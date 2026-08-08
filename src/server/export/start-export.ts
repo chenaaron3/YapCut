@@ -39,13 +39,13 @@ export async function startProjectExport(options: {
   }
 
   // Claim exporting before kicking Lambda so a second click cannot race.
+  // Keep prior exportS3Key / exportBucketName so Download still works if kickoff fails.
   const claimed = await db
     .update(projects)
     .set({
       status: "exporting",
       failureReason: null,
       exportRenderId: null,
-      exportBucketName: null,
       updatedAt: new Date(),
     })
     .where(
@@ -81,7 +81,6 @@ export async function startProjectExport(options: {
         status: "ready",
         failureReason: message,
         exportRenderId: null,
-        exportBucketName: null,
         updatedAt: new Date(),
       })
       .where(eq(projects.id, options.projectId));

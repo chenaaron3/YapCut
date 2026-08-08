@@ -47,5 +47,5 @@ Add your Vercel URL in `bin/infra.ts` before production uploads from the browser
 App export uses Remotion Lambda (separate from this CDK stack). One-time setup:
 
 1. Follow https://www.remotion.dev/docs/lambda/setup (role `remotion-lambda-role`, user policy). Prefer a dedicated IAM user — `talking-head-app` is too narrow for deploy.
-2. Extend the **role** policy so Lambda can write `exports/*` on `AWS_S3_BUCKET` (same region).
-3. From repo root: `npm run remotion:deploy` → paste printed `REMOTION_*` vars into `.env` / Vercel.
+2. From repo root: `npm run remotion:deploy` → paste printed `REMOTION_*` vars into `.env` / Vercel.
+3. Export writes a public MP4 into the Remotion Lambda bucket; Download uses that S3 URL directly (no copy into the media bucket).

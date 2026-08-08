@@ -117,10 +117,11 @@ export const projects = createTable(
       .notNull()
       .default(sql`'{}'::jsonb`),
     configUpdatedAt: d.timestamp({ withTimezone: true }),
+    /** Object key in the Remotion Lambda bucket (`exportBucketName`). */
     exportS3Key: d.varchar({ length: 1024 }),
     /** Remotion Lambda render id while `status === "exporting"`. */
     exportRenderId: d.varchar({ length: 128 }),
-    /** Remotion site bucket (for getRenderProgress), not the media out bucket. */
+    /** Remotion Lambda bucket (progress + final MP4). Kept after export for Download. */
     exportBucketName: d.varchar({ length: 255 }),
     createdAt: d
       .timestamp({ withTimezone: true })

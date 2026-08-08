@@ -9,6 +9,7 @@ import {
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { startCreatePipeline } from "~/server/create/start-create-pipeline";
 import { assets, projects, transcripts } from "~/server/db/schema";
+import { exportDownloadUrl } from "~/server/export/download-url";
 import { pollProjectExport } from "~/server/export/poll-export";
 import { startProjectExport } from "~/server/export/start-export";
 import {
@@ -73,6 +74,7 @@ export const projectRouter = createTRPCRouter({
           config: true,
           configUpdatedAt: true,
           exportS3Key: true,
+          exportBucketName: true,
           updatedAt: true,
           createdAt: true,
         },
@@ -106,13 +108,17 @@ export const projectRouter = createTRPCRouter({
 
       if (!project) return null;
 
+      const downloadUrl =
+        project.exportS3Key && project.exportBucketName
+          ? await exportDownloadUrl({
+              bucketName: project.exportBucketName,
+              objectKey: project.exportS3Key,
+            })
+          : null;
+
       return {
         ...project,
-        downloadUrl: project.exportS3Key
-          ? signedCloudFrontUrl(project.exportS3Key, {
-              expiresInSec: 60 * 60,
-            })
-          : null,
+        downloadUrl,
         config: isEmptyConfig(project.config)
           ? emptyProjectConfig()
           : parseProjectConfig(project.config),

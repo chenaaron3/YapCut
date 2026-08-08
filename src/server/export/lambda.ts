@@ -8,7 +8,6 @@ import { env } from "~/env";
 import { COMPOSITION_ID } from "~/remotion/constants";
 import type { ProjectProps } from "~/remotion/types";
 import { ensureRemotionAwsEnv } from "~/server/export/ensure-remotion-aws-env";
-import { exportKey } from "~/server/media/keys";
 
 function remotionRegion(): AwsRegion {
   return (env.REMOTION_AWS_REGION ?? env.AWS_REGION) as AwsRegion;
@@ -39,12 +38,9 @@ export async function startLambdaRender(options: {
 }): Promise<{
   renderId: string;
   bucketName: string;
-  outKey: string;
 }> {
   ensureRemotionAwsEnv();
   const { functionName, serveUrl, region } = requireLambdaConfig();
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const outKey = exportKey(options.projectId, timestamp);
 
   const { renderId, bucketName } = await renderMediaOnLambda({
     region,
@@ -55,19 +51,15 @@ export async function startLambdaRender(options: {
     codec: "h264",
     imageFormat: "jpeg",
     maxRetries: 1,
-    privacy: "no-acl",
+    privacy: "public",
     downloadBehavior: {
       type: "download",
       fileName: `${options.projectId}.mp4`,
     },
-    outName: {
-      key: outKey,
-      bucketName: env.AWS_S3_BUCKET,
-    },
     framesPerLambda: 40,
   });
 
-  return { renderId, bucketName, outKey };
+  return { renderId, bucketName };
 }
 
 export type LambdaProgress = {

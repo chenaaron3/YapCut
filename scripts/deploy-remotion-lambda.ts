@@ -25,25 +25,16 @@ const REGION = (process.env.REMOTION_AWS_REGION ??
   "us-east-1") as AwsRegion;
 
 async function main() {
-  if (!process.env.REMOTION_AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID) {
-    process.env.REMOTION_AWS_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID;
-  }
-  if (
-    !process.env.REMOTION_AWS_SECRET_ACCESS_KEY &&
-    process.env.AWS_SECRET_ACCESS_KEY
-  ) {
-    process.env.REMOTION_AWS_SECRET_ACCESS_KEY =
-      process.env.AWS_SECRET_ACCESS_KEY;
-  }
-
-  if (
-    !process.env.REMOTION_AWS_ACCESS_KEY_ID ||
-    !process.env.REMOTION_AWS_SECRET_ACCESS_KEY
-  ) {
+  const accessKeyId = process.env.REMOTION_AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.REMOTION_AWS_SECRET_ACCESS_KEY;
+  if (!accessKeyId || !secretAccessKey) {
     throw new Error(
-      "Set REMOTION_AWS_ACCESS_KEY_ID / REMOTION_AWS_SECRET_ACCESS_KEY (or AWS_*)",
+      "Set REMOTION_AWS_ACCESS_KEY_ID and REMOTION_AWS_SECRET_ACCESS_KEY in .env",
     );
   }
+  // Prefer Remotion user over app media user (AWS_ACCESS_KEY_ID).
+  process.env.AWS_ACCESS_KEY_ID = accessKeyId;
+  process.env.AWS_SECRET_ACCESS_KEY = secretAccessKey;
 
   console.log(`[remotion] region=${REGION}`);
   console.log("[remotion] ensuring bucket…");

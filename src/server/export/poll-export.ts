@@ -2,8 +2,8 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "~/server/db";
 import { projects } from "~/server/db/schema";
+import { exportDownloadUrl } from "~/server/export/download-url";
 import { fetchLambdaProgress } from "~/server/export/lambda";
-import { signedCloudFrontUrl } from "~/server/media/cloudfront";
 
 export type ExportProgressResult = {
   status: string;
@@ -12,6 +12,14 @@ export type ExportProgressResult = {
   downloadUrl: string | null;
   failureReason: string | null;
 };
+
+async function downloadFor(
+  bucketName: string | null,
+  key: string | null,
+): Promise<string | null> {
+  if (!bucketName || !key) return null;
+  return exportDownloadUrl({ bucketName, objectKey: key });
+}
 
 export async function pollProjectExport(options: {
   projectId: string;
@@ -44,17 +52,15 @@ export async function pollProjectExport(options: {
       status: project.status,
       progress: project.exportS3Key ? 1 : 0,
       exportS3Key: project.exportS3Key,
-      downloadUrl: project.exportS3Key
-        ? signedCloudFrontUrl(project.exportS3Key, {
-            expiresInSec: 60 * 60,
-          })
-        : null,
+      downloadUrl: await downloadFor(
+        project.exportBucketName,
+        project.exportS3Key,
+      ),
       failureReason: project.failureReason,
     };
   }
 
   if (!project.exportRenderId || !project.exportBucketName) {
-    // Lambda kickoff still in flight, or crashed before ids were saved.
     return {
       status: "exporting",
       progress: 0,
@@ -78,7 +84,6 @@ export async function pollProjectExport(options: {
         status: "ready",
         failureReason: reason,
         exportRenderId: null,
-        exportBucketName: null,
         updatedAt: new Date(),
       })
       .where(eq(projects.id, options.projectId));
@@ -87,9 +92,10 @@ export async function pollProjectExport(options: {
       status: "ready",
       progress: progress.overallProgress,
       exportS3Key: project.exportS3Key,
-      downloadUrl: project.exportS3Key
-        ? signedCloudFrontUrl(project.exportS3Key, { expiresInSec: 60 * 60 })
-        : null,
+      downloadUrl: await downloadFor(
+        project.exportBucketName,
+        project.exportS3Key,
+      ),
       failureReason: reason,
     };
   }
@@ -104,7 +110,6 @@ export async function pollProjectExport(options: {
           status: "ready",
           failureReason: reason,
           exportRenderId: null,
-          exportBucketName: null,
           updatedAt: new Date(),
         })
         .where(eq(projects.id, options.projectId));
@@ -112,9 +117,10 @@ export async function pollProjectExport(options: {
         status: "ready",
         progress: 1,
         exportS3Key: project.exportS3Key,
-        downloadUrl: project.exportS3Key
-          ? signedCloudFrontUrl(project.exportS3Key, { expiresInSec: 60 * 60 })
-          : null,
+        downloadUrl: await downloadFor(
+          project.exportBucketName,
+          project.exportS3Key,
+        ),
         failureReason: reason,
       };
     }
@@ -124,9 +130,9 @@ export async function pollProjectExport(options: {
       .set({
         status: "ready",
         exportS3Key: outKey,
+        // Keep exportBucketName — downloads come from the Remotion bucket.
         failureReason: null,
         exportRenderId: null,
-        exportBucketName: null,
         updatedAt: new Date(),
       })
       .where(eq(projects.id, options.projectId));
@@ -135,7 +141,10 @@ export async function pollProjectExport(options: {
       status: "ready",
       progress: 1,
       exportS3Key: outKey,
-      downloadUrl: signedCloudFrontUrl(outKey, { expiresInSec: 60 * 60 }),
+      downloadUrl: await exportDownloadUrl({
+        bucketName: project.exportBucketName,
+        objectKey: outKey,
+      }),
       failureReason: null,
     };
   }
