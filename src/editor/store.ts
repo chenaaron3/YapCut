@@ -14,6 +14,7 @@ import {
   timelineToOutputSec,
   type ArollLayoutCell,
 } from "~/domain/arolls";
+import { clampTimelineRangeToMedia } from "~/domain/media";
 import {
   patchEdit as applyPatchEdit,
   patchEditRange,
@@ -50,6 +51,8 @@ export type EditorAsset = {
   kind: "video" | "image" | "audio";
   playbackUrl: string;
   durationSec: number | null;
+  width: number | null;
+  height: number | null;
   originalFilename: string | null;
   sortOrder: number;
 };
@@ -111,7 +114,13 @@ type EditorActions = {
 
   // —— Create (place) ——
   /** Place an edit over the word (or word selection if it includes this word). */
-  placeEditOnWord: (globalIndex: number, seed: EditSeed) => void;
+  placeEditOnWord: (
+    globalIndex: number,
+    seed: EditSeed,
+    options?: { maxDurationSec?: number | null },
+  ) => void;
+  /** Merge newly uploaded assets into the editor library. */
+  addAssets: (assets: EditorAsset[]) => void;
 
   // —— Read (get) ——
   getGlobalWords: () => GlobalTranscriptWord[];
@@ -195,6 +204,24 @@ function durationMap(assets: EditorAsset[]): Map<string, number> {
   return new Map(assets.map((a) => [a.id, a.durationSec ?? 0]));
 }
 
+function sizeMap(
+  assets: EditorAsset[],
+): Map<string, { width: number; height: number }> {
+  const map = new Map<string, { width: number; height: number }>();
+  for (const a of assets) {
+    if (a.width != null && a.height != null && a.width > 0 && a.height > 0) {
+      map.set(a.id, { width: a.width, height: a.height });
+    }
+  }
+  return map;
+}
+
+function kindMap(
+  assets: EditorAsset[],
+): Map<string, "video" | "image" | "audio"> {
+  return new Map(assets.map((a) => [a.id, a.kind]));
+}
+
 function recomputeProps(state: {
   config: ProjectConfig;
   assets: EditorAsset[];
@@ -206,6 +233,8 @@ function recomputeProps(state: {
     mediaUrls: mediaUrlMap(state.assets),
     transcriptsByAssetId: transcriptMap(state.transcriptsByAssetId),
     assetDurationSec: durationMap(state.assets),
+    assetSize: sizeMap(state.assets),
+    assetKind: kindMap(state.assets),
     fps: state.fps,
   });
 }
@@ -560,14 +589,17 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       );
     },
 
-    placeEditOnWord: (globalIndex, seed) => {
+    placeEditOnWord: (globalIndex, seed, options) => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config) return;
       const words = get().getGlobalWords();
       const word = words[globalIndex];
       if (!word) return;
       const { selection } = useSelection.getState();
-      const range = wordActionRange(selection, word, words);
+      let range = wordActionRange(selection, word, words);
+      if (options?.maxDurationSec != null) {
+        range = clampTimelineRangeToMedia(range, options.maxDurationSec);
+      }
       const duration = layoutTimelineDuration(layoutFor(config, assets));
       const prevIds = new Set(config.edits.map((e) => e.id));
       const next = placeEdit(config, range, duration, seed);
@@ -575,6 +607,25 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       commit({ config: next, transcriptsByAssetId });
       const created = next.edits.find((e) => !prevIds.has(e.id));
       if (created) useSelection.getState().select("edit", created.id);
+    },
+
+    addAssets: (incoming) => {
+      const { assets, config, transcriptsByAssetId, fps } = get();
+      if (!config) return;
+      const byId = new Map(assets.map((a) => [a.id, a]));
+      for (const a of incoming) byId.set(a.id, a);
+      const nextAssets = [...byId.values()].sort(
+        (a, b) => a.sortOrder - b.sortOrder,
+      );
+      set({
+        assets: nextAssets,
+        props: recomputeProps({
+          config,
+          assets: nextAssets,
+          transcriptsByAssetId,
+          fps,
+        }),
+      });
     },
 
     cutWord: (globalIndex) => {
@@ -665,11 +716,14 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     },
 
     patchEdit: (id, patch, live = false) => {
-      const { config, transcriptsByAssetId } = get();
+      const { config, transcriptsByAssetId, assets } = get();
       if (!config) return;
       commit(
         {
-          config: applyPatchEdit(config, id, patch),
+          config: applyPatchEdit(config, id, patch, {
+            srcDurationSec: (assetId) =>
+              assets.find((a) => a.id === assetId)?.durationSec ?? null,
+          }),
           transcriptsByAssetId,
         },
         { live },

@@ -36,10 +36,36 @@ export type VfxQuoteEdit = EditBase & {
   style?: TemplateStyle;
 };
 
-export type BrollEdit = EditBase & {
-  kind: "broll";
-  assetId: string;
+/** Normalized transform applied at props / overlay time. */
+export type Transform = {
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
 };
+
+/**
+ * Edit-side ref to a project/global Asset (src/size live on the Asset row).
+ * Counterpart to prototype VisualAsset, without inlined media bytes.
+ */
+export type MediaRef = {
+  assetId: string;
+  /** Trim into source media (sec). */
+  mediaOffsetSec: number;
+  /** Linear gain 0–1. */
+  volume: number;
+};
+
+/**
+ * B-roll edit = timeline range + transform + media ref.
+ * `kenBurns` present means enabled (end-scale multiplier on `scale`).
+ */
+export type BrollEdit = EditBase &
+  Transform &
+  MediaRef & {
+    kind: "broll";
+    kenBurns?: number;
+  };
 
 export type SfxEdit = EditBase & {
   kind: "sfx";
@@ -102,10 +128,26 @@ const vfxQuoteEditSchema = editBaseSchema.extend({
   style: templateStyleSchema.optional(),
 });
 
-const brollEditSchema = editBaseSchema.extend({
-  kind: z.literal("broll"),
-  assetId: z.string().min(1),
+const transformSchema = z.object({
+  scale: z.number(),
+  offsetX: z.number(),
+  offsetY: z.number(),
+  rotation: z.number(),
 });
+
+const mediaRefSchema = z.object({
+  assetId: z.string().min(1),
+  mediaOffsetSec: z.number(),
+  volume: z.number(),
+});
+
+const brollEditSchema = editBaseSchema
+  .merge(transformSchema)
+  .merge(mediaRefSchema)
+  .extend({
+    kind: z.literal("broll"),
+    kenBurns: z.number().optional(),
+  });
 
 const sfxEditSchema = editBaseSchema.extend({
   kind: z.literal("sfx"),

@@ -34,6 +34,7 @@ import {
 } from "~/remotion/constants";
 import type {
   ArollSection,
+  BrollClipProp,
   CaptionGroupProp,
   CaptionWordProp,
   ProjectProps,
@@ -48,6 +49,10 @@ export type BuildProjectPropsInput = {
   transcriptsByAssetId: ReadonlyMap<string, readonly TranscriptWord[]>;
   /** assetId → media duration (for timeline→output edit mapping). */
   assetDurationSec: ReadonlyMap<string, number>;
+  /** assetId → natural size for b-roll contain-fit. */
+  assetSize: ReadonlyMap<string, { width: number; height: number }>;
+  /** assetId → media kind (image|video|audio). */
+  assetKind: ReadonlyMap<string, "video" | "image" | "audio">;
   fps?: number;
 };
 
@@ -184,6 +189,48 @@ function buildTextOverlays(
   return out;
 }
 
+function buildBrolls(
+  edits: ProjectConfig["edits"],
+  cells: ReturnType<typeof buildArollLayout>,
+  mediaUrls: ReadonlyMap<string, string>,
+  assetSize: ReadonlyMap<string, { width: number; height: number }>,
+  assetKind: ReadonlyMap<string, "video" | "image" | "audio">,
+  fps: number,
+): BrollClipProp[] {
+  const out: BrollClipProp[] = [];
+  for (const e of edits) {
+    if (e.kind !== "broll") continue;
+    const src = mediaUrls.get(e.assetId);
+    if (!src) continue;
+    const size = assetSize.get(e.assetId);
+    if (!size || size.width <= 0 || size.height <= 0) continue;
+    const kind = assetKind.get(e.assetId);
+    if (kind !== "image" && kind !== "video") continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+    out.push({
+      id: e.id,
+      startFrame: secToFrame(range.start, fps),
+      endFrame: Math.max(
+        secToFrame(range.start, fps) + 1,
+        secToFrame(range.end, fps),
+      ),
+      src,
+      width: size.width,
+      height: size.height,
+      mediaKind: kind,
+      scale: e.scale,
+      offsetX: e.offsetX,
+      offsetY: e.offsetY,
+      rotation: e.rotation,
+      mediaOffsetSec: e.mediaOffsetSec,
+      volume: e.volume,
+      ...(e.kenBurns != null ? { kenBurns: e.kenBurns } : {}),
+    });
+  }
+  return out;
+}
+
 export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
   const fps = input.fps ?? COMPOSITION_FPS ?? PROJECT_FPS;
   const sections = buildSections(
@@ -212,5 +259,13 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
     ),
     zooms: buildZooms(input.config.edits, layout, fps),
     textOverlays: buildTextOverlays(input.config.edits, layout, fps),
+    brolls: buildBrolls(
+      input.config.edits,
+      layout,
+      input.mediaUrls,
+      input.assetSize,
+      input.assetKind,
+      fps,
+    ),
   };
 }

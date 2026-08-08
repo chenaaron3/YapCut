@@ -1,3 +1,10 @@
+import { useState } from "react";
+
+import {
+  BROLL_DRAG_MIME,
+  brollSeed,
+  type BrollDragPayload,
+} from "~/domain/broll";
 import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import { EditMarker } from "~/editor/components/transcript/EditMarker";
@@ -33,6 +40,7 @@ export function WordCell({
   const patchWord = useEditor((s) => s.patchWord);
   const placeEditOnWord = useEditor((s) => s.placeEditOnWord);
   const cutWord = useEditor((s) => s.cutWord);
+  const [dropActive, setDropActive] = useState(false);
 
   const selected = isSelected(selection, "word", word.globalIndex);
   const markers = annotation.spans.filter((s) => isMarkerRole(s.role));
@@ -83,6 +91,7 @@ export function WordCell({
               selected && "bg-primary/35",
               !selected && primaryChrome && primaryChrome.underlineClass,
               primarySelected && primaryChrome && primaryChrome.highlightClass,
+              dropActive && "bg-broll/30 ring-1 ring-broll",
             )}
             onMouseDown={(e) => onWordDragStart?.(e)}
             onClick={(e) => {
@@ -93,6 +102,32 @@ export function WordCell({
             onDoubleClick={(e) => {
               e.stopPropagation();
               patchWord(word.globalIndex, { emphasized: !word.emphasized });
+            }}
+            onDragOver={(e) => {
+              if (![...e.dataTransfer.types].includes(BROLL_DRAG_MIME)) return;
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "copy";
+              setDropActive(true);
+            }}
+            onDragLeave={() => setDropActive(false)}
+            onDrop={(e) => {
+              const raw = e.dataTransfer.getData(BROLL_DRAG_MIME);
+              setDropActive(false);
+              if (!raw) return;
+              e.preventDefault();
+              e.stopPropagation();
+              try {
+                const payload = JSON.parse(raw) as BrollDragPayload;
+                if (payload?.assetId) {
+                  placeEditOnWord(
+                    word.globalIndex,
+                    brollSeed(payload.assetId),
+                    { maxDurationSec: payload.durationSec },
+                  );
+                }
+              } catch {
+                // ignore malformed drag payload
+              }
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {

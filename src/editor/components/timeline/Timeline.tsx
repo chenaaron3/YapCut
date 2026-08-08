@@ -10,7 +10,7 @@ import {
   buildArollLayout,
   layoutTimelineDuration,
 } from "~/domain/arolls";
-import type { VfxTextEdit, ZoomEdit } from "~/domain/project-config";
+import type { BrollEdit, VfxTextEdit, ZoomEdit } from "~/domain/project-config";
 import { LABEL_OFFSET } from "~/editor/components/timeline/constants";
 import {
   contentXForSec,
@@ -18,6 +18,7 @@ import {
 } from "~/editor/components/timeline/hooks/useTimelineZoom";
 import { Playhead } from "~/editor/components/timeline/Playhead";
 import { TimelineRuler } from "~/editor/components/timeline/TimelineRuler";
+import { BRollTrack } from "~/editor/components/timeline/tracks/BRollTrack";
 import { CaptionTrack } from "~/editor/components/timeline/tracks/CaptionTrack";
 import { VideoTrack } from "~/editor/components/timeline/tracks/VideoTrack";
 import { VfxTrack } from "~/editor/components/timeline/tracks/VfxTrack";
@@ -59,6 +60,8 @@ export function Timeline() {
     config?.edits.filter(
       (e): e is VfxTextEdit => e.kind === "vfx" && e.type === "text",
     ) ?? [];
+  const brolls =
+    config?.edits.filter((e): e is BrollEdit => e.kind === "broll") ?? [];
 
   const layout = useMemo(() => {
     if (!config) return [];
@@ -190,6 +193,7 @@ export function Timeline() {
           <div className="py-2 pl-[72px]">
             <VideoTrack layout={layout} width={trackWidth} />
             <CaptionTrack width={trackWidth} />
+            <BRollTrack edits={brolls} width={trackWidth} />
             <ZoomTrack edits={zooms} width={trackWidth} />
             <VfxTrack edits={texts} width={trackWidth} />
           </div>

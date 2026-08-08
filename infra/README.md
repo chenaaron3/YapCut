@@ -41,3 +41,11 @@ Signing **private** key never goes into CloudFormation — only the public key i
 
 Default allowed origins: `http://localhost:3000`, `http://127.0.0.1:3000`.  
 Add your Vercel URL in `bin/infra.ts` before production uploads from the browser.
+
+## Remotion Lambda (export)
+
+App export uses Remotion Lambda (separate from this CDK stack). One-time setup:
+
+1. Follow https://www.remotion.dev/docs/lambda/setup (role `remotion-lambda-role`, user policy). Prefer a dedicated IAM user — `talking-head-app` is too narrow for deploy.
+2. Extend the **role** policy so Lambda can write `exports/*` on `AWS_S3_BUCKET` (same region).
+3. From repo root: `npm run remotion:deploy` → paste printed `REMOTION_*` vars into `.env` / Vercel.

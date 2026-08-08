@@ -118,6 +118,10 @@ export const projects = createTable(
       .default(sql`'{}'::jsonb`),
     configUpdatedAt: d.timestamp({ withTimezone: true }),
     exportS3Key: d.varchar({ length: 1024 }),
+    /** Remotion Lambda render id while `status === "exporting"`. */
+    exportRenderId: d.varchar({ length: 128 }),
+    /** Remotion site bucket (for getRenderProgress), not the media out bucket. */
+    exportBucketName: d.varchar({ length: 255 }),
     createdAt: d
       .timestamp({ withTimezone: true })
       .$defaultFn(() => /* @__PURE__ */ new Date())
@@ -151,6 +155,9 @@ export const assets = createTable(
     s3Key: d.varchar({ length: 1024 }).notNull(),
     contentType: d.varchar({ length: 255 }).notNull(),
     durationSec: d.doublePrecision(),
+    /** Natural pixel size (b-roll layout / transform overlay). */
+    width: d.integer(),
+    height: d.integer(),
     originalFilename: d.varchar({ length: 512 }),
     sortOrder: d.integer().notNull().default(0),
     createdAt: d

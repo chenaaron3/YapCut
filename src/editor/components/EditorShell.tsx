@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
-import { AssetsPanel } from "~/editor/components/AssetsPanel";
+import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
+import { ExportButton } from "~/editor/components/ExportButton";
 import { Timeline } from "~/editor/components/timeline/Timeline";
 import { TranscriptPanel } from "~/editor/components/transcript/TranscriptPanel";
 import { getPlayer, togglePlayback } from "~/editor/lib/player-bridge";
@@ -84,7 +85,11 @@ export function EditorShell({ projectId }: Props) {
 
   const projectQuery = api.project.byId.useQuery(
     { id: projectId },
-    { enabled: projectId.length > 0 },
+    {
+      enabled: projectId.length > 0,
+      refetchInterval: (query) =>
+        query.state.data?.status === "exporting" ? 2000 : false,
+    },
   );
 
   useGlobalShortcuts();
@@ -131,6 +136,8 @@ export function EditorShell({ projectId }: Props) {
         kind: a.kind,
         playbackUrl: a.playbackUrl,
         durationSec: a.durationSec,
+        width: a.width,
+        height: a.height,
         originalFilename: a.originalFilename,
         sortOrder: a.sortOrder,
       })),
@@ -193,9 +200,7 @@ export function EditorShell({ projectId }: Props) {
             </span>
           ) : null}
         </div>
-        <div className="text-[11px] text-muted-foreground">
-          Space play · Esc deselect · ⌘Z undo · ⌘S save
-        </div>
+        <ExportButton />
       </header>
 
       {error ? (

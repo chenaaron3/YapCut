@@ -1,13 +1,18 @@
 import { produce } from "immer";
 
+import { withBrollKenBurns } from "~/domain/broll";
+import { withMediaOffset, withVolume } from "~/domain/media";
 import {
   nextEditId,
+  type BrollEdit,
   type Edit,
   type EditBase,
+  type MediaRef,
   type ProjectConfig,
-  type TemplateStyle,
+  type Transform,
 } from "~/domain/project-config";
 import type { TimelineTime } from "~/domain/time";
+import { withTransform } from "~/domain/transform";
 
 const EPS = 0.001;
 const MIN_RANGE_SEC = 0.05;
@@ -23,12 +28,27 @@ export type EditSeed = Edit extends infer E
 /**
  * Partial body for an existing edit. Discriminant (`kind` / vfx `type`) is fixed;
  * use remove + place to change identity.
+ * `kenBurns: null` clears optional Ken Burns on b-roll.
  */
 export type EditPatch = Edit extends infer E
   ? E extends Edit
-    ? Partial<Omit<E, "id" | "kind" | "type">>
+    ? Partial<Omit<E, "id" | "kind" | "type" | "kenBurns">> & {
+        kenBurns?: number | null;
+      }
     : never
   : never;
+
+function hasTransform(edit: Edit): edit is Edit & Transform {
+  return "offsetX" in edit && "offsetY" in edit && "rotation" in edit;
+}
+
+function hasMediaRef(
+  edit: Edit,
+): edit is Edit & MediaRef & { start: number; end: number } {
+  return (
+    "assetId" in edit && "mediaOffsetSec" in edit && "volume" in edit
+  );
+}
 
 function clampRange(
   range: TimelineTime,
@@ -80,39 +100,92 @@ export function placeEdit(
   });
 }
 
-export function placeZoom(
-  config: ProjectConfig,
-  range: TimelineTime,
-  timelineDuration: number,
-  scale = DEFAULT_ZOOM_SCALE,
-): ProjectConfig {
-  return placeEdit(config, range, timelineDuration, { kind: "zoom", scale });
+/** External facts needed to apply constrained patches (lives outside ProjectConfig). */
+export type PatchEditContext = {
+  /** Source duration for an asset id; null/undefined = unconstrained (e.g. image). */
+  srcDurationSec?: (assetId: string) => number | null | undefined;
+};
+
+/** Unconstrained edit fields — facets own everything else. */
+const PLAIN_PATCH_KEYS = [
+  "start",
+  "end",
+  "assetId",
+  "text",
+  "style",
+] as const;
+
+function applyPlainPatch(edit: Edit, patch: EditPatch): Edit {
+  const raw = patch as Record<string, unknown>;
+  let next = edit;
+  for (const key of PLAIN_PATCH_KEYS) {
+    if (!(key in raw) || raw[key] === undefined) continue;
+    if (next === edit) next = { ...edit };
+    (next as Record<string, unknown>)[key] = raw[key];
+  }
+  return next;
 }
 
-export function placeTextVfx(
-  config: ProjectConfig,
-  range: TimelineTime,
-  text: string,
-  timelineDuration: number,
-  style?: TemplateStyle,
-): ProjectConfig {
-  return placeEdit(config, range, timelineDuration, {
-    kind: "vfx",
-    type: "text",
-    text,
-    style,
-  });
+function applyTransformPatch(edit: Edit, patch: EditPatch): Edit {
+  const tPatch: Partial<Transform> = {};
+  if ("scale" in patch && typeof patch.scale === "number") {
+    tPatch.scale = patch.scale;
+  }
+  if ("offsetX" in patch && typeof patch.offsetX === "number") {
+    tPatch.offsetX = patch.offsetX;
+  }
+  if ("offsetY" in patch && typeof patch.offsetY === "number") {
+    tPatch.offsetY = patch.offsetY;
+  }
+  if ("rotation" in patch && typeof patch.rotation === "number") {
+    tPatch.rotation = patch.rotation;
+  }
+  if (Object.keys(tPatch).length === 0) return edit;
+
+  if (hasTransform(edit)) return withTransform(edit, tPatch);
+  if (typeof tPatch.scale === "number") {
+    return { ...edit, scale: tPatch.scale } as Edit;
+  }
+  return edit;
+}
+
+function applyMediaPatch(
+  edit: Edit,
+  patch: EditPatch,
+  ctx?: PatchEditContext,
+): Edit {
+  if (!hasMediaRef(edit)) return edit;
+  let next = edit;
+  if ("volume" in patch && typeof patch.volume === "number") {
+    next = withVolume(next, patch.volume);
+  }
+  if ("mediaOffsetSec" in patch && typeof patch.mediaOffsetSec === "number") {
+    const src = ctx?.srcDurationSec?.(next.assetId) ?? null;
+    next = withMediaOffset(next, patch.mediaOffsetSec, src);
+  }
+  return next;
+}
+
+function applyKenBurnsPatch(edit: Edit, patch: EditPatch): Edit {
+  if (!("kenBurns" in patch) || edit.kind !== "broll") return edit;
+  return withBrollKenBurns(edit, patch.kenBurns ?? null);
 }
 
 export function patchEdit(
   config: ProjectConfig,
   id: number,
   patch: EditPatch,
+  ctx?: PatchEditContext,
 ): ProjectConfig {
   return produce(config, (draft) => {
-    const edit = draft.edits.find((e) => e.id === id);
-    if (!edit) return;
-    Object.assign(edit, patch);
+    const idx = draft.edits.findIndex((e) => e.id === id);
+    if (idx < 0) return;
+    let next = draft.edits[idx]!;
+    next = applyPlainPatch(next, patch);
+    next = applyTransformPatch(next, patch);
+    next = applyMediaPatch(next, patch, ctx);
+    next = applyKenBurnsPatch(next, patch);
+    draft.edits[idx] = next;
   });
 }
 

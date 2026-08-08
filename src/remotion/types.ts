@@ -41,6 +41,24 @@ export type TextOverlayProp = {
   style?: TemplateStyle;
 };
 
+export type BrollClipProp = {
+  id: number;
+  startFrame: number;
+  endFrame: number;
+  src: string;
+  width: number;
+  height: number;
+  /** `image` | `video` — drives Img vs Video. */
+  mediaKind: "image" | "video";
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  kenBurns?: number;
+  mediaOffsetSec: number;
+  volume: number;
+};
+
 export type ProjectProps = {
   fps: number;
   width: number;
@@ -50,4 +68,5 @@ export type ProjectProps = {
   captionGroups: CaptionGroupProp[];
   zooms: ZoomProp[];
   textOverlays: TextOverlayProp[];
+  brolls: BrollClipProp[];
 };

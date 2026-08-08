@@ -1,6 +1,7 @@
 import { AbsoluteFill, Series } from "remotion";
 import { Video } from "@remotion/media";
 
+import { BRollOverlay } from "~/remotion/components/BRollOverlay";
 import { Captions } from "~/remotion/components/Captions";
 import { TextOverlay } from "~/remotion/components/TextOverlay";
 import { Zoom } from "~/remotion/components/Zoom";
@@ -36,6 +37,7 @@ export function TalkingHead({
   captionGroups,
   zooms,
   textOverlays,
+  brolls,
 }: TalkingHeadProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
@@ -46,6 +48,7 @@ export function TalkingHead({
           <AbsoluteFill style={{ backgroundColor: "#111" }} />
         )}
       </Zoom>
+      <BRollOverlay brolls={brolls} />
       <TextOverlay overlays={textOverlays} />
       <Captions groups={captionGroups} />
     </AbsoluteFill>

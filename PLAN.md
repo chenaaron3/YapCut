@@ -17,8 +17,8 @@ Agents working a milestone: read **CONTEXT.md** + this milestone’s **Agent bri
 | M2 Projects page | **Done** | `projects` table, `project.list` / `byId`, grid + create modal shell |
 | M3 Create pipeline | **Done** | Presign upload → WhisperX → keeps → AI seed; `withWorkflow` always on; create uses in-process unless `USE_VERCEL_WORKFLOW=true` (set on Vercel for prod) |
 | M4 Editor | **Done** | Shell: Assets\|Transcript\|Player\|Timeline; arolls delete+ripple; Zustand+autosave; Remotion preview (A-roll stitch, captions, zoom, title text). Caption/text chrome simplified vs full catalog; no Lambda export (M4b). |
-| M4b Export Lambda | Not started | |
-| M5 Features | In progress | **5.1–5.2 done** — captions stack+inspector; text VFX templates/inspector/place + independent title rename; next 5.3 B-roll |
+| M4b Export Lambda | **Done** | Header Export → Remotion Lambda (poll progress, no Vercel workflow); download via signed CF on `exportS3Key` |
+| M5 Features | In progress | **5.1–5.3 done** — captions; text VFX; b-roll upload/drag-place/inspector/transform overlay/timeline/Remotion; entrance SFX deferred to 5.4; next 5.4 SFX |
 
 ### Already in talking-head-2 (do not re-scaffold)
 

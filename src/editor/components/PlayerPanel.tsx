@@ -1,9 +1,10 @@
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Player } from "@remotion/player";
 
 import type { PlayerRef } from "@remotion/player";
 import type { FC } from "react";
 
+import { TransformOverlay } from "~/editor/components/player/TransformOverlay";
 import {
   getPlayer,
   peekPlayAfterSeek,
@@ -32,6 +33,7 @@ export function PlayerPanel() {
   const seekFrame = useEditor((s) => s.seekFrame);
   const ref = useRef<PlayerRef | null>(null);
   const seekTargetRef = useRef<number | null>(null);
+  const [overlayDragging, setOverlayDragging] = useState(false);
 
   const inputProps: TalkingHeadProps | null = useMemo(() => props, [props]);
 
@@ -119,9 +121,10 @@ export function PlayerPanel() {
             fps={COMPOSITION_FPS}
             style={{ width: "100%", height: "100%" }}
             controls={false}
-            clickToPlay
+            clickToPlay={!overlayDragging}
             spaceKeyToPlayOrPause={false}
           />
+          <TransformOverlay onDraggingChange={setOverlayDragging} />
         </div>
       </div>
       <FrameCounter durationInFrames={durationInFrames} />

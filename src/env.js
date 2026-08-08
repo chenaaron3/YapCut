@@ -31,6 +31,12 @@ export const env = createEnv({
       .enum(["true", "false"])
       .optional()
       .transform((v) => v === "true"),
+    /** Remotion Lambda function name from `npm run remotion:deploy`. */
+    REMOTION_FUNCTION_NAME: z.string().min(1).optional(),
+    /** Remotion Lambda serve URL from site deploy. */
+    REMOTION_SERVE_URL: z.string().url().optional(),
+    /** Region for Remotion Lambda (defaults to AWS_REGION). */
+    REMOTION_AWS_REGION: z.string().min(1).optional(),
   },
 
   /**
@@ -62,6 +68,9 @@ export const env = createEnv({
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN,
     USE_VERCEL_WORKFLOW: process.env.USE_VERCEL_WORKFLOW,
+    REMOTION_FUNCTION_NAME: process.env.REMOTION_FUNCTION_NAME,
+    REMOTION_SERVE_URL: process.env.REMOTION_SERVE_URL,
+    REMOTION_AWS_REGION: process.env.REMOTION_AWS_REGION,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
