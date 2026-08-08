@@ -118,22 +118,15 @@ async function runCreatePipelineInner(projectId: string): Promise<void> {
       throw new Error(`WhisperX failed for ${asset.originalFilename ?? asset.id}: ${message}`);
     }
 
-    const durationSec =
-      result.durationSec ??
-      (result.words.length > 0
-        ? result.words[result.words.length - 1]!.end
-        : null);
+    // Prefer client-probed media duration (createStart). Never use last-word
+    // end as asset length — that hides the trailing cut after speech.
+    const durationSec = asset.durationSec;
 
     if (durationSec == null || durationSec <= 0) {
       throw new Error(
-        `Could not determine duration for ${asset.originalFilename ?? asset.id}`,
+        `Missing media duration for ${asset.originalFilename ?? asset.id} (probe before upload)`,
       );
     }
-
-    await db
-      .update(assets)
-      .set({ durationSec, updatedAt: new Date() })
-      .where(eq(assets.id, asset.id));
 
     const existing = await db
       .select({ id: transcripts.id })

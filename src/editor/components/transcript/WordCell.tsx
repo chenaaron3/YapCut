@@ -87,6 +87,7 @@ export function WordCell({
             tabIndex={0}
             className={cn(
               "relative mx-[2px] cursor-pointer rounded px-[2px] transition-colors select-none",
+              word.inGap && "opacity-40 line-through",
               word.emphasized && "font-semibold text-amber-300",
               selected && "bg-primary/35",
               !selected && primaryChrome && primaryChrome.underlineClass,

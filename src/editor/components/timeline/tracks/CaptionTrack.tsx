@@ -77,15 +77,18 @@ export function CaptionTrack({ width }: Props) {
               data-cell
               data-word-index={word.globalIndex}
               className={cn(
-                "absolute top-1 bottom-1 z-[1] flex cursor-pointer items-center overflow-hidden rounded px-0.5 text-[10px] text-[#e8eaef] select-none",
+                "absolute top-1 bottom-1 z-[1] flex cursor-pointer items-center overflow-hidden rounded px-0.5 text-[10px] select-none",
+                word.inGap ? "text-[#e8eaef]/55" : "text-[#e8eaef]",
                 selected
                   ? "z-[2] bg-accent/50 outline outline-2 outline-white"
-                  : word.emphasized
-                    ? "bg-amber-500/40"
-                    : "bg-accent/25",
+                  : word.inGap
+                    ? "bg-accent/10"
+                    : word.emphasized
+                      ? "bg-amber-500/40"
+                      : "bg-accent/25",
               )}
               style={{ left, width: w }}
-              title={`${word.text}  ${word.start.toFixed(2)}–${word.end.toFixed(2)}s`}
+              title={`${word.text}  ${word.start.toFixed(2)}–${word.end.toFixed(2)}s${word.inGap ? " (deleted)" : ""}`}
               onMouseDown={(e) => onWordDragStart(word.globalIndex, e)}
               onClick={(e) => {
                 e.stopPropagation();

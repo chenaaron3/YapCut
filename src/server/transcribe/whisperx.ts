@@ -53,13 +53,14 @@ function asNumber(value: unknown): number | null {
 export function normalizeWhisperXWords(output: unknown): {
   words: TranscriptWord[];
   language: string | null;
-  durationSec: number | null;
+  /** Last speech end — not media duration (trailing silence is excluded). */
+  speechEndSec: number | null;
   raw: Record<string, unknown>;
 } {
   const data = (output ?? {}) as WhisperXOutput;
   const segments = Array.isArray(data.segments) ? data.segments : [];
   const words: TranscriptWord[] = [];
-  let maxEnd = 0;
+  let speechEndSec = 0;
 
   for (const segment of segments) {
     const segWords = Array.isArray(segment.words) ? segment.words : [];
@@ -71,7 +72,7 @@ export function normalizeWhisperXWords(output: unknown): {
         if (!text || start == null || end == null) continue;
         if (end < start) continue;
         words.push({ text, start, end });
-        maxEnd = Math.max(maxEnd, end);
+        speechEndSec = Math.max(speechEndSec, end);
       }
       continue;
     }
@@ -90,7 +91,7 @@ export function normalizeWhisperXWords(output: unknown): {
       const tEnd = i === tokens.length - 1 ? end : start + (i + 1) * step;
       words.push({ text: tokens[i]!, start: tStart, end: tEnd });
     }
-    maxEnd = Math.max(maxEnd, end);
+    speechEndSec = Math.max(speechEndSec, end);
   }
 
   words.sort((a, b) => a.start - b.start);
@@ -101,7 +102,7 @@ export function normalizeWhisperXWords(output: unknown): {
       typeof data.detected_language === "string"
         ? data.detected_language
         : null,
-    durationSec: maxEnd > 0 ? maxEnd : null,
+    speechEndSec: speechEndSec > 0 ? speechEndSec : null,
     raw: {
       detected_language: data.detected_language ?? null,
       segmentCount: segments.length,
@@ -117,7 +118,7 @@ export function normalizeWhisperXWords(output: unknown): {
 export async function transcribeWithWhisperX(audioUrl: string): Promise<{
   words: TranscriptWord[];
   language: string | null;
-  durationSec: number | null;
+  speechEndSec: number | null;
   raw: Record<string, unknown>;
 }> {
   const output = await getReplicate().run(WHISPERX_MODEL, {

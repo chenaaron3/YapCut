@@ -10,7 +10,8 @@ import type {
 
 /**
  * Project local asset words onto the expanded timeline (gaps count).
- * Words outside keep ranges are dropped.
+ * Words overlapping keep or gap cells are shown (gap words marked `inGap`).
+ * Output/export captions still use `projectOutputWords` (keeps only).
  */
 export function projectTimelineWords(
   arolls: readonly ArollKeep[],
@@ -29,7 +30,6 @@ export function projectTimelineWordsFromLayout(
   let globalIndex = 0;
 
   for (const cell of layout) {
-    if (cell.kind !== "keep") continue;
     const words = transcriptsByAssetId.get(cell.local.assetId) ?? [];
 
     for (let localIndex = 0; localIndex < words.length; localIndex++) {
@@ -53,6 +53,7 @@ export function projectTimelineWordsFromLayout(
         assetId: cell.local.assetId,
         localIndex,
         globalIndex,
+        ...(cell.kind === "gap" ? { inGap: true } : {}),
       });
       globalIndex += 1;
     }

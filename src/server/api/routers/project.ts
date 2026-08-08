@@ -34,6 +34,10 @@ const createFileSchema = z.object({
   filename: z.string().min(1).max(512),
   contentType: z.string().min(1).max(255),
   size: z.number().int().nonnegative(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+  /** Client-probed media duration (required for correct trailing gap layout). */
+  durationSec: z.number().positive(),
 });
 
 const transcriptWordSchema = z.object({
@@ -350,6 +354,9 @@ export const projectRouter = createTRPCRouter({
           contentType: file.contentType,
           kind: "video" as const,
           sortOrder: i,
+          width: file.width ?? null,
+          height: file.height ?? null,
+          durationSec: file.durationSec,
         })),
       });
 

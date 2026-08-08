@@ -5,6 +5,7 @@ import { Button, buttonVariants } from '~/components/ui/button';
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 } from '~/components/ui/dialog';
+import { probeVideoFile } from '~/editor/lib/probe-media';
 import { cn } from '~/lib/utils';
 import { api } from '~/utils/api';
 
@@ -95,17 +96,27 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
     setPhase("uploading");
 
     try {
+      const probed = await Promise.all(
+        files.map(async (file) => {
+          const meta = await probeVideoFile(file);
+          return { file, meta };
+        }),
+      );
+
       const { projectId, uploads } = await createStart.mutateAsync({
-        files: files.map((file) => ({
+        files: probed.map(({ file, meta }) => ({
           filename: file.name,
           contentType: file.type || "video/mp4",
           size: file.size,
+          width: meta.width,
+          height: meta.height,
+          durationSec: meta.durationSec!,
         })),
       });
 
       await Promise.all(
         uploads.map(async (upload, index) => {
-          const file = files[index];
+          const file = probed[index]?.file;
           if (!file) {
             throw new Error("File/upload mismatch");
           }

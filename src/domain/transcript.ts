@@ -23,4 +23,6 @@ export type GlobalTranscriptWord = TimelineTime & {
   localIndex: number;
   /** Index in the flat projected word list. */
   globalIndex: number;
+  /** True when the word falls in a deleted (gap) layout cell — still shown on the timeline. */
+  inGap?: boolean;
 };
