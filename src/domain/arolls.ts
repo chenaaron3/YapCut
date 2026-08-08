@@ -27,8 +27,7 @@ export type ArollLayoutCell = {
   output: OutputTime;
 };
 
-/** Normalize keeps: drop empties, merge consecutive same-asset overlaps only.
- * Abutting keeps (`end === next.start`) stay separate so razor splits persist. */
+/** Normalize keeps: drop empties, merge consecutive same-asset overlaps/abutments. */
 export function normalizeArolls(arolls: readonly ArollKeep[]): ArollKeep[] {
   const sorted = [...arolls]
     .filter((k) => k.end > k.start + EPS)
@@ -38,14 +37,14 @@ export function normalizeArolls(arolls: readonly ArollKeep[]): ArollKeep[] {
       end: k.end,
     }));
 
-  // Preserve stitch order; merge only true overlaps (not mere abutment).
+  // Preserve stitch order; merge overlaps and abutments on the same asset.
   const merged: ArollKeep[] = [];
   for (const keep of sorted) {
     const last = merged[merged.length - 1];
     if (
       last &&
       last.assetId === keep.assetId &&
-      keep.start < last.end - EPS
+      keep.start <= last.end + EPS
     ) {
       last.end = Math.max(last.end, keep.end);
       last.start = Math.min(last.start, keep.start);
@@ -216,27 +215,6 @@ export function snapTimelineSec(
   return t;
 }
 
-/** Timeline seconds → asset local (null if inside a gap / unmapped). */
-export function timelineSecToLocal(
-  cells: readonly ArollLayoutCell[],
-  timelineSec: number,
-): { assetId: string; localSec: number; cellId: number } | null {
-  for (const cell of cells) {
-    if (cell.kind !== "keep") continue;
-    if (
-      timelineSec >= cell.timeline.start - EPS &&
-      timelineSec <= cell.timeline.end + EPS
-    ) {
-      return {
-        assetId: cell.local.assetId,
-        localSec: cell.local.start + (timelineSec - cell.timeline.start),
-        cellId: cell.id,
-      };
-    }
-  }
-  return null;
-}
-
 /**
  * Remove / clamp edits that overlap a timeline range — no shifting (gaps hold time).
  */
@@ -273,48 +251,6 @@ export function pruneEditsInTimelineRange(
     }
   }
   return result;
-}
-
-/**
- * Razor-split the keep under `timelineSec` into two abutting arolls.
- * No-op in gaps, outside keeps, or when either half would be < MIN_KEEP_SEC.
- * Edits are left unchanged.
- */
-export function splitArollAtTimelineSec(
-  config: ProjectConfig,
-  timelineSec: number,
-  assetDurationSec: ReadonlyMap<string, number>,
-): ProjectConfig {
-  const layout = buildArollLayout(config.arolls, assetDurationSec);
-  const mapped = timelineSecToLocal(layout, timelineSec);
-  if (!mapped) return config;
-
-  const cell = layout.find((c) => c.id === mapped.cellId);
-  if (!cell || cell.kind !== "keep") return config;
-
-  const localSec = mapped.localSec;
-  if (
-    localSec < cell.local.start + MIN_KEEP_SEC ||
-    localSec > cell.local.end - MIN_KEEP_SEC
-  ) {
-    return config;
-  }
-
-  const arollIndex = arollIndexForKeepCell(layout, cell.id);
-  if (arollIndex == null) return config;
-
-  return produce(config, (draft) => {
-    const keep = draft.arolls[arollIndex];
-    if (!keep) return;
-    const end = keep.end;
-    keep.end = localSec;
-    draft.arolls.splice(arollIndex + 1, 0, {
-      assetId: keep.assetId,
-      start: localSec,
-      end,
-    });
-    draft.arolls = normalizeArolls(draft.arolls);
-  });
 }
 
 /**

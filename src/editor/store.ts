@@ -11,7 +11,6 @@ import {
   outputToTimelineSec,
   setArollKeepEdge as applyArollKeepEdge,
   snapTimelineSec,
-  splitArollAtTimelineSec,
   timelineToOutputSec,
   type ArollLayoutCell,
 } from "~/domain/arolls";
@@ -111,8 +110,6 @@ type EditorActions = {
     edge: "start" | "end",
     targetTimelineSec: number,
   ) => void;
-  /** Razor-split the keep under the playhead into two abutting arolls. */
-  splitAtPlayhead: () => boolean;
   getGlobalWords: () => GlobalTranscriptWord[];
   getDurationSec: () => number;
   getLayout: () => ArollLayoutCell[];
@@ -620,19 +617,6 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       ) {
         setSelection({ kind: "aroll", ids: [cellId] });
       }
-    },
-
-    splitAtPlayhead: () => {
-      const { config, transcriptsByAssetId, assets, timelineSec } = get();
-      if (!config) return false;
-      const next = splitArollAtTimelineSec(
-        config,
-        timelineSec,
-        durationMap(assets),
-      );
-      if (next === config) return false;
-      commit({ config: next, transcriptsByAssetId });
-      return true;
     },
 
     getGlobalWords: () => {

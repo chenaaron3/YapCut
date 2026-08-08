@@ -54,9 +54,6 @@ function useGlobalShortcuts() {
       } else if (e.key === " " || e.code === "Space") {
         e.preventDefault();
         togglePlayback();
-      } else if (e.key === "s" || e.key === "S") {
-        if (getPlayer()?.isPlaying()) return;
-        if (editor.splitAtPlayhead()) e.preventDefault();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         editor.seekBySeconds(e.shiftKey ? -0.1 : -1);
@@ -198,7 +195,7 @@ export function EditorShell({ projectId }: Props) {
           ) : null}
         </div>
         <div className="text-[11px] text-muted-foreground">
-          Space play · S split · Esc deselect · ⌘Z undo · ⌘S save
+          Space play · Esc deselect · ⌘Z undo · ⌘S save
         </div>
       </header>
 
