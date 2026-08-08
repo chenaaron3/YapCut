@@ -87,7 +87,7 @@ export type ProjectConfig = {
   defaultBRollSfxAssetId: string | null;
 };
 
-export const DEFAULT_CAPTION_TEMPLATE_ID = "hormozi";
+export const DEFAULT_CAPTION_TEMPLATE_ID = "ugc";
 export const DEFAULT_TEXT_VFX_DURATION_SEC = 5;
 /** Output fps used for min-keep filtering (matches Remotion composition). */
 export const PROJECT_FPS = 30;

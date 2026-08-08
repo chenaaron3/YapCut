@@ -49,7 +49,7 @@ export function CaptionStyleFields({
           value={resolvedFontSize}
           step={1}
           min={24}
-          max={120}
+          max={150}
           onLiveChange={(fontSize) => onPatch({ fontSize }, true)}
         />
         {showCaptionsAtATime ? (

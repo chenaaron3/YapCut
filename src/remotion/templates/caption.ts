@@ -28,7 +28,7 @@ export type CaptionTemplate = {
   style: CaptionGroupStyle;
 };
 
-export const DEFAULT_CAPTION_TEMPLATE_ID: CaptionTemplateId = "hormozi";
+export const DEFAULT_CAPTION_TEMPLATE_ID: CaptionTemplateId = "ugc";
 
 const SHADOW = "0 3px 0 #000, 0 6px 16px rgba(0,0,0,0.85)";
 
@@ -43,11 +43,11 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     label: "UGC",
     style: {
       fontFamily: "inter",
-      fontSize: 40,
+      fontSize: 50,
       y: TRENDING_CAPTION_Y,
       animation: "none",
       textTransform: "lowercase",
-      captionsAtATime: 5,
+      captionsAtATime: 1,
       background: { kind: "none" },
       fontStyle: "normal",
       textAlign: "center",

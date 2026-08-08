@@ -25,7 +25,7 @@ export type QuoteTemplate = {
   style: CaptionGroupStyle;
 };
 
-export const DEFAULT_QUOTE_TEMPLATE_ID: QuoteTemplateId = "handwritten-white";
+export const DEFAULT_QUOTE_TEMPLATE_ID: QuoteTemplateId = "bold-white";
 
 const QUOTE_TEXT_SHADOW = "0 2px 0 #000, 0 4px 14px rgba(0,0,0,0.8)";
 
@@ -45,8 +45,8 @@ const QUOTE_HANDWRITTEN_WORD = {
 
 const BOLD_WHITE_BASE: CaptionGroupStyle = {
   fontFamily: "montserrat",
-  fontSize: 72,
-  y: QUOTE_CAPTION_Y,
+  fontSize: 125,
+  y: 0.5,
   animation: "fade",
   textTransform: "uppercase",
   captionsAtATime: 1,
