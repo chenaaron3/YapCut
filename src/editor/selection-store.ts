@@ -28,6 +28,8 @@ type SelectionActions = {
   select: (kind: SelectionKind, id: number | null, toggle?: boolean) => void;
   /** Open the Captions project-field inspector. */
   openCaptionsPanel: () => void;
+  /** Open the Project settings inspector. */
+  openSettingsPanel: () => void;
   selectWordRange: (start: number, end: number) => void;
   clearSelection: () => void;
 };
@@ -80,6 +82,10 @@ export const useSelection = create<SelectionState & SelectionActions>(
 
     openCaptionsPanel: () => {
       set({ selection: null, projectPanel: "captions" });
+    },
+
+    openSettingsPanel: () => {
+      set({ selection: null, projectPanel: "settings" });
     },
 
     selectWordRange: (start, end) => {

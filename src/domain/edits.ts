@@ -1,7 +1,11 @@
 import { produce } from "immer";
 
 import { withBrollKenBurns } from "~/domain/broll";
-import { withMediaOffset, withVolume } from "~/domain/media";
+import {
+  clampTimelineRangeToMedia,
+  withMediaOffset,
+  withVolume,
+} from "~/domain/media";
 import {
   nextEditId,
   type BrollEdit,
@@ -11,12 +15,19 @@ import {
   type ProjectConfig,
   type Transform,
 } from "~/domain/project-config";
+import { sfxSeed } from "~/domain/sfx";
 import type { TimelineTime } from "~/domain/time";
 import { withTransform } from "~/domain/transform";
 
 const EPS = 0.001;
 const MIN_RANGE_SEC = 0.05;
 export const DEFAULT_ZOOM_SCALE = 1.1;
+
+/** External facts needed at place/patch time (lives outside ProjectConfig). */
+export type PlaceEditContext = {
+  /** Source duration for an asset id; null/undefined = unconstrained (e.g. image). */
+  srcDurationSec?: (assetId: string) => number | null | undefined;
+};
 
 /** Edit fields supplied at place-time (id + range filled by `placeEdit`). */
 export type EditSeed = Edit extends infer E
@@ -82,29 +93,73 @@ export function patchEditRange(
   });
 }
 
+function appendEdit(
+  config: ProjectConfig,
+  range: TimelineTime,
+  timelineDuration: number,
+  seed: EditSeed,
+): { config: ProjectConfig; placed: Edit } | null {
+  const clamped = clampRange(range, timelineDuration);
+  if (!clamped) return null;
+  const placed = {
+    ...seed,
+    id: nextEditId(config.edits),
+    start: clamped.start,
+    end: clamped.end,
+  } as Edit;
+  const next = produce(config, (draft) => {
+    draft.edits.push(placed);
+  });
+  return { config: next, placed };
+}
+
+/**
+ * Place-time side effects after a successful append (e.g. default b-roll entrance SFX).
+ * Pure Model — no store/UI.
+ */
+export function applyPlaceSideEffects(
+  config: ProjectConfig,
+  placed: Edit,
+  timelineDuration: number,
+  ctx?: PlaceEditContext,
+): ProjectConfig {
+  if (placed.kind !== "broll") return config;
+  const sfxAssetId = config.defaultBRollSfxAssetId;
+  if (!sfxAssetId) return config;
+
+  const sfxDur = ctx?.srcDurationSec?.(sfxAssetId) ?? null;
+  let sfxRange: TimelineTime = { start: placed.start, end: placed.end };
+  if (sfxDur != null) {
+    sfxRange = clampTimelineRangeToMedia(
+      { start: placed.start, end: placed.start + sfxDur },
+      sfxDur,
+    );
+  }
+  return (
+    appendEdit(config, sfxRange, timelineDuration, sfxSeed(sfxAssetId))
+      ?.config ?? config
+  );
+}
+
 export function placeEdit(
   config: ProjectConfig,
   range: TimelineTime,
   timelineDuration: number,
   seed: EditSeed,
+  ctx?: PlaceEditContext,
 ): ProjectConfig {
-  const clamped = clampRange(range, timelineDuration);
-  if (!clamped) return config;
-  return produce(config, (draft) => {
-    draft.edits.push({
-      ...seed,
-      id: nextEditId(draft.edits),
-      start: clamped.start,
-      end: clamped.end,
-    } as Edit);
-  });
+  const result = appendEdit(config, range, timelineDuration, seed);
+  if (!result) return config;
+  return applyPlaceSideEffects(
+    result.config,
+    result.placed,
+    timelineDuration,
+    ctx,
+  );
 }
 
-/** External facts needed to apply constrained patches (lives outside ProjectConfig). */
-export type PatchEditContext = {
-  /** Source duration for an asset id; null/undefined = unconstrained (e.g. image). */
-  srcDurationSec?: (assetId: string) => number | null | undefined;
-};
+/** Same asset lookup as place — kept as an alias for patch call sites. */
+export type PatchEditContext = PlaceEditContext;
 
 /** Unconstrained edit fields — facets own everything else. */
 const PLAIN_PATCH_KEYS = [

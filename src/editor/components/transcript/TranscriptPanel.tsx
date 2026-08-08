@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useMemo } from "react";
+import { Settings } from "lucide-react";
 
 import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
 import { InspectorPanel } from "~/editor/components/inspector/InspectorPanel";
@@ -22,6 +23,7 @@ export function TranscriptPanel() {
   const projectPanel = useSelection((s) => s.projectPanel);
   const clearSelection = useSelection((s) => s.clearSelection);
   const openCaptionsPanel = useSelection((s) => s.openCaptionsPanel);
+  const openSettingsPanel = useSelection((s) => s.openSettingsPanel);
   const { onDragStart } = useWordDragSelect();
   const { beginResize, consumeJustResized } = useRangeResize();
 
@@ -64,6 +66,23 @@ export function TranscriptPanel() {
             }}
           >
             Captions
+          </button>
+          <button
+            type="button"
+            className={cn(
+              "rounded p-1 transition-colors",
+              projectPanel === "settings"
+                ? "bg-primary/20 text-foreground"
+                : "text-muted-foreground hover:bg-panel-2 hover:text-foreground",
+            )}
+            aria-label="Project settings"
+            title="Project settings"
+            onClick={(e) => {
+              e.stopPropagation();
+              openSettingsPanel();
+            }}
+          >
+            <Settings className="size-3.5" />
           </button>
           <span
             className={cn(

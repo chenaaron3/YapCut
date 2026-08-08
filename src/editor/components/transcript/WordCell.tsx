@@ -1,16 +1,16 @@
 import { useState } from "react";
 
-import {
-  BROLL_DRAG_MIME,
-  brollSeed,
-  type BrollDragPayload,
-} from "~/domain/broll";
 import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import { EditMarker } from "~/editor/components/transcript/EditMarker";
 import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
 import { WordContextMenu } from "~/editor/components/transcript/WordContextMenu";
 import { chromeByKey } from "~/editor/lib/edit-chrome";
+import {
+  assetDropKindFromTypes,
+  placeEditFromAssetDrop,
+  type AssetDropKind,
+} from "~/editor/lib/place-asset-drop";
 import { isSelected } from "~/editor/lib/selection";
 import {
   isMarkerRole,
@@ -40,7 +40,7 @@ export function WordCell({
   const patchWord = useEditor((s) => s.patchWord);
   const placeEditOnWord = useEditor((s) => s.placeEditOnWord);
   const cutWord = useEditor((s) => s.cutWord);
-  const [dropActive, setDropActive] = useState(false);
+  const [dropActive, setDropActive] = useState<AssetDropKind | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(word.text);
 
@@ -125,7 +125,8 @@ export function WordCell({
               selected && "bg-primary/35",
               !selected && primaryChrome && primaryChrome.underlineClass,
               primarySelected && primaryChrome && primaryChrome.highlightClass,
-              dropActive && "bg-broll/30 ring-1 ring-broll",
+              dropActive === "broll" && "bg-broll/30 ring-1 ring-broll",
+              dropActive === "sfx" && "bg-sfx/30 ring-1 ring-sfx",
             )}
             onMouseDown={(e) => onWordDragStart?.(e)}
             onClick={(e) => {
@@ -139,30 +140,26 @@ export function WordCell({
               setEditing(true);
             }}
             onDragOver={(e) => {
-              if (![...e.dataTransfer.types].includes(BROLL_DRAG_MIME)) return;
+              const kind = assetDropKindFromTypes([...e.dataTransfer.types]);
+              if (!kind) return;
               e.preventDefault();
               e.dataTransfer.dropEffect = "copy";
-              setDropActive(true);
+              setDropActive(kind);
             }}
-            onDragLeave={() => setDropActive(false)}
+            onDragLeave={() => setDropActive(null)}
             onDrop={(e) => {
-              const raw = e.dataTransfer.getData(BROLL_DRAG_MIME);
-              setDropActive(false);
-              if (!raw) return;
+              setDropActive(null);
+              if (
+                !placeEditFromAssetDrop(
+                  e.dataTransfer,
+                  word.globalIndex,
+                  placeEditOnWord,
+                )
+              ) {
+                return;
+              }
               e.preventDefault();
               e.stopPropagation();
-              try {
-                const payload = JSON.parse(raw) as BrollDragPayload;
-                if (payload?.assetId) {
-                  placeEditOnWord(
-                    word.globalIndex,
-                    brollSeed(payload.assetId),
-                    { maxDurationSec: payload.durationSec },
-                  );
-                }
-              } catch {
-                // ignore malformed drag payload
-              }
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {

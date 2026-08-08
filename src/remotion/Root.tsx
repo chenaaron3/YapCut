@@ -21,6 +21,7 @@ const defaultProps: ProjectProps = {
   zooms: [],
   textOverlays: [],
   brolls: [],
+  sfx: [],
 };
 
 const calculateMetadata: CalculateMetadataFunction<TalkingHeadProps> = ({

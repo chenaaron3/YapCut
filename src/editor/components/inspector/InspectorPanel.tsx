@@ -3,6 +3,8 @@ import { X } from "lucide-react";
 
 import { BRollInspector } from "~/editor/components/inspector/BRollInspector";
 import { CaptionsInspector } from "~/editor/components/inspector/CaptionsInspector";
+import { ProjectSettingsInspector } from "~/editor/components/inspector/ProjectSettingsInspector";
+import { SfxInspector } from "~/editor/components/inspector/SfxInspector";
 import { TextVfxInspector } from "~/editor/components/inspector/TextVfxInspector";
 import { primaryId } from "~/editor/lib/selection";
 import { useSelection } from "~/editor/selection-store";
@@ -21,7 +23,10 @@ export function InspectorPanel() {
   let title: string | null = null;
   let body: ReactNode = null;
 
-  if (projectPanel === "captions") {
+  if (projectPanel === "settings") {
+    title = "Settings";
+    body = <ProjectSettingsInspector />;
+  } else if (projectPanel === "captions") {
     title = "Captions";
     body = <CaptionsInspector />;
   } else if (selection?.kind === "edit" && config) {
@@ -34,6 +39,9 @@ export function InspectorPanel() {
     } else if (edit?.kind === "broll") {
       title = "B-roll";
       body = <BRollInspector edit={edit} />;
+    } else if (edit?.kind === "sfx") {
+      title = "SFX";
+      body = <SfxInspector edit={edit} />;
     } else if (edit?.kind === "zoom") {
       title = "Zoom";
       body = (

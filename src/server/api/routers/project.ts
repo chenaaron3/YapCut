@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -60,6 +60,32 @@ export const projectRouter = createTRPCRouter({
       .from(projects)
       .where(eq(projects.userId, ctx.session.user.id))
       .orderBy(desc(projects.updatedAt));
+  }),
+
+  /** Global SFX library (`projectId` null, `kind` audio). */
+  listGlobalSfx: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({
+        id: assets.id,
+        kind: assets.kind,
+        s3Key: assets.s3Key,
+        contentType: assets.contentType,
+        durationSec: assets.durationSec,
+        width: assets.width,
+        height: assets.height,
+        originalFilename: assets.originalFilename,
+        sortOrder: assets.sortOrder,
+      })
+      .from(assets)
+      .where(and(isNull(assets.projectId), eq(assets.kind, "audio")))
+      .orderBy(asc(assets.originalFilename));
+
+    return rows.map(({ s3Key, ...asset }) => ({
+      ...asset,
+      playbackUrl: signedCloudFrontUrl(s3Key, {
+        expiresInSec: 60 * 60 * 6,
+      }),
+    }));
   }),
 
   byId: protectedProcedure

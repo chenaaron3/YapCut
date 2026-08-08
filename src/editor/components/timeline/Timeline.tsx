@@ -1,35 +1,26 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { buildArollLayout, layoutTimelineDuration } from '~/domain/arolls';
+import { LABEL_OFFSET } from '~/editor/components/timeline/constants';
 import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+    contentXForSec, useTimelineZoom
+} from '~/editor/components/timeline/hooks/useTimelineZoom';
+import { Playhead } from '~/editor/components/timeline/Playhead';
+import { TimelineRuler } from '~/editor/components/timeline/TimelineRuler';
+import { BRollTrack } from '~/editor/components/timeline/tracks/BRollTrack';
+import { CaptionTrack } from '~/editor/components/timeline/tracks/CaptionTrack';
+import { SfxTrack } from '~/editor/components/timeline/tracks/SfxTrack';
+import { VfxTrack } from '~/editor/components/timeline/tracks/VfxTrack';
+import { VideoTrack } from '~/editor/components/timeline/tracks/VideoTrack';
+import { ZoomTrack } from '~/editor/components/timeline/tracks/ZoomTrack';
+import { getPlayer } from '~/editor/lib/player-bridge';
+import { isTimelineScrubbing, setTimelineScrubbing, useEditor } from '~/editor/store';
 
-import {
-  buildArollLayout,
-  layoutTimelineDuration,
-} from "~/domain/arolls";
-import type { BrollEdit, VfxTextEdit, ZoomEdit } from "~/domain/project-config";
-import { LABEL_OFFSET } from "~/editor/components/timeline/constants";
-import {
-  contentXForSec,
-  useTimelineZoom,
-} from "~/editor/components/timeline/hooks/useTimelineZoom";
-import { Playhead } from "~/editor/components/timeline/Playhead";
-import { TimelineRuler } from "~/editor/components/timeline/TimelineRuler";
-import { BRollTrack } from "~/editor/components/timeline/tracks/BRollTrack";
-import { CaptionTrack } from "~/editor/components/timeline/tracks/CaptionTrack";
-import { VideoTrack } from "~/editor/components/timeline/tracks/VideoTrack";
-import { VfxTrack } from "~/editor/components/timeline/tracks/VfxTrack";
-import { ZoomTrack } from "~/editor/components/timeline/tracks/ZoomTrack";
-import { getPlayer } from "~/editor/lib/player-bridge";
-import {
-  isTimelineScrubbing,
-  setTimelineScrubbing,
-  useEditor,
-} from "~/editor/store";
-
+import type {
+  BrollEdit,
+  SfxEdit,
+  VfxTextEdit,
+  ZoomEdit,
+} from "~/domain/project-config";
 function scrollPlayheadIntoView(el: HTMLDivElement, playheadX: number): void {
   const viewLeft = el.scrollLeft;
   const viewRight = viewLeft + el.clientWidth;
@@ -62,6 +53,8 @@ export function Timeline() {
     ) ?? [];
   const brolls =
     config?.edits.filter((e): e is BrollEdit => e.kind === "broll") ?? [];
+  const sfx =
+    config?.edits.filter((e): e is SfxEdit => e.kind === "sfx") ?? [];
 
   const layout = useMemo(() => {
     if (!config) return [];
@@ -143,15 +136,6 @@ export function Timeline() {
 
   return (
     <div className="flex h-full min-h-0 min-w-0 w-full flex-col overflow-hidden border-t border-border bg-panel">
-      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Timeline
-        </span>
-        <span className="text-[11px] text-muted-foreground">
-          ⌘/Ctrl + scroll to zoom · {pxPerSec.toFixed(0)} px/s
-        </span>
-      </div>
-
       <div
         ref={scrollRef}
         className="relative min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto [touch-action:pan-x_pan-y]"
@@ -194,6 +178,7 @@ export function Timeline() {
             <VideoTrack layout={layout} width={trackWidth} />
             <CaptionTrack width={trackWidth} />
             <BRollTrack edits={brolls} width={trackWidth} />
+            <SfxTrack edits={sfx} width={trackWidth} />
             <ZoomTrack edits={zooms} width={trackWidth} />
             <VfxTrack edits={texts} width={trackWidth} />
           </div>

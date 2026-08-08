@@ -82,6 +82,25 @@ export function formatS3Error(error: unknown, action: string): Error {
   return new Error(`S3 ${action} failed (${name}/${status ?? "?"}): ${message}`);
 }
 
+export async function putObject(options: {
+  key: string;
+  body: Buffer | Uint8Array;
+  contentType: string;
+}): Promise<void> {
+  try {
+    await getS3Client().send(
+      new PutObjectCommand({
+        Bucket: env.AWS_S3_BUCKET,
+        Key: options.key,
+        Body: options.body,
+        ContentType: options.contentType,
+      }),
+    );
+  } catch (error) {
+    throw formatS3Error(error, `PutObject ${options.key}`);
+  }
+}
+
 export async function headObject(
   key: string,
 ): Promise<{ contentLength?: number; contentType?: string } | null> {

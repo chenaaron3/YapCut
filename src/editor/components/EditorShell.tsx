@@ -91,6 +91,9 @@ export function EditorShell({ projectId }: Props) {
         query.state.data?.status === "exporting" ? 2000 : false,
     },
   );
+  const globalSfxQuery = api.project.listGlobalSfx.useQuery(undefined, {
+    staleTime: 60_000,
+  });
 
   useGlobalShortcuts();
 
@@ -122,8 +125,48 @@ export function EditorShell({ projectId }: Props) {
       current.projectId === data.id &&
       current.configUpdatedAt === configUpdatedAt
     ) {
+      // Still merge global SFX if they arrived after initial hydrate.
+      const globalSfx = globalSfxQuery.data;
+      if (globalSfx?.length) {
+        useEditor.getState().addAssets(
+          globalSfx.map((a) => ({
+            id: a.id,
+            kind: a.kind,
+            playbackUrl: a.playbackUrl,
+            durationSec: a.durationSec,
+            width: a.width,
+            height: a.height,
+            originalFilename: a.originalFilename,
+            sortOrder: a.sortOrder,
+          })),
+        );
+      }
       return;
     }
+
+    const projectAssets = data.assets.map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      playbackUrl: a.playbackUrl,
+      durationSec: a.durationSec,
+      width: a.width,
+      height: a.height,
+      originalFilename: a.originalFilename,
+      sortOrder: a.sortOrder,
+    }));
+    const globalAssets = (globalSfxQuery.data ?? []).map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      playbackUrl: a.playbackUrl,
+      durationSec: a.durationSec,
+      width: a.width,
+      height: a.height,
+      originalFilename: a.originalFilename,
+      sortOrder: a.sortOrder,
+    }));
+    const byId = new Map(
+      [...projectAssets, ...globalAssets].map((a) => [a.id, a]),
+    );
 
     hydrateFromServer({
       id: data.id,
@@ -131,16 +174,7 @@ export function EditorShell({ projectId }: Props) {
       status: data.status,
       config: data.config,
       configUpdatedAt,
-      assets: data.assets.map((a) => ({
-        id: a.id,
-        kind: a.kind,
-        playbackUrl: a.playbackUrl,
-        durationSec: a.durationSec,
-        width: a.width,
-        height: a.height,
-        originalFilename: a.originalFilename,
-        sortOrder: a.sortOrder,
-      })),
+      assets: [...byId.values()],
       // Only assets that have a transcript row — b-roll/etc. must not be
       // hydrated as empty maps or autosave will 404 on updateTranscriptWords.
       transcripts: data.assets.flatMap((a) =>
@@ -149,7 +183,7 @@ export function EditorShell({ projectId }: Props) {
           : [],
       ),
     });
-  }, [projectQuery.data, hydrateFromServer]);
+  }, [projectQuery.data, globalSfxQuery.data, hydrateFromServer]);
 
   useEffect(() => {
     const label = title || "Editor";

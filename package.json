@@ -19,7 +19,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "remotion:deploy": "tsx --env-file=.env scripts/deploy-remotion-lambda.ts",
-    "remotion:studio": "remotion studio src/remotion/index.ts"
+    "remotion:studio": "remotion studio src/remotion/index.ts",
+    "seed:global-sfx": "tsx --env-file=.env scripts/seed-global-sfx.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.2",

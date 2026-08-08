@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 
 import {
   emptyProjectConfig,
@@ -54,13 +54,41 @@ export async function buildExportProps(
     ? emptyProjectConfig()
     : parseProjectConfig(project.config);
 
+  const projectAssetIds = new Set(project.assets.map((a) => a.id));
+  const missingIds = [
+    ...new Set(
+      config.edits
+        .filter((e) => e.kind === "sfx" || e.kind === "broll")
+        .map((e) => e.assetId)
+        .filter((id) => !projectAssetIds.has(id)),
+    ),
+  ];
+  const globals =
+    missingIds.length === 0
+      ? []
+      : (
+          await db
+            .select({
+              id: assets.id,
+              kind: assets.kind,
+              s3Key: assets.s3Key,
+              durationSec: assets.durationSec,
+              width: assets.width,
+              height: assets.height,
+            })
+            .from(assets)
+            .where(
+              and(isNull(assets.projectId), inArray(assets.id, missingIds)),
+            )
+        ).map((a) => ({ ...a, transcript: null }));
+
   const mediaUrls = new Map<string, string>();
   const transcriptsByAssetId = new Map<string, readonly TranscriptWord[]>();
   const assetDurationSec = new Map<string, number>();
   const assetSize = new Map<string, { width: number; height: number }>();
   const assetKind = new Map<string, "video" | "image" | "audio">();
 
-  for (const asset of project.assets) {
+  for (const asset of [...project.assets, ...globals]) {
     mediaUrls.set(
       asset.id,
       signedCloudFrontUrl(asset.s3Key, { expiresInSec: EXPORT_MEDIA_TTL_SEC }),

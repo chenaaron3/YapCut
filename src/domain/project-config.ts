@@ -67,10 +67,10 @@ export type BrollEdit = EditBase &
     kenBurns?: number;
   };
 
-export type SfxEdit = EditBase & {
-  kind: "sfx";
-  assetId: string;
-};
+export type SfxEdit = EditBase &
+  MediaRef & {
+    kind: "sfx";
+  };
 
 export type VfxEdit = VfxTextEdit | VfxQuoteEdit;
 
@@ -80,6 +80,11 @@ export type ProjectConfig = {
   arolls: ArollKeep[];
   edits: Edit[];
   captions: TemplateStyle;
+  /**
+   * Global audio Asset id placed as a sibling `sfx` edit when dropping b-roll.
+   * `null` = no entrance SFX on place.
+   */
+  defaultBRollSfxAssetId: string | null;
 };
 
 export const DEFAULT_CAPTION_TEMPLATE_ID = "hormozi";
@@ -91,6 +96,7 @@ export const emptyProjectConfig = (): ProjectConfig => ({
   arolls: [],
   edits: [],
   captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
+  defaultBRollSfxAssetId: null,
 });
 
 const templateStyleSchema = z.object({
@@ -149,10 +155,11 @@ const brollEditSchema = editBaseSchema
     kenBurns: z.number().optional(),
   });
 
-const sfxEditSchema = editBaseSchema.extend({
-  kind: z.literal("sfx"),
-  assetId: z.string().min(1),
-});
+const sfxEditSchema = editBaseSchema
+  .merge(mediaRefSchema)
+  .extend({
+    kind: z.literal("sfx"),
+  });
 
 export const projectConfigSchema = z.object({
   arolls: z.array(arollKeepSchema),
@@ -166,6 +173,7 @@ export const projectConfigSchema = z.object({
     ]),
   ),
   captions: templateStyleSchema,
+  defaultBRollSfxAssetId: z.string().min(1).nullable().default(null),
 });
 
 export function parseProjectConfig(value: unknown): ProjectConfig {

@@ -119,6 +119,8 @@ type EditorActions = {
     seed: EditSeed,
     options?: { maxDurationSec?: number | null },
   ) => void;
+  /** Project-level default entrance SFX for new b-roll drops (`null` = none). */
+  setDefaultBRollSfxAssetId: (assetId: string | null) => void;
   /** Merge newly uploaded assets into the editor library. */
   addAssets: (assets: EditorAsset[]) => void;
 
@@ -609,13 +611,26 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       if (options?.maxDurationSec != null) {
         range = clampTimelineRangeToMedia(range, options.maxDurationSec);
       }
-      const duration = layoutTimelineDuration(layoutFor(config, assets));
+      const timelineDuration = layoutTimelineDuration(layoutFor(config, assets));
       const prevIds = new Set(config.edits.map((e) => e.id));
-      const next = placeEdit(config, range, duration, seed);
+      const next = placeEdit(config, range, timelineDuration, seed, {
+        srcDurationSec: (assetId) =>
+          assets.find((a) => a.id === assetId)?.durationSec ?? null,
+      });
       if (next === config) return;
       commit({ config: next, transcriptsByAssetId });
       const created = next.edits.find((e) => !prevIds.has(e.id));
       if (created) useSelection.getState().select("edit", created.id);
+    },
+
+    setDefaultBRollSfxAssetId: (assetId) => {
+      const { config, transcriptsByAssetId } = get();
+      if (!config) return;
+      if (config.defaultBRollSfxAssetId === assetId) return;
+      const next = produce(config, (draft) => {
+        draft.defaultBRollSfxAssetId = assetId;
+      });
+      commit({ config: next, transcriptsByAssetId });
     },
 
     addAssets: (incoming) => {

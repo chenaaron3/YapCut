@@ -59,6 +59,15 @@ export type BrollClipProp = {
   volume: number;
 };
 
+export type SfxClipProp = {
+  id: number;
+  startFrame: number;
+  endFrame: number;
+  src: string;
+  mediaOffsetSec: number;
+  volume: number;
+};
+
 export type ProjectProps = {
   fps: number;
   width: number;
@@ -69,4 +78,5 @@ export type ProjectProps = {
   zooms: ZoomProp[];
   textOverlays: TextOverlayProp[];
   brolls: BrollClipProp[];
+  sfx: SfxClipProp[];
 };

@@ -17,8 +17,8 @@ Sparse JSON document on the Project row: topology (`arolls`), flat `edits`, and 
 _Avoid_: config blob (prefer ProjectConfig), row-per-edit, parallel kind arrays (`bRolls` / `vfx` / …)
 
 **Project field**:
-Project-level config data that is not an Edit and has no EditId. Today: `captions` (`TemplateStyle`). Later: music. Title string is a Project column, not a Project field.
-_Avoid_: treating captions/music as Edits; treating on-screen title overlay as the Project.title column
+Project-level config data that is not an Edit and has no EditId. Today: `captions` (`TemplateStyle`), `defaultBRollSfxAssetId` (global audio Asset id or null — place-time sibling `sfx` edit when dropping b-roll). Later: music. Title string is a Project column, not a Project field.
+_Avoid_: treating captions/music as Edits; nesting entrance SFX on `BrollEdit`; treating on-screen title overlay as the Project.title column
 
 **Asset**:
 Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set ⇒ project-scoped; `projectId` null ⇒ **global** library (SFX pack). Create-flow uploads are project-scoped A-roll videos only.
@@ -170,6 +170,6 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 ## Flagged ambiguities
 
 - Exact default duration/range for seeded title `vfx/text`
-- Whether b-roll entrance SFX is place-seeded by default (port later with b-roll feature)
+- ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid
 - ~~Overlapping idle underlines: stack vs priority~~ → **priority**: all start markers show; underline/highlight/handles use one primary (selected wins, else earlier entry in `EDIT_CHROME`)

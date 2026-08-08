@@ -2,10 +2,11 @@ import { useMemo, useState } from "react";
 
 import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
 import { BrollLibrary } from "~/editor/components/assets/BrollLibrary";
+import { SfxLibrary } from "~/editor/components/assets/SfxLibrary";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-type Tab = "aroll" | "broll";
+type Tab = "aroll" | "broll" | "sfx";
 
 function arollAssetIds(configArolls: { assetId: string }[]): Set<string> {
   return new Set(configArolls.map((k) => k.assetId));
@@ -35,6 +36,11 @@ export function AssetsPanel() {
     [assets, arollIds],
   );
 
+  const sfxAssets = useMemo(
+    () => assets.filter((a) => a.kind === "audio"),
+    [assets],
+  );
+
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden border-r border-border bg-panel">
       <div className="flex shrink-0 gap-1 border-b border-border px-2 py-1.5">
@@ -42,6 +48,7 @@ export function AssetsPanel() {
           [
             ["aroll", "A-roll"],
             ["broll", "B-roll"],
+            ["sfx", "SFX"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -63,8 +70,10 @@ export function AssetsPanel() {
       <div className="min-h-0 flex-1 overflow-auto">
         {tab === "aroll" ? (
           <ArollAssetList assets={arollAssets} />
-        ) : (
+        ) : tab === "broll" ? (
           <BrollLibrary assets={brollAssets} />
+        ) : (
+          <SfxLibrary assets={sfxAssets} />
         )}
       </div>
     </aside>

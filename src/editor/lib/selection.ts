@@ -9,7 +9,7 @@ export type Selection =
   | { kind: "aroll"; ids: number[] };
 
 /** Project-field inspector panels (not entity selections). */
-export type ProjectPanel = "captions";
+export type ProjectPanel = "captions" | "settings";
 
 export function isSelected(
   selection: Selection | null | undefined,

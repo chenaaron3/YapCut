@@ -38,6 +38,7 @@ import type {
   CaptionGroupProp,
   CaptionWordProp,
   ProjectProps,
+  SfxClipProp,
   TextOverlayProp,
   ZoomProp,
 } from "~/remotion/types";
@@ -231,6 +232,36 @@ function buildBrolls(
   return out;
 }
 
+function buildSfx(
+  edits: ProjectConfig["edits"],
+  cells: ReturnType<typeof buildArollLayout>,
+  mediaUrls: ReadonlyMap<string, string>,
+  assetKind: ReadonlyMap<string, "video" | "image" | "audio">,
+  fps: number,
+): SfxClipProp[] {
+  const out: SfxClipProp[] = [];
+  for (const e of edits) {
+    if (e.kind !== "sfx") continue;
+    const src = mediaUrls.get(e.assetId);
+    if (!src) continue;
+    if (assetKind.get(e.assetId) !== "audio") continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+    out.push({
+      id: e.id,
+      startFrame: secToFrame(range.start, fps),
+      endFrame: Math.max(
+        secToFrame(range.start, fps) + 1,
+        secToFrame(range.end, fps),
+      ),
+      src,
+      mediaOffsetSec: e.mediaOffsetSec,
+      volume: e.volume,
+    });
+  }
+  return out;
+}
+
 export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
   const fps = input.fps ?? COMPOSITION_FPS ?? PROJECT_FPS;
   const sections = buildSections(
@@ -264,6 +295,13 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
       layout,
       input.mediaUrls,
       input.assetSize,
+      input.assetKind,
+      fps,
+    ),
+    sfx: buildSfx(
+      input.config.edits,
+      layout,
+      input.mediaUrls,
       input.assetKind,
       fps,
     ),
