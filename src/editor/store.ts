@@ -44,7 +44,7 @@ import {
 import type { ProjectProps } from "~/remotion/types";
 
 /** Mutable transcript-word fields (local asset words). */
-export type WordPatch = Partial<Pick<TranscriptWord, "emphasized">>;
+export type WordPatch = Partial<Pick<TranscriptWord, "emphasized" | "text">>;
 
 export type EditorAsset = {
   id: string;
@@ -370,6 +370,9 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         transcriptsByAssetId,
         fps,
       });
+      const layout = layoutFor(data.config, data.assets);
+      const timelineSec = snapTimelineSec(layout, 0);
+      const outputSec = timelineToOutputSec(layout, timelineSec);
       set({
         loadState: "ready",
         error: null,
@@ -384,8 +387,8 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         configDirty: false,
         transcriptsDirty: false,
         saving: false,
-        frame: 0,
-        timelineSec: 0,
+        frame: Math.round(outputSec * fps),
+        timelineSec,
         fps,
       });
     },
@@ -417,7 +420,10 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         }
 
         if (didTranscripts && saveWordsMutate) {
+          const prev = lastSavedTranscripts ?? {};
           for (const [assetId, words] of Object.entries(savedTranscripts)) {
+            // Immer keeps unchanged word-array identities — skip untouched assets.
+            if (prev[assetId] === words) continue;
             await saveWordsMutate({
               projectId,
               assetId,
@@ -580,6 +586,9 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
           transcriptsByAssetId: produce(transcriptsByAssetId, (draft) => {
             const local = draft[word.assetId]?.[word.localIndex];
             if (!local) return;
+            if ("text" in patch && patch.text != null) {
+              local.text = patch.text;
+            }
             if ("emphasized" in patch) {
               local.emphasized = patch.emphasized ? true : undefined;
             }

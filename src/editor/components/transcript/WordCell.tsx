@@ -41,6 +41,8 @@ export function WordCell({
   const placeEditOnWord = useEditor((s) => s.placeEditOnWord);
   const cutWord = useEditor((s) => s.cutWord);
   const [dropActive, setDropActive] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(word.text);
 
   const selected = isSelected(selection, "word", word.globalIndex);
   const markers = annotation.spans.filter((s) => isMarkerRole(s.role));
@@ -48,6 +50,37 @@ export function WordCell({
   const primarySelected =
     primary != null && isSelected(selection, "edit", primary.editId);
   const primaryChrome = primary ? chromeByKey(primary.chromeKey) : null;
+
+  const commitText = () => {
+    const next = draft.trim() || word.text;
+    if (next !== word.text) patchWord(word.globalIndex, { text: next });
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        className="m-0 mx-[2px] inline rounded-sm bg-panel-2 px-[2px] py-px font-[inherit] text-[inherit] leading-[inherit] text-[#e8eaef] outline outline-2 outline-accent"
+        value={draft}
+        autoFocus
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commitText}
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commitText();
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setEditing(false);
+          }
+        }}
+        size={Math.max(2, draft.length + 1)}
+      />
+    );
+  }
 
   return (
     <>
@@ -102,7 +135,8 @@ export function WordCell({
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();
-              patchWord(word.globalIndex, { emphasized: !word.emphasized });
+              setDraft(word.text);
+              setEditing(true);
             }}
             onDragOver={(e) => {
               if (![...e.dataTransfer.types].includes(BROLL_DRAG_MIME)) return;

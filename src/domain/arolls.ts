@@ -194,23 +194,36 @@ export function timelineToOutputSec(
   return cells[0]!.output.start;
 }
 
+/** Timeline start of the first keep cell (0 if none). */
+export function firstKeepTimelineSec(
+  cells: readonly ArollLayoutCell[],
+): number {
+  for (const cell of cells) {
+    if (cell.kind === "keep") return cell.timeline.start;
+  }
+  return 0;
+}
+
 /** Snap timeline seconds into a keep (for seek). Gaps snap to the attached edge. */
 export function snapTimelineSec(
   cells: readonly ArollLayoutCell[],
   timelineSec: number,
 ): number {
   if (cells.length === 0) return 0;
+  const min = firstKeepTimelineSec(cells);
   const t = Math.min(
-    Math.max(0, timelineSec),
+    Math.max(min, timelineSec),
     layoutTimelineDuration(cells),
   );
 
+  let seenKeep = false;
   for (const cell of cells) {
     if (t >= cell.timeline.start && t < cell.timeline.end) {
       if (cell.kind === "keep") return t;
-      // Prefer previous keep end; else next keep start.
-      return cell.timeline.start;
+      // Prefer previous keep end; else next keep start (leading gap).
+      return seenKeep ? cell.timeline.start : cell.timeline.end;
     }
+    if (cell.kind === "keep") seenKeep = true;
   }
   return t;
 }
@@ -365,8 +378,9 @@ export function clampTimelineSec(
   cells: readonly ArollLayoutCell[],
   sec: number,
 ): number {
+  const min = firstKeepTimelineSec(cells);
   const dur = layoutTimelineDuration(cells);
-  return Math.min(Math.max(0, sec), Math.max(0, dur));
+  return Math.min(Math.max(min, sec), Math.max(min, dur));
 }
 
 /** Index into `config.arolls` for a keep layout cell, or null. */

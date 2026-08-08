@@ -141,10 +141,13 @@ export function EditorShell({ projectId }: Props) {
         originalFilename: a.originalFilename,
         sortOrder: a.sortOrder,
       })),
-      transcripts: data.assets.map((a) => ({
-        assetId: a.id,
-        words: a.transcript?.words ?? [],
-      })),
+      // Only assets that have a transcript row — b-roll/etc. must not be
+      // hydrated as empty maps or autosave will 404 on updateTranscriptWords.
+      transcripts: data.assets.flatMap((a) =>
+        a.transcript
+          ? [{ assetId: a.id, words: a.transcript.words ?? [] }]
+          : [],
+      ),
     });
   }, [projectQuery.data, hydrateFromServer]);
 
