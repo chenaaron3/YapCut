@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Match talking-head prototype editor theme */
+/* Editor theme tokens */
 @theme {
   --font-sans: var(--font-body), "IBM Plex Sans", "Segoe UI", sans-serif;
   --color-panel: #1a1d26;
@@ -13,6 +13,15 @@
   --color-vfx: #fb7185;
   --color-sfx: #2dd4bf;
   --color-music: #a78bfa;
+  --color-zoom: #3b82f6;
+}
+
+/* Editor layout helpers */
+.bg-panel {
+  background-color: var(--color-panel);
+}
+.bg-panel-2 {
+  background-color: var(--color-panel-2);
 }
 
 @keyframes rise {

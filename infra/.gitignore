@@ -1,0 +1,13 @@
+*.js
+!jest.config.js
+*.d.ts
+node_modules
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+cdk-outputs.json
+cdk.context.json
+
+# CloudFront URL-signing keypair (private key must never be committed)
+keys/

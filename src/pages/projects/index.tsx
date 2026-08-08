@@ -16,7 +16,13 @@ type Props = {
 
 export default function ProjectsPage() {
   const [createOpen, setCreateOpen] = useState(false);
-  const projectsQuery = api.project.list.useQuery();
+  const projectsQuery = api.project.list.useQuery(undefined, {
+    refetchInterval: (query) => {
+      const list = query.state.data;
+      if (!list) return false;
+      return list.some((p) => p.status === "processing") ? 2000 : false;
+    },
+  });
 
   return (
     <AppLayout

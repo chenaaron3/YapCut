@@ -1,21 +1,17 @@
-import { FileVideo, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { useDropzone } from "react-dropzone";
-
-import { Button, buttonVariants } from "~/components/ui/button";
+import { FileVideo, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Button, buttonVariants } from '~/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "~/components/ui/dialog";
-import { cn } from "~/lib/utils";
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
+} from '~/components/ui/dialog';
+import { cn } from '~/lib/utils';
+import { api } from '~/utils/api';
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  onCreated?: (projectId: string) => void;
 };
 
 function formatBytes(bytes: number): string {
@@ -24,16 +20,47 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function CreateProjectModal({ open, onClose }: Props) {
+async function putToPresignedUrl(
+  file: File,
+  uploadUrl: string,
+  contentType: string,
+): Promise<void> {
+  const response = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: file,
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Upload failed for ${file.name} (${response.status} ${response.statusText})`,
+    );
+  }
+}
+
+export function CreateProjectModal({ open, onClose, onCreated }: Props) {
   const [files, setFiles] = useState<File[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"idle" | "uploading" | "finalizing">(
+    "idle",
+  );
+
+  const utils = api.useUtils();
+  const createStart = api.project.createStart.useMutation();
+  const createFinalize = api.project.createFinalize.useMutation();
 
   useEffect(() => {
-    if (!open) setFiles([]);
+    if (!open) {
+      setFiles([]);
+      setError(null);
+      setPhase("idle");
+    }
   }, [open]);
 
   const onDrop = useCallback((accepted: File[]) => {
     setFiles((prev) => {
-      const seen = new Set(prev.map((f) => `${f.name}:${f.size}:${f.lastModified}`));
+      const seen = new Set(
+        prev.map((f) => `${f.name}:${f.size}:${f.lastModified}`),
+      );
       const next = [...prev];
       for (const file of accepted) {
         const key = `${file.name}:${file.size}:${file.lastModified}`;
@@ -53,27 +80,74 @@ export function CreateProjectModal({ open, onClose }: Props) {
       multiple: true,
       noClick: true,
       noKeyboard: true,
+      disabled: phase !== "idle",
     });
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const busy = phase !== "idle";
+
+  const handleCreate = async () => {
+    if (files.length === 0 || busy) return;
+    setError(null);
+    setPhase("uploading");
+
+    try {
+      const { projectId, uploads } = await createStart.mutateAsync({
+        files: files.map((file) => ({
+          filename: file.name,
+          contentType: file.type || "video/mp4",
+          size: file.size,
+        })),
+      });
+
+      await Promise.all(
+        uploads.map(async (upload, index) => {
+          const file = files[index];
+          if (!file) {
+            throw new Error("File/upload mismatch");
+          }
+          await putToPresignedUrl(file, upload.uploadUrl, upload.contentType);
+        }),
+      );
+
+      setPhase("finalizing");
+      await createFinalize.mutateAsync({ projectId });
+      await utils.project.list.invalidate();
+      onCreated?.(projectId);
+      onClose();
+    } catch (err) {
+      let message = "Could not create project";
+      if (err instanceof Error) {
+        message = err.message;
+        // tRPC client errors often nest the server message
+        const data = (err as { data?: { message?: string }; shape?: { message?: string } });
+        if (data.shape?.message) message = data.shape.message;
+        else if (data.data?.message) message = data.data.message;
+      }
+      setError(message);
+      setPhase("idle");
+      void utils.project.list.invalidate();
+    }
+  };
+
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) onClose();
+        if (!next && !busy) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-lg" showCloseButton>
+      <DialogContent className="sm:max-w-lg" showCloseButton={!busy}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-semibold tracking-tight">
             New project
           </DialogTitle>
           <DialogDescription>
-            Drop one or more A-roll videos. Upload and transcription land in the
-            next milestone.
+            Drop one or more A-roll videos. We&apos;ll upload, transcribe, and
+            seed edits automatically.
           </DialogDescription>
         </DialogHeader>
 
@@ -84,6 +158,7 @@ export function CreateProjectModal({ open, onClose }: Props) {
             isDragActive
               ? "border-primary bg-primary/5"
               : "border-border bg-muted/40",
+            busy && "pointer-events-none opacity-60",
           )}
         >
           <input {...getInputProps()} />
@@ -98,6 +173,7 @@ export function CreateProjectModal({ open, onClose }: Props) {
             size="sm"
             className="mt-5"
             onClick={openFilePicker}
+            disabled={busy}
           >
             Choose files
           </Button>
@@ -117,31 +193,42 @@ export function CreateProjectModal({ open, onClose }: Props) {
                     {formatBytes(file.size)}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  className={cn(
-                    buttonVariants({ variant: "ghost", size: "icon-xs" }),
-                  )}
-                  aria-label={`Remove ${file.name}`}
-                  onClick={() => removeFile(index)}
-                >
-                  <X />
-                </button>
+                {!busy ? (
+                  <button
+                    type="button"
+                    className={cn(
+                      buttonVariants({ variant: "ghost", size: "icon-xs" }),
+                    )}
+                    aria-label={`Remove ${file.name}`}
+                    onClick={() => removeFile(index)}
+                  >
+                    <X />
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>
         ) : null}
 
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
+
         <DialogFooter>
           <Button
             type="button"
-            disabled={files.length === 0}
+            disabled={files.length === 0 || busy}
             onClick={() => {
-              /* Milestone 3: upload + create workflow */
+              void handleCreate();
             }}
           >
-            Create project
-            {files.length > 0 ? ` (${files.length})` : ""}
+            {phase === "uploading"
+              ? "Uploading…"
+              : phase === "finalizing"
+                ? "Starting…"
+                : `Create project${files.length > 0 ? ` (${files.length})` : ""}`}
           </Button>
         </DialogFooter>
       </DialogContent>

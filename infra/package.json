@@ -1,0 +1,29 @@
+{
+  "name": "infra",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "keys": "tsx scripts/ensure-signing-keys.ts",
+    "synth": "tsx scripts/ensure-signing-keys.ts && cdk synth",
+    "deploy": "tsx scripts/ensure-signing-keys.ts && cdk deploy TalkingHeadMedia -O cdk-outputs.json --require-approval never",
+    "env-snippet": "tsx scripts/write-env-snippet.ts",
+    "env-write": "tsx scripts/write-env-snippet.ts --write"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.15.0",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30",
+    "@types/node": "^24.10.1",
+    "jest": "^30",
+    "aws-cdk": "2.1135.1",
+    "tsx": "^4.23.0",
+    "typescript": "~7.0.2"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.263.0",
+    "constructs": "^10.5.0"
+  }
+}

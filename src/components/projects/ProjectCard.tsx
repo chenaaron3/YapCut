@@ -59,49 +59,40 @@ export function ProjectCard({
 }: Props) {
   const trimmed = title?.trim() ?? "";
   const displayTitle = trimmed.length > 0 ? trimmed : "Untitled";
-  const canOpen = status === "ready" || status === "exporting";
-
-  const card = (
-    <Card
-      size="sm"
-      className={cn(
-        "h-full transition-colors",
-        canOpen && "hover:ring-foreground/20",
-        !canOpen && "opacity-90",
-      )}
+  // M3: allow opening stub for processing/failed; editor unlocks at ready (M4).
+  return (
+    <Link
+      href={`/projects/${id}`}
+      className="block rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <CardTitle className="text-xl leading-tight font-semibold tracking-tight">
-            {displayTitle}
-          </CardTitle>
-          <Badge variant={statusVariant(status)} className="uppercase">
-            {STATUS_LABEL[status]}
-          </Badge>
-        </div>
-        <CardDescription>Updated {formatUpdatedAt(updatedAt)}</CardDescription>
-        {status === "failed" && failureReason ? (
-          <p className="line-clamp-2 text-xs text-destructive">{failureReason}</p>
-        ) : null}
-        {status === "processing" ? (
-          <p className="text-xs text-muted-foreground">
-            Creating project… editor unlocks when ready.
-          </p>
-        ) : null}
-      </CardHeader>
-    </Card>
-  );
-
-  if (canOpen) {
-    return (
-      <Link
-        href={`/projects/${id}`}
-        className="block rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      <Card
+        size="sm"
+        className={cn("h-full transition-colors", "hover:ring-foreground/20")}
       >
-        {card}
-      </Link>
-    );
-  }
-
-  return <div aria-disabled>{card}</div>;
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <CardTitle className="text-xl leading-tight font-semibold tracking-tight">
+              {displayTitle}
+            </CardTitle>
+            <Badge variant={statusVariant(status)} className="uppercase">
+              {STATUS_LABEL[status]}
+            </Badge>
+          </div>
+          <CardDescription>
+            Updated {formatUpdatedAt(updatedAt)}
+          </CardDescription>
+          {status === "failed" && failureReason ? (
+            <p className="line-clamp-2 text-xs text-destructive">
+              {failureReason}
+            </p>
+          ) : null}
+          {status === "processing" ? (
+            <p className="text-xs text-muted-foreground">
+              Creating project… editor unlocks when ready.
+            </p>
+          ) : null}
+        </CardHeader>
+      </Card>
+    </Link>
+  );
 }

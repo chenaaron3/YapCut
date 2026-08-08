@@ -2,7 +2,9 @@ import { relations, sql } from "drizzle-orm";
 import { index, pgTableCreator, primaryKey } from "drizzle-orm/pg-core";
 import type { AdapterAccount } from "next-auth/adapters";
 
+import type { ProjectConfig } from "~/domain/project-config";
 import type { ProjectStatus } from "~/domain/project-status";
+import type { TranscriptStatus, TranscriptWord } from "~/domain/transcript";
 
 /**
  * Multi-project schema prefix for shared databases.
@@ -88,8 +90,7 @@ export const verificationTokens = createTable(
   (t) => [primaryKey({ columns: [t.identifier, t.token] })],
 );
 
-/** Sparse ProjectConfig JSON — shape locked in CONTEXT.md; validated in app code. */
-export type ProjectConfigJson = Record<string, unknown>;
+export type AssetKind = "video" | "image" | "audio";
 
 export const projects = createTable(
   "project",
@@ -112,7 +113,7 @@ export const projects = createTable(
     failureReason: d.text(),
     config: d
       .jsonb()
-      .$type<ProjectConfigJson>()
+      .$type<ProjectConfig | Record<string, never>>()
       .notNull()
       .default(sql`'{}'::jsonb`),
     configUpdatedAt: d.timestamp({ withTimezone: true }),
@@ -130,6 +131,94 @@ export const projects = createTable(
   (t) => [index("project_user_id_idx").on(t.userId)],
 );
 
-export const projectsRelations = relations(projects, ({ one }) => ({
+export const projectsRelations = relations(projects, ({ one, many }) => ({
   user: one(users, { fields: [projects.userId], references: [users.id] }),
+  assets: many(assets),
+}));
+
+export const assets = createTable(
+  "asset",
+  (d) => ({
+    id: d
+      .varchar({ length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    projectId: d
+      .varchar({ length: 255 })
+      .references(() => projects.id, { onDelete: "cascade" }),
+    kind: d.varchar({ length: 32 }).$type<AssetKind>().notNull(),
+    s3Key: d.varchar({ length: 1024 }).notNull(),
+    contentType: d.varchar({ length: 255 }).notNull(),
+    durationSec: d.doublePrecision(),
+    originalFilename: d.varchar({ length: 512 }),
+    sortOrder: d.integer().notNull().default(0),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    updatedAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  }),
+  (t) => [
+    index("asset_project_id_idx").on(t.projectId),
+    index("asset_s3_key_idx").on(t.s3Key),
+  ],
+);
+
+export const assetsRelations = relations(assets, ({ one }) => ({
+  project: one(projects, {
+    fields: [assets.projectId],
+    references: [projects.id],
+  }),
+  transcript: one(transcripts),
+}));
+
+export const transcripts = createTable(
+  "transcript",
+  (d) => ({
+    id: d
+      .varchar({ length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    assetId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .unique()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    words: d
+      .jsonb()
+      .$type<TranscriptWord[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    durationSec: d.doublePrecision(),
+    language: d.varchar({ length: 64 }),
+    status: d
+      .varchar({ length: 32 })
+      .$type<TranscriptStatus>()
+      .notNull()
+      .default("pending"),
+    raw: d.jsonb().$type<Record<string, unknown>>(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    updatedAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  }),
+  (t) => [index("transcript_asset_id_idx").on(t.assetId)],
+);
+
+export const transcriptsRelations = relations(transcripts, ({ one }) => ({
+  asset: one(assets, {
+    fields: [transcripts.assetId],
+    references: [assets.id],
+  }),
 }));

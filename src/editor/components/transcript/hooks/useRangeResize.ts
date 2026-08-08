@@ -1,0 +1,136 @@
+import { useEffect, useMemo, useRef } from "react";
+
+import { buildArollLayout } from "~/domain/arolls";
+import { clampRangeEdge, MIN_RANGE_SEC } from "~/editor/lib/range";
+import { snapTranscriptCaptionEdge } from "~/editor/lib/snap";
+import { wordIndexFromPoint } from "~/editor/lib/use-word-drag-select";
+import { useSelection } from "~/editor/selection-store";
+import { useEditor, useGlobalWords } from "~/editor/store";
+
+type ResizeState = {
+  edge: "start" | "end";
+  editId: number;
+};
+
+/**
+ * Transcript edit-edge resize: snap to caption/keep edges by default;
+ * hold Shift for continuous time within the word under the cursor.
+ */
+export function useRangeResize() {
+  const config = useEditor((s) => s.config);
+  const assets = useEditor((s) => s.assets);
+  const words = useGlobalWords();
+  const clearSelection = useSelection((s) => s.clearSelection);
+  const beginGesture = useEditor((s) => s.beginGesture);
+  const patchSelectedEditRange = useEditor((s) => s.patchSelectedEditRange);
+
+  const resizeRef = useRef<ResizeState | null>(null);
+  /** Survives mouseup→click so panel click doesn't clear the edit selection. */
+  const justResizedRef = useRef(false);
+
+  const keepRanges = useMemo(() => {
+    if (!config) return [];
+    const durations = new Map(assets.map((a) => [a.id, a.durationSec ?? 0]));
+    return buildArollLayout(config.arolls, durations)
+      .filter((c) => c.kind === "keep")
+      .map((c) => c.timeline);
+  }, [config, assets]);
+
+  const indexedWords = useMemo(
+    () => words.map((w) => ({ ...w, index: w.globalIndex })),
+    [words],
+  );
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const resize = resizeRef.current;
+      if (!resize) return;
+      const cfg = useEditor.getState().config;
+      if (!cfg) return;
+      const edit = cfg.edits.find((ed) => ed.id === resize.editId);
+      if (!edit) return;
+
+      const hit = wordIndexFromPoint(e.clientX, e.clientY);
+      if (hit == null) return;
+      const word = useEditor.getState().getGlobalWords()[hit];
+      if (!word) return;
+
+      let value: number;
+      if (e.shiftKey) {
+        const el = document
+          .elementFromPoint(e.clientX, e.clientY)
+          ?.closest("[data-word-index]");
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          const t =
+            rect.width > 0
+              ? Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+              : resize.edge === "start"
+                ? 0
+                : 1;
+          value = word.start + (word.end - word.start) * t;
+        } else {
+          value = resize.edge === "start" ? word.start : word.end;
+        }
+      } else {
+        value = snapTranscriptCaptionEdge(
+          { start: word.start, end: word.end, index: word.globalIndex },
+          resize.edge,
+          indexedWords,
+          keepRanges,
+        );
+      }
+
+      const { start, end } = clampRangeEdge(resize.edge, value, edit);
+      if (
+        Math.abs(start - edit.start) < 0.0005 &&
+        Math.abs(end - edit.end) < 0.0005
+      ) {
+        return;
+      }
+      if (end - start < MIN_RANGE_SEC) return;
+      patchSelectedEditRange(start, end);
+    };
+
+    const onUp = () => {
+      if (resizeRef.current) justResizedRef.current = true;
+      resizeRef.current = null;
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (!resizeRef.current) return;
+      resizeRef.current = null;
+      justResizedRef.current = false;
+      clearSelection();
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [clearSelection, indexedWords, keepRanges, patchSelectedEditRange]);
+
+  const beginResize = (edge: "start" | "end", editId: number) => {
+    if (!config) return;
+    const edit = config.edits.find((e) => e.id === editId);
+    if (!edit) return;
+    useSelection.getState().select("edit", editId);
+    beginGesture();
+    resizeRef.current = { edge, editId };
+  };
+
+  const consumeJustResized = () => {
+    if (resizeRef.current || justResizedRef.current) {
+      justResizedRef.current = false;
+      return true;
+    }
+    return false;
+  };
+
+  return { beginResize, consumeJustResized };
+}

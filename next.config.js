@@ -3,11 +3,17 @@
  * for Docker builds.
  */
 import "./src/env.js";
+import { withWorkflow } from "workflow/next";
 
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
-  transpilePackages: ["next-auth"],
+  transpilePackages: [
+    "next-auth",
+    "remotion",
+    "@remotion/player",
+    "@remotion/media",
+  ],
 
   /**
    * If you are using `appDir` then you must comment the below `i18n` config out.
@@ -20,4 +26,9 @@ const config = {
   },
 };
 
-export default config;
+/**
+ * Workflow SDK is always configured here. Runtime create path is selected by
+ * `USE_VERCEL_WORKFLOW` (see `src/server/create/start-create-pipeline.ts`):
+ * false/unset → in-process; true → durable `createProjectWorkflow`.
+ */
+export default withWorkflow(config);

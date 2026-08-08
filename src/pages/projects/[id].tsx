@@ -3,9 +3,10 @@ import { useRouter } from "next/router";
 
 import { AppLayout } from "~/components/layout/AppLayout";
 import { buttonVariants } from "~/components/ui/button";
+import { EditorShell } from "~/editor/components/EditorShell";
+import { cn } from "~/lib/utils";
 import { requireUser } from "~/server/auth/session";
 import { api } from "~/utils/api";
-import { cn } from "~/lib/utils";
 
 import type { GetServerSideProps } from "next";
 import type { Session } from "next-auth";
@@ -14,16 +15,25 @@ type Props = {
   session: Session | null;
 };
 
-export default function ProjectStubPage() {
+export default function ProjectPage() {
   const router = useRouter();
   const id = typeof router.query.id === "string" ? router.query.id : "";
   const projectQuery = api.project.byId.useQuery(
     { id },
-    { enabled: id.length > 0 },
+    {
+      enabled: id.length > 0,
+      refetchInterval: (query) =>
+        query.state.data?.status === "processing" ? 2000 : false,
+    },
   );
 
   const trimmedTitle = projectQuery.data?.title?.trim() ?? "";
   const title = trimmedTitle.length > 0 ? trimmedTitle : "Untitled";
+  const status = projectQuery.data?.status;
+
+  if (status === "ready" || status === "exporting") {
+    return <EditorShell projectId={id} />;
+  }
 
   return (
     <AppLayout title={`${title} · Talking Head`}>
@@ -37,9 +47,17 @@ export default function ProjectStubPage() {
         <>
           <h1 className="text-4xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-3 max-w-lg text-muted-foreground">
-            Editor shell arrives in Milestone 4. This project is{" "}
-            <span className="text-foreground">{projectQuery.data.status}</span>.
+            {status === "processing"
+              ? "Still creating — transcription and AI seeding are running. This page refreshes automatically."
+              : status === "failed"
+                ? "Create failed. Failure reason is shown below."
+                : `This project is ${status}.`}
           </p>
+          {status === "failed" && projectQuery.data.failureReason ? (
+            <p className="mt-4 max-w-lg text-sm text-destructive">
+              {projectQuery.data.failureReason}
+            </p>
+          ) : null}
           <Link
             href="/projects"
             className={cn(

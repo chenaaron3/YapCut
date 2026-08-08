@@ -44,3 +44,13 @@ yarn-error.log*
 
 # idea files
 .idea
+
+# CDK / media signing keys (never commit private key)
+/infra/cdk.out
+/infra/cdk.context.json
+/infra/cdk-outputs.json
+/infra/keys/
+/infra/*.js
+/infra/*.d.ts
+!/infra/jest.config.js
+/.swc

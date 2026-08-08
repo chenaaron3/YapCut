@@ -29,8 +29,8 @@ Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local 
 _Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis
 
 **Aroll keep** (`ArollKeep`):
-One segment to keep from an A-roll asset: `{ assetId, start, end }` in **local** asset time. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the global timeline.
-_Avoid_: Cut (prototype delete-range), storing keep lists grouped by asset as source of truth, parallel delete array
+One segment to keep from an A-roll asset: `{ assetId, start, end }` in **local** asset time. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the timeline / output. Keeps for the same asset are **contiguous** in that list (no interleaving another asset between two keeps of one asset — you cannot cut part of a clip and place it after a different asset).
+_Avoid_: Cut (prototype delete-range), storing keep lists grouped by asset as source of truth, parallel delete array, A→B→A stitch order
 
 **Deleted / gap cell**:
 Timeline View chrome for media not in `arolls` (between keeps or trimmed ends). Derived in the View — never stored as topology.
@@ -39,8 +39,8 @@ _Avoid_: Cut as persisted model type
 ### Model (ProjectConfig)
 
 **Edit**:
-A ranged overlay on the **global** (stitched) timeline. Flat `edits[]` with one discriminant `kind`. Mutated through shared Model CRUD.
-_Avoid_: clip (ambiguous), local-time edits, kind+type nesting except `vfx.type`
+A ranged overlay on the **timeline** (expanded; gaps count). Flat `edits[]` with one discriminant `kind`. Mutated through shared Model CRUD.
+_Avoid_: clip (ambiguous), local-time edits, output-time edits, kind+type nesting except `vfx.type`
 
 **EditId**:
 Monotonic integer identifying an Edit. Assigned at place as `max(ids)+1`; never reused after delete.
@@ -66,16 +66,18 @@ No dual-read of prototype YAML shapes, string edit ids, or `cuts` delete lists.
 ### Coordinates
 
 **Local timestamp**:
-Seconds on a single Asset’s media timeline. Used by `ArollKeep` and Transcript words.
+Seconds on a single Asset’s media timeline. Used by Transcript words and by `LocalTime` / `ArollKeep` `{ assetId, start, end }` (asset layer).
 
-**Global timestamp**:
-Seconds on the stitched output timeline (sum of keep durations in `arolls` order). Used by all Edits and by the editor Transcript/Timeline/Player UX.
+**Timeline timestamp**:
+Seconds on the expanded editor/config axis: keeps + derived gaps to scale (gaps count as time). Range form: `TimelineTime` `{ start, end }`. Used by all Edits, projected transcript words, and Timeline/Transcript View. Delete/restore does **not** shift later edit timestamps — the gap holds the span; overlapping edits are pruned/clamped only.
+_Avoid_: calling this “global” (ambiguous with output); storing a parallel display clock
+
+**Output timestamp**:
+Seconds on the compacted playback/export timeline (sum of keep durations in `arolls` order). Range form: `OutputTime` `{ start, end }`. Remotion Player/Lambda only — map from timeline at props/seek time by skipping gaps.
+_Avoid_: persisting output times on Edits
 
 **Projection**:
-Derive global words / playhead mapping from `arolls` + per-asset transcripts. Do not persist a separate global transcript.
-
-**Ripple**:
-After arolls surgery (delete or restore-gap), clamp/remove overlapping edits, then shift later edits’ global `start`/`end` by ±deleted duration so the UX stays “one video.”
+Derive timeline words from `arolls` + per-asset transcripts + asset durations (for gap layout). Do not persist a separate projected transcript. Map timeline → output at the Remotion edge.
 
 ### MVC
 
@@ -84,7 +86,7 @@ Pure ProjectConfig (and transcript emphasis) transforms. No Zustand, no Remotion
 _Avoid_: store logic in Model, View writing config
 
 **Controller**:
-Zustand actions: call Model, commit, live gestures, undo (full-config snapshots), selection side effects. Debounced autosave to Postgres.
+Zustand actions: call Model, commit, live gestures, undo (full-config snapshots), selection side effects. Debounced autosave to Postgres. Prefer `immer` (`produce`) for nested Snapshot updates (config / transcripts) instead of hand-rolled spreads; Model helpers already follow this.
 
 **View**:
 React editor + Remotion player/export. Composes View primitives. Kind modules choose primitives; they do not reimplement range chrome.
@@ -127,8 +129,8 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 **Create workflow** (Vercel Workflows):
 1. Presigned upload → Project + Assets (`processing`)
 2. WhisperX per A-roll video (language autodetect, diarization off) → Transcript rows
-3. Keep builder (fillers + long gaps) → `arolls`
-4. AI assist (always on, create-only): title if empty → `Project.title` + seed `vfx/text`; zooms → `zoom` edits; emphasis → boolean on transcript words — all on **global projected** transcript
+3. Keep builder (long gaps) → `arolls`
+4. AI assist (always on, create-only): title if empty → `Project.title` + seed `vfx/text`; zooms → `zoom` edits; emphasis → boolean on transcript words — all on **timeline projected** transcript
 5. Seed default `captions` TemplateStyle → `ready`
 
 **Export workflow**:
@@ -139,7 +141,7 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - Project has many Assets; Asset has 0..1 Transcript
 - Global Assets have `projectId = null` (seeded SFX); edits reference any Asset by id
 - ProjectConfig.arolls reference project video Assets
-- Edits use global time; arolls use local time
+- Edits use timeline time; arolls use local time; Remotion maps timeline → output
 - On-screen title is a `vfx`/`text` Edit (seeded, deletable); `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
 
@@ -170,4 +172,4 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - Exact default duration/range for seeded title `vfx/text`
 - Whether b-roll entrance SFX is place-seeded by default (port later with b-roll feature)
 - Poster/thumbnail for projects grid
-- Overlapping idle underlines: stack vs priority
+- ~~Overlapping idle underlines: stack vs priority~~ → **priority**: all start markers show; underline/highlight/handles use one primary (selected wins, else earlier entry in `EDIT_CHROME`)
