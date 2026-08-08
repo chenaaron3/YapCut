@@ -18,7 +18,7 @@ new MediaStack(app, "TalkingHeadMedia", {
   corsOrigins: [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    // Add production web origin(s) later, e.g. https://your-app.vercel.app
+    "https://yap-cut.vercel.app",
   ],
   tags: {
     Project: "talking-head",

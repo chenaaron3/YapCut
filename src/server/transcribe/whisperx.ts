@@ -9,8 +9,8 @@ import { env } from "~/env";
  * versioned runs use `/v1/predictions` and work.
  * @see https://replicate.com/victor-upmeet/whisperx/versions
  */
-const WHISPERX_MODEL =
-  "victor-upmeet/whisperx:655845d6190ef70573c669245f245892cd039df4b880a1e3a65852c09252f5cc" as const;
+const WHISPERX_VERSION =
+  "655845d6190ef70573c669245f245892cd039df4b880a1e3a65852c09252f5cc" as const;
 
 type WhisperXWord = {
   word?: string;
@@ -31,11 +31,29 @@ type WhisperXOutput = {
   segments?: WhisperXSegment[];
 };
 
+export type WhisperXPredictionStatus =
+  | "starting"
+  | "processing"
+  | "succeeded"
+  | "failed"
+  | "canceled"
+  | "aborted";
+
 let replicate: Replicate | null = null;
 
 function getReplicate(): Replicate {
   replicate ??= new Replicate({ auth: env.REPLICATE_API_TOKEN });
   return replicate;
+}
+
+function whisperXInput(audioUrl: string) {
+  return {
+    audio_file: audioUrl,
+    // Omit language for autodetect
+    diarization: false,
+    align_output: true,
+    debug: false,
+  };
 }
 
 function asNumber(value: unknown): number | null {
@@ -109,9 +127,55 @@ export function normalizeWhisperXWords(output: unknown): {
   };
 }
 
+/** Start WhisperX without waiting (for durable workflow polling). */
+export async function startWhisperXPrediction(
+  audioUrl: string,
+): Promise<{ predictionId: string }> {
+  const prediction = await getReplicate().predictions.create({
+    version: WHISPERX_VERSION,
+    input: whisperXInput(audioUrl),
+  });
+  if (!prediction.id) {
+    throw new Error("Replicate prediction missing id");
+  }
+  return { predictionId: prediction.id };
+}
+
+/** One poll of a WhisperX prediction — does not block until complete. */
+export async function getWhisperXPrediction(predictionId: string): Promise<{
+  status: WhisperXPredictionStatus;
+  error: string | null;
+  result: ReturnType<typeof normalizeWhisperXWords> | null;
+}> {
+  const prediction = await getReplicate().predictions.get(predictionId);
+  const status = prediction.status as WhisperXPredictionStatus;
+
+  if (status === "succeeded") {
+    return {
+      status,
+      error: null,
+      result: normalizeWhisperXWords(prediction.output),
+    };
+  }
+
+  if (
+    status === "failed" ||
+    status === "canceled" ||
+    status === "aborted"
+  ) {
+    const error =
+      typeof prediction.error === "string" && prediction.error.length > 0
+        ? prediction.error
+        : `WhisperX ${status}`;
+    return { status, error, result: null };
+  }
+
+  return { status, error: null, result: null };
+}
+
 /**
  * Transcribe a publicly reachable audio/video URL via Replicate WhisperX.
- * Language autodetect; diarization off; word alignment on.
+ * Blocks until complete — for local / in-process create only.
  */
 export async function transcribeWithWhisperX(audioUrl: string): Promise<{
   words: TranscriptWord[];
@@ -119,15 +183,19 @@ export async function transcribeWithWhisperX(audioUrl: string): Promise<{
   speechEndSec: number | null;
   raw: Record<string, unknown>;
 }> {
-  const output = await getReplicate().run(WHISPERX_MODEL, {
-    input: {
-      audio_file: audioUrl,
-      // Omit language for autodetect
-      diarization: false,
-      align_output: true,
-      debug: false,
-    },
+  const prediction = await getReplicate().predictions.create({
+    version: WHISPERX_VERSION,
+    input: whisperXInput(audioUrl),
   });
+  const completed = await getReplicate().wait(prediction);
 
-  return normalizeWhisperXWords(output);
+  if (completed.status !== "succeeded") {
+    const error =
+      typeof completed.error === "string" && completed.error.length > 0
+        ? completed.error
+        : `WhisperX ${completed.status}`;
+    throw new Error(error);
+  }
+
+  return normalizeWhisperXWords(completed.output);
 }
