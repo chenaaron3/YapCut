@@ -38,7 +38,12 @@ export function WordContextMenu({
           sideOffset={8}
           className="outline-none"
         >
-          <ContextMenu.Popup className="z-50 flex w-auto min-w-0 flex-row items-center gap-0.5 rounded-md border border-border bg-panel-2 p-1 text-[#e8eaef] shadow-md outline-none">
+          <ContextMenu.Popup
+            // Portal bubbles through React to the transcript panel — don't clear selection.
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="z-50 flex w-auto min-w-0 flex-row items-center gap-0.5 rounded-md border border-border bg-panel-2 p-1 text-[#e8eaef] shadow-md outline-none"
+          >
             <MenuIcon
               label={emphasized ? "Remove emphasis" : "Emphasis"}
               active={emphasized}
