@@ -5,14 +5,18 @@ import {
   replaceSelection,
   selectWordRange,
   toggleSelection,
+  type ProjectPanel,
   type Selection,
+  type SelectionKind,
 } from "~/editor/lib/selection";
 
 export { isSelected };
-export type { Selection };
+export type { ProjectPanel, Selection, SelectionKind };
 
 type SelectionState = {
   selection: Selection | null;
+  /** Project-field inspector (captions, later music). Mutually exclusive with selection. */
+  projectPanel: ProjectPanel | null;
 };
 
 type SelectionActions = {
@@ -21,11 +25,9 @@ type SelectionActions = {
    * Select by kind + id. Pass `toggle: true` to add/remove from multi-select.
    * `id: null` clears selection of that kind.
    */
-  select: (
-    kind: Selection["kind"],
-    id: number | null,
-    toggle?: boolean,
-  ) => void;
+  select: (kind: SelectionKind, id: number | null, toggle?: boolean) => void;
+  /** Open the Captions project-field inspector. */
+  openCaptionsPanel: () => void;
   selectWordRange: (start: number, end: number) => void;
   clearSelection: () => void;
 };
@@ -45,40 +47,49 @@ function seekEditStart(id: number) {
 export const useSelection = create<SelectionState & SelectionActions>(
   (set, get) => ({
     selection: null,
+    projectPanel: null,
 
-    setSelection: (selection) => set({ selection }),
+    setSelection: (selection) => set({ selection, projectPanel: null }),
 
     select: (kind, id, toggle = false) => {
       if (id == null) {
         set({
           selection:
             get().selection?.kind === kind ? null : get().selection,
+          projectPanel: null,
         });
         return;
       }
 
       if (toggle) {
-        set({ selection: toggleSelection(get().selection, kind, id) });
+        set({
+          selection: toggleSelection(get().selection, kind, id),
+          projectPanel: null,
+        });
       } else {
-        set({ selection: replaceSelection(kind, [id]) });
+        set({
+          selection: replaceSelection(kind, [id]),
+          projectPanel: null,
+        });
       }
 
-      if (
-        kind === "edit" &&
-        isSelected(get().selection, "edit", id)
-      ) {
+      if (kind === "edit" && isSelected(get().selection, "edit", id)) {
         seekEditStart(id);
       }
     },
 
-    selectWordRange: (start, end) => {
-      set({ selection: selectWordRange(start, end) });
+    openCaptionsPanel: () => {
+      set({ selection: null, projectPanel: "captions" });
     },
 
-    clearSelection: () => set({ selection: null }),
+    selectWordRange: (start, end) => {
+      set({ selection: selectWordRange(start, end), projectPanel: null });
+    },
+
+    clearSelection: () => set({ selection: null, projectPanel: null }),
   }),
 );
 
-export function useIsSelected(kind: Selection["kind"], id: number): boolean {
+export function useIsSelected(kind: SelectionKind, id: number): boolean {
   return useSelection((s) => isSelected(s.selection, kind, id));
 }

@@ -15,17 +15,23 @@ import {
   type ArollLayoutCell,
 } from "~/domain/arolls";
 import {
+  patchEdit as applyPatchEdit,
   patchEditRange,
   placeEdit,
   removeEdit,
+  type EditPatch,
   type EditSeed,
 } from "~/domain/edits";
 import {
   PROJECT_FPS,
   type ProjectConfig,
+  type TemplateStyle,
 } from "~/domain/project-config";
 import { projectTimelineWords } from "~/domain/projection";
-import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
+import type {
+  GlobalTranscriptWord,
+  TranscriptWord,
+} from "~/domain/transcript";
 import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
 import { buildProjectProps } from "~/remotion/build-props";
@@ -35,6 +41,9 @@ import {
   COMPOSITION_WIDTH,
 } from "~/remotion/constants";
 import type { ProjectProps } from "~/remotion/types";
+
+/** Mutable transcript-word fields (local asset words). */
+export type WordPatch = Partial<Pick<TranscriptWord, "emphasized">>;
 
 export type EditorAsset = {
   id: string;
@@ -73,6 +82,7 @@ type EditorState = {
 };
 
 type EditorActions = {
+  // —— Hydration / persisting ——
   hydrateFromServer: (data: {
     id: string;
     title: string | null;
@@ -86,33 +96,51 @@ type EditorActions = {
     }>;
   }) => void;
   save: () => Promise<void>;
-  /** Seek by expanded timeline seconds (snaps out of gaps for the player). */
+
+  // —— Seek / time ——
+  /** Expanded timeline seconds (snaps out of gaps for the player). */
   seekTimeline: (timelineSec: number) => void;
   seekFrame: (frame: number) => void;
   seekBySeconds: (delta: number) => void;
   setPxPerSec: (v: number) => void;
+
+  // —— History ——
   beginGesture: () => void;
   undo: () => void;
   redo: () => void;
-  deleteSelection: () => boolean;
-  toggleWordEmphasis: (globalIndex: number) => void;
-  setWordEmphasis: (globalIndex: number, emphasized: boolean) => void;
+
+  // —— Create (place) ——
   /** Place an edit over the word (or word selection if it includes this word). */
   placeEditOnWord: (globalIndex: number, seed: EditSeed) => void;
-  /** Cut the word (or word selection if it includes this word). */
-  cutWord: (globalIndex: number) => void;
+
+  // —— Read (get) ——
+  getGlobalWords: () => GlobalTranscriptWord[];
+  getDurationSec: () => number;
+  getLayout: () => ArollLayoutCell[];
+
+  // —— Update (patches) ——
   patchSelectedEditRange: (start: number, end: number) => void;
   /** Live range patch for a specific edit (timeline handle drag). */
   patchEditRangeById: (id: number, start: number, end: number) => void;
   /** Live keep-edge patch; `arollIndex` is index in `config.arolls`. */
-  setArollKeepEdge: (
+  patchArollRange: (
     arollIndex: number,
     edge: "start" | "end",
     targetTimelineSec: number,
   ) => void;
-  getGlobalWords: () => GlobalTranscriptWord[];
-  getDurationSec: () => number;
-  getLayout: () => ArollLayoutCell[];
+  /** Patch Project field `captions` TemplateStyle. */
+  patchCaptions: (patch: Partial<TemplateStyle>, live?: boolean) => void;
+  /** Patch fields on an existing edit (discriminant fixed). */
+  patchEdit: (id: number, patch: EditPatch, live?: boolean) => void;
+  /** Patch a projected word (writes through to the asset transcript). */
+  patchWord: (globalIndex: number, patch: WordPatch, live?: boolean) => void;
+  /** Rename Project.title column only (does not sync text VFX). */
+  setProjectTitle: (title: string) => void;
+
+  // —— Delete ——
+  deleteSelection: () => boolean;
+  /** Cut the word (or word selection if it includes this word). */
+  cutWord: (globalIndex: number) => void;
 };
 
 let history: Snapshot[] = [];
@@ -506,14 +534,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       return false;
     },
 
-    toggleWordEmphasis: (globalIndex) => {
-      const words = get().getGlobalWords();
-      const word = words[globalIndex];
-      if (!word) return;
-      get().setWordEmphasis(globalIndex, !word.emphasized);
-    },
-
-    setWordEmphasis: (globalIndex, emphasized) => {
+    patchWord: (globalIndex, patch, live = false) => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config) return;
       const words = projectTimelineWords(
@@ -524,14 +545,19 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const word = words[globalIndex];
       if (!word) return;
 
-      commit({
-        config,
-        transcriptsByAssetId: produce(transcriptsByAssetId, (draft) => {
-          const local = draft[word.assetId]?.[word.localIndex];
-          if (!local) return;
-          local.emphasized = emphasized ? true : undefined;
-        }),
-      });
+      commit(
+        {
+          config,
+          transcriptsByAssetId: produce(transcriptsByAssetId, (draft) => {
+            const local = draft[word.assetId]?.[word.localIndex];
+            if (!local) return;
+            if ("emphasized" in patch) {
+              local.emphasized = patch.emphasized ? true : undefined;
+            }
+          }),
+        },
+        { live },
+      );
     },
 
     placeEditOnWord: (globalIndex, seed) => {
@@ -591,7 +617,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       );
     },
 
-    setArollKeepEdge: (arollIndex, edge, targetTimelineSec) => {
+    patchArollRange: (arollIndex, edge, targetTimelineSec) => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config) return;
       const durations = durationMap(assets);
@@ -617,6 +643,41 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       ) {
         setSelection({ kind: "aroll", ids: [cellId] });
       }
+    },
+
+    patchCaptions: (patch, live = false) => {
+      const { config, transcriptsByAssetId } = get();
+      if (!config) return;
+      const next = produce(config, (draft) => {
+        const templateId = patch.templateId ?? draft.captions.templateId;
+        const overrides =
+          patch.overrides !== undefined
+            ? patch.overrides
+            : draft.captions.overrides;
+        draft.captions = {
+          templateId,
+          ...(overrides && Object.keys(overrides).length > 0
+            ? { overrides }
+            : {}),
+        };
+      });
+      commit({ config: next, transcriptsByAssetId }, { live });
+    },
+
+    patchEdit: (id, patch, live = false) => {
+      const { config, transcriptsByAssetId } = get();
+      if (!config) return;
+      commit(
+        {
+          config: applyPatchEdit(config, id, patch),
+          transcriptsByAssetId,
+        },
+        { live },
+      );
+    },
+
+    setProjectTitle: (title) => {
+      set({ title: title.trim() || "Untitled" });
     },
 
     getGlobalWords: () => {

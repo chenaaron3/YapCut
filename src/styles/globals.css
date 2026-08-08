@@ -1,6 +1,20 @@
+/* Must precede other @imports — Tailwind expands into rules. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,700;1,700&family=Montserrat:ital,wght@0,900;1,900&family=Nunito:wght@800&family=Pacifico&display=swap");
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+@font-face {
+  font-family: "Proxima Nova";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src:
+    local("Proxima Nova Semibold"),
+    local("ProximaNova-Semibold"),
+    local("Proxima Nova");
+}
 
 @custom-variant dark (&:is(.dark *));
 

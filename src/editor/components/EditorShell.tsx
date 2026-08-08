@@ -187,7 +187,6 @@ export function EditorShell({ projectId }: Props) {
           >
             ← Projects
           </Link>
-          <h1 className="truncate text-sm font-semibold">{title}</h1>
           {project.status === "exporting" ? (
             <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-200">
               exporting

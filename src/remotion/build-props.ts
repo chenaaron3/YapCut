@@ -12,13 +12,26 @@ import { projectOutputWords } from "~/domain/projection";
 import type { TranscriptWord } from "~/domain/transcript";
 import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
 import {
-  CAPTION_GROUP_GAP_SEC,
-  CAPTION_LAST_WORD_PAD_SEC,
+  applyCaptionOverrides,
+  type CaptionGroupStyle,
+} from "~/remotion/captions/style";
+import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
+import {
+  DEFAULT_CAPTION_TEMPLATE_ID,
+  isCaptionTemplateId,
+  resolveCaptionTemplateStyle,
+} from "~/remotion/templates/caption";
+import {
+  groupCaptionWords,
+  isFiller,
+  padLastWordInGroups,
+  stripPunctuationForDisplay,
+} from "~/remotion/captions/words";
+import {
   COMPOSITION_FPS,
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/constants";
-import { resolveCaptionStyle, transformCaptionText } from "~/remotion/captions/templates";
 import type {
   ArollSection,
   CaptionGroupProp,
@@ -61,8 +74,17 @@ function buildSections(
   });
 }
 
-function stripPunctuation(text: string): string {
-  return text.replace(/^[\s"'([{]+|[\s"'.,!?;:)\]}]+$/g, "");
+export function resolveProjectCaptionStyle(
+  captions: ProjectConfig["captions"],
+): CaptionGroupStyle {
+  const templateId = isCaptionTemplateId(captions.templateId)
+    ? captions.templateId
+    : DEFAULT_CAPTION_TEMPLATE_ID;
+  const base = resolveCaptionTemplateStyle(templateId);
+  return applyCaptionOverrides(
+    base,
+    normalizeCaptionOverrides(captions.overrides),
+  );
 }
 
 function buildCaptionGroups(
@@ -70,56 +92,49 @@ function buildCaptionGroups(
   transcriptsByAssetId: ReadonlyMap<string, readonly TranscriptWord[]>,
   fps: number,
 ): CaptionGroupProp[] {
-  const style = resolveCaptionStyle(
-    config.captions.templateId,
-    config.captions.overrides,
-  );
-  // Captions ride the compacted output clock (Remotion frames).
+  const style = resolveProjectCaptionStyle(config.captions);
   const words = projectOutputWords(config.arolls, transcriptsByAssetId);
-  const atATime = Math.max(1, style.captionsAtATime);
 
+  // Keep source punctuation through grouping so sentence boundaries work;
+  // strip for on-screen display after groups are formed.
   const captionWords: CaptionWordProp[] = [];
   for (const word of words) {
-    const text = stripPunctuation(
-      transformCaptionText(word.text, style.textTransform),
-    );
-    if (!text) continue;
+    if (isFiller(word.text) || !word.text.trim()) continue;
     const startFrame = secToFrame(word.start, fps);
     const endFrame = Math.max(startFrame + 3, secToFrame(word.end, fps));
     captionWords.push({
-      text,
+      text: word.text,
       startFrame,
       endFrame,
-      emphasized: word.emphasized,
+      ...(word.emphasized ? { emphasized: true } : {}),
     });
   }
 
-  const groups: CaptionGroupProp[] = [];
-  for (let i = 0; i < captionWords.length; ) {
-    const chunk = captionWords.slice(i, i + atATime);
-    i += atATime;
-    if (chunk.length === 0) continue;
+  const rawGroups = groupCaptionWords(captionWords, style.captionsAtATime);
+  const displayGroups = rawGroups
+    .map((group) => {
+      const displayWords = group.words
+        .map((w) => ({
+          ...w,
+          text: stripPunctuationForDisplay(w.text),
+        }))
+        .filter((w) => w.text.length > 0);
+      if (displayWords.length === 0) return null;
+      return {
+        words: displayWords,
+        startFrame: displayWords[0]!.startFrame,
+        endFrame: displayWords[displayWords.length - 1]!.endFrame,
+      };
+    })
+    .filter((g): g is NonNullable<typeof g> => g != null);
 
-    let endFrame = chunk[chunk.length - 1]!.endFrame;
-    const next = captionWords[i];
-    if (next) {
-      const pad = Math.round(CAPTION_LAST_WORD_PAD_SEC * fps);
-      const gap = Math.round(CAPTION_GROUP_GAP_SEC * fps);
-      endFrame = Math.min(endFrame + pad, next.startFrame - gap);
-      endFrame = Math.max(endFrame, chunk[chunk.length - 1]!.endFrame);
-    } else {
-      endFrame += Math.round(CAPTION_LAST_WORD_PAD_SEC * fps);
-    }
+  const padded = padLastWordInGroups(displayGroups, fps);
 
-    groups.push({
-      words: chunk,
-      startFrame: chunk[0]!.startFrame,
-      endFrame: Math.max(chunk[0]!.startFrame + 1, endFrame),
-      captionsAtATime: atATime,
-    });
-  }
-
-  return groups;
+  return padded.map((group) => ({
+    ...group,
+    captionsAtATime: style.captionsAtATime,
+    style,
+  }));
 }
 
 function buildZooms(

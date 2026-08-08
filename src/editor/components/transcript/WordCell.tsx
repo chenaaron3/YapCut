@@ -30,7 +30,7 @@ export function WordCell({
   const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
   const seekTimeline = useEditor((s) => s.seekTimeline);
-  const toggleWordEmphasis = useEditor((s) => s.toggleWordEmphasis);
+  const patchWord = useEditor((s) => s.patchWord);
   const placeEditOnWord = useEditor((s) => s.placeEditOnWord);
   const cutWord = useEditor((s) => s.cutWord);
 
@@ -63,7 +63,9 @@ export function WordCell({
 
         <WordContextMenu
           emphasized={!!word.emphasized}
-          onEmphasis={() => toggleWordEmphasis(word.globalIndex)}
+          onEmphasis={() =>
+            patchWord(word.globalIndex, { emphasized: !word.emphasized })
+          }
           onZoom={() =>
             placeEditOnWord(word.globalIndex, {
               kind: "zoom",
@@ -90,7 +92,7 @@ export function WordCell({
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();
-              toggleWordEmphasis(word.globalIndex);
+              patchWord(word.globalIndex, { emphasized: !word.emphasized });
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {

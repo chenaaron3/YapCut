@@ -1,4 +1,5 @@
 import type { TemplateStyle } from "~/domain/project-config";
+import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export type ArollSection = {
   assetId: string;
@@ -21,6 +22,8 @@ export type CaptionGroupProp = {
   startFrame: number;
   endFrame: number;
   captionsAtATime: number;
+  /** Fully resolved style baked at props time. */
+  style?: CaptionGroupStyle;
 };
 
 export type ZoomProp = {

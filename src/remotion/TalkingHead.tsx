@@ -29,18 +29,13 @@ function ArollSeries({ sections }: { sections: ProjectProps["sections"] }) {
   );
 }
 
-export type TalkingHeadProps = ProjectProps & {
-  captionTemplateId: string;
-  captionOverrides?: Record<string, unknown>;
-};
+export type TalkingHeadProps = ProjectProps;
 
 export function TalkingHead({
   sections,
   captionGroups,
   zooms,
   textOverlays,
-  captionTemplateId,
-  captionOverrides,
 }: TalkingHeadProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
@@ -52,11 +47,7 @@ export function TalkingHead({
         )}
       </Zoom>
       <TextOverlay overlays={textOverlays} />
-      <Captions
-        groups={captionGroups}
-        templateId={captionTemplateId}
-        overrides={captionOverrides}
-      />
+      <Captions groups={captionGroups} />
     </AbsoluteFill>
   );
 }

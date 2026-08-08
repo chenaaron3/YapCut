@@ -19,7 +19,7 @@ type Props = {
 export function VideoTrack({ layout, width }: Props) {
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const seekTimeline = useEditor((s) => s.seekTimeline);
-  const setArollKeepEdge = useEditor((s) => s.setArollKeepEdge);
+  const patchArollRange = useEditor((s) => s.patchArollRange);
   const words = useGlobalWords();
   const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
@@ -77,7 +77,7 @@ export function VideoTrack({ layout, width }: Props) {
                           start: origin,
                           end: fixedEnd,
                         });
-                        setArollKeepEdge(index, "start", start);
+                        patchArollRange(index, "start", start);
                       });
                     }}
                   />
@@ -96,7 +96,7 @@ export function VideoTrack({ layout, width }: Props) {
                           start: fixedStart,
                           end: origin,
                         });
-                        setArollKeepEdge(index, "end", end);
+                        patchArollRange(index, "end", end);
                       });
                     }}
                   />

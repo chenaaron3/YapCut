@@ -29,19 +29,11 @@ function FrameCounter({ durationInFrames }: { durationInFrames: number }) {
 
 export function PlayerPanel() {
   const props = useEditor((s) => s.props);
-  const config = useEditor((s) => s.config);
   const seekFrame = useEditor((s) => s.seekFrame);
   const ref = useRef<PlayerRef | null>(null);
   const seekTargetRef = useRef<number | null>(null);
 
-  const inputProps: TalkingHeadProps | null = useMemo(() => {
-    if (!props || !config) return null;
-    return {
-      ...props,
-      captionTemplateId: config.captions.templateId,
-      captionOverrides: config.captions.overrides,
-    };
-  }, [props, config]);
+  const inputProps: TalkingHeadProps | null = useMemo(() => props, [props]);
 
   const setPlayerRef = useCallback((instance: PlayerRef | null) => {
     ref.current = instance;

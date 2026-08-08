@@ -143,6 +143,8 @@ export function outputDurationFromArolls(arolls: readonly ArollKeep[]): number {
   return arolls.reduce((sum, keep) => sum + Math.max(0, keep.end - keep.start), 0);
 }
 
+export const DEFAULT_TEXT_TEMPLATE_ID = "white-board";
+
 export function seedTitleTextVfx(options: {
   edits: Edit[];
   title: string;
@@ -160,5 +162,6 @@ export function seedTitleTextVfx(options: {
     start: 0,
     end: end > 0 ? end : DEFAULT_TEXT_VFX_DURATION_SEC,
     text: options.title,
+    style: { templateId: DEFAULT_TEXT_TEMPLATE_ID },
   };
 }

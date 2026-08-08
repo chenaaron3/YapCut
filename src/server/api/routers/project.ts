@@ -113,6 +113,50 @@ export const projectRouter = createTRPCRouter({
       };
     }),
 
+  /** Rename Project.title column only — does not sync on-screen text VFX. */
+  updateTitle: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().min(1),
+        title: z.string().max(512),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select({
+          id: projects.id,
+          status: projects.status,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.id),
+            eq(projects.userId, ctx.session.user.id),
+          ),
+        )
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+      }
+
+      if (project.status !== "ready" && project.status !== "exporting") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot rename while status is ${project.status}`,
+        });
+      }
+
+      const title = input.title.trim() || null;
+      const now = new Date();
+      await ctx.db
+        .update(projects)
+        .set({ title, updatedAt: now })
+        .where(eq(projects.id, input.id));
+
+      return { title };
+    }),
+
   updateConfig: protectedProcedure
     .input(
       z.object({

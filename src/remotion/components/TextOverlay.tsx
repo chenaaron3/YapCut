@@ -1,47 +1,61 @@
-import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { useMemo } from "react";
+import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 
+import { buildStaticGroup } from "~/remotion/components/captions/static-group";
+import { StaticGroupView } from "~/remotion/components/captions/StaticGroupView";
 import { SAFE_AREA } from "~/remotion/constants";
+import { resolveTextVfxStyle } from "~/remotion/text/resolve";
 import type { TextOverlayProp } from "~/remotion/types";
 
-export function TextOverlay({ overlays }: { overlays: TextOverlayProp[] }) {
+function TextOverlayItem({ overlay }: { overlay: TextOverlayProp }) {
   const frame = useCurrentFrame();
-  const active = overlays.find(
-    (o) => frame >= o.startFrame && frame < o.endFrame,
+  const { fps } = useVideoConfig();
+  const style = resolveTextVfxStyle(overlay.style);
+  const durationFrames = Math.max(1, overlay.endFrame - overlay.startFrame);
+
+  const group = useMemo(
+    () => buildStaticGroup(overlay.text, style, fps, durationFrames),
+    [overlay.text, style, fps, durationFrames],
   );
-  if (!active) return null;
+
+  if (frame >= durationFrames) return null;
 
   return (
     <AbsoluteFill
       style={{
         pointerEvents: "none",
         top: SAFE_AREA.top,
-        bottom: "auto",
+        bottom: SAFE_AREA.bottom,
         left: SAFE_AREA.left,
         right: SAFE_AREA.right,
         width: "auto",
-        height: "20%",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        paddingTop: 24,
+        height: "auto",
       }}
     >
-      <div
-        style={{
-          color: "#fff",
-          fontFamily: '"Montserrat", "Arial Black", Impact, sans-serif',
-          fontWeight: 900,
-          fontSize: 56,
-          textAlign: "center",
-          textTransform: "uppercase",
-          textShadow: "0 3px 0 #000, 0 6px 16px rgba(0,0,0,0.85)",
-          WebkitTextStroke: "6px #000",
-          paintOrder: "stroke fill",
-          lineHeight: 1.15,
-        }}
-      >
-        {active.text}
-      </div>
+      <StaticGroupView group={group} frame={frame} fps={fps} />
     </AbsoluteFill>
+  );
+}
+
+export function TextOverlay({ overlays }: { overlays: TextOverlayProp[] }) {
+  return (
+    <>
+      {overlays.map((overlay) => {
+        const durationInFrames = Math.max(
+          1,
+          overlay.endFrame - overlay.startFrame,
+        );
+        return (
+          <Sequence
+            key={overlay.id}
+            from={overlay.startFrame}
+            durationInFrames={durationInFrames}
+            layout="none"
+          >
+            <TextOverlayItem overlay={overlay} />
+          </Sequence>
+        );
+      })}
+    </>
   );
 }

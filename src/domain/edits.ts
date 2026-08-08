@@ -6,8 +6,6 @@ import {
   type EditBase,
   type ProjectConfig,
   type TemplateStyle,
-  type VfxTextEdit,
-  type ZoomEdit,
 } from "~/domain/project-config";
 import type { TimelineTime } from "~/domain/time";
 
@@ -19,6 +17,16 @@ export const DEFAULT_ZOOM_SCALE = 1.1;
 export type EditSeed = Edit extends infer E
   ? E extends Edit
     ? Omit<E, "id" | "start" | "end">
+    : never
+  : never;
+
+/**
+ * Partial body for an existing edit. Discriminant (`kind` / vfx `type`) is fixed;
+ * use remove + place to change identity.
+ */
+export type EditPatch = Edit extends infer E
+  ? E extends Edit
+    ? Partial<Omit<E, "id" | "kind" | "type">>
     : never
   : never;
 
@@ -96,26 +104,14 @@ export function placeTextVfx(
   });
 }
 
-export function patchTextVfx(
+export function patchEdit(
   config: ProjectConfig,
   id: number,
-  patch: Partial<Pick<VfxTextEdit, "text" | "style" | "start" | "end">>,
+  patch: EditPatch,
 ): ProjectConfig {
   return produce(config, (draft) => {
     const edit = draft.edits.find((e) => e.id === id);
-    if (!edit || edit.kind !== "vfx" || edit.type !== "text") return;
-    Object.assign(edit, patch);
-  });
-}
-
-export function patchZoom(
-  config: ProjectConfig,
-  id: number,
-  patch: Partial<Pick<ZoomEdit, "scale" | "start" | "end">>,
-): ProjectConfig {
-  return produce(config, (draft) => {
-    const edit = draft.edits.find((e) => e.id === id);
-    if (!edit || edit.kind !== "zoom") return;
+    if (!edit) return;
     Object.assign(edit, patch);
   });
 }
