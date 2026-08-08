@@ -89,7 +89,15 @@ export async function fetchLambdaProgress(options: {
     overallProgress: progress.overallProgress,
     fatalErrorEncountered: progress.fatalErrorEncountered,
     errors: (progress.errors ?? []).map((e) => ({
-      message: typeof e === "string" ? e : (e.message ?? String(e)),
+      message:
+        typeof e === "string"
+          ? e
+          : typeof e === "object" &&
+              e !== null &&
+              "message" in e &&
+              typeof e.message === "string"
+            ? e.message
+            : "Unknown error",
     })),
     outputKey:
       typeof progress.outKey === "string" && progress.outKey.length > 0

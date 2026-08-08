@@ -379,7 +379,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         loadState: "ready",
         error: null,
         projectId: data.id,
-        title: data.title?.trim() || "Untitled",
+        title: data.title?.trim() ? data.title.trim() : "Untitled",
         status: data.status,
         config: data.config,
         configUpdatedAt: data.configUpdatedAt,
@@ -673,7 +673,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
 
     patchSelectedEditRange: (start, end) => {
       const { selection } = useSelection.getState();
-      if (!selection || selection.kind !== "edit") return;
+      if (selection?.kind !== "edit") return;
       const id = selection.ids[0];
       if (id == null) return;
       get().patchEditRangeById(id, start, end);
@@ -725,10 +725,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       if (!config) return;
       const next = produce(config, (draft) => {
         const templateId = patch.templateId ?? draft.captions.templateId;
-        const overrides =
-          patch.overrides !== undefined
-            ? patch.overrides
-            : draft.captions.overrides;
+        const overrides = patch.overrides ?? draft.captions.overrides;
         draft.captions = {
           templateId,
           ...(overrides && Object.keys(overrides).length > 0

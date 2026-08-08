@@ -2,7 +2,6 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Player } from "@remotion/player";
 
 import type { PlayerRef } from "@remotion/player";
-import type { FC } from "react";
 
 import { TransformOverlay } from "~/editor/components/player/TransformOverlay";
 import {
@@ -113,8 +112,8 @@ export function PlayerPanel() {
         >
           <Player
             ref={setPlayerRef}
-            component={TalkingHead as unknown as FC<Record<string, unknown>>}
-            inputProps={inputProps as unknown as Record<string, unknown>}
+            component={TalkingHead}
+            inputProps={inputProps}
             durationInFrames={durationInFrames}
             compositionWidth={COMPOSITION_WIDTH}
             compositionHeight={COMPOSITION_HEIGHT}

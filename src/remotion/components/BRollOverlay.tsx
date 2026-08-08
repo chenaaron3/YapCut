@@ -14,7 +14,7 @@ import { containSize } from "~/domain/transform";
 import type { BrollClipProp } from "~/remotion/types";
 
 const FADE_SEC = 0.12;
-const KEN_BURNS_EASING = Easing.inOut(Easing.ease);
+const KEN_BURNS_EASING = Easing.inOut((t) => Easing.ease(t));
 
 function scaleAtFrame(
   frame: number,

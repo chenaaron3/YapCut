@@ -33,12 +33,12 @@ export function SliderField({
         step={step}
         onPointerDown={() => useEditor.getState().beginGesture()}
         onValueChange={(v) => {
-          const next = Array.isArray(v) ? v[0] : v;
-          if (typeof next === "number") onLiveChange(next);
+          const next = Array.isArray(v) ? Number(v[0]) : Number(v);
+          if (Number.isFinite(next)) onLiveChange(next);
         }}
         onValueCommitted={(v) => {
-          const next = Array.isArray(v) ? v[0] : v;
-          if (typeof next === "number") onCommit(next);
+          const next = Array.isArray(v) ? Number(v[0]) : Number(v);
+          if (Number.isFinite(next)) onCommit(next);
         }}
       />
     </div>

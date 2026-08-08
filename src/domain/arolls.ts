@@ -42,8 +42,7 @@ export function normalizeArolls(arolls: readonly ArollKeep[]): ArollKeep[] {
   for (const keep of sorted) {
     const last = merged[merged.length - 1];
     if (
-      last &&
-      last.assetId === keep.assetId &&
+      last?.assetId === keep.assetId &&
       keep.start <= last.end + EPS
     ) {
       last.end = Math.max(last.end, keep.end);
@@ -97,7 +96,7 @@ export function buildArollLayout(
   for (let i = 0; i < arolls.length; i++) {
     const keep = arolls[i]!;
     const prev = arolls[i - 1];
-    if (!prev || prev.assetId !== keep.assetId) {
+    if (prev?.assetId !== keep.assetId) {
       localCursor = 0;
     }
 
@@ -118,7 +117,7 @@ export function buildArollLayout(
     localCursor = keep.end;
 
     const next = arolls[i + 1];
-    if (next && next.assetId === keep.assetId) continue;
+    if (next?.assetId === keep.assetId) continue;
 
     // Leaving this asset run — trailing trim to asset duration.
     const duration = assetDurationSec.get(keep.assetId) ?? localCursor;
@@ -426,7 +425,7 @@ export function setArollKeepEdge(
   const cellId = keepCellIdForArollIndex(layout, arollIndex);
   if (cellId == null) return config;
   const cell = layout.find((c) => c.id === cellId);
-  if (!cell || cell.kind !== "keep") return config;
+  if (cell?.kind !== "keep") return config;
 
   const keep = config.arolls[arollIndex];
   if (!keep) return config;

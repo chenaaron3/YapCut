@@ -264,7 +264,9 @@ export function applyCaptionOverrides(
         : style.captionsAtATime,
     wordStyle: {
       ...style.wordStyle,
-      fill: overrides.fill?.trim() || style.wordStyle.fill,
+      fill: overrides.fill?.trim()
+        ? overrides.fill.trim()
+        : style.wordStyle.fill,
     },
   };
 }

@@ -2,17 +2,32 @@
  * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially useful
  * for Docker builds.
  */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import "./src/env.js";
 import { withWorkflow } from "workflow/next";
+
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
+  // Multiple parent lockfiles confuse Next's workspace-root detection.
+  outputFileTracingRoot: projectRoot,
   transpilePackages: [
     "next-auth",
     "remotion",
     "@remotion/player",
     "@remotion/media",
+  ],
+  // Keep Vercel CLI config / xdg-app-paths out of the webpack graph — bundling
+  // xdg-portable crashes page-data collection (path.parse(undefined)).
+  serverExternalPackages: [
+    "@vercel/cli-config",
+    "@vercel/oidc",
+    "xdg-app-paths",
+    "xdg-portable",
   ],
 
   /**

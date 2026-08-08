@@ -17,7 +17,7 @@ const EXPORT_MEDIA_TTL_SEC = 60 * 60 * 12;
 function isEmptyConfig(value: unknown): boolean {
   if (value == null) return true;
   if (typeof value !== "object") return true;
-  return Object.keys(value as object).length === 0;
+  return Object.keys(value).length === 0;
 }
 
 export async function buildExportProps(

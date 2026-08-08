@@ -60,7 +60,7 @@ export function backgroundChromeStyle(
   const color = background.color?.trim();
 
   if (background.kind === "box") {
-    const fill = color || "rgba(0, 0, 0, 0.82)";
+    const fill = color !== undefined && color !== "" ? color : "rgba(0, 0, 0, 0.82)";
     const board = Boolean(color);
     if (!board) {
       return {
@@ -79,7 +79,8 @@ export function backgroundChromeStyle(
 
   if (background.kind === "rounded") {
     return {
-      backgroundColor: color || "rgba(0, 0, 0, 0.78)",
+      backgroundColor:
+        color !== undefined && color !== "" ? color : "rgba(0, 0, 0, 0.78)",
       padding: "0.12em 0.4em",
       borderRadius: 999,
     };
@@ -87,7 +88,7 @@ export function backgroundChromeStyle(
 
   if (background.kind === "scrap") {
     return {
-      backgroundColor: color || "#FFFFFF",
+      backgroundColor: color !== undefined && color !== "" ? color : "#FFFFFF",
       padding: "0.12em 0.28em",
       clipPath: scrapClipPath(index),
       boxDecorationBreak: "clone",
@@ -160,7 +161,7 @@ export const CaptionBackground: React.FC<{
   if (background?.kind === "wrap") {
     return (
       <ContourBoard
-        fill={background.color?.trim() || "#FFFFFF"}
+        fill={background.color?.trim() ? background.color.trim() : "#FFFFFF"}
         textAlign={textAlign}
         textStyle={textStyle ?? {}}
       >

@@ -29,7 +29,9 @@ function vfxCellLabel(edit: VfxEdit): string {
       ? edit.style.templateId
       : null;
     const templateLabel = tid ? TEXT_TEMPLATES[tid]?.label : null;
-    return edit.text.trim() || templateLabel || "Title";
+    const text = edit.text.trim();
+    if (text) return text;
+    return templateLabel ?? "Title";
   }
   return resolveQuoteTemplate(
     resolveTemplateId(

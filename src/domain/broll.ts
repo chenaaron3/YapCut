@@ -36,7 +36,8 @@ export function withBrollKenBurns(
   kenBurns: number | null,
 ): BrollEdit {
   if (kenBurns == null) {
-    const { kenBurns: _drop, ...rest } = edit;
+    const rest = { ...edit };
+    delete rest.kenBurns;
     return rest;
   }
   return { ...edit, kenBurns: clampKenBurns(kenBurns) };

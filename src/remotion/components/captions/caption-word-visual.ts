@@ -52,7 +52,7 @@ function resolvePaintStyle(
 }
 
 function hasWordStateDeltas(style: CaptionGroupStyle): boolean {
-  return Boolean(style.futureWordStyle || style.activeWordStyle);
+  return Boolean(style.futureWordStyle ?? style.activeWordStyle);
 }
 
 function activeWordBackground(

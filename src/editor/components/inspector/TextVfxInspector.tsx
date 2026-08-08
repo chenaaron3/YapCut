@@ -14,7 +14,6 @@ import {
   isTextTemplateId,
   resolveTextTemplateStyle,
   TEXT_TEMPLATE_LIST,
-  type TextTemplateId,
 } from "~/remotion/templates/text";
 
 export function TextVfxInspector({ edit }: { edit: VfxTextEdit }) {
@@ -50,7 +49,7 @@ export function TextVfxInspector({ edit }: { edit: VfxTextEdit }) {
           const kept: { y?: number } = prev.y != null ? { y: prev.y } : {};
           patchEdit(edit.id, {
             style: {
-              templateId: tid as TextTemplateId,
+              templateId: tid,
               ...(Object.keys(kept).length > 0 ? { overrides: kept } : {}),
             },
           });

@@ -20,11 +20,15 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function asTrimmedString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function parseBorder(value: unknown): WordBorder | null {
   if (value == null) return null;
   if (!isPlainObject(value)) return null;
   const width = Number(value.width);
-  const color = String(value.color ?? "").trim();
+  const color = asTrimmedString(value.color);
   if (!Number.isFinite(width) || width <= 0 || !color) return null;
   return { width, color };
 }
@@ -40,7 +44,7 @@ function parseBackground(
     const raw = value.color;
     if (raw == null || raw === "") color = null;
     else {
-      const trimmed = String(raw).trim();
+      const trimmed = asTrimmedString(raw);
       color = trimmed || null;
     }
   } else {
@@ -57,7 +61,7 @@ function parseOptionalString(
   if (!(key in src)) return fallback;
   const raw = src[key];
   if (raw == null || raw === "") return null;
-  const value = String(raw).trim();
+  const value = asTrimmedString(raw);
   return value || null;
 }
 
@@ -67,7 +71,7 @@ function parseWordStyle(
 ): WordStyle {
   if (!isPlainObject(value)) return { ...fallback };
 
-  const fill = String(value.fill ?? "").trim() || fallback.fill;
+  const fill = asTrimmedString(value.fill) || fallback.fill;
   const opacityRaw = Number(value.opacity);
   const opacity =
     "opacity" in value && Number.isFinite(opacityRaw)
@@ -108,7 +112,7 @@ function parseWordStyleDelta(value: unknown): WordStyleDelta | undefined {
   const delta: WordStyleDelta = {};
 
   if ("fill" in value) {
-    const fill = String(value.fill ?? "").trim();
+    const fill = asTrimmedString(value.fill);
     if (fill) delta.fill = fill;
   }
   if ("opacity" in value) {
@@ -217,7 +221,7 @@ export function normalizeCaptionOverrides(
     if (Number.isFinite(n)) out.captionsAtATime = clampCaptionsAtATime(n);
   }
   if ("fill" in raw) {
-    const fill = String(raw.fill ?? "").trim();
+    const fill = asTrimmedString(raw.fill);
     if (fill) out.fill = fill;
   }
 

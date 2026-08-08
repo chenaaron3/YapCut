@@ -125,8 +125,8 @@ export function WordCell({
               word.inGap && "opacity-40 line-through",
               word.emphasized && "font-semibold text-amber-300",
               selected && "bg-primary/35",
-              !selected && primaryChrome && primaryChrome.underlineClass,
-              primarySelected && primaryChrome && primaryChrome.highlightClass,
+              !selected && primaryChrome?.underlineClass,
+              primarySelected && primaryChrome?.highlightClass,
               dropActive === "broll" && "bg-broll/30 ring-1 ring-broll",
               dropActive === "sfx" && "bg-sfx/30 ring-1 ring-sfx",
             )}

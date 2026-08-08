@@ -6,7 +6,7 @@ import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
 import { ExportButton } from "~/editor/components/ExportButton";
 import { Timeline } from "~/editor/components/timeline/Timeline";
 import { TranscriptPanel } from "~/editor/components/transcript/TranscriptPanel";
-import { getPlayer, togglePlayback } from "~/editor/lib/player-bridge";
+import { togglePlayback } from "~/editor/lib/player-bridge";
 import { useSelection } from "~/editor/selection-store";
 import { bindEditorSavers, useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";

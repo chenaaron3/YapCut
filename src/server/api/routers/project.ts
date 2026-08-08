@@ -50,7 +50,7 @@ const transcriptWordSchema = z.object({
 function isEmptyConfig(value: unknown): boolean {
   if (value == null) return true;
   if (typeof value !== "object") return true;
-  return Object.keys(value as object).length === 0;
+  return Object.keys(value).length === 0;
 }
 
 export const projectRouter = createTRPCRouter({
@@ -303,7 +303,7 @@ export const projectRouter = createTRPCRouter({
         .where(eq(assets.id, input.assetId))
         .limit(1);
 
-      if (!asset || asset.projectId !== input.projectId) {
+      if (asset?.projectId !== input.projectId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Asset not found" });
       }
 
@@ -361,7 +361,11 @@ export const projectRouter = createTRPCRouter({
         }
       }
 
-      const title = input.title?.trim() || null;
+      const trimmedTitle = input.title?.trim();
+      const title =
+        trimmedTitle !== undefined && trimmedTitle !== ""
+          ? trimmedTitle
+          : null;
       const projectId = crypto.randomUUID();
 
       await ctx.db.insert(projects).values({
@@ -528,7 +532,7 @@ export const projectRouter = createTRPCRouter({
         return {
           filename: file.filename,
           contentType: file.contentType,
-          kind: (isVideo ? "video" : "image") as "video" | "image",
+          kind: isVideo ? ("video" as const) : ("image" as const),
           sortOrder: nextSort++,
           width: file.width,
           height: file.height,

@@ -35,7 +35,7 @@ export function Zoom({
         {
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
-          easing: Easing.inOut(Easing.ease),
+          easing: Easing.inOut((t) => Easing.ease(t)),
         },
       );
     }

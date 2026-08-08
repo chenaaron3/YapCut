@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 
-import { db } from "~/server/db";
+import type { db } from "~/server/db";
 import { assets, type AssetKind } from "~/server/db/schema";
 import { assetSourceKey } from "~/server/media/keys";
 import { headObject, presignPutObject } from "~/server/media/s3";

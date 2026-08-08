@@ -65,8 +65,8 @@ function clampRange(
   range: TimelineTime,
   timelineDuration: number,
 ): TimelineTime | null {
-  let s = Math.max(0, Math.min(range.start, range.end));
-  let e = Math.min(timelineDuration, Math.max(range.start, range.end));
+  const s = Math.max(0, Math.min(range.start, range.end));
+  const e = Math.min(timelineDuration, Math.max(range.start, range.end));
   if (e - s < MIN_RANGE_SEC) return null;
   return { start: s, end: e };
 }
@@ -122,7 +122,7 @@ function appendEdit(
     id: nextEditId(config.edits),
     start: clamped.start,
     end: clamped.end,
-  } as Edit;
+  };
   const next = produce(config, (draft) => {
     draft.edits.push(placed);
   });

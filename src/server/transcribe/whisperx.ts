@@ -34,9 +34,7 @@ type WhisperXOutput = {
 let replicate: Replicate | null = null;
 
 function getReplicate(): Replicate {
-  if (!replicate) {
-    replicate = new Replicate({ auth: env.REPLICATE_API_TOKEN });
-  }
+  replicate ??= new Replicate({ auth: env.REPLICATE_API_TOKEN });
   return replicate;
 }
 

@@ -14,15 +14,13 @@ const PRESIGN_GET_TTL_SEC = 60 * 60; // 1h — enough for WhisperX to fetch
 let client: S3Client | null = null;
 
 function getS3Client(): S3Client {
-  if (!client) {
-    client = new S3Client({
-      region: env.AWS_REGION,
-      credentials: {
-        accessKeyId: env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
-      },
-    });
-  }
+  client ??= new S3Client({
+    region: env.AWS_REGION,
+    credentials: {
+      accessKeyId: env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+    },
+  });
   return client;
 }
 
@@ -66,10 +64,14 @@ export function formatS3Error(error: unknown, action: string): Error {
   const status = awsHttpStatus(error);
   const name =
     error && typeof error === "object" && "name" in error
-      ? String((error as { name: unknown }).name)
+      ? String((error).name)
       : "Error";
   const message =
-    error instanceof Error ? error.message : String(error ?? "unknown");
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "unknown";
 
   if (status === 403 || name === "AccessDenied" || name === "Forbidden") {
     return new Error(
@@ -119,7 +121,7 @@ export async function headObject(
     const status = awsHttpStatus(error);
     const name =
       error && typeof error === "object" && "name" in error
-        ? String((error as { name: unknown }).name)
+        ? String((error).name)
         : "";
     if (name === "NotFound" || name === "NoSuchKey" || status === 404) {
       return null;

@@ -159,7 +159,7 @@ export function snapTransformScale(args: {
   thresholdPx?: number;
 }): number {
   const { boxW, boxH, compW, compH, thresholdPx = SNAP_PX } = args;
-  let { scale } = args;
+  const { scale } = args;
   if (boxW <= 0 || boxH <= 0) return scale;
 
   const candidates = [compW / boxW, compH / boxH, 1];

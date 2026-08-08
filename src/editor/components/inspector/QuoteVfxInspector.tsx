@@ -8,7 +8,6 @@ import {
   isQuoteTemplateId,
   QUOTE_TEMPLATE_LIST,
   resolveQuoteTemplateStyle,
-  type QuoteTemplateId,
 } from "~/remotion/templates/quote";
 import {
   mergeTemplateStyleOverrides,
@@ -43,7 +42,7 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
           const kept: { y?: number } = prev.y != null ? { y: prev.y } : {};
           patchEdit(edit.id, {
             style: {
-              templateId: tid as QuoteTemplateId,
+              templateId: tid,
               ...(Object.keys(kept).length > 0 ? { overrides: kept } : {}),
             },
           });

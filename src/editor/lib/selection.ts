@@ -16,7 +16,7 @@ export function isSelected(
   kind: SelectionKind,
   id: number,
 ): boolean {
-  if (!selection || selection.kind !== kind) return false;
+  if (selection?.kind !== kind) return false;
   return selection.ids.includes(id);
 }
 
@@ -31,7 +31,7 @@ export function replaceSelection(
 ): Selection | null {
   const unique = [...new Set(ids)];
   if (unique.length === 0) return null;
-  return { kind, ids: unique } as Selection;
+  return { kind, ids: unique };
 }
 
 export function toggleSelection(
@@ -40,14 +40,14 @@ export function toggleSelection(
   id: number,
 ): Selection | null {
   if (current?.kind !== kind) {
-    return { kind, ids: [id] } as Selection;
+    return { kind, ids: [id] };
   }
 
   const next = [...current.ids];
   const i = next.indexOf(id);
   if (i >= 0) next.splice(i, 1);
   else next.push(id);
-  return next.length === 0 ? null : ({ kind, ids: next } as Selection);
+  return next.length === 0 ? null : ({ kind, ids: next });
 }
 
 export function selectWordRange(start: number, end: number): Selection {

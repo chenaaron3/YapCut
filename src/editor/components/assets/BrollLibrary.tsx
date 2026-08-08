@@ -80,7 +80,9 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
   );
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
-    onDrop,
+    onDrop: (files) => {
+      void onDrop(files);
+    },
     accept: {
       "image/*": [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"],
       "image/heic": [".heic"],
