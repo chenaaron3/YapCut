@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
+import { quoteSeed } from "~/domain/quote";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import { EditMarker } from "~/editor/components/transcript/EditMarker";
 import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
@@ -113,6 +114,7 @@ export function WordCell({
               scale: DEFAULT_ZOOM_SCALE,
             })
           }
+          onQuote={() => placeEditOnWord(word.globalIndex, quoteSeed())}
           onDelete={() => cutWord(word.globalIndex)}
         >
           <span
@@ -162,7 +164,8 @@ export function WordCell({
               e.stopPropagation();
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+              // Space is global play/pause — only Enter activates the word.
+              if (e.key === "Enter") {
                 e.preventDefault();
                 select("word", word.globalIndex);
                 seekTimeline(word.start);

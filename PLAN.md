@@ -18,7 +18,7 @@ Agents working a milestone: read **CONTEXT.md** + this milestone’s **Agent bri
 | M3 Create pipeline | **Done** | Presign upload → WhisperX → keeps → AI seed; `withWorkflow` always on; create uses in-process unless `USE_VERCEL_WORKFLOW=true` (set on Vercel for prod) |
 | M4 Editor | **Done** | Shell: Assets\|Transcript\|Player\|Timeline; arolls delete+ripple; Zustand+autosave; Remotion preview (A-roll stitch, captions, zoom, title text). Caption/text chrome simplified vs full catalog; no Lambda export (M4b). |
 | M4b Export Lambda | **Done** | Header Export → Remotion Lambda (poll progress, no Vercel workflow); download via signed CF on `exportS3Key` |
-| M5 Features | In progress | **5.1–5.4 done** — captions; text VFX; b-roll; SFX (global pack seed, place/drag, inspector, timeline, Remotion audio; b-roll default entrance = sibling sfx edit); next 5.5 Quotes |
+| M5 Features | **Done** | **5.1–5.5 done** — captions; text VFX; b-roll; SFX; quotes (place from selection, template/overrides inspector, caption style merge in build-props, transcript/timeline chrome) |
 
 ### Already in talking-head-2 (do not re-scaffold)
 
@@ -626,11 +626,11 @@ scripts/seed-global-sfx.ts          # S3 + Asset rows projectId=null
 
 ### M5 acceptance (milestone)
 
-- [ ] 5.1–5.5 each meet their slice “Done when”
-- [ ] All new edits survive autosave reload
-- [ ] Player composition includes b-roll + sfx + quote paths (export-ready)
-- [ ] `npm run typecheck` passes
-- [ ] PLAN Status updated
+- [x] 5.1–5.5 each meet their slice “Done when”
+- [x] All new edits survive autosave reload
+- [x] Player composition includes b-roll + sfx + quote paths (export-ready)
+- [x] `npm run typecheck` passes
+- [x] PLAN Status updated
 
 ### Explicitly do not port (v1)
 

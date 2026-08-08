@@ -53,7 +53,10 @@ function useGlobalShortcuts() {
       } else if (isTypingTarget(e.target)) {
         return;
       } else if (e.key === " " || e.code === "Space") {
+        // Capture-phase stop so focused words (role=button) don't also
+        // activate and seek back to word.start.
         e.preventDefault();
+        e.stopPropagation();
         togglePlayback();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();

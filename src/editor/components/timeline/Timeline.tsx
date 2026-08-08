@@ -18,7 +18,7 @@ import { isTimelineScrubbing, setTimelineScrubbing, useEditor } from '~/editor/s
 import type {
   BrollEdit,
   SfxEdit,
-  VfxTextEdit,
+  VfxEdit,
   ZoomEdit,
 } from "~/domain/project-config";
 function scrollPlayheadIntoView(el: HTMLDivElement, playheadX: number): void {
@@ -47,10 +47,8 @@ export function Timeline() {
 
   const zooms =
     config?.edits.filter((e): e is ZoomEdit => e.kind === "zoom") ?? [];
-  const texts =
-    config?.edits.filter(
-      (e): e is VfxTextEdit => e.kind === "vfx" && e.type === "text",
-    ) ?? [];
+  const vfx =
+    config?.edits.filter((e): e is VfxEdit => e.kind === "vfx") ?? [];
   const brolls =
     config?.edits.filter((e): e is BrollEdit => e.kind === "broll") ?? [];
   const sfx =
@@ -180,7 +178,7 @@ export function Timeline() {
             <BRollTrack edits={brolls} width={trackWidth} />
             <SfxTrack edits={sfx} width={trackWidth} />
             <ZoomTrack edits={zooms} width={trackWidth} />
-            <VfxTrack edits={texts} width={trackWidth} />
+            <VfxTrack edits={vfx} width={trackWidth} />
           </div>
         </div>
       </div>

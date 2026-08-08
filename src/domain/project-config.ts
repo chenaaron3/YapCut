@@ -198,19 +198,20 @@ export const DEFAULT_TEXT_TEMPLATE_ID = "white-board";
 export function seedTitleTextVfx(options: {
   edits: Edit[];
   title: string;
+  /** Timeline start of the first keep (not 0 when a leading gap exists). */
+  startSec: number;
   /** Expanded timeline duration (gaps count). */
   timelineDurationSec: number;
 }): VfxTextEdit {
-  const end = Math.min(
-    DEFAULT_TEXT_VFX_DURATION_SEC,
-    Math.max(0, options.timelineDurationSec),
-  );
+  const start = Math.max(0, options.startSec);
+  const remaining = Math.max(0, options.timelineDurationSec - start);
+  const duration = Math.min(DEFAULT_TEXT_VFX_DURATION_SEC, remaining);
   return {
     id: nextEditId(options.edits),
     kind: "vfx",
     type: "text",
-    start: 0,
-    end: end > 0 ? end : DEFAULT_TEXT_VFX_DURATION_SEC,
+    start,
+    end: start + (duration > 0 ? duration : DEFAULT_TEXT_VFX_DURATION_SEC),
     text: options.title,
     style: { templateId: DEFAULT_TEXT_TEMPLATE_ID },
   };

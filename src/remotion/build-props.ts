@@ -2,6 +2,7 @@ import {
   buildArollLayout,
   timelineRangeToOutput,
 } from "~/domain/arolls";
+import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
 import {
   outputDurationFromArolls,
   PROJECT_FPS,
@@ -10,19 +11,13 @@ import {
 } from "~/domain/project-config";
 import { projectOutputWords } from "~/domain/projection";
 import type { TranscriptWord } from "~/domain/transcript";
-import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
+import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
   applyCaptionOverrides,
   type CaptionGroupStyle,
 } from "~/remotion/captions/style";
-import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
-  DEFAULT_CAPTION_TEMPLATE_ID,
-  isCaptionTemplateId,
-  resolveCaptionTemplateStyle,
-} from "~/remotion/templates/caption";
-import {
-  groupCaptionWords,
+  groupStyledCaptionWords,
   isFiller,
   padLastWordInGroups,
   stripPunctuationForDisplay,
@@ -32,6 +27,17 @@ import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/constants";
+import {
+  DEFAULT_CAPTION_TEMPLATE_ID,
+  isCaptionTemplateId,
+  resolveCaptionTemplateStyle,
+} from "~/remotion/templates/caption";
+import {
+  DEFAULT_QUOTE_TEMPLATE_ID,
+  isQuoteTemplateId,
+  resolveQuoteTemplateStyle,
+} from "~/remotion/templates/quote";
+import { resolveTemplateStyle } from "~/remotion/templates/style";
 import type {
   ArollSection,
   BrollClipProp,
@@ -93,31 +99,90 @@ export function resolveProjectCaptionStyle(
   );
 }
 
+type OutputQuote = {
+  id: number;
+  start: number;
+  end: number;
+  style: CaptionGroupStyle;
+};
+
+function outputQuotes(
+  edits: ProjectConfig["edits"],
+  cells: ReturnType<typeof buildArollLayout>,
+): OutputQuote[] {
+  const out: OutputQuote[] = [];
+  for (const e of edits) {
+    if (e.kind !== "vfx" || e.type !== "quote") continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+    out.push({
+      id: e.id,
+      start: range.start,
+      end: range.end,
+      style: resolveTemplateStyle(
+        e.style,
+        isQuoteTemplateId,
+        DEFAULT_QUOTE_TEMPLATE_ID,
+        resolveQuoteTemplateStyle,
+      ),
+    });
+  }
+  return out;
+}
+
+/** First quote whose output range overlaps the word (start inclusive, end exclusive). */
+function quoteForWord(
+  word: { start: number; end: number },
+  quotes: readonly OutputQuote[],
+): OutputQuote | null {
+  for (const quote of quotes) {
+    if (word.start < quote.end && word.end > quote.start) return quote;
+  }
+  return null;
+}
+
 function buildCaptionGroups(
   config: ProjectConfig,
   transcriptsByAssetId: ReadonlyMap<string, readonly TranscriptWord[]>,
+  cells: ReturnType<typeof buildArollLayout>,
   fps: number,
 ): CaptionGroupProp[] {
-  const style = resolveProjectCaptionStyle(config.captions);
+  const captionStyle = resolveProjectCaptionStyle(config.captions);
+  const quotes = outputQuotes(config.edits, cells);
   const words = projectOutputWords(config.arolls, transcriptsByAssetId);
+
+  type StyledWord = CaptionWordProp & {
+    styleKey: string;
+    captionsAtATime: number;
+    style: CaptionGroupStyle;
+  };
 
   // Keep source punctuation through grouping so sentence boundaries work;
   // strip for on-screen display after groups are formed.
-  const captionWords: CaptionWordProp[] = [];
+  const styledWords: StyledWord[] = [];
   for (const word of words) {
     if (isFiller(word.text) || !word.text.trim()) continue;
     const startFrame = secToFrame(word.start, fps);
     const endFrame = Math.max(startFrame + 3, secToFrame(word.end, fps));
-    captionWords.push({
+    const quote = quoteForWord(word, quotes);
+    const style = quote?.style ?? captionStyle;
+    styledWords.push({
       text: word.text,
       startFrame,
       endFrame,
       ...(word.emphasized ? { emphasized: true } : {}),
+      styleKey: quote ? `quote:${quote.id}` : "default",
+      captionsAtATime: style.captionsAtATime,
+      style,
     });
   }
 
-  const rawGroups = groupCaptionWords(captionWords, style.captionsAtATime);
-  const displayGroups = rawGroups
+  const styleByKey = new Map<string, CaptionGroupStyle>();
+  for (const word of styledWords) {
+    styleByKey.set(word.styleKey, word.style);
+  }
+
+  const displayGroups = groupStyledCaptionWords(styledWords)
     .map((group) => {
       const displayWords = group.words
         .map((w) => ({
@@ -126,21 +191,18 @@ function buildCaptionGroups(
         }))
         .filter((w) => w.text.length > 0);
       if (displayWords.length === 0) return null;
+      const style = styleByKey.get(group.styleKey) ?? captionStyle;
       return {
         words: displayWords,
         startFrame: displayWords[0]!.startFrame,
         endFrame: displayWords[displayWords.length - 1]!.endFrame,
+        captionsAtATime: style.captionsAtATime,
+        style,
       };
     })
     .filter((g): g is NonNullable<typeof g> => g != null);
 
-  const padded = padLastWordInGroups(displayGroups, fps);
-
-  return padded.map((group) => ({
-    ...group,
-    captionsAtATime: style.captionsAtATime,
-    style,
-  }));
+  return padLastWordInGroups(displayGroups, fps);
 }
 
 function buildZooms(
@@ -286,6 +348,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
     captionGroups: buildCaptionGroups(
       input.config,
       input.transcriptsByAssetId,
+      layout,
       fps,
     ),
     zooms: buildZooms(input.config.edits, layout, fps),

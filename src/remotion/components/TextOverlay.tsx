@@ -4,13 +4,23 @@ import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotio
 import { buildStaticGroup } from "~/remotion/components/captions/static-group";
 import { StaticGroupView } from "~/remotion/components/captions/StaticGroupView";
 import { SAFE_AREA } from "~/remotion/constants";
-import { resolveTextVfxStyle } from "~/remotion/text/resolve";
+import { resolveTemplateStyle } from "~/remotion/templates/style";
+import {
+  DEFAULT_TEXT_TEMPLATE_ID,
+  isTextTemplateId,
+  resolveTextTemplateStyle,
+} from "~/remotion/templates/text";
 import type { TextOverlayProp } from "~/remotion/types";
 
 function TextOverlayItem({ overlay }: { overlay: TextOverlayProp }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const style = resolveTextVfxStyle(overlay.style);
+  const style = resolveTemplateStyle(
+    overlay.style,
+    isTextTemplateId,
+    DEFAULT_TEXT_TEMPLATE_ID,
+    resolveTextTemplateStyle,
+  );
   const durationFrames = Math.max(1, overlay.endFrame - overlay.startFrame);
 
   const group = useMemo(

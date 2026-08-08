@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 
 import {
   buildArollLayout,
+  firstKeepTimelineSec,
   layoutTimelineDuration,
 } from "~/domain/arolls";
 import { buildArollKeepsFromWords } from "~/domain/keeps";
@@ -180,9 +181,9 @@ async function runCreatePipelineInner(projectId: string): Promise<void> {
     wordsByAssetId,
     durationByAssetId,
   );
-  const timelineDuration = layoutTimelineDuration(
-    buildArollLayout(arolls, durationByAssetId),
-  );
+  const layout = buildArollLayout(arolls, durationByAssetId);
+  const timelineDuration = layoutTimelineDuration(layout);
+  const titleStartSec = firstKeepTimelineSec(layout);
 
   let title = project.title?.trim() ?? "";
   let edits: Edit[] = [];
@@ -206,6 +207,7 @@ async function runCreatePipelineInner(projectId: string): Promise<void> {
       seedTitleTextVfx({
         edits,
         title,
+        startSec: titleStartSec,
         timelineDurationSec: timelineDuration,
       }),
     ];

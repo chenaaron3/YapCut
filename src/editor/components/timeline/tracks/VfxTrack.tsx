@@ -1,4 +1,4 @@
-import type { VfxTextEdit } from "~/domain/project-config";
+import type { VfxEdit } from "~/domain/project-config";
 import { Handle, TrackLabel, useTrackDrag } from "~/editor/components/timeline/shared";
 import { clampRangeEdge } from "~/editor/lib/range";
 import { isSelected } from "~/editor/lib/selection";
@@ -7,11 +7,38 @@ import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
+import {
+  DEFAULT_QUOTE_TEMPLATE_ID,
+  isQuoteTemplateId,
+  resolveQuoteTemplate,
+} from "~/remotion/templates/quote";
+import { resolveTemplateId } from "~/remotion/templates/style";
+import {
+  isTextTemplateId,
+  TEXT_TEMPLATES,
+} from "~/remotion/templates/text";
 
 type Props = {
-  edits: VfxTextEdit[];
+  edits: VfxEdit[];
   width: number;
 };
+
+function vfxCellLabel(edit: VfxEdit): string {
+  if (edit.type === "text") {
+    const tid = isTextTemplateId(edit.style?.templateId)
+      ? edit.style.templateId
+      : null;
+    const templateLabel = tid ? TEXT_TEMPLATES[tid]?.label : null;
+    return edit.text.trim() || templateLabel || "Title";
+  }
+  return resolveQuoteTemplate(
+    resolveTemplateId(
+      edit.style,
+      isQuoteTemplateId,
+      DEFAULT_QUOTE_TEMPLATE_ID,
+    ),
+  ).label;
+}
 
 export function VfxTrack({ edits, width }: Props) {
   const pxPerSec = useEditor((s) => s.pxPerSec);
@@ -32,7 +59,7 @@ export function VfxTrack({ edits, width }: Props) {
             key={edit.id}
             data-cell
             type="button"
-            title={`${edit.text}  ${edit.start.toFixed(2)}–${edit.end.toFixed(2)}s`}
+            title={`${vfxCellLabel(edit)}  ${edit.start.toFixed(2)}–${edit.end.toFixed(2)}s`}
             className={cn(
               "absolute top-1 bottom-1 flex items-center overflow-hidden rounded bg-vfx px-1.5 text-[10px] text-[#1a1508] select-none",
               isSelected(selection, "edit", edit.id) &&
@@ -62,7 +89,7 @@ export function VfxTrack({ edits, width }: Props) {
                 });
               }}
             />
-            <span className="truncate">{edit.text}</span>
+            <span className="truncate">{vfxCellLabel(edit)}</span>
             <Handle
               side="right"
               onMouseDown={(e) => {

@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { BRollInspector } from "~/editor/components/inspector/BRollInspector";
 import { CaptionsInspector } from "~/editor/components/inspector/CaptionsInspector";
 import { ProjectSettingsInspector } from "~/editor/components/inspector/ProjectSettingsInspector";
+import { QuoteVfxInspector } from "~/editor/components/inspector/QuoteVfxInspector";
 import { SfxInspector } from "~/editor/components/inspector/SfxInspector";
 import { TextVfxInspector } from "~/editor/components/inspector/TextVfxInspector";
 import { primaryId } from "~/editor/lib/selection";
@@ -36,6 +37,9 @@ export function InspectorPanel() {
     if (edit?.kind === "vfx" && edit.type === "text") {
       title = "Title";
       body = <TextVfxInspector edit={edit} />;
+    } else if (edit?.kind === "vfx" && edit.type === "quote") {
+      title = "Quote";
+      body = <QuoteVfxInspector edit={edit} />;
     } else if (edit?.kind === "broll") {
       title = "B-roll";
       body = <BRollInspector edit={edit} />;

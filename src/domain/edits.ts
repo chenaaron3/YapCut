@@ -8,13 +8,13 @@ import {
 } from "~/domain/media";
 import {
   nextEditId,
-  type BrollEdit,
   type Edit,
   type EditBase,
   type MediaRef,
   type ProjectConfig,
   type Transform,
 } from "~/domain/project-config";
+import { quoteRangeConflicts } from "~/domain/quote";
 import { sfxSeed } from "~/domain/sfx";
 import type { TimelineTime } from "~/domain/time";
 import { withTransform } from "~/domain/transform";
@@ -85,6 +85,15 @@ export function patchEditRange(
 ): ProjectConfig {
   const clamped = clampRange(range, timelineDuration);
   if (!clamped) return config;
+  const existing = config.edits.find((e) => e.id === id);
+  if (!existing) return config;
+  if (
+    existing.kind === "vfx" &&
+    existing.type === "quote" &&
+    quoteRangeConflicts(config.edits, clamped, id)
+  ) {
+    return config;
+  }
   return produce(config, (draft) => {
     const edit = draft.edits.find((e) => e.id === id);
     if (!edit) return;
@@ -101,6 +110,13 @@ function appendEdit(
 ): { config: ProjectConfig; placed: Edit } | null {
   const clamped = clampRange(range, timelineDuration);
   if (!clamped) return null;
+  if (
+    seed.kind === "vfx" &&
+    seed.type === "quote" &&
+    quoteRangeConflicts(config.edits, clamped)
+  ) {
+    return null;
+  }
   const placed = {
     ...seed,
     id: nextEditId(config.edits),
