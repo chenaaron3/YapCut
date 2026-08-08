@@ -9,8 +9,13 @@ import {
   sfxSeed,
   type SfxDragPayload,
 } from "~/domain/sfx";
+import {
+  VFX_DRAG_MIME,
+  vfxSeedFromPreset,
+  type VfxDragPayload,
+} from "~/domain/vfx";
 
-export type AssetDropKind = "broll" | "sfx";
+export type AssetDropKind = "broll" | "sfx" | "vfx";
 
 type PlaceEditOnWord = (
   globalIndex: number,
@@ -24,6 +29,7 @@ export function assetDropKindFromTypes(
 ): AssetDropKind | null {
   if (types.includes(BROLL_DRAG_MIME)) return "broll";
   if (types.includes(SFX_DRAG_MIME)) return "sfx";
+  if (types.includes(VFX_DRAG_MIME)) return "vfx";
   return null;
 }
 
@@ -36,7 +42,7 @@ function parseJson<T>(raw: string): T | null {
 }
 
 /**
- * Place a b-roll/SFX edit from a transcript word drop.
+ * Place a b-roll/SFX/VFX edit from a transcript word drop.
  * Returns true when the event was handled (caller should preventDefault).
  */
 export function placeEditFromAssetDrop(
@@ -56,12 +62,21 @@ export function placeEditFromAssetDrop(
   }
 
   const sfxRaw = dataTransfer.getData(SFX_DRAG_MIME);
-  if (!sfxRaw) return false;
-  const payload = parseJson<SfxDragPayload>(sfxRaw);
-  if (payload?.assetId) {
-    placeEditOnWord(globalIndex, sfxSeed(payload.assetId), {
-      maxDurationSec: payload.durationSec,
-    });
+  if (sfxRaw) {
+    const payload = parseJson<SfxDragPayload>(sfxRaw);
+    if (payload?.assetId) {
+      placeEditOnWord(globalIndex, sfxSeed(payload.assetId), {
+        maxDurationSec: payload.durationSec,
+      });
+    }
+    return true;
+  }
+
+  const vfxRaw = dataTransfer.getData(VFX_DRAG_MIME);
+  if (!vfxRaw) return false;
+  const payload = parseJson<VfxDragPayload>(vfxRaw);
+  if (payload?.type === "quote" || payload?.type === "text") {
+    placeEditOnWord(globalIndex, vfxSeedFromPreset(payload.type));
   }
   return true;
 }

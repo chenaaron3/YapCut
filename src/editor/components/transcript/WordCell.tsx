@@ -129,6 +129,7 @@ export function WordCell({
               primarySelected && primaryChrome?.highlightClass,
               dropActive === "broll" && "bg-broll/30 ring-1 ring-broll",
               dropActive === "sfx" && "bg-sfx/30 ring-1 ring-sfx",
+              dropActive === "vfx" && "bg-vfx/30 ring-1 ring-vfx",
             )}
             onMouseDown={(e) => onWordDragStart?.(e)}
             onClick={(e) => {

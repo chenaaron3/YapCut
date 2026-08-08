@@ -3,10 +3,11 @@ import { useMemo, useState } from "react";
 import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
 import { BrollLibrary } from "~/editor/components/assets/BrollLibrary";
 import { SfxLibrary } from "~/editor/components/assets/SfxLibrary";
+import { VfxLibrary } from "~/editor/components/assets/VfxLibrary";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-type Tab = "aroll" | "broll" | "sfx";
+type Tab = "aroll" | "broll" | "vfx" | "sfx";
 
 function arollAssetIds(configArolls: { assetId: string }[]): Set<string> {
   return new Set(configArolls.map((k) => k.assetId));
@@ -48,6 +49,7 @@ export function AssetsPanel() {
           [
             ["aroll", "A-roll"],
             ["broll", "B-roll"],
+            ["vfx", "VFX"],
             ["sfx", "SFX"],
           ] as const
         ).map(([id, label]) => (
@@ -72,6 +74,8 @@ export function AssetsPanel() {
           <ArollAssetList assets={arollAssets} />
         ) : tab === "broll" ? (
           <BrollLibrary assets={brollAssets} />
+        ) : tab === "vfx" ? (
+          <VfxLibrary />
         ) : (
           <SfxLibrary assets={sfxAssets} />
         )}
