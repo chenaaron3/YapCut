@@ -1,6 +1,9 @@
 import { useState } from "react";
 
-import { CaptionTemplatePreview } from "~/editor/components/inspector/CaptionTemplatePreview";
+import {
+  CaptionTemplatePreview,
+  type ListiclePreviewPair,
+} from "~/editor/components/inspector/CaptionTemplatePreview";
 import { requestPlayAfterSeek } from "~/editor/lib/player-bridge";
 import { useEditor } from "~/editor/store";
 import {
@@ -13,7 +16,16 @@ export type StyleTemplateChip = {
   id: string;
   label: string;
   style: CaptionGroupStyle;
+  /** Optional dual-layer preview (listicle indicator + value). */
+  previewPair?: ListiclePreviewPair;
 };
+
+function resolvePreviewPair(
+  chip: StyleTemplateChip | null | undefined,
+  fallback?: ListiclePreviewPair | null,
+): ListiclePreviewPair | null {
+  return chip?.previewPair ?? fallback ?? null;
+}
 
 /** Shared template preview + chip picker for Captions, Quote, and Title inspectors. */
 export function StyleTemplatePicker({
@@ -22,12 +34,15 @@ export function StyleTemplatePicker({
   onChange,
   /** When set, used as the idle preview (e.g. live project style). */
   fallbackStyle,
+  /** Idle dual-layer preview (listicle). */
+  fallbackPair,
   previewVariant = "dynamic",
 }: {
   templates: StyleTemplateChip[];
   value: string | null;
   onChange: (id: string) => void;
   fallbackStyle?: CaptionGroupStyle;
+  fallbackPair?: ListiclePreviewPair | null;
   previewVariant?: "dynamic" | "static";
 }) {
   const [hovered, setHovered] = useState<StyleTemplateChip | null>(null);
@@ -37,6 +52,9 @@ export function StyleTemplatePicker({
   const previewStyle = previewingOther
     ? hovered.style
     : (fallbackStyle ?? selected?.style ?? null);
+  const previewPair = previewingOther
+    ? resolvePreviewPair(hovered)
+    : resolvePreviewPair(selected, fallbackPair);
   const previewLabel = previewingOther ? hovered.label : (selected?.label ?? null);
 
   return (
@@ -52,6 +70,12 @@ export function StyleTemplatePicker({
               style={previewStyle}
               playing={previewingOther}
               variant={previewVariant}
+              pair={previewPair}
+              restartKey={
+                previewingOther
+                  ? hovered.id
+                  : (selected?.id ?? value ?? "")
+              }
             />
             <div className="border-t border-border bg-panel-2 px-2 py-1.5 text-center text-[10px] text-muted-foreground">
               {previewLabel ?? "Current"}

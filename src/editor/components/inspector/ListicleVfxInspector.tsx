@@ -73,9 +73,21 @@ export function ListicleVfxInspector({ edit }: { edit: VfxListicleEdit }) {
       </label>
 
       <StyleTemplatePicker
-        templates={LISTICLE_TEMPLATE_LIST}
+        templates={LISTICLE_TEMPLATE_LIST.map((t) => ({
+          ...t,
+          previewPair: {
+            indicator: t.indicatorStyle,
+            value: t.valueStyle,
+            stacked: t.stacked,
+          },
+        }))}
         value={templateId}
         fallbackStyle={template.style}
+        fallbackPair={{
+          indicator: template.indicatorStyle,
+          value: template.valueStyle,
+          stacked: template.stacked,
+        }}
         onChange={(id) => {
           const tid = isListicleTemplateId(id)
             ? id

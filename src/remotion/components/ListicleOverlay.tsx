@@ -97,27 +97,33 @@ function ListicleText({
   );
 }
 
-function ListiclePair({
+/**
+ * Remotion-free listicle paint path — shared by {@link ListicleItem} and the
+ * inspector template preview.
+ */
+export function ListiclePairView({
   overlay,
-  timings,
+  frame,
+  fps,
 }: {
   overlay: ListicleOverlayProp;
-  timings: { indicator: PhaseTiming; value: PhaseTiming };
+  /** Absolute composition frame. */
+  frame: number;
+  fps: number;
 }) {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const absoluteFrame = overlay.startFrame + frame;
+  const timings = listiclePhaseTimings(
+    overlay.startFrame,
+    overlay.endFrame,
+    overlay.middleFrame,
+    overlay.stacked,
+  );
 
   const showIndicator = phaseActive(
-    absoluteFrame,
+    frame,
     timings.indicator,
     overlay.indicatorText,
   );
-  const showValue = phaseActive(
-    absoluteFrame,
-    timings.value,
-    overlay.valueText,
-  );
+  const showValue = phaseActive(frame, timings.value, overlay.valueText);
 
   if (!showIndicator && !showValue) return null;
 
@@ -126,7 +132,7 @@ function ListiclePair({
       text={overlay.indicatorText}
       style={overlay.indicatorStyle}
       durationFrames={Math.max(1, timings.indicator.duration)}
-      frame={absoluteFrame - timings.indicator.start}
+      frame={frame - timings.indicator.start}
       fps={fps}
       embedded={overlay.stacked}
     />
@@ -137,7 +143,7 @@ function ListiclePair({
       text={overlay.valueText}
       style={overlay.valueStyle}
       durationFrames={Math.max(1, timings.value.duration)}
-      frame={absoluteFrame - timings.value.start}
+      frame={frame - timings.value.start}
       fps={fps}
       embedded={overlay.stacked}
     />
@@ -184,12 +190,6 @@ function ListiclePair({
 
 function ListicleItem({ overlay }: { overlay: ListicleOverlayProp }) {
   const fullDuration = Math.max(1, overlay.endFrame - overlay.startFrame);
-  const timings = listiclePhaseTimings(
-    overlay.startFrame,
-    overlay.endFrame,
-    overlay.middleFrame,
-    overlay.stacked,
-  );
 
   return (
     <Sequence
@@ -197,8 +197,21 @@ function ListicleItem({ overlay }: { overlay: ListicleOverlayProp }) {
       durationInFrames={fullDuration}
       layout="none"
     >
-      <ListiclePair overlay={overlay} timings={timings} />
+      <ListicleItemBody overlay={overlay} />
     </Sequence>
+  );
+}
+
+function ListicleItemBody({ overlay }: { overlay: ListicleOverlayProp }) {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  return (
+    <ListiclePairView
+      overlay={overlay}
+      frame={overlay.startFrame + frame}
+      fps={fps}
+    />
   );
 }
 
