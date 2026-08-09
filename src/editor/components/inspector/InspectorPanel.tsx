@@ -8,6 +8,7 @@ import { ProjectSettingsInspector } from "~/editor/components/inspector/ProjectS
 import { QuoteVfxInspector } from "~/editor/components/inspector/QuoteVfxInspector";
 import { SfxInspector } from "~/editor/components/inspector/SfxInspector";
 import { TextVfxInspector } from "~/editor/components/inspector/TextVfxInspector";
+import { ZoomInspector } from "~/editor/components/inspector/ZoomInspector";
 import { primaryId } from "~/editor/lib/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
@@ -52,11 +53,7 @@ export function InspectorPanel() {
       body = <SfxInspector edit={edit} />;
     } else if (edit?.kind === "zoom") {
       title = "Zoom";
-      body = (
-        <p className="text-xs text-muted-foreground">
-          Drag timeline handles to adjust range.
-        </p>
-      );
+      body = <ZoomInspector edit={edit} />;
     }
   }
 

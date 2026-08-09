@@ -2,8 +2,15 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 import { buildNumberedTranscript } from "~/domain/projection";
+import type { Edit } from "~/domain/project-config";
+import { isQuoteEdit } from "~/domain/quote";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
+
+export type QuoteWordRange = {
+  startWordIndex: number;
+  endWordIndex: number;
+};
 
 export const EmphasisDetectionSchema = z.object({
   words: z
@@ -19,13 +26,49 @@ export const EmphasisDetectionSchema = z.object({
           .describe("Why this word is the highlight, one short sentence"),
       }),
     )
-    .describe("Most significant word about every 10–15 words"),
+    .describe(
+      "Sparse outside quotes (~every 10–15 words); most content words inside each quote range",
+    ),
 });
 
 export type EmphasisDetection = z.infer<typeof EmphasisDetectionSchema>;
 
+/** Map quote edits → covering global word index ranges. */
+export function quoteWordRanges(
+  edits: readonly Edit[],
+  words: readonly GlobalTranscriptWord[],
+): QuoteWordRange[] {
+  const ranges: QuoteWordRange[] = [];
+  for (const edit of edits) {
+    if (!isQuoteEdit(edit)) continue;
+    const covered = words.filter(
+      (w) =>
+        !w.inGap &&
+        w.start < edit.end - 0.001 &&
+        w.end > edit.start + 0.001,
+    );
+    if (covered.length === 0) continue;
+    ranges.push({
+      startWordIndex: covered[0]!.globalIndex,
+      endWordIndex: covered[covered.length - 1]!.globalIndex,
+    });
+  }
+  return ranges;
+}
+
+function formatQuoteRanges(ranges: readonly QuoteWordRange[]): string {
+  if (ranges.length === 0) return "None.";
+  return ranges
+    .map(
+      (r, i) =>
+        `${i}: words ${r.startWordIndex}–${r.endWordIndex} (emphasize most content words here)`,
+    )
+    .join("\n");
+}
+
 async function callOpenAI(
   words: readonly GlobalTranscriptWord[],
+  quoteRanges: readonly QuoteWordRange[],
 ): Promise<EmphasisDetection> {
   const client = getOpenAIClient();
   const numbered = buildNumberedTranscript(words);
@@ -37,14 +80,21 @@ async function callOpenAI(
         role: "system",
         content: [
           "You pick on-screen caption highlight words from a talking-head transcript.",
-          "Cadence: about one highlight every 10–15 words. In each window, pick only the single most significant content word.",
+          "Outside quote ranges: about one highlight every 10–15 words — only the single most significant content word per window.",
+          "Inside quote ranges: denser — emphasize most content words in the punch phrase (skip function words).",
           "Never highlight function words (don't, your, the, a, to, of, and, but).",
           "Return indices into the numbered transcript.",
         ].join(" "),
       },
       {
         role: "user",
-        content: `Numbered transcript words:\n\n${numbered}`,
+        content: [
+          "Quote ranges (dense emphasis):",
+          formatQuoteRanges(quoteRanges),
+          "",
+          "Numbered transcript words:",
+          numbered,
+        ].join("\n"),
       },
     ],
     response_format: zodResponseFormat(
@@ -98,9 +148,11 @@ export function applyEmphasisToAssetWords(
 export async function generateEmphasisUpdates(
   globalWords: readonly GlobalTranscriptWord[],
   transcriptsByAssetId: Map<string, TranscriptWord[]>,
+  edits: readonly Edit[] = [],
 ): Promise<Map<string, TranscriptWord[]>> {
   if (globalWords.length === 0) return new Map();
-  const detection = await callOpenAI(globalWords);
+  const ranges = quoteWordRanges(edits, globalWords);
+  const detection = await callOpenAI(globalWords, ranges);
   return applyEmphasisToAssetWords(
     globalWords,
     detection,

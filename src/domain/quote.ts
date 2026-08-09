@@ -1,3 +1,4 @@
+import { isListicleEdit } from "~/domain/listicle";
 import type {
   Edit,
   TemplateStyle,
@@ -29,16 +30,19 @@ function rangesOverlap(a: TimelineTime, b: TimelineTime): boolean {
   return a.start < b.end - EPS && b.start < a.end - EPS;
 }
 
-/** True if `range` overlaps any other quote (optionally excluding one id). */
+/**
+ * True if `range` conflicts with another quote (optionally excluding one id)
+ * or any listicle (quotes must not stack on listicles).
+ */
 export function quoteRangeConflicts(
   edits: readonly Edit[],
   range: TimelineTime,
   excludeId?: number,
 ): boolean {
-  return edits.some(
-    (e) =>
-      isQuoteEdit(e) &&
-      e.id !== excludeId &&
-      rangesOverlap(e, range),
-  );
+  return edits.some((e) => {
+    if (isListicleEdit(e) && rangesOverlap(e, range)) return true;
+    return (
+      isQuoteEdit(e) && e.id !== excludeId && rangesOverlap(e, range)
+    );
+  });
 }

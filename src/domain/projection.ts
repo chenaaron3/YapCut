@@ -121,3 +121,16 @@ export function wordIndexToTimelineSec(
   const word = words[index]!;
   return prefer === "start" ? word.start : word.end;
 }
+
+/** Global word index under the expanded timeline playhead, if any. */
+export function wordIndexAtTimelineSec(
+  timelineSec: number,
+  words: readonly GlobalTranscriptWord[],
+): number | null {
+  for (const word of words) {
+    if (timelineSec >= word.start && timelineSec < word.end) {
+      return word.globalIndex;
+    }
+  }
+  return null;
+}

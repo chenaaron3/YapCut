@@ -1,5 +1,6 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 
+import { AI_SFX_PACK } from "~/domain/ai-sfx-pack";
 import {
   buildArollLayout,
   firstKeepTimelineSec,
@@ -15,8 +16,11 @@ import {
   type ProjectConfig,
 } from "~/domain/project-config";
 import type { TranscriptWord } from "~/domain/transcript";
+import { generateCompanionSfxEdits } from "~/server/ai/companion-sfx";
 import { generateEmphasisUpdates } from "~/server/ai/emphasis";
 import { generateListicleEdits } from "~/server/ai/listicles";
+import { generatePacingReconcileZooms } from "~/server/ai/pacing-reconcile";
+import { generateQuoteEdits } from "~/server/ai/quotes";
 import { generateTitle } from "~/server/ai/title";
 import { generateZoomEdits } from "~/server/ai/zooms";
 import { db } from "~/server/db";
@@ -372,9 +376,21 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
   }
 
   try {
+    const quotes = await generateQuoteEdits(timelineWords, edits);
+    edits = [...edits, ...quotes];
+    console.log(`[create] quotes=${quotes.length}`);
+  } catch (error) {
+    console.warn(
+      "[create] quote AI soft-failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  try {
     const updates = await generateEmphasisUpdates(
       timelineWords,
       wordsByAssetId,
+      edits,
     );
     for (const [assetId, words] of updates) {
       wordsByAssetId.set(assetId, words);
@@ -387,6 +403,56 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
   } catch (error) {
     console.warn(
       "[create] emphasis AI soft-failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  // Re-project after emphasis so pacing/SFX see emphasized flags.
+  const timelineWordsAfterEmphasis = projectTimelineWords(
+    arolls,
+    wordsByAssetId,
+    durationByAssetId,
+  );
+
+  try {
+    const slowZooms = await generatePacingReconcileZooms(
+      timelineWordsAfterEmphasis,
+      edits,
+    );
+    edits = [...edits, ...slowZooms];
+    console.log(`[create] pacing slowZooms=${slowZooms.length}`);
+  } catch (error) {
+    console.warn(
+      "[create] pacing reconcile AI soft-failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  try {
+    const packAssetIds = [...new Set(AI_SFX_PACK.map((v) => v.assetId))];
+    const sfxRows =
+      packAssetIds.length > 0
+        ? await db
+            .select({
+              id: assets.id,
+              durationSec: assets.durationSec,
+            })
+            .from(assets)
+            .where(inArray(assets.id, packAssetIds))
+        : [];
+    const durationBySfxId = new Map(
+      sfxRows.map((r) => [r.id, r.durationSec]),
+    );
+    const sfxEdits = await generateCompanionSfxEdits(
+      timelineWordsAfterEmphasis,
+      edits,
+      (assetId) => durationBySfxId.get(assetId) ?? null,
+    );
+    edits = [...edits, ...sfxEdits];
+    console.log(`[create] companionSfx=${sfxEdits.length}`);
+  } catch (error) {
+    console.warn(
+      "[create] companion SFX AI soft-failed:",
       error instanceof Error ? error.message : error,
     );
   }

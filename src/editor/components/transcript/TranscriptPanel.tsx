@@ -106,7 +106,7 @@ export function TranscriptPanel() {
             clearSelection();
           }}
         >
-          <div className="px-6 py-5 text-[18px] leading-[1.85] tracking-wide">
+          <div className="px-6 py-5 text-[18px] leading-[1.85]">
             {words.length === 0 ? (
               <p className="text-sm text-muted-foreground">No transcript words.</p>
             ) : (

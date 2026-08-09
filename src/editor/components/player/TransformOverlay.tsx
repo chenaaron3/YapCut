@@ -9,7 +9,7 @@ import {
   type SnapGuide,
   type Transform,
 } from "~/domain/transform";
-import { useEditableBroll } from "~/editor/lib/use-editable-broll";
+import { useEditableTransform } from "~/editor/lib/use-editable-transform";
 import { useEditor } from "~/editor/store";
 import {
   COMPOSITION_HEIGHT,
@@ -34,13 +34,14 @@ function clientToComp(
 
 /**
  * HTML overlay on the Remotion player for drag move / scale / rotate.
+ * Works for selected b-roll or zoom under the playhead.
  */
 export function TransformOverlay({
   onDraggingChange,
 }: {
   onDraggingChange?: (dragging: boolean) => void;
 }) {
-  const editable = useEditableBroll();
+  const editable = useEditableTransform();
   const patchEdit = useEditor((s) => s.patchEdit);
   const beginGesture = useEditor((s) => s.beginGesture);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -100,7 +101,7 @@ export function TransformOverlay({
         });
         setGuides(snapped.guides);
         patchEdit(
-          current.edit.id,
+          current.editId,
           { offsetX: snapped.offsetX, offsetY: snapped.offsetY },
           true,
         );
@@ -123,7 +124,7 @@ export function TransformOverlay({
           }),
         );
         setGuides([]);
-        patchEdit(current.edit.id, { scale }, true);
+        patchEdit(current.editId, { scale }, true);
         return;
       }
 
@@ -136,7 +137,7 @@ export function TransformOverlay({
       const nearest = Math.round(rotation / rotSnap) * rotSnap;
       if (Math.abs(rotation - nearest) <= 8) rotation = nearest;
       setGuides([]);
-      patchEdit(current.edit.id, { rotation }, true);
+      patchEdit(current.editId, { rotation }, true);
     };
 
     const onUp = () => {
@@ -170,7 +171,7 @@ export function TransformOverlay({
     if (!root) return;
     const rect = root.getBoundingClientRect();
     const { x, y } = clientToComp(e.clientX, e.clientY, rect);
-    const origin = transformOf(editable.edit);
+    const origin = transformOf(editable.transform);
     const cx = COMPOSITION_WIDTH / 2 + origin.offsetX * COMPOSITION_WIDTH;
     const cy = COMPOSITION_HEIGHT / 2 + origin.offsetY * COMPOSITION_HEIGHT;
     beginGesture();
@@ -199,7 +200,7 @@ export function TransformOverlay({
   return (
     <div
       ref={rootRef}
-      className="pointer-events-none absolute inset-0 z-10"
+      className="pointer-events-none absolute inset-0 z-50 overflow-visible"
     >
       {guides.map((g) =>
         g.orientation === "x" ? (

@@ -60,9 +60,23 @@ function useGlobalShortcuts() {
         togglePlayback();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
+        if (
+          !e.shiftKey &&
+          selection.selection?.kind === "word" &&
+          editor.seekAdjacentWord(-1)
+        ) {
+          return;
+        }
         editor.seekBySeconds(e.shiftKey ? -0.1 : -1);
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
+        if (
+          !e.shiftKey &&
+          selection.selection?.kind === "word" &&
+          editor.seekAdjacentWord(1)
+        ) {
+          return;
+        }
         editor.seekBySeconds(e.shiftKey ? 0.1 : 1);
       }
     };
@@ -251,7 +265,7 @@ export function EditorShell({ projectId }: Props) {
         </div>
       ) : null}
 
-      <div className="grid min-h-0 min-w-0 grid-cols-[200px_minmax(0,1fr)_280px] overflow-hidden border-b border-border">
+      <div className="grid min-h-0 min-w-0 grid-cols-[200px_minmax(0,1fr)_280px] border-b border-border">
         <AssetsPanel />
         <TranscriptPanel />
         <PlayerPanel />

@@ -19,9 +19,10 @@ import { sfxSeed } from "~/domain/sfx";
 import type { TimelineTime } from "~/domain/time";
 import { withTransform } from "~/domain/transform";
 
+export { DEFAULT_ZOOM_SCALE } from "~/domain/zoom";
+
 const EPS = 0.001;
 const MIN_RANGE_SEC = 0.05;
-export const DEFAULT_ZOOM_SCALE = 1.1;
 
 /** External facts needed at place/patch time (lives outside ProjectConfig). */
 export type PlaceEditContext = {
@@ -188,6 +189,7 @@ const PLAIN_PATCH_KEYS = [
   "valueText",
   "hideCaptions",
   "style",
+  "ease",
 ] as const;
 
 function applyPlainPatch(edit: Edit, patch: EditPatch): Edit {
@@ -216,12 +218,8 @@ function applyTransformPatch(edit: Edit, patch: EditPatch): Edit {
     tPatch.rotation = patch.rotation;
   }
   if (Object.keys(tPatch).length === 0) return edit;
-
-  if (hasTransform(edit)) return withTransform(edit, tPatch);
-  if (typeof tPatch.scale === "number") {
-    return { ...edit, scale: tPatch.scale } as Edit;
-  }
-  return edit;
+  if (!hasTransform(edit)) return edit;
+  return withTransform(edit, tPatch);
 }
 
 function applyMediaPatch(

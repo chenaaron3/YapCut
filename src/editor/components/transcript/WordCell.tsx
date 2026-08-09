@@ -1,29 +1,28 @@
 import { useState } from "react";
 
-import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
 import { quoteSeed } from "~/domain/quote";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
+import { zoomSeed } from "~/domain/zoom";
 import { EditMarker } from "~/editor/components/transcript/EditMarker";
-import {
-  RangeHandle,
-  type ResizeEdge,
-} from "~/editor/components/transcript/RangeHandle";
+import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
 import { WordContextMenu } from "~/editor/components/transcript/WordContextMenu";
 import { chromeByKey } from "~/editor/lib/edit-chrome";
 import {
   assetDropKindFromTypes,
   placeEditFromAssetDrop,
-  type AssetDropKind,
 } from "~/editor/lib/place-asset-drop";
 import { isSelected } from "~/editor/lib/selection";
 import {
   isMarkerRole,
   resolvePrimarySpan,
-  type WordAnnotation,
 } from "~/editor/lib/word-annotations";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
+
+import type { GlobalTranscriptWord } from "~/domain/transcript";
+import type { ResizeEdge } from "~/editor/components/transcript/RangeHandle";
+import type { AssetDropKind } from "~/editor/lib/place-asset-drop";
+import type { WordAnnotation } from "~/editor/lib/word-annotations";
 
 type Props = {
   word: GlobalTranscriptWord;
@@ -64,7 +63,7 @@ export function WordCell({
   if (editing) {
     return (
       <input
-        className="m-0 mx-[2px] inline rounded-sm bg-panel-2 px-[2px] py-px font-[inherit] text-[inherit] leading-[inherit] text-[#e8eaef] outline outline-2 outline-accent"
+        className="bg-panel-2 outline-accent m-0 mx-px inline rounded-sm px-0.5 py-px font-[inherit] leading-[inherit] text-[#e8eaef] text-[inherit] outline outline-2"
         value={draft}
         autoFocus
         onChange={(e) => setDraft(e.target.value)}
@@ -98,7 +97,10 @@ export function WordCell({
         />
       ))}
 
-      <span className="relative inline-block" data-word-index={word.globalIndex}>
+      <span
+        className="relative inline-block"
+        data-word-index={word.globalIndex}
+      >
         <RangeHandle
           edge="start"
           span={primary}
@@ -117,12 +119,7 @@ export function WordCell({
           onEmphasis={() =>
             patchWord(word.globalIndex, { emphasized: !word.emphasized })
           }
-          onZoom={() =>
-            placeEditOnWord(word.globalIndex, {
-              kind: "zoom",
-              scale: DEFAULT_ZOOM_SCALE,
-            })
-          }
+          onZoom={() => placeEditOnWord(word.globalIndex, zoomSeed())}
           onQuote={() => placeEditOnWord(word.globalIndex, quoteSeed())}
           onDelete={() => cutWord(word.globalIndex)}
         >
@@ -130,15 +127,15 @@ export function WordCell({
             role="button"
             tabIndex={0}
             className={cn(
-              "relative mx-[2px] cursor-pointer rounded px-[2px] transition-colors select-none",
-              word.inGap && "opacity-40 line-through",
+              "relative mx-px cursor-pointer rounded px-0.5 transition-colors select-none",
+              word.inGap && "line-through opacity-40",
               word.emphasized && "font-semibold text-amber-300",
               selected && "bg-primary/35",
               !selected && primaryChrome?.underlineClass,
               primarySelected && primaryChrome?.highlightClass,
-              dropActive === "broll" && "bg-broll/30 ring-1 ring-broll",
-              dropActive === "sfx" && "bg-sfx/30 ring-1 ring-sfx",
-              dropActive === "vfx" && "bg-vfx/30 ring-1 ring-vfx",
+              dropActive === "broll" && "bg-broll/30 ring-broll ring-1",
+              dropActive === "sfx" && "bg-sfx/30 ring-sfx ring-1",
+              dropActive === "vfx" && "bg-vfx/30 ring-vfx ring-1",
             )}
             onMouseDown={(e) => onWordDragStart?.(e)}
             onClick={(e) => {

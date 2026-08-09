@@ -37,10 +37,16 @@ export function editHidesCaptions(
   );
 }
 
-export type ZoomEdit = EditBase & {
-  kind: "zoom";
-  scale?: number;
-};
+/**
+ * Zoom = timeline range + end-keyframe transform.
+ * Start is always identity; `ease` interpolates identity → end over the range
+ * (omit/false = hard snap to end for the whole range).
+ */
+export type ZoomEdit = EditBase &
+  Transform & {
+    kind: "zoom";
+    ease?: boolean;
+  };
 
 export type VfxTextEdit = EditBase & {
   kind: "vfx";
@@ -159,10 +165,19 @@ const editBaseSchema = z.object({
   end: z.number(),
 });
 
-const zoomEditSchema = editBaseSchema.extend({
-  kind: z.literal("zoom"),
-  scale: z.number().optional(),
-});
+const zoomEditSchema = editBaseSchema
+  .merge(
+    z.object({
+      scale: z.number().default(1.1),
+      offsetX: z.number().default(0),
+      offsetY: z.number().default(0),
+      rotation: z.number().default(0),
+    }),
+  )
+  .extend({
+    kind: z.literal("zoom"),
+    ease: z.boolean().optional(),
+  });
 
 const vfxTextEditSchema = editBaseSchema.extend({
   kind: z.literal("vfx"),

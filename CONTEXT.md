@@ -25,8 +25,8 @@ Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set
 _Avoid_: is_visual / is_audio booleans, public URLs as source of truth
 
 **Transcript**:
-Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment.
-_Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis
+Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: sparse in open captions, denser (most content words) inside a quote punch phrase.
+_Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type
 
 **Aroll keep** (`ArollKeep`):
 One segment to keep from an A-roll asset: `{ assetId, start, end }` in **local** asset time. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the timeline / output. Keeps for the same asset are **contiguous** in that list (no interleaving another asset between two keeps of one asset — you cannot cut part of a clip and place it after a different asset).
@@ -50,11 +50,43 @@ _Avoid_: uuid, array index, string ids
 ```
 broll | sfx | zoom | vfx
 ```
-- **zoom** — punch-in (scale)
-- **vfx** — `type: "quote" | "text"` only (listicle deferred; location/shake/cutout out of scope)
+- **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
+- **vfx** — `type: "quote" | "text" | "listicle"` (location/shake/cutout out of scope)
+
+**Punch-in**:
+Hard zoom (`ease` false/omitted). Create zoom AI prefers these as intentional camera hits.
+_Avoid_: treating every zoom as a punch-in
+
+**Slow zoom**:
+Eased zoom used by **pacing reconcile** on bare sentences (no overlapping edits, ≥5 words) when the LLM says yes — covers the entire sentence.
+_Avoid_: filling dry stretches with standalone SFX; partial-sentence slow zooms
+
+**Punch phrase**:
+Short high-impact word span for a quote VFX (~3–8 words), not a full sentence.
+_Avoid_: quote-as-paragraph, quote overlapping listicle
+
+**Companion SFX**:
+An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak emphasis, listicle indicator/value). Optional per candidate (`none` allowed). Not used to plug pacing gaps.
+_Avoid_: nesting SFX on zoom/vfx; free-placement SFX as gap filler; SFX on sparse outer emphasis; SFX on slow zooms
+
+**AI SFX pack**:
+Curated role → flavor variants (id, intensity, description) for create AI only. Roles: `motion` (punch-in), `ping` (quote peak), `reveal` (listicle indicator), `tick` (listicle value). Each variant stores a global Asset id. Distinct from the full manual global SFX library.
+_Avoid_: letting the LLM choose from the entire global library; `texture` roles (typing/flash) in v1; resolving pack entries by filename
+
+**Beat**:
+A visible or audible onset that resets pacing: punch-in start, quote start, listicle indicator start and value middle (when staggered), emphasized word start, seeded title `vfx/text` start. Target: about one beat every ~3s of keep/output time (~2s in the **hook**).
+_Avoid_: counting only edits (emphasis counts); using SFX to satisfy the floor; measuring across deleted gap cells
+
+**Hook**:
+Opening ~10s of keep/output time; heavier editing (tighter beat target, bias toward early punch-in and/or quote).
+_Avoid_: undefined “intro”; applying hook density to the whole video
+
+**Pacing reconcile**:
+Create AI pass after visual set pieces + emphasis: code lists bare sentences (≥5 words, no overlapping edits); LLM returns yes/no per sentence; yes → slow zoom over the full sentence.
+_Avoid_: early zoom step owning slow fillers; gap-index / partial-phrase slow zooms; reconcile inventing standalone SFX
 
 **TemplateStyle**:
-`{ templateId, overrides? }` — catalog base + sparse user overrides. Used by Project field `captions` and by `vfx` quote/text. Resolve at props time; do not persist fully resolved style.
+`{ templateId, overrides? }` — catalog base + sparse user overrides. Used by Project fields `captions` / `listicleStyle` and by `vfx` quote/text. Resolve at props time; do not persist fully resolved style.
 _Avoid_: parallel `captionTemplateId` + `captionStyle` fields, dumping resolved style into config
 
 **No-op default / Place seed**:
@@ -130,7 +162,14 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 1. Presigned upload → Project + Assets (`processing`)
 2. WhisperX per A-roll video (language autodetect, diarization off) → Transcript rows
 3. Keep builder (long gaps) → `arolls`
-4. AI assist (always on, create-only): title if empty → `Project.title` + seed `vfx/text`; zooms → `zoom` edits; emphasis → boolean on transcript words — all on **timeline projected** transcript
+4. AI assist (always on, create-only), on **timeline projected** transcript:
+   1. title if empty → `Project.title` + seed `vfx/text`
+   2. punch-in zooms
+   3. listicles
+   4. quotes (punch phrases; greedy ~every 4–5s when punch lines exist; no overlap with listicle; may overlap text/zoom)
+   5. emphasis (sparse outside quotes; most content words inside quotes)
+   6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
+   7. companion SFX (role + variant from AI SFX pack; 300ms min-gap; priority listicle → quote ping → punch-in motion)
 5. Seed default `captions` TemplateStyle → `ready`
 
 **Export workflow**:
@@ -144,6 +183,8 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - Edits use timeline time; arolls use local time; Remotion maps timeline → output
 - On-screen title is a `vfx`/`text` Edit (seeded, deletable); `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
+- Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
+- Companion SFX are sibling `sfx` edits; AI chooses optional variants from the AI SFX pack only
 
 ## Composition matrix (v1)
 
@@ -154,18 +195,19 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 | zoom | Edit | yes | Edit cell | Zoom |
 | vfx/quote | Edit | yes | Edit cell | Caption style override (+ text as applicable) |
 | vfx/text | Edit | yes | Edit cell | Text overlay |
+| vfx/listicle | Edit | yes | Edit cell | Listicle overlay (shared `listicleStyle`) |
 | captions | Project field | no | optional track | Text overlay (words from projection) |
 | arolls | topology | — | Keep/gap cells | A-roll Media |
 | emphasis | Transcript word flag | (caption styling) | — | caption word style |
 
 ## Deprioritized / out of scope
 
-- Listicle (+ marker/reveal)
 - Location VFX, shake VFX, cutout greenscreen
 - Music (Project field later)
 - LLM regenerate-in-editor; listicle/emphasis process flags
 - Teams/sharing; user upload to global library
 - Per-project dimensions/fps
+- Standalone AI SFX (non-companion); AI `texture` SFX roles; SFX on slow zooms / sparse outer emphasis
 
 ## Flagged ambiguities
 
@@ -173,3 +215,6 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid
 - ~~Overlapping idle underlines: stack vs priority~~ → **priority**: all start markers show; underline/highlight/handles use one primary (selected wins, else earlier entry in `EDIT_CHROME`)
+- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority listicle → quote ping → punch-in motion
+- ~~Aggressive quote cadence hard quota vs soft~~ → **greedy soft prompt** (~every 4–5s when punch lines exist)
+

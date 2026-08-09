@@ -1,4 +1,6 @@
+import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
+  applyCaptionOverrides,
   QUOTE_CAPTION_Y,
   type CaptionGroupStyle,
 } from "~/remotion/captions/style";
@@ -89,14 +91,14 @@ export const LISTICLE_TEMPLATES: Record<ListicleTemplateId, ListicleTemplate> =
         ...LISTICLE_TEXT_BASE,
         fontSize: 56,
         textTransform: "uppercase",
-        background: { kind: "box", color: "#5ED4DC" },
+        background: { kind: "wrap", color: "#5ED4DC" },
         wordStyle: { fill: "#111111", opacity: 1 },
       },
       style: {
         ...LISTICLE_TEXT_BASE,
         fontSize: 56,
         textTransform: "uppercase",
-        background: { kind: "box", color: "#5ED4DC" },
+        background: { kind: "wrap", color: "#5ED4DC" },
         wordStyle: { fill: "#111111", opacity: 1 },
       },
     },
@@ -114,7 +116,10 @@ export function resolveListicleTemplate(
   );
 }
 
-export function resolveListicleTextStyles(templateId: string): {
+export function resolveListicleTextStyles(
+  templateId: string,
+  overrides?: Record<string, unknown>,
+): {
   indicator: CaptionGroupStyle;
   value: CaptionGroupStyle;
   stacked: boolean;
@@ -123,9 +128,10 @@ export function resolveListicleTextStyles(templateId: string): {
     ? templateId
     : DEFAULT_LISTICLE_TEMPLATE_ID;
   const template = resolveListicleTemplate(tid);
+  const normalized = normalizeCaptionOverrides(overrides);
   return {
-    indicator: template.indicatorStyle,
-    value: template.valueStyle,
+    indicator: applyCaptionOverrides(template.indicatorStyle, normalized),
+    value: applyCaptionOverrides(template.valueStyle, normalized),
     stacked: template.stacked,
   };
 }

@@ -1,14 +1,12 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import {
-  DEFAULT_SFX_VOLUME,
-  SFX_DRAG_MIME,
-  type SfxDragPayload,
-} from "~/domain/sfx";
+import { DEFAULT_SFX_VOLUME, SFX_DRAG_MIME } from "~/domain/sfx";
 import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
-import type { EditorAsset } from "~/editor/store";
 import { cn } from "~/lib/utils";
+
+import type { SfxDragPayload } from "~/domain/sfx";
+import type { EditorAsset } from "~/editor/store";
 
 const FOLDER_ORDER = ["meme", "beep-bop", "realistic", "general"] as const;
 
@@ -81,7 +79,7 @@ function SfxRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-lg border border-border bg-panel-2 px-2 py-1.5 select-none",
+        "border-border bg-panel-2 flex items-center gap-2 rounded-lg border px-2 py-1.5 select-none",
         canDrag && "cursor-grab active:cursor-grabbing",
       )}
       draggable={canDrag}
@@ -103,7 +101,7 @@ function SfxRow({
     >
       <button
         type="button"
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-sfx/25 text-sfx hover:bg-sfx/40"
+        className="bg-sfx/25 text-sfx hover:bg-sfx/40 flex h-7 w-7 shrink-0 items-center justify-center rounded"
         onClick={(e) => {
           e.stopPropagation();
           onPreview(asset.id, asset.playbackUrl, DEFAULT_SFX_VOLUME);
@@ -112,11 +110,11 @@ function SfxRow({
       >
         {playingKey === asset.id ? "■" : "▶"}
       </button>
-      <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+      <span className="text-foreground min-w-0 flex-1 truncate text-[11px]">
         {label}
       </span>
       {asset.durationSec != null ? (
-        <span className="shrink-0 text-[10px] text-muted-foreground">
+        <span className="text-muted-foreground shrink-0 text-[10px]">
           {asset.durationSec.toFixed(1)}s
         </span>
       ) : null}
@@ -135,7 +133,7 @@ export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
 
   if (assets.length === 0) {
     return (
-      <p className="p-2.5 text-xs text-muted-foreground">
+      <p className="text-muted-foreground p-2.5 text-xs">
         No global SFX seeded. Run{" "}
         <code className="text-[10px]">npm run seed:global-sfx</code>.
       </p>
@@ -148,13 +146,11 @@ export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
         const key = group.folder ?? "__other__";
         const isOpen = open[key] ?? true;
         return (
-          <div key={key} className="rounded-md border border-border/60">
+          <div key={key} className="border-border/60 rounded-md border">
             <button
               type="button"
-              className="flex w-full items-center gap-1 px-2 py-1.5 text-left text-[11px] font-medium text-muted-foreground hover:text-foreground"
-              onClick={() =>
-                setOpen((prev) => ({ ...prev, [key]: !isOpen }))
-              }
+              className="text-muted-foreground hover:text-foreground flex w-full items-center gap-1 px-2 py-1.5 text-left text-[11px] font-medium"
+              onClick={() => setOpen((prev) => ({ ...prev, [key]: !isOpen }))}
             >
               <ChevronRight
                 className={cn(
@@ -182,9 +178,6 @@ export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
           </div>
         );
       })}
-      <p className="px-1 pt-1 text-[10px] text-muted-foreground">
-        Drag onto the transcript to place.
-      </p>
     </div>
   );
 }

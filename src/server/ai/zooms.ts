@@ -8,18 +8,16 @@ import {
 import type { ZoomEdit } from "~/domain/project-config";
 import { nextEditId } from "~/domain/project-config";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
+import { TRANSFORM_DEFAULTS } from "~/domain/transform";
+import {
+  ZOOM_MAX_DURATION_SEC,
+  ZOOM_MIN_DURATION_SEC,
+  ZOOM_STRENGTH,
+} from "~/domain/zoom";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
 const MAX_ZOOMS = 10;
-const MIN_DURATION_SEC = 0.8;
-const MAX_DURATION_SEC = 3;
 const MIN_GAP_SEC = 2;
-
-export const PUNCH_IN_STRENGTH = {
-  light: 1.05,
-  medium: 1.1,
-  strong: 1.15,
-} as const;
 
 export const ZoomDetectionSchema = z.object({
   punchIns: z
@@ -29,18 +27,18 @@ export const ZoomDetectionSchema = z.object({
           .number()
           .int()
           .nonnegative()
-          .describe("First word of the emphasized phrase"),
+          .describe("First word of the punch-in phrase"),
         endWordIndex: z
           .number()
           .int()
           .nonnegative()
-          .describe("Last word of the emphasized phrase"),
+          .describe("Last word of the punch-in phrase"),
         strength: z
           .enum(["light", "medium", "strong"])
           .describe("light ≈ 1.05x, medium ≈ 1.10x, strong ≈ 1.15x"),
         reason: z
           .string()
-          .describe("Why this moment deserves emphasis, one short sentence"),
+          .describe("Why this moment deserves a hard punch-in, one short sentence"),
       }),
     )
     .max(MAX_ZOOMS),
@@ -53,7 +51,11 @@ export function detectionToZoomEdits(
   words: readonly GlobalTranscriptWord[],
   existingEdits: readonly { id: number }[],
 ): ZoomEdit[] {
-  const mapped: Array<{ start: number; end: number; scale: number }> = [];
+  const mapped: Array<{
+    start: number;
+    end: number;
+    scale: number;
+  }> = [];
 
   for (const item of detection.punchIns.slice(0, MAX_ZOOMS)) {
     if (item.endWordIndex < item.startWordIndex) continue;
@@ -64,13 +66,13 @@ export function detectionToZoomEdits(
     if (endRaw < start) continue;
 
     const duration = Math.min(
-      MAX_DURATION_SEC,
-      Math.max(MIN_DURATION_SEC, endRaw - start),
+      ZOOM_MAX_DURATION_SEC,
+      Math.max(ZOOM_MIN_DURATION_SEC, endRaw - start),
     );
     mapped.push({
       start,
       end: start + duration,
-      scale: PUNCH_IN_STRENGTH[item.strength],
+      scale: ZOOM_STRENGTH[item.strength],
     });
   }
 
@@ -91,6 +93,9 @@ export function detectionToZoomEdits(
       start: zoom.start,
       end: zoom.end,
       scale: zoom.scale,
+      offsetX: TRANSFORM_DEFAULTS.offsetX,
+      offsetY: TRANSFORM_DEFAULTS.offsetY,
+      rotation: TRANSFORM_DEFAULTS.rotation,
     };
     nextId += 1;
     return edit;
@@ -109,9 +114,11 @@ async function callOpenAI(
       {
         role: "system",
         content: [
-          "You pick moments in a talking-head transcript where a quick camera punch-in (zoom) would add impact.",
-          "Look for hooks, payoffs, surprising statements, and key numbers.",
-          "Return word indices into the numbered transcript: startWordIndex is the first word of the emphasized phrase, endWordIndex the last word.",
+          "You pick hard punch-in camera zooms for a talking-head transcript.",
+          "Only hard punch-ins: instant snap on short punchy phrases, hooks, numbers, one-liners.",
+          "Do NOT place slow push-ins — a later pacing step handles those.",
+          "Bias heavier editing in the first ~10 seconds (hook).",
+          "Return word indices into the numbered transcript.",
           "Prefer short phrases of a few words over whole sentences.",
           'Use strength "strong" only for the biggest moments; otherwise prefer "light" or "medium".',
           "Give a one-sentence reason for each pick.",
@@ -137,7 +144,7 @@ async function callOpenAI(
   return parsed;
 }
 
-/** Detect zoom moments and return global-time zoom edits. */
+/** Detect punch-in zoom moments and return timeline zoom edits. */
 export async function generateZoomEdits(
   words: readonly GlobalTranscriptWord[],
   existingEdits: readonly { id: number }[],

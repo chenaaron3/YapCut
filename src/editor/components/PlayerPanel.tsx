@@ -30,6 +30,7 @@ function FrameCounter({ durationInFrames }: { durationInFrames: number }) {
 export function PlayerPanel() {
   const props = useEditor((s) => s.props);
   const seekFrame = useEditor((s) => s.seekFrame);
+  const syncActiveWord = useEditor((s) => s.syncActiveWord);
   const ref = useRef<PlayerRef | null>(null);
   const seekTargetRef = useRef<number | null>(null);
   const [overlayDragging, setOverlayDragging] = useState(false);
@@ -57,13 +58,16 @@ export function PlayerPanel() {
         return;
       }
       seekFrame(current);
+      if (player.isPlaying()) {
+        syncActiveWord();
+      }
     };
 
     player.addEventListener("frameupdate", onUpdate);
     return () => {
       player.removeEventListener("frameupdate", onUpdate);
     };
-  }, [seekFrame, inputProps]);
+  }, [seekFrame, syncActiveWord, inputProps]);
 
   useLayoutEffect(() => {
     return useEditor.subscribe((state, prev) => {
@@ -102,10 +106,10 @@ export function PlayerPanel() {
   const durationInFrames = Math.max(1, inputProps.durationInFrames);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0b0c10]">
-      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black">
+    <div className="relative z-20 flex h-full min-h-0 flex-col bg-[#0b0c10]">
+      <div className="relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-visible bg-black">
         <div
-          className="relative h-full max-h-full w-auto max-w-full"
+          className="relative h-full max-h-full w-auto max-w-full overflow-visible"
           style={{
             aspectRatio: `${COMPOSITION_WIDTH} / ${COMPOSITION_HEIGHT}`,
           }}

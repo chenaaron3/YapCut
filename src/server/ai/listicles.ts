@@ -32,9 +32,9 @@ export const ListicleDetectionSchema = z.object({
           .number()
           .int()
           .nonnegative()
-          .optional()
+          .nullable()
           .describe(
-            "First word of the spoken indicator phrase, if a clear spoken indicator exists; omit when there is no good indicator",
+            "First word of the spoken indicator phrase, if a clear spoken indicator exists; null when there is no good indicator",
           ),
         valueText: z
           .string()
@@ -161,7 +161,7 @@ async function callOpenAI(
           "Same pattern for tip two / hack three / number four, etc.",
           "For each item return:",
           `- indicatorText: polished on-screen indicator (Tip #1, No. 1, Hack #1, First) — max ${MAX_INDICATOR_WORDS} words; never trailing particles like is/the/are.`,
-          "- indicatorStartWordIndex: first spoken indicator word when a clear indicator exists; omit when there is no good spoken indicator.",
+          "- indicatorStartWordIndex: first spoken indicator word when a clear indicator exists; null when there is no good spoken indicator.",
           `- valueText: short value in title case (small words a/of/the lowercase unless first/last) — max ${MAX_VALUE_WORDS} words.`,
           "- valueStartWordIndex / valueEndWordIndex: spoken value range; when an indicator exists, prefer the value starting immediately after it (back-to-back).",
           "Return 1+ items when any clear values exist; otherwise items: [].",

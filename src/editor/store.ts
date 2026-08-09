@@ -28,11 +28,12 @@ import {
   type ProjectConfig,
   type TemplateStyle,
 } from "~/domain/project-config";
-import { projectTimelineWords } from "~/domain/projection";
+import { projectTimelineWords, wordIndexAtTimelineSec } from "~/domain/projection";
 import type {
   GlobalTranscriptWord,
   TranscriptWord,
 } from "~/domain/transcript";
+import { primaryId } from "~/editor/lib/selection";
 import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
 import { buildProjectProps } from "~/remotion/build-props";
@@ -105,6 +106,10 @@ type EditorActions = {
   seekTimeline: (timelineSec: number) => void;
   seekFrame: (frame: number) => void;
   seekBySeconds: (delta: number) => void;
+  /** Move selection/playhead to adjacent word when a word is selected. */
+  seekAdjacentWord: (direction: -1 | 1) => boolean;
+  /** While playing, keep the word under the playhead selected. */
+  syncActiveWord: () => void;
   setPxPerSec: (v: number) => void;
 
   // —— History ——
@@ -473,6 +478,35 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       get().seekTimeline(get().timelineSec + delta);
     },
 
+    seekAdjacentWord: (direction) => {
+      const { selection, select } = useSelection.getState();
+      if (selection?.kind !== "word") return false;
+      const words = get().getGlobalWords();
+      const focusId = primaryId(selection);
+      if (focusId == null) return false;
+      const next = focusId + direction;
+      if (next < 0 || next >= words.length) return false;
+      const word = words[next]!;
+      select("word", next);
+      get().seekTimeline(word.start);
+      return true;
+    },
+
+    syncActiveWord: () => {
+      const { timelineSec } = get();
+      const { selection, select } = useSelection.getState();
+      // Keep edit / a-roll selections while scrubbing playhead for preview.
+      if (selection != null && selection.kind !== "word") return;
+      if (selection?.kind === "word" && selection.ids.length > 1) return;
+      const words = get().getGlobalWords();
+      const index = wordIndexAtTimelineSec(timelineSec, words);
+      if (index == null) return;
+      const current =
+        selection?.kind === "word" ? (selection.ids[0] ?? null) : null;
+      if (index === current) return;
+      select("word", index);
+    },
+
     setPxPerSec: (pxPerSec) => set({ pxPerSec }),
 
     beginGesture: () => {
@@ -742,8 +776,14 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { config, transcriptsByAssetId } = get();
       if (!config) return;
       const next = produce(config, (draft) => {
+        const templateId =
+          patch.templateId ?? draft.listicleStyle.templateId;
+        const overrides = patch.overrides ?? draft.listicleStyle.overrides;
         draft.listicleStyle = {
-          templateId: patch.templateId ?? draft.listicleStyle.templateId,
+          templateId,
+          ...(overrides && Object.keys(overrides).length > 0
+            ? { overrides }
+            : {}),
         };
       });
       commit({ config: next, transcriptsByAssetId }, { live });

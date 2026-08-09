@@ -30,7 +30,13 @@ export type ZoomProp = {
   id: number;
   startFrame: number;
   endFrame: number;
+  /** End-keyframe transform (start is always identity). */
   scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  /** Ease identity → end over the range; false = hard snap. */
+  ease: boolean;
 };
 
 export type TextOverlayProp = {

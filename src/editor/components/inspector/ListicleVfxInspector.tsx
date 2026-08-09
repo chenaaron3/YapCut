@@ -1,12 +1,15 @@
 import { clampListicleMiddle } from "~/domain/listicle";
-import { TextField } from "~/editor/components/inspector/field";
+import { SliderField, TextField } from "~/editor/components/inspector/field";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
+import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
+import { applyCaptionOverrides } from "~/remotion/captions/style";
 import {
   DEFAULT_LISTICLE_TEMPLATE_ID,
   isListicleTemplateId,
   LISTICLE_TEMPLATE_LIST,
   resolveListicleTemplate,
+  resolveListicleTextStyles,
 } from "~/remotion/templates/listicle";
 
 import type { VfxListicleEdit } from "~/domain/project-config";
@@ -20,6 +23,9 @@ export function ListicleVfxInspector({ edit }: { edit: VfxListicleEdit }) {
     ? listicleStyle.templateId
     : DEFAULT_LISTICLE_TEMPLATE_ID;
   const template = resolveListicleTemplate(templateId);
+  const overrides = normalizeCaptionOverrides(listicleStyle?.overrides);
+  const styles = resolveListicleTextStyles(templateId, overrides);
+  const fallbackStyle = applyCaptionOverrides(template.style, overrides);
   const staggered = edit.middle != null;
 
   return (
@@ -72,6 +78,31 @@ export function ListicleVfxInspector({ edit }: { edit: VfxListicleEdit }) {
         Hide captions
       </label>
 
+      <SliderField
+        label="Y (safe area)"
+        value={styles.value.y}
+        min={0}
+        max={1}
+        step={0.01}
+        display={styles.value.y.toFixed(2)}
+        onLiveChange={(y) =>
+          patchListicleStyle(
+            {
+              overrides: normalizeCaptionOverrides({ ...overrides, y }),
+            },
+            true,
+          )
+        }
+        onCommit={(y) =>
+          patchListicleStyle(
+            {
+              overrides: normalizeCaptionOverrides({ ...overrides, y }),
+            },
+            true,
+          )
+        }
+      />
+
       <StyleTemplatePicker
         templates={LISTICLE_TEMPLATE_LIST.map((t) => ({
           ...t,
@@ -82,17 +113,22 @@ export function ListicleVfxInspector({ edit }: { edit: VfxListicleEdit }) {
           },
         }))}
         value={templateId}
-        fallbackStyle={template.style}
+        fallbackStyle={fallbackStyle}
         fallbackPair={{
-          indicator: template.indicatorStyle,
-          value: template.valueStyle,
+          indicator: styles.indicator,
+          value: styles.value,
           stacked: template.stacked,
         }}
         onChange={(id) => {
           const tid = isListicleTemplateId(id)
             ? id
             : DEFAULT_LISTICLE_TEMPLATE_ID;
-          patchListicleStyle({ templateId: tid });
+          const kept =
+            overrides.y != null ? { y: overrides.y } : undefined;
+          patchListicleStyle({
+            templateId: tid,
+            overrides: kept,
+          });
         }}
         previewVariant="static"
       />

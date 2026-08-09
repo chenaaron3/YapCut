@@ -14,6 +14,7 @@ import { promisify } from "node:util";
 
 import { eq, isNull } from "drizzle-orm";
 
+import { AI_SFX_PACK } from "~/domain/ai-sfx-pack";
 import { db } from "~/server/db";
 import { assets } from "~/server/db/schema";
 import { globalSfxKey } from "~/server/media/keys";
@@ -152,6 +153,28 @@ async function main() {
       updated += 1;
       console.log(`  update  ${relativePath} duration=${durationSec.toFixed(3)}s`);
     }
+  }
+
+  const globalIds = new Set(
+    (
+      await db
+        .select({ id: assets.id })
+        .from(assets)
+        .where(isNull(assets.projectId))
+    ).map((r) => r.id),
+  );
+  const missingPack = AI_SFX_PACK.filter((v) => !globalIds.has(v.assetId));
+  if (missingPack.length) {
+    console.warn(
+      `[seed-global-sfx] AI SFX pack missing ${missingPack.length} asset id(s):`,
+    );
+    for (const v of missingPack) {
+      console.warn(`  - ${v.id} → ${v.assetId}`);
+    }
+  } else {
+    console.log(
+      `[seed-global-sfx] AI SFX pack ok (${AI_SFX_PACK.length} variants)`,
+    );
   }
 
   console.log(

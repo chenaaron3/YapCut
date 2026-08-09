@@ -1,11 +1,12 @@
 import { buildArollLayout, timelineRangeToOutput } from "~/domain/arolls";
-import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
 import {
   editHidesCaptions,
   outputDurationFromArolls,
   PROJECT_FPS,
 } from "~/domain/project-config";
 import { projectOutputWords } from "~/domain/projection";
+import { resolveTransform } from "~/domain/transform";
+import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/zoom";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
 import {
@@ -252,6 +253,12 @@ function buildZooms(
     if (e.kind !== "zoom") continue;
     const range = timelineRangeToOutput(cells, e);
     if (!range) continue;
+    const t = resolveTransform({
+      scale: e.scale ?? DEFAULT_ZOOM_SCALE,
+      offsetX: e.offsetX,
+      offsetY: e.offsetY,
+      rotation: e.rotation,
+    });
     out.push({
       id: e.id,
       startFrame: secToFrame(range.start, fps),
@@ -259,7 +266,11 @@ function buildZooms(
         secToFrame(range.start, fps) + 1,
         secToFrame(range.end, fps),
       ),
-      scale: e.scale ?? DEFAULT_ZOOM_SCALE,
+      scale: t.scale,
+      offsetX: t.offsetX,
+      offsetY: t.offsetY,
+      rotation: t.rotation,
+      ease: resolveZoomEase(e.ease),
     });
   }
   return out;
@@ -297,7 +308,10 @@ function buildListicleOverlays(
   const templateId = isListicleTemplateId(config.listicleStyle.templateId)
     ? config.listicleStyle.templateId
     : DEFAULT_LISTICLE_TEMPLATE_ID;
-  const styles = resolveListicleTextStyles(templateId);
+  const styles = resolveListicleTextStyles(
+    templateId,
+    config.listicleStyle.overrides,
+  );
   const out: ListicleOverlayProp[] = [];
 
   for (const e of config.edits) {
