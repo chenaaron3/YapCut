@@ -3,6 +3,7 @@ import { Video } from "@remotion/media";
 
 import { BRollOverlay } from "~/remotion/components/BRollOverlay";
 import { Captions } from "~/remotion/components/Captions";
+import { ListicleOverlay } from "~/remotion/components/ListicleOverlay";
 import { SfxAudio } from "~/remotion/components/SfxAudio";
 import { TextOverlay } from "~/remotion/components/TextOverlay";
 import { Zoom } from "~/remotion/components/Zoom";
@@ -38,6 +39,7 @@ export function TalkingHead({
   captionGroups,
   zooms,
   textOverlays,
+  listicleOverlays,
   brolls,
   sfx,
 }: TalkingHeadProps) {
@@ -52,6 +54,7 @@ export function TalkingHead({
       </Zoom>
       <BRollOverlay brolls={brolls} />
       <TextOverlay overlays={textOverlays} />
+      <ListicleOverlay overlays={listicleOverlays} />
       <Captions groups={captionGroups} />
       <SfxAudio sfx={sfx} />
     </AbsoluteFill>

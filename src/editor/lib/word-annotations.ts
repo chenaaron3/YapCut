@@ -1,3 +1,4 @@
+import { isListicleEdit } from "~/domain/listicle";
 import type { Edit, EditId } from "~/domain/project-config";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import {
@@ -7,7 +8,19 @@ import {
 } from "~/editor/lib/edit-chrome";
 import { isSelected, type Selection } from "~/editor/lib/selection";
 
-export type RangeRole = "start" | "middle" | "end" | "both" | "point";
+/**
+ * `split` = listicle indicator→value boundary (middle handle).
+ * `split-start` / `split-end` = split coincides with start/end word.
+ */
+export type RangeRole =
+  | "start"
+  | "middle"
+  | "split"
+  | "split-start"
+  | "split-end"
+  | "end"
+  | "both"
+  | "point";
 
 /** One Edit covering (or pinned to) a transcript word. */
 export type WordEditSpan = {
@@ -85,11 +98,38 @@ export function buildWordAnnotations(
     // Annotate start / middle / end (or both) on each covered word.
     const first = covered[0]!.globalIndex;
     const last = covered[covered.length - 1]!.globalIndex;
+
+    let splitIndex: number | null = null;
+    if (
+      isListicleEdit(edit) &&
+      edit.middle != null &&
+      covered.length > 1
+    ) {
+      // Middle is an end-of-word boundary: pin the handle on the last
+      // covered word that ends at/before the split (indicator side).
+      const splitWord =
+        [...covered]
+          .filter((w) => w.end <= edit.middle! + 0.001)
+          .at(-1) ??
+        covered.find(
+          (w) =>
+            w.start < edit.middle! + 0.001 && w.end > edit.middle! - 0.001,
+        ) ??
+        covered[0]!;
+      splitIndex = splitWord.globalIndex;
+    }
+
     for (const w of covered) {
+      let role = roleForIndex(w.globalIndex, first, last);
+      if (splitIndex != null && w.globalIndex === splitIndex) {
+        if (w.globalIndex === first) role = "split-start";
+        else if (w.globalIndex === last) role = "split-end";
+        else role = "split";
+      }
       pushSpan(map, w.globalIndex, {
         editId: edit.id,
         chromeKey: chrome.key,
-        role: roleForIndex(w.globalIndex, first, last),
+        role,
       });
     }
   }
@@ -98,15 +138,36 @@ export function buildWordAnnotations(
 }
 
 export function isMarkerRole(role: RangeRole): boolean {
-  return role === "start" || role === "both" || role === "point";
+  return (
+    role === "start" ||
+    role === "both" ||
+    role === "point" ||
+    role === "split-start"
+  );
 }
 
 export function isStartHandleRole(role: RangeRole): boolean {
-  return role === "start" || role === "both" || role === "point";
+  return (
+    role === "start" ||
+    role === "both" ||
+    role === "point" ||
+    role === "split-start"
+  );
 }
 
 export function isEndHandleRole(role: RangeRole): boolean {
-  return role === "end" || role === "both" || role === "point";
+  return (
+    role === "end" ||
+    role === "both" ||
+    role === "point" ||
+    role === "split-end"
+  );
+}
+
+export function isSplitHandleRole(role: RangeRole): boolean {
+  return (
+    role === "split" || role === "split-start" || role === "split-end"
+  );
 }
 
 /**

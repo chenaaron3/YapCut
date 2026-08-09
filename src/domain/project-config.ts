@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 import type { LocalTime, TimelineTime } from "~/domain/time";
 
@@ -18,6 +18,25 @@ export type EditBase = TimelineTime & {
   id: EditId;
 };
 
+/**
+ * Mixin for edits that can suppress spoken captions under their timeline range.
+ * Opt in per edit type (listicle today; others can intersect later).
+ */
+export type CanHideCaptions = {
+  /** When true, hide spoken captions under [start, end]. */
+  hideCaptions: boolean;
+};
+
+/** True when this edit opts into caption hiding and the flag is on. */
+export function editHidesCaptions(
+  edit: EditBase,
+): edit is EditBase & CanHideCaptions {
+  return (
+    "hideCaptions" in edit &&
+    (edit as CanHideCaptions).hideCaptions === true
+  );
+}
+
 export type ZoomEdit = EditBase & {
   kind: "zoom";
   scale?: number;
@@ -35,6 +54,21 @@ export type VfxQuoteEdit = EditBase & {
   type: "quote";
   style?: TemplateStyle;
 };
+
+/**
+ * Indicator + value text VFX.
+ * `middle` set → staggered reveal (value joins at middle).
+ * `middle` null → simultaneous (stacked) or value-only (not stacked).
+ */
+export type VfxListicleEdit = EditBase &
+  CanHideCaptions & {
+    kind: "vfx";
+    type: "listicle";
+    /** Timeline sec where value appears; null = not staggered. */
+    middle: number | null;
+    indicatorText: string;
+    valueText: string;
+  };
 
 /** Normalized transform applied at props / overlay time. */
 export type Transform = {
@@ -72,7 +106,7 @@ export type SfxEdit = EditBase &
     kind: "sfx";
   };
 
-export type VfxEdit = VfxTextEdit | VfxQuoteEdit;
+export type VfxEdit = VfxTextEdit | VfxQuoteEdit | VfxListicleEdit;
 
 export type Edit = BrollEdit | SfxEdit | ZoomEdit | VfxEdit;
 
@@ -80,6 +114,11 @@ export type ProjectConfig = {
   arolls: ArollKeep[];
   edits: Edit[];
   captions: TemplateStyle;
+  /**
+   * Shared listicle look (all listicle edits use this).
+   * Preset id only — no per-edit overrides.
+   */
+  listicleStyle: TemplateStyle;
   /**
    * Global audio Asset id placed as a sibling `sfx` edit when dropping b-roll.
    * `null` = no entrance SFX on place.
@@ -92,10 +131,14 @@ export const DEFAULT_TEXT_VFX_DURATION_SEC = 5;
 /** Output fps used for min-keep filtering (matches Remotion composition). */
 export const PROJECT_FPS = 30;
 
+/** Default listicle preset id (see remotion/templates/listicle). */
+export const DEFAULT_LISTICLE_TEMPLATE_ID = "black-board";
+
 export const emptyProjectConfig = (): ProjectConfig => ({
   arolls: [],
   edits: [],
   captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
+  listicleStyle: { templateId: DEFAULT_LISTICLE_TEMPLATE_ID },
   defaultBRollSfxAssetId: null,
 });
 
@@ -134,6 +177,19 @@ const vfxQuoteEditSchema = editBaseSchema.extend({
   style: templateStyleSchema.optional(),
 });
 
+const vfxListicleEditSchema = editBaseSchema.extend({
+  kind: z.literal("vfx"),
+  type: z.literal("listicle"),
+  middle: z
+    .number()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  indicatorText: z.string(),
+  valueText: z.string(),
+  hideCaptions: z.boolean().default(true),
+});
+
 const transformSchema = z.object({
   scale: z.number(),
   offsetX: z.number(),
@@ -168,11 +224,15 @@ export const projectConfigSchema = z.object({
       zoomEditSchema,
       vfxTextEditSchema,
       vfxQuoteEditSchema,
+      vfxListicleEditSchema,
       brollEditSchema,
       sfxEditSchema,
     ]),
   ),
   captions: templateStyleSchema,
+  listicleStyle: templateStyleSchema.default({
+    templateId: DEFAULT_LISTICLE_TEMPLATE_ID,
+  }),
   defaultBRollSfxAssetId: z.string().min(1).nullable().default(null),
 });
 

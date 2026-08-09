@@ -15,7 +15,9 @@ export const StaticGroupView: React.FC<{
   group: CaptionGroupProp;
   frame: number;
   fps: number;
-}> = ({ group, frame, fps }) => {
+  /** Flow layout for stacked listicle pairs (no absolute Y). */
+  embedded?: boolean;
+}> = ({ group, frame, fps, embedded = false }) => {
   const style = group.style ?? DEFAULT_CAPTION_STYLE;
   const animation = style.animation;
 
@@ -30,7 +32,7 @@ export const StaticGroupView: React.FC<{
   const shellStyle: CSSProperties = {
     opacity: groupMotion.opacity,
     transform: [
-      "translateY(-50%)",
+      !embedded ? "translateY(-50%)" : "",
       groupMotion.scale !== 1 ? `scale(${groupMotion.scale})` : "",
       groupMotion.translateY !== 0
         ? `translateY(${groupMotion.translateY}px)`
@@ -41,7 +43,11 @@ export const StaticGroupView: React.FC<{
   };
 
   return (
-    <CaptionGroupLayout group={group} shellStyle={shellStyle}>
+    <CaptionGroupLayout
+      group={group}
+      shellStyle={shellStyle}
+      embedded={embedded}
+    >
       {group.words.map((word, index) => (
         <CaptionWordSpan
           key={`${word.startFrame}-${word.text}-${index}`}

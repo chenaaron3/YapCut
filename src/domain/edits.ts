@@ -122,7 +122,7 @@ function appendEdit(
     id: nextEditId(config.edits),
     start: clamped.start,
     end: clamped.end,
-  };
+  } as Edit;
   const next = produce(config, (draft) => {
     draft.edits.push(placed);
   });
@@ -181,8 +181,12 @@ export type PatchEditContext = PlaceEditContext;
 const PLAIN_PATCH_KEYS = [
   "start",
   "end",
+  "middle",
   "assetId",
   "text",
+  "indicatorText",
+  "valueText",
+  "hideCaptions",
   "style",
 ] as const;
 

@@ -41,6 +41,21 @@ export type TextOverlayProp = {
   style?: TemplateStyle;
 };
 
+/** Baked listicle overlay (timing via middleFrame; layout via stacked). */
+export type ListicleOverlayProp = {
+  id: number;
+  startFrame: number;
+  /** Null = not staggered. */
+  middleFrame: number | null;
+  endFrame: number;
+  indicatorText: string;
+  valueText: string;
+  indicatorStyle: CaptionGroupStyle;
+  valueStyle: CaptionGroupStyle;
+  /** Template: stack indicator above value when both visible. */
+  stacked: boolean;
+};
+
 export type BrollClipProp = {
   id: number;
   startFrame: number;
@@ -77,6 +92,7 @@ export type ProjectProps = {
   captionGroups: CaptionGroupProp[];
   zooms: ZoomProp[];
   textOverlays: TextOverlayProp[];
+  listicleOverlays: ListicleOverlayProp[];
   brolls: BrollClipProp[];
   sfx: SfxClipProp[];
 };

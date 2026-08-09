@@ -1,9 +1,12 @@
-import {
-  QUOTE_CAPTION_Y,
-  type CaptionGroupStyle,
-} from "~/remotion/captions/style";
+import { QUOTE_CAPTION_Y } from '~/remotion/captions/style';
 
-export const TEXT_TEMPLATE_IDS = ["simple-white", "white-board"] as const;
+import type { CaptionGroupStyle } from '~/remotion/captions/style';
+
+export const TEXT_TEMPLATE_IDS = [
+  "simple-white",
+  "simple-black",
+  "white-board",
+] as const;
 
 export type TextTemplateId = (typeof TEXT_TEMPLATE_IDS)[number];
 
@@ -23,7 +26,7 @@ export type TextTemplate = {
 /** Default on-screen text VFX — white board title. */
 export const DEFAULT_TEXT_STYLE: CaptionGroupStyle = {
   fontFamily: "proxima-nova",
-  fontSize: 62,
+  fontSize: 100,
   y: QUOTE_CAPTION_Y,
   animation: "fade",
   textTransform: "none",
@@ -45,7 +48,7 @@ export const TEXT_TEMPLATES: Record<TextTemplateId, TextTemplate> = {
     label: "Simple White",
     style: {
       fontFamily: "proxima-nova",
-      fontSize: 72,
+      fontSize: 100,
       y: QUOTE_CAPTION_Y,
       animation: "fade",
       textTransform: "capitalize",
@@ -55,6 +58,25 @@ export const TEXT_TEMPLATES: Record<TextTemplateId, TextTemplate> = {
       textAlign: "center",
       wordStyle: {
         fill: "#FFFFFF",
+        opacity: 1,
+      },
+    },
+  },
+  "simple-black": {
+    id: "simple-black",
+    label: "Simple Black",
+    style: {
+      fontFamily: "proxima-nova",
+      fontSize: 100,
+      y: QUOTE_CAPTION_Y,
+      animation: "fade",
+      textTransform: "none",
+      captionsAtATime: 1,
+      background: { kind: "none" },
+      fontStyle: "normal",
+      textAlign: "center",
+      wordStyle: {
+        fill: "#111111",
         opacity: 1,
       },
     },

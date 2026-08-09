@@ -22,6 +22,11 @@ export type CaptionGroupLayoutProps = {
   group: CaptionGroupProp;
   /** Outer transform/opacity (e.g. group enter/exit). */
   shellStyle?: CSSProperties;
+  /**
+   * Flow layout for stacked parents (listicle indicator above value).
+   * Skips absolute Y placement.
+   */
+  embedded?: boolean;
   children: ReactNode;
 };
 
@@ -32,6 +37,7 @@ export type CaptionGroupLayoutProps = {
 export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
   group,
   shellStyle,
+  embedded = false,
   children,
 }) => {
   const style = group.style ?? DEFAULT_CAPTION_STYLE;
@@ -76,16 +82,26 @@ export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
 
   return (
     <div
-      style={{
-        position: "absolute",
-        top: `${style.y * 100}%`,
-        left: 0,
-        right: 0,
-        display: "flex",
-        justifyContent: rowJustify(textAlign),
-        transform: "translateY(-50%)",
-        ...shellStyle,
-      }}
+      style={
+        embedded
+          ? {
+              position: "relative",
+              display: "flex",
+              justifyContent: rowJustify(textAlign),
+              width: "100%",
+              ...shellStyle,
+            }
+          : {
+              position: "absolute",
+              top: `${style.y * 100}%`,
+              left: 0,
+              right: 0,
+              display: "flex",
+              justifyContent: rowJustify(textAlign),
+              transform: "translateY(-50%)",
+              ...shellStyle,
+            }
+      }
     >
       <CaptionBackground
         background={background}

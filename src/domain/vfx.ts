@@ -5,7 +5,7 @@ import { quoteSeed } from "~/domain/quote";
 /** DataTransfer MIME for drag-from-Assets → transcript place. */
 export const VFX_DRAG_MIME = "application/x-vfx-preset";
 
-export type VfxPresetType = "quote" | "text";
+export type VfxPresetType = "quote" | "text" | "listicle";
 
 /** Payload for drag-from-Assets → transcript place. */
 export type VfxDragPayload = {
@@ -17,6 +17,7 @@ export type VfxDragPayload = {
 export const VFX_PRESETS: readonly VfxDragPayload[] = [
   { type: "quote", label: "Quote" },
   { type: "text", label: "Text" },
+  { type: "listicle", label: "Listicle" },
 ] as const;
 
 /** Place-time defaults for a text VFX (range filled by `placeEdit`). */
@@ -32,9 +33,9 @@ export function textSeed(): Extract<
   };
 }
 
-/** Place-time seed for a VFX preset. */
+/** Place-time seed for quote/text presets (listicle → `listicleSeedFromWords`). */
 export function vfxSeedFromPreset(
-  type: VfxPresetType,
+  type: Exclude<VfxPresetType, "listicle">,
 ): Extract<EditSeed, { kind: "vfx" }> {
   if (type === "quote") return quoteSeed();
   return textSeed();

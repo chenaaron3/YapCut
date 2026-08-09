@@ -20,6 +20,7 @@ const defaultProps: ProjectProps = {
   captionGroups: [],
   zooms: [],
   textOverlays: [],
+  listicleOverlays: [],
   brolls: [],
   sfx: [],
 };

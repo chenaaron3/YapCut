@@ -4,7 +4,10 @@ import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
 import { quoteSeed } from "~/domain/quote";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import { EditMarker } from "~/editor/components/transcript/EditMarker";
-import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
+import {
+  RangeHandle,
+  type ResizeEdge,
+} from "~/editor/components/transcript/RangeHandle";
 import { WordContextMenu } from "~/editor/components/transcript/WordContextMenu";
 import { chromeByKey } from "~/editor/lib/edit-chrome";
 import {
@@ -26,7 +29,7 @@ type Props = {
   word: GlobalTranscriptWord;
   annotation: WordAnnotation;
   onWordDragStart?: (e: React.MouseEvent) => void;
-  onResizeEdge?: (edge: "start" | "end", editId: number) => void;
+  onResizeEdge?: (edge: ResizeEdge, editId: number) => void;
 };
 
 export function WordCell({
@@ -98,6 +101,12 @@ export function WordCell({
       <span className="relative inline-block" data-word-index={word.globalIndex}>
         <RangeHandle
           edge="start"
+          span={primary}
+          selected={primarySelected}
+          onResizeEdge={onResizeEdge}
+        />
+        <RangeHandle
+          edge="middle"
           span={primary}
           selected={primarySelected}
           onResizeEdge={onResizeEdge}

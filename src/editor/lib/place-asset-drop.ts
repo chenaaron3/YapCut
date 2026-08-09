@@ -4,6 +4,7 @@ import {
   type BrollDragPayload,
 } from "~/domain/broll";
 import type { EditSeed } from "~/domain/edits";
+import { listicleSeedFromWords } from "~/domain/listicle";
 import {
   SFX_DRAG_MIME,
   sfxSeed,
@@ -14,6 +15,9 @@ import {
   vfxSeedFromPreset,
   type VfxDragPayload,
 } from "~/domain/vfx";
+import { wordActionRange } from "~/editor/lib/word-selection";
+import { useSelection } from "~/editor/selection-store";
+import { useEditor } from "~/editor/store";
 
 export type AssetDropKind = "broll" | "sfx" | "vfx";
 
@@ -75,6 +79,18 @@ export function placeEditFromAssetDrop(
   const vfxRaw = dataTransfer.getData(VFX_DRAG_MIME);
   if (!vfxRaw) return false;
   const payload = parseJson<VfxDragPayload>(vfxRaw);
+  if (payload?.type === "listicle") {
+    const words = useEditor.getState().getGlobalWords();
+    const word = words[globalIndex];
+    if (!word) return true;
+    const range = wordActionRange(
+      useSelection.getState().selection,
+      word,
+      words,
+    );
+    placeEditOnWord(globalIndex, listicleSeedFromWords(words, range));
+    return true;
+  }
   if (payload?.type === "quote" || payload?.type === "text") {
     placeEditOnWord(globalIndex, vfxSeedFromPreset(payload.type));
   }

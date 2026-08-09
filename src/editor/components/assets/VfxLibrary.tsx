@@ -1,10 +1,16 @@
-import { Quote, Type } from 'lucide-react';
-import { VFX_DRAG_MIME, VFX_PRESETS } from '~/domain/vfx';
+import { ListOrdered, Quote, Type } from "lucide-react";
 
-import type { VfxDragPayload, VfxPresetType } from '~/domain/vfx';
+import {
+  VFX_DRAG_MIME,
+  VFX_PRESETS,
+  type VfxDragPayload,
+  type VfxPresetType,
+} from "~/domain/vfx";
+
 const PRESET_ICON: Record<VfxPresetType, typeof Quote> = {
   quote: Quote,
   text: Type,
+  listicle: ListOrdered,
 };
 
 function VfxPresetRow({ preset }: { preset: VfxDragPayload }) {

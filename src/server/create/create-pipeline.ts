@@ -16,6 +16,7 @@ import {
 } from "~/domain/project-config";
 import type { TranscriptWord } from "~/domain/transcript";
 import { generateEmphasisUpdates } from "~/server/ai/emphasis";
+import { generateListicleEdits } from "~/server/ai/listicles";
 import { generateTitle } from "~/server/ai/title";
 import { generateZoomEdits } from "~/server/ai/zooms";
 import { db } from "~/server/db";
@@ -355,6 +356,17 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
   } catch (error) {
     console.warn(
       "[create] zoom AI soft-failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  try {
+    const listicles = await generateListicleEdits(timelineWords, edits);
+    edits = [...edits, ...listicles];
+    console.log(`[create] listicles=${listicles.length}`);
+  } catch (error) {
+    console.warn(
+      "[create] listicle AI soft-failed:",
       error instanceof Error ? error.message : error,
     );
   }

@@ -14,7 +14,6 @@ import {
   timelineToOutputSec,
   type ArollLayoutCell,
 } from "~/domain/arolls";
-import { clampTimelineRangeToMedia } from "~/domain/media";
 import {
   patchEdit as applyPatchEdit,
   patchEditRange,
@@ -23,6 +22,7 @@ import {
   type EditPatch,
   type EditSeed,
 } from "~/domain/edits";
+import { clampTimelineRangeToMedia } from "~/domain/media";
 import {
   PROJECT_FPS,
   type ProjectConfig,
@@ -141,6 +141,8 @@ type EditorActions = {
   ) => void;
   /** Patch Project field `captions` TemplateStyle. */
   patchCaptions: (patch: Partial<TemplateStyle>, live?: boolean) => void;
+  /** Patch Project field `listicleStyle` (shared by all listicle edits). */
+  patchListicleStyle: (patch: Partial<TemplateStyle>, live?: boolean) => void;
   /** Patch fields on an existing edit (discriminant fixed). */
   patchEdit: (id: number, patch: EditPatch, live?: boolean) => void;
   /** Patch a projected word (writes through to the asset transcript). */
@@ -731,6 +733,17 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
           ...(overrides && Object.keys(overrides).length > 0
             ? { overrides }
             : {}),
+        };
+      });
+      commit({ config: next, transcriptsByAssetId }, { live });
+    },
+
+    patchListicleStyle: (patch, live = false) => {
+      const { config, transcriptsByAssetId } = get();
+      if (!config) return;
+      const next = produce(config, (draft) => {
+        draft.listicleStyle = {
+          templateId: patch.templateId ?? draft.listicleStyle.templateId,
         };
       });
       commit({ config: next, transcriptsByAssetId }, { live });

@@ -1,5 +1,6 @@
 import {
   Film,
+  ListOrdered,
   Quote,
   Type,
   Volume2,
@@ -18,6 +19,7 @@ export type EditChromeKey =
   | "zoom"
   | "vfx:text"
   | "vfx:quote"
+  | "vfx:listicle"
   | "broll"
   | "sfx";
 
@@ -53,6 +55,16 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
     highlightClass: "bg-vfx/20",
     matches: (e) => e.kind === "vfx" && e.type === "quote",
+  },
+  {
+    key: "vfx:listicle",
+    label: "listicle",
+    Icon: ListOrdered,
+    markerClass: "bg-vfx/80 text-black",
+    markerSelectedClass: "bg-vfx text-black",
+    underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
+    highlightClass: "bg-vfx/20",
+    matches: (e) => e.kind === "vfx" && e.type === "listicle",
   },
   {
     key: "broll",

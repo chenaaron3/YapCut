@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { buildArollLayout } from "~/domain/arolls";
+import { clampListicleMiddle, isListicleEdit } from "~/domain/listicle";
+import type { ResizeEdge } from "~/editor/components/transcript/RangeHandle";
 import { clampRangeEdge, MIN_RANGE_SEC } from "~/editor/lib/range";
 import { snapTranscriptCaptionEdge } from "~/editor/lib/snap";
 import { wordIndexFromPoint } from "~/editor/lib/use-word-drag-select";
@@ -8,7 +10,7 @@ import { useSelection } from "~/editor/selection-store";
 import { useEditor, useGlobalWords } from "~/editor/store";
 
 type ResizeState = {
-  edge: "start" | "end";
+  edge: ResizeEdge;
   editId: number;
 };
 
@@ -23,6 +25,7 @@ export function useRangeResize() {
   const clearSelection = useSelection((s) => s.clearSelection);
   const beginGesture = useEditor((s) => s.beginGesture);
   const patchSelectedEditRange = useEditor((s) => s.patchSelectedEditRange);
+  const patchEdit = useEditor((s) => s.patchEdit);
 
   const resizeRef = useRef<ResizeState | null>(null);
   /** Survives mouseup→click so panel click doesn't clear the edit selection. */
@@ -55,6 +58,10 @@ export function useRangeResize() {
       const word = useEditor.getState().getGlobalWords()[hit];
       if (!word) return;
 
+      // Listicle split clips to word ends (same as an end handle).
+      const edgeForSnap =
+        resize.edge === "middle" ? "end" : resize.edge;
+
       let value: number;
       if (e.shiftKey) {
         const el = document
@@ -65,20 +72,28 @@ export function useRangeResize() {
           const t =
             rect.width > 0
               ? Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-              : resize.edge === "start"
+              : edgeForSnap === "start"
                 ? 0
                 : 1;
           value = word.start + (word.end - word.start) * t;
         } else {
-          value = resize.edge === "start" ? word.start : word.end;
+          value = edgeForSnap === "start" ? word.start : word.end;
         }
       } else {
         value = snapTranscriptCaptionEdge(
           { start: word.start, end: word.end, index: word.globalIndex },
-          resize.edge,
+          edgeForSnap,
           indexedWords,
           keepRanges,
         );
+      }
+
+      if (resize.edge === "middle") {
+        if (!isListicleEdit(edit) || edit.middle == null) return;
+        const middle = clampListicleMiddle(edit.start, value, edit.end);
+        if (Math.abs(middle - edit.middle) < 0.0005) return;
+        patchEdit(edit.id, { middle }, true);
+        return;
       }
 
       const { start, end } = clampRangeEdge(resize.edge, value, edit);
@@ -113,9 +128,15 @@ export function useRangeResize() {
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("keydown", onKey, true);
     };
-  }, [clearSelection, indexedWords, keepRanges, patchSelectedEditRange]);
+  }, [
+    clearSelection,
+    indexedWords,
+    keepRanges,
+    patchEdit,
+    patchSelectedEditRange,
+  ]);
 
-  const beginResize = (edge: "start" | "end", editId: number) => {
+  const beginResize = (edge: ResizeEdge, editId: number) => {
     if (!config) return;
     const edit = config.edits.find((e) => e.id === editId);
     if (!edit) return;

@@ -1,21 +1,13 @@
-import {
-  buildArollLayout,
-  timelineRangeToOutput,
-} from "~/domain/arolls";
+import { buildArollLayout, timelineRangeToOutput } from "~/domain/arolls";
 import { DEFAULT_ZOOM_SCALE } from "~/domain/edits";
 import {
+  editHidesCaptions,
   outputDurationFromArolls,
   PROJECT_FPS,
-  type ArollKeep,
-  type ProjectConfig,
 } from "~/domain/project-config";
 import { projectOutputWords } from "~/domain/projection";
-import type { TranscriptWord } from "~/domain/transcript";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
-import {
-  applyCaptionOverrides,
-  type CaptionGroupStyle,
-} from "~/remotion/captions/style";
+import { applyCaptionOverrides } from "~/remotion/captions/style";
 import {
   groupStyledCaptionWords,
   isFiller,
@@ -33,16 +25,27 @@ import {
   resolveCaptionTemplateStyle,
 } from "~/remotion/templates/caption";
 import {
+  DEFAULT_LISTICLE_TEMPLATE_ID,
+  isListicleTemplateId,
+  resolveListicleTextStyles,
+} from "~/remotion/templates/listicle";
+import {
   DEFAULT_QUOTE_TEMPLATE_ID,
   isQuoteTemplateId,
   resolveQuoteTemplateStyle,
 } from "~/remotion/templates/quote";
 import { resolveTemplateStyle } from "~/remotion/templates/style";
+
+import type { ArollKeep, ProjectConfig } from "~/domain/project-config";
+import type { OutputTime } from "~/domain/time";
+import type { TranscriptWord } from "~/domain/transcript";
+import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type {
   ArollSection,
   BrollClipProp,
   CaptionGroupProp,
   CaptionWordProp,
+  ListicleOverlayProp,
   ProjectProps,
   SfxClipProp,
   TextOverlayProp,
@@ -141,6 +144,31 @@ function quoteForWord(
   return null;
 }
 
+/** Output-time ranges for any edit with `hideCaptions: true`. */
+function hiddenCaptionRanges(
+  edits: ProjectConfig["edits"],
+  cells: ReturnType<typeof buildArollLayout>,
+): OutputTime[] {
+  const ranges: OutputTime[] = [];
+  for (const e of edits) {
+    if (!editHidesCaptions(e)) continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+    ranges.push(range);
+  }
+  return ranges;
+}
+
+function wordInHiddenRange(
+  word: { start: number; end: number },
+  ranges: readonly OutputTime[],
+): boolean {
+  for (const range of ranges) {
+    if (word.start < range.end && word.end > range.start) return true;
+  }
+  return false;
+}
+
 function buildCaptionGroups(
   config: ProjectConfig,
   transcriptsByAssetId: ReadonlyMap<string, readonly TranscriptWord[]>,
@@ -149,19 +177,27 @@ function buildCaptionGroups(
 ): CaptionGroupProp[] {
   const captionStyle = resolveProjectCaptionStyle(config.captions);
   const quotes = outputQuotes(config.edits, cells);
+  const hiddenRanges = hiddenCaptionRanges(config.edits, cells);
   const words = projectOutputWords(config.arolls, transcriptsByAssetId);
 
   type StyledWord = CaptionWordProp & {
     styleKey: string;
+    segmentKey: string;
     captionsAtATime: number;
     style: CaptionGroupStyle;
   };
 
   // Keep source punctuation through grouping so sentence boundaries work;
   // strip for on-screen display after groups are formed.
+  // Bump `segment` across hidden runs so a caption group never spans a hide.
   const styledWords: StyledWord[] = [];
+  let segment = 0;
   for (const word of words) {
     if (isFiller(word.text) || !word.text.trim()) continue;
+    if (wordInHiddenRange(word, hiddenRanges)) {
+      segment += 1;
+      continue;
+    }
     const startFrame = secToFrame(word.start, fps);
     const endFrame = Math.max(startFrame + 3, secToFrame(word.end, fps));
     const quote = quoteForWord(word, quotes);
@@ -172,6 +208,7 @@ function buildCaptionGroups(
       endFrame,
       ...(word.emphasized ? { emphasized: true } : {}),
       styleKey: quote ? `quote:${quote.id}` : "default",
+      segmentKey: String(segment),
       captionsAtATime: style.captionsAtATime,
       style,
     });
@@ -247,6 +284,50 @@ function buildTextOverlays(
       ),
       text: e.text,
       style: e.style,
+    });
+  }
+  return out;
+}
+
+function buildListicleOverlays(
+  config: ProjectConfig,
+  cells: ReturnType<typeof buildArollLayout>,
+  fps: number,
+): ListicleOverlayProp[] {
+  const templateId = isListicleTemplateId(config.listicleStyle.templateId)
+    ? config.listicleStyle.templateId
+    : DEFAULT_LISTICLE_TEMPLATE_ID;
+  const styles = resolveListicleTextStyles(templateId);
+  const out: ListicleOverlayProp[] = [];
+
+  for (const e of config.edits) {
+    if (e.kind !== "vfx" || e.type !== "listicle") continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+
+    const startFrame = secToFrame(range.start, fps);
+    const endFrame = Math.max(startFrame + 1, secToFrame(range.end, fps));
+    let middleFrame: number | null = null;
+    if (e.middle != null) {
+      const span = Math.max(0.001, e.end - e.start);
+      const t = Math.min(1, Math.max(0, (e.middle - e.start) / span));
+      const middleSec = range.start + t * (range.end - range.start);
+      middleFrame = Math.min(
+        endFrame,
+        Math.max(startFrame, secToFrame(middleSec, fps)),
+      );
+    }
+
+    out.push({
+      id: e.id,
+      startFrame,
+      middleFrame,
+      endFrame,
+      indicatorText: e.indicatorText,
+      valueText: e.valueText,
+      indicatorStyle: styles.indicator,
+      valueStyle: styles.value,
+      stacked: styles.stacked,
     });
   }
   return out;
@@ -332,10 +413,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
     fps,
   ).filter((s) => s.src.length > 0);
 
-  const layout = buildArollLayout(
-    input.config.arolls,
-    input.assetDurationSec,
-  );
+  const layout = buildArollLayout(input.config.arolls, input.assetDurationSec);
   const durationSec = outputDurationFromArolls(input.config.arolls);
   const durationInFrames = Math.max(1, secToFrame(durationSec, fps));
 
@@ -353,6 +431,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
     ),
     zooms: buildZooms(input.config.edits, layout, fps),
     textOverlays: buildTextOverlays(input.config.edits, layout, fps),
+    listicleOverlays: buildListicleOverlays(input.config, layout, fps),
     brolls: buildBrolls(
       input.config.edits,
       layout,
