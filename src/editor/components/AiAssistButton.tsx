@@ -10,6 +10,7 @@ export function AiAssistButton() {
   const status = useEditor((s) => s.status);
   const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
   const save = useEditor((s) => s.save);
+  const clearForAiAssist = useEditor((s) => s.clearForAiAssist);
 
   const [error, setError] = useState<string | null>(null);
   const utils = api.useUtils();
@@ -36,14 +37,10 @@ export function AiAssistButton() {
   const disabled = busy || status === "exporting";
 
   const onClick = async () => {
-    const ok = window.confirm(
-      "Re-run AI on this project?\n\nKeeps your cuts and b-roll. Replaces zooms, quotes, listicles, SFX, title card, and emphasis.",
-    );
-    if (!ok) return;
-
     setError(null);
     try {
       if (dirty) await save();
+      clearForAiAssist();
       await mutation.mutateAsync({ id: projectId });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

@@ -3,36 +3,28 @@ import { create } from "zustand";
 
 import {
   applyArollCellAction,
+  setArollKeepEdge as applyArollKeepEdge,
   buildArollLayout,
   clampTimelineSec,
   deleteTimelineRange,
   keepCellIdForArollIndex,
   layoutTimelineDuration,
   outputToTimelineSec,
-  setArollKeepEdge as applyArollKeepEdge,
   snapTimelineSec,
   timelineToOutputSec,
-  type ArollLayoutCell,
 } from "~/domain/arolls";
 import {
   patchEdit as applyPatchEdit,
   patchEditRange,
   placeEdit,
   removeEdit,
-  type EditPatch,
-  type EditSeed,
 } from "~/domain/edits";
 import { clampTimelineRangeToMedia } from "~/domain/media";
+import { PROJECT_FPS } from "~/domain/project-config";
 import {
-  PROJECT_FPS,
-  type ProjectConfig,
-  type TemplateStyle,
-} from "~/domain/project-config";
-import { projectTimelineWords, wordIndexAtTimelineSec } from "~/domain/projection";
-import type {
-  GlobalTranscriptWord,
-  TranscriptWord,
-} from "~/domain/transcript";
+  projectTimelineWords,
+  wordIndexAtTimelineSec,
+} from "~/domain/projection";
 import { primaryId } from "~/editor/lib/selection";
 import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
@@ -42,6 +34,11 @@ import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/constants";
+
+import type { ArollLayoutCell } from "~/domain/arolls";
+import type { EditPatch, EditSeed } from "~/domain/edits";
+import type { ProjectConfig, TemplateStyle } from "~/domain/project-config";
+import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 import type { ProjectProps } from "~/remotion/types";
 
 /** Mutable transcript-word fields (local asset words). */
@@ -159,6 +156,12 @@ type EditorActions = {
   deleteSelection: () => boolean;
   /** Cut the word (or word selection if it includes this word). */
   cutWord: (globalIndex: number) => void;
+
+  /**
+   * Local UI clear before editor AI re-run: keep b-roll, drop other edits +
+   * emphasis. Does not mark dirty / autosave — server rewrite is the source of truth.
+   */
+  clearForAiAssist: () => void;
 };
 
 let history: Snapshot[] = [];
@@ -280,8 +283,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
 
     const state = get();
     const configDirty = next.config !== lastSavedConfig;
-    const transcriptsDirty =
-      next.transcriptsByAssetId !== lastSavedTranscripts;
+    const transcriptsDirty = next.transcriptsByAssetId !== lastSavedTranscripts;
     const props = recomputeProps({
       config: next.config,
       assets: state.assets,
@@ -311,8 +313,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
   const restore = (snap: Snapshot) => {
     const state = get();
     const configDirty = snap.config !== lastSavedConfig;
-    const transcriptsDirty =
-      snap.transcriptsByAssetId !== lastSavedTranscripts;
+    const transcriptsDirty = snap.transcriptsByAssetId !== lastSavedTranscripts;
     const props = recomputeProps({
       config: snap.config,
       assets: state.assets,
@@ -647,7 +648,9 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       if (options?.maxDurationSec != null) {
         range = clampTimelineRangeToMedia(range, options.maxDurationSec);
       }
-      const timelineDuration = layoutTimelineDuration(layoutFor(config, assets));
+      const timelineDuration = layoutTimelineDuration(
+        layoutFor(config, assets),
+      );
       const prevIds = new Set(config.edits.map((e) => e.id));
       const next = placeEdit(config, range, timelineDuration, seed, {
         srcDurationSec: (assetId) =>
@@ -697,14 +700,47 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { selection, clearSelection } = useSelection.getState();
       const range = wordActionRange(selection, word, words);
       commit({
-        config: deleteTimelineRange(
-          config,
-          range,
-          durationMap(assets),
-        ),
+        config: deleteTimelineRange(config, range, durationMap(assets)),
         transcriptsByAssetId,
       });
       clearSelection();
+    },
+
+    clearForAiAssist: () => {
+      const state = get();
+      if (!state.config) return;
+
+      const nextConfig: ProjectConfig = {
+        ...state.config,
+        edits: state.config.edits.filter((e) => e.kind === "broll"),
+      };
+      const nextTranscripts = produce(state.transcriptsByAssetId, (draft) => {
+        for (const words of Object.values(draft)) {
+          for (const w of words) {
+            delete w.emphasized;
+          }
+        }
+      });
+      const props = recomputeProps({
+        config: nextConfig,
+        assets: state.assets,
+        transcriptsByAssetId: nextTranscripts,
+        fps: state.fps,
+      });
+
+      set({
+        config: nextConfig,
+        transcriptsByAssetId: nextTranscripts,
+        props,
+      });
+
+      const { selection, clearSelection } = useSelection.getState();
+      if (selection?.kind === "edit") {
+        const kept = new Set(nextConfig.edits.map((e) => e.id));
+        if (selection.ids.some((id) => !kept.has(id))) {
+          clearSelection();
+        }
+      }
     },
 
     patchSelectedEditRange: (start, end) => {
@@ -776,8 +812,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { config, transcriptsByAssetId } = get();
       if (!config) return;
       const next = produce(config, (draft) => {
-        const templateId =
-          patch.templateId ?? draft.listicleStyle.templateId;
+        const templateId = patch.templateId ?? draft.listicleStyle.templateId;
         const overrides = patch.overrides ?? draft.listicleStyle.overrides;
         draft.listicleStyle = {
           templateId,
