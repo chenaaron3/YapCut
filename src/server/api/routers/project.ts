@@ -6,6 +6,7 @@ import {
   parseProjectConfig,
   projectConfigSchema,
 } from "~/domain/project-config";
+import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { startCreatePipeline } from "~/server/create/start-create-pipeline";
 import { assets, projects, transcripts } from "~/server/db/schema";
@@ -192,6 +193,27 @@ export const projectRouter = createTRPCRouter({
           throw new TRPCError({ code: "NOT_FOUND", message });
         }
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
+      }
+    }),
+
+  /**
+   * Re-run create AI assist on current arolls/transcripts.
+   * Keeps b-roll + Project fields; replaces other edits and emphasis.
+   */
+  runAiAssist: protectedProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await rerunProjectAiAssist({
+          projectId: input.id,
+          userId: ctx.session.user.id,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message === "Project not found") {
+          throw new TRPCError({ code: "NOT_FOUND", message });
+        }
+        throw new TRPCError({ code: "BAD_REQUEST", message });
       }
     }),
 

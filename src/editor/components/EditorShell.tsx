@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
+import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
 import { ExportButton } from "~/editor/components/ExportButton";
 import { Timeline } from "~/editor/components/timeline/Timeline";
@@ -254,7 +255,10 @@ export function EditorShell({ projectId }: Props) {
             </span>
           ) : null}
         </div>
-        <ExportButton />
+        <div className="flex items-center gap-2">
+          <AiAssistButton />
+          <ExportButton />
+        </div>
       </header>
 
       {error ? (

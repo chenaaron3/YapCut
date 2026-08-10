@@ -162,7 +162,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 1. Presigned upload → Project + Assets (`processing`)
 2. WhisperX per A-roll video (language autodetect, diarization off) → Transcript rows
 3. Keep builder (long gaps) → `arolls`
-4. AI assist (always on, create-only), on **timeline projected** transcript:
+4. AI assist (create + editor **AI** button), on **timeline projected** transcript:
    1. title if empty → `Project.title` + seed `vfx/text`
    2. punch-in zooms
    3. listicles
@@ -170,7 +170,9 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    5. emphasis (sparse outside quotes; most content words inside quotes)
    6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
    7. companion SFX (role + variant from AI SFX pack; 300ms min-gap; priority listicle → quote ping → punch-in motion)
-5. Seed default `captions` TemplateStyle → `ready`
+   Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
+5. Seed default `captions` TemplateStyle → `ready` (create only)
+
 
 **Export workflow**:
 Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920 @ 30fps.
@@ -204,7 +206,7 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 
 - Location VFX, shake VFX, cutout greenscreen
 - Music (Project field later)
-- LLM regenerate-in-editor; listicle/emphasis process flags
+- Listicle/emphasis process flags
 - Teams/sharing; user upload to global library
 - Per-project dimensions/fps
 - Standalone AI SFX (non-companion); AI `texture` SFX roles; SFX on slow zooms / sparse outer emphasis

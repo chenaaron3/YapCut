@@ -1,28 +1,13 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
-import { AI_SFX_PACK } from "~/domain/ai-sfx-pack";
-import {
-  buildArollLayout,
-  firstKeepTimelineSec,
-  layoutTimelineDuration,
-} from "~/domain/arolls";
 import { buildArollKeepsFromWords } from "~/domain/keeps";
-import { projectTimelineWords } from "~/domain/projection";
 import {
   DEFAULT_CAPTION_TEMPLATE_ID,
   emptyProjectConfig,
-  seedTitleTextVfx,
-  type Edit,
   type ProjectConfig,
 } from "~/domain/project-config";
 import type { TranscriptWord } from "~/domain/transcript";
-import { generateCompanionSfxEdits } from "~/server/ai/companion-sfx";
-import { generateEmphasisUpdates } from "~/server/ai/emphasis";
-import { generateListicleEdits } from "~/server/ai/listicles";
-import { generatePacingReconcileZooms } from "~/server/ai/pacing-reconcile";
-import { generateQuoteEdits } from "~/server/ai/quotes";
-import { generateTitle } from "~/server/ai/title";
-import { generateZoomEdits } from "~/server/ai/zooms";
+import { runAiAssist } from "~/server/ai/run-ai-assist";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
 import { headObject, presignGetObject } from "~/server/media/s3";
@@ -317,150 +302,25 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
     throw new Error("Keep builder produced empty arolls");
   }
 
-  const timelineWords = projectTimelineWords(
+  const assist = await runAiAssist({
     arolls,
     wordsByAssetId,
     durationByAssetId,
-  );
-  const layout = buildArollLayout(arolls, durationByAssetId);
-  const timelineDuration = layoutTimelineDuration(layout);
-  const titleStartSec = firstKeepTimelineSec(layout);
+    title: project.title?.trim() ?? "",
+    generateTitleIfEmpty: true,
+  });
 
-  let title = project.title?.trim() ?? "";
-  let edits: Edit[] = [];
-
-  if (!title) {
-    try {
-      title = await generateTitle(timelineWords);
-      console.log(`[create] title="${title}"`);
-    } catch (error) {
-      console.warn(
-        "[create] title AI soft-failed:",
-        error instanceof Error ? error.message : error,
-      );
-    }
-  }
-
-  if (title) {
-    edits = [
-      ...edits,
-      seedTitleTextVfx({
-        edits,
-        title,
-        startSec: titleStartSec,
-        timelineDurationSec: timelineDuration,
-      }),
-    ];
-  }
-
-  try {
-    const zooms = await generateZoomEdits(timelineWords, edits);
-    edits = [...edits, ...zooms];
-    console.log(`[create] zooms=${zooms.length}`);
-  } catch (error) {
-    console.warn(
-      "[create] zoom AI soft-failed:",
-      error instanceof Error ? error.message : error,
-    );
-  }
-
-  try {
-    const listicles = await generateListicleEdits(timelineWords, edits);
-    edits = [...edits, ...listicles];
-    console.log(`[create] listicles=${listicles.length}`);
-  } catch (error) {
-    console.warn(
-      "[create] listicle AI soft-failed:",
-      error instanceof Error ? error.message : error,
-    );
-  }
-
-  try {
-    const quotes = await generateQuoteEdits(timelineWords, edits);
-    edits = [...edits, ...quotes];
-    console.log(`[create] quotes=${quotes.length}`);
-  } catch (error) {
-    console.warn(
-      "[create] quote AI soft-failed:",
-      error instanceof Error ? error.message : error,
-    );
-  }
-
-  try {
-    const updates = await generateEmphasisUpdates(
-      timelineWords,
-      wordsByAssetId,
-      edits,
-    );
-    for (const [assetId, words] of updates) {
-      wordsByAssetId.set(assetId, words);
-      await db
-        .update(transcripts)
-        .set({ words, updatedAt: new Date() })
-        .where(eq(transcripts.assetId, assetId));
-    }
-    console.log(`[create] emphasis updated assets=${updates.size}`);
-  } catch (error) {
-    console.warn(
-      "[create] emphasis AI soft-failed:",
-      error instanceof Error ? error.message : error,
-    );
-  }
-
-  // Re-project after emphasis so pacing/SFX see emphasized flags.
-  const timelineWordsAfterEmphasis = projectTimelineWords(
-    arolls,
-    wordsByAssetId,
-    durationByAssetId,
-  );
-
-  try {
-    const slowZooms = await generatePacingReconcileZooms(
-      timelineWordsAfterEmphasis,
-      edits,
-    );
-    edits = [...edits, ...slowZooms];
-    console.log(`[create] pacing slowZooms=${slowZooms.length}`);
-  } catch (error) {
-    console.warn(
-      "[create] pacing reconcile AI soft-failed:",
-      error instanceof Error ? error.message : error,
-    );
-  }
-
-  try {
-    const packAssetIds = [...new Set(AI_SFX_PACK.map((v) => v.assetId))];
-    const sfxRows =
-      packAssetIds.length > 0
-        ? await db
-            .select({
-              id: assets.id,
-              durationSec: assets.durationSec,
-            })
-            .from(assets)
-            .where(inArray(assets.id, packAssetIds))
-        : [];
-    const durationBySfxId = new Map(
-      sfxRows.map((r) => [r.id, r.durationSec]),
-    );
-    const sfxEdits = await generateCompanionSfxEdits(
-      timelineWordsAfterEmphasis,
-      edits,
-      (assetId) => durationBySfxId.get(assetId) ?? null,
-    );
-    edits = [...edits, ...sfxEdits];
-    console.log(`[create] companionSfx=${sfxEdits.length}`);
-  } catch (error) {
-    console.warn(
-      "[create] companion SFX AI soft-failed:",
-      error instanceof Error ? error.message : error,
-    );
+  for (const [assetId, words] of assist.wordsByAssetId) {
+    await db
+      .update(transcripts)
+      .set({ words, updatedAt: new Date() })
+      .where(eq(transcripts.assetId, assetId));
   }
 
   const config: ProjectConfig = {
     ...emptyProjectConfig(),
     arolls,
-    edits,
+    edits: assist.edits,
     captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
   };
 
@@ -468,7 +328,7 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
   await db
     .update(projects)
     .set({
-      title: title.length > 0 ? title : null,
+      title: assist.title.length > 0 ? assist.title : null,
       config,
       configUpdatedAt: now,
       status: "ready",
