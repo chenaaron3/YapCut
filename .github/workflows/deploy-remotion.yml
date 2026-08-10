@@ -1,0 +1,69 @@
+# Redeploy Remotion Lambda function + site when the render bundle changes.
+# Preview/editor changes that only affect props do not need this.
+#
+# GitHub secrets (same names as .env):
+#   REMOTION_AWS_ACCESS_KEY_ID
+#   REMOTION_AWS_SECRET_ACCESS_KEY
+#   REMOTION_AWS_REGION          (optional; defaults to us-east-1)
+#
+# With fixed siteName "talking-head", REMOTION_SERVE_URL stays stable.
+# Update Vercel REMOTION_FUNCTION_NAME only if the function name changes
+# (usually on Remotion version bumps) — check the job summary.
+
+name: Deploy Remotion Lambda
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/remotion/**"
+      - "remotion.config.ts"
+      - "scripts/deploy-remotion-lambda.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-remotion.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-remotion
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Deploy function + site
+        env:
+          REMOTION_AWS_ACCESS_KEY_ID: ${{ secrets.REMOTION_AWS_ACCESS_KEY_ID }}
+          REMOTION_AWS_SECRET_ACCESS_KEY: ${{ secrets.REMOTION_AWS_SECRET_ACCESS_KEY }}
+          REMOTION_AWS_REGION: ${{ secrets.REMOTION_AWS_REGION }}
+        run: |
+          set -o pipefail
+          npm run remotion:deploy | tee /tmp/remotion-deploy.log
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Remotion deploy"
+            echo ""
+            echo '```'
+            tail -n 40 /tmp/remotion-deploy.log 2>/dev/null || echo "(no log)"
+            echo '```'
+            echo ""
+            echo "If \`REMOTION_FUNCTION_NAME\` changed, update that env var in Vercel."
+            echo "\`REMOTION_SERVE_URL\` should stay the same (site name: talking-head)."
+          } >> "$GITHUB_STEP_SUMMARY"

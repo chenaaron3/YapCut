@@ -1,13 +1,16 @@
 /**
- * Deploy Remotion Lambda function + site. Prints env vars to paste into `.env`.
+ * Deploy Remotion Lambda function + site. Prints env vars to paste into `.env`
+ * / Vercel (serve URL is stable when siteName is fixed).
  *
  * Prerequisites (one-time IAM): https://www.remotion.dev/docs/lambda/setup
  *   - Role `remotion-lambda-role` with Remotion role policy
  *   - User policy for deploy credentials
  *   - Extend role policy to allow read/write on AWS_S3_BUCKET (exports/*)
  *
- * Usage: npm run remotion:deploy
+ * Local: npm run remotion:deploy (loads .env when present)
+ * CI:    .github/workflows/deploy-remotion.yml (GitHub secrets)
  */
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,6 +23,16 @@ import {
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SITE_NAME = "talking-head";
+
+/** Load local `.env` if present; CI injects secrets into the process env. */
+function loadLocalEnv() {
+  const envPath = path.join(ROOT, ".env");
+  if (!existsSync(envPath)) return;
+  process.loadEnvFile(envPath);
+}
+
+loadLocalEnv();
+
 const REGION = (process.env.REMOTION_AWS_REGION ??
   process.env.AWS_REGION ??
   "us-east-1") as AwsRegion;
@@ -29,7 +42,7 @@ async function main() {
   const secretAccessKey = process.env.REMOTION_AWS_SECRET_ACCESS_KEY;
   if (!accessKeyId || !secretAccessKey) {
     throw new Error(
-      "Set REMOTION_AWS_ACCESS_KEY_ID and REMOTION_AWS_SECRET_ACCESS_KEY in .env",
+      "Set REMOTION_AWS_ACCESS_KEY_ID and REMOTION_AWS_SECRET_ACCESS_KEY (.env or CI secrets)",
     );
   }
   // Prefer Remotion user over app media user (AWS_ACCESS_KEY_ID).
