@@ -1,6 +1,10 @@
 /**
- * Upload the prototype SFX pack to S3 and insert global Asset rows
- * (`projectId = null`). Idempotent on `s3Key`.
+ * Upload public/sfx to S3 and insert global Asset rows (`projectId` null).
+ * Idempotent on `s3Key`. Prunes obsolete global audio not in the keep set.
+ *
+ * Layout:
+ *   public/sfx/<role>/<intensity>/*   — AI companion pools
+ *   public/sfx/custom/memes/*         — manual library only
  *
  * Usage:
  *   npm run seed:global-sfx
@@ -14,21 +18,24 @@ import { promisify } from "node:util";
 
 import { eq, isNull } from "drizzle-orm";
 
-import { AI_SFX_PACK } from "~/domain/ai-sfx-pack";
+import {
+  AI_SFX_INTENSITIES,
+  AI_SFX_ROLES,
+  expectedAiSfxPoolDirs,
+  parseAiSfxPoolPath,
+} from "~/domain/ai-sfx-pack";
 import { db } from "~/server/db";
 import { assets } from "~/server/db/schema";
 import { globalSfxKey } from "~/server/media/keys";
-import { headObject, putObject } from "~/server/media/s3";
+import { deleteObject, headObject, putObject } from "~/server/media/s3";
 
 const execFileAsync = promisify(execFile);
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_SFX_DIR = path.resolve(
-  ROOT,
-  "../talking-head/public/sfx",
-);
+const DEFAULT_SFX_DIR = path.resolve(ROOT, "public/sfx");
 
 const AUDIO_EXT = new Set([".wav", ".mp3"]);
+const MEME_PREFIX = "custom/memes/";
 
 function contentTypeFor(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
@@ -86,6 +93,11 @@ function parseDirArg(argv: string[]): string {
   return DEFAULT_SFX_DIR;
 }
 
+function isKeepRelativePath(relativePath: string): boolean {
+  if (relativePath.startsWith(MEME_PREFIX)) return true;
+  return parseAiSfxPoolPath(relativePath) != null;
+}
+
 async function main() {
   const sfxDir = parseDirArg(process.argv.slice(2));
   console.log(`[seed-global-sfx] source=${sfxDir}`);
@@ -96,11 +108,63 @@ async function main() {
   }
   console.log(`[seed-global-sfx] found ${files.length} files`);
 
+  // Validate every AI role/intensity pool has ≥1 file.
+  const poolCounts = new Map<string, number>();
+  for (const dir of expectedAiSfxPoolDirs()) {
+    poolCounts.set(dir, 0);
+  }
+  let memeCount = 0;
+
+  for (const filePath of files) {
+    const relativePath = path.relative(sfxDir, filePath).split(path.sep).join("/");
+    if (relativePath.startsWith(MEME_PREFIX)) {
+      memeCount += 1;
+      continue;
+    }
+    const parsed = parseAiSfxPoolPath(relativePath);
+    if (!parsed) {
+      console.warn(
+        `[seed-global-sfx] skipping non-pack path (won't keep): ${relativePath}`,
+      );
+      continue;
+    }
+    const key = `${parsed.role}/${parsed.intensity}`;
+    poolCounts.set(key, (poolCounts.get(key) ?? 0) + 1);
+  }
+
+  const emptyPools = [...poolCounts.entries()].filter(([, n]) => n === 0);
+  if (emptyPools.length > 0) {
+    throw new Error(
+      `Empty AI SFX pools (need ≥1 file each):\n${emptyPools
+        .map(([d]) => `  - ${d}/`)
+        .join("\n")}`,
+    );
+  }
+
+  for (const role of AI_SFX_ROLES) {
+    for (const intensity of AI_SFX_INTENSITIES) {
+      const key = `${role}/${intensity}`;
+      console.log(`  pool  ${key}: ${poolCounts.get(key) ?? 0}`);
+    }
+  }
+  console.log(`  pool  custom/memes: ${memeCount}`);
+
+  const keepRelative = new Set<string>();
+  for (const filePath of files) {
+    const relativePath = path.relative(sfxDir, filePath).split(path.sep).join("/");
+    if (isKeepRelativePath(relativePath)) {
+      keepRelative.add(relativePath);
+    }
+  }
+  const keepS3Keys = new Set([...keepRelative].map((r) => globalSfxKey(r)));
+
   const existing = await db
     .select({
       id: assets.id,
       s3Key: assets.s3Key,
       durationSec: assets.durationSec,
+      kind: assets.kind,
+      originalFilename: assets.originalFilename,
     })
     .from(assets)
     .where(isNull(assets.projectId));
@@ -111,8 +175,8 @@ async function main() {
   let inserted = 0;
   let updated = 0;
 
-  for (const filePath of files) {
-    const relativePath = path.relative(sfxDir, filePath).split(path.sep).join("/");
+  for (const relativePath of [...keepRelative].sort()) {
+    const filePath = path.join(sfxDir, ...relativePath.split("/"));
     const s3Key = globalSfxKey(relativePath);
     const contentType = contentTypeFor(filePath);
     const durationSec = await probeDurationSec(filePath);
@@ -145,40 +209,47 @@ async function main() {
       continue;
     }
 
-    if (row.durationSec == null && durationSec != null) {
-      await db
-        .update(assets)
-        .set({ durationSec, updatedAt: new Date() })
-        .where(eq(assets.id, row.id));
+    const patch: {
+      durationSec?: number | null;
+      originalFilename?: string;
+      updatedAt: Date;
+    } = { updatedAt: new Date() };
+    let needsUpdate = false;
+    if (durationSec != null && row.durationSec !== durationSec) {
+      patch.durationSec = durationSec;
+      needsUpdate = true;
+    }
+    if (row.originalFilename !== relativePath) {
+      patch.originalFilename = relativePath;
+      needsUpdate = true;
+    }
+    if (needsUpdate) {
+      await db.update(assets).set(patch).where(eq(assets.id, row.id));
       updated += 1;
-      console.log(`  update  ${relativePath} duration=${durationSec.toFixed(3)}s`);
+      console.log(`  update  ${relativePath}`);
     }
   }
 
-  const globalIds = new Set(
-    (
-      await db
-        .select({ id: assets.id })
-        .from(assets)
-        .where(isNull(assets.projectId))
-    ).map((r) => r.id),
-  );
-  const missingPack = AI_SFX_PACK.filter((v) => !globalIds.has(v.assetId));
-  if (missingPack.length) {
-    console.warn(
-      `[seed-global-sfx] AI SFX pack missing ${missingPack.length} asset id(s):`,
-    );
-    for (const v of missingPack) {
-      console.warn(`  - ${v.id} → ${v.assetId}`);
+  // Prune obsolete global audio (old beep-bop/, etc.).
+  let pruned = 0;
+  for (const row of existing) {
+    if (row.kind !== "audio") continue;
+    if (keepS3Keys.has(row.s3Key)) continue;
+    await db.delete(assets).where(eq(assets.id, row.id));
+    try {
+      await deleteObject(row.s3Key);
+    } catch (error) {
+      console.warn(
+        `  prune S3 warn ${row.s3Key}:`,
+        error instanceof Error ? error.message : error,
+      );
     }
-  } else {
-    console.log(
-      `[seed-global-sfx] AI SFX pack ok (${AI_SFX_PACK.length} variants)`,
-    );
+    pruned += 1;
+    console.log(`  prune  ${row.s3Key} (${row.id})`);
   }
 
   console.log(
-    `[seed-global-sfx] done uploaded=${uploaded} s3Skipped=${skipped} inserted=${inserted} updated=${updated}`,
+    `[seed-global-sfx] done uploaded=${uploaded} s3Skipped=${skipped} inserted=${inserted} updated=${updated} pruned=${pruned}`,
   );
   process.exit(0);
 }

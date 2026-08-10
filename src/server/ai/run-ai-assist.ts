@@ -1,6 +1,6 @@
-import { inArray } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
-import { AI_SFX_PACK } from "~/domain/ai-sfx-pack";
+import { parseAiSfxPoolPath } from "~/domain/ai-sfx-pack";
 import {
   buildArollLayout,
   firstKeepTimelineSec,
@@ -13,7 +13,10 @@ import {
   type Edit,
 } from "~/domain/project-config";
 import type { TranscriptWord } from "~/domain/transcript";
-import { generateCompanionSfxEdits } from "~/server/ai/companion-sfx";
+import {
+  generateCompanionSfxEdits,
+  type CompanionSfxPools,
+} from "~/server/ai/companion-sfx";
 import { generateEmphasisUpdates } from "~/server/ai/emphasis";
 import { generateListicleEdits } from "~/server/ai/listicles";
 import { generatePacingReconcileZooms } from "~/server/ai/pacing-reconcile";
@@ -59,17 +62,33 @@ function clearEmphasis(
   return out;
 }
 
-async function loadPackSfxDurations(): Promise<Map<string, number | null>> {
-  const packAssetIds = [...new Set(AI_SFX_PACK.map((v) => v.assetId))];
-  if (packAssetIds.length === 0) return new Map();
+async function loadAiSfxPools(): Promise<{
+  pools: CompanionSfxPools;
+  durationByAssetId: Map<string, number | null>;
+}> {
   const rows = await db
     .select({
       id: assets.id,
       durationSec: assets.durationSec,
+      originalFilename: assets.originalFilename,
     })
     .from(assets)
-    .where(inArray(assets.id, packAssetIds));
-  return new Map(rows.map((r) => [r.id, r.durationSec]));
+    .where(and(isNull(assets.projectId), eq(assets.kind, "audio")));
+
+  const poolMap = new Map<string, string[]>();
+  const durationByAssetId = new Map<string, number | null>();
+
+  for (const row of rows) {
+    if (!row.originalFilename) continue;
+    const parsed = parseAiSfxPoolPath(row.originalFilename);
+    if (!parsed) continue;
+    const list = poolMap.get(parsed.variantId) ?? [];
+    list.push(row.id);
+    poolMap.set(parsed.variantId, list);
+    durationByAssetId.set(row.id, row.durationSec);
+  }
+
+  return { pools: poolMap, durationByAssetId };
 }
 
 /**
@@ -189,11 +208,13 @@ export async function runAiAssist(
   }
 
   try {
-    const durationBySfxId = await loadPackSfxDurations();
+    const { pools, durationByAssetId: durationBySfxId } =
+      await loadAiSfxPools();
     const sfxEdits = await generateCompanionSfxEdits(
       timelineWordsAfterEmphasis,
       edits,
       (assetId) => durationBySfxId.get(assetId) ?? null,
+      pools,
     );
     edits = [...edits, ...sfxEdits];
     console.log(`[ai-assist] companionSfx=${sfxEdits.length}`);

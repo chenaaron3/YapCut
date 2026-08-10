@@ -54,3 +54,6 @@ yarn-error.log*
 /infra/*.d.ts
 !/infra/jest.config.js
 /.swc
+
+# Local SFX pack (seeded to S3; not committed)
+/public/sfx/

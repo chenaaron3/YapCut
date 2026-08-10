@@ -66,12 +66,12 @@ Short high-impact word span for a quote VFX (~3–8 words), not a full sentence.
 _Avoid_: quote-as-paragraph, quote overlapping listicle
 
 **Companion SFX**:
-An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak emphasis, listicle indicator/value). Optional per candidate (`none` allowed). Not used to plug pacing gaps.
+An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, listicle indicator/value, title card, hook riser). Optional per candidate (`none` allowed). Not used to plug pacing gaps.
 _Avoid_: nesting SFX on zoom/vfx; free-placement SFX as gap filler; SFX on sparse outer emphasis; SFX on slow zooms
 
 **AI SFX pack**:
-Curated role → flavor variants (id, intensity, description) for create AI only. Roles: `motion` (punch-in), `ping` (quote peak), `reveal` (listicle indicator), `tick` (listicle value). Each variant stores a global Asset id. Distinct from the full manual global SFX library.
-_Avoid_: letting the LLM choose from the entire global library; `texture` roles (typing/flash) in v1; resolving pack entries by filename
+Curated role × intensity (`soft`/`medium`/`hard`) for create AI only. Roles: `build` (hook riser), `reveal` (title + listicle indicator), `hit` (title/value weight), `tick` (listicle value), `ping` (quote peak), `motion` (punch-in). LLM picks `role.intensity` or `none`; place-time hash picks one Asset from `public/sfx/<role>/<intensity>/`. Intensity sets volume. `custom/memes/` is manual library only.
+_Avoid_: letting the LLM choose from the entire global library; `texture` roles (typing/flash); meme in AI pool; hardcoding asset UUIDs in the pack
 
 **Beat**:
 A visible or audible onset that resets pacing: punch-in start, quote start, listicle indicator start and value middle (when staggered), emphasized word start, seeded title `vfx/text` start. Target: about one beat every ~3s of keep/output time (~2s in the **hook**).
@@ -169,7 +169,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    4. quotes (punch phrases; greedy ~every 4–5s when punch lines exist; no overlap with listicle; may overlap text/zoom)
    5. emphasis (sparse outside quotes; most content words inside quotes)
    6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
-   7. companion SFX (role + variant from AI SFX pack; 300ms min-gap; priority listicle → quote ping → punch-in motion)
+   7. companion SFX (role.intensity from AI SFX pack; hash-pick asset from pool; 300ms min-gap; priority build → reveal/hit/tick → quote ping → punch-in motion)
    Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
 5. Seed default `captions` TemplateStyle → `ready` (create only)
 
@@ -186,7 +186,7 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - On-screen title is a `vfx`/`text` Edit (seeded, deletable); `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
 - Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
-- Companion SFX are sibling `sfx` edits; AI chooses optional variants from the AI SFX pack only
+- Companion SFX are sibling `sfx` edits; AI chooses optional `role.intensity` from the AI SFX pack only; concrete Asset is hash-picked from the seeded pool
 
 ## Composition matrix (v1)
 
@@ -217,6 +217,6 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid
 - ~~Overlapping idle underlines: stack vs priority~~ → **priority**: all start markers show; underline/highlight/handles use one primary (selected wins, else earlier entry in `EDIT_CHROME`)
-- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority listicle → quote ping → punch-in motion
+- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority build → reveal/hit/tick → quote ping → punch-in motion
 - ~~Aggressive quote cadence hard quota vs soft~~ → **greedy soft prompt** (~every 4–5s when punch lines exist)
 

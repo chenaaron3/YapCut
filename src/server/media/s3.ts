@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -127,5 +128,18 @@ export async function headObject(
       return null;
     }
     throw formatS3Error(error, `HeadObject ${key}`);
+  }
+}
+
+export async function deleteObject(key: string): Promise<void> {
+  try {
+    await getS3Client().send(
+      new DeleteObjectCommand({
+        Bucket: env.AWS_S3_BUCKET,
+        Key: key,
+      }),
+    );
+  } catch (error) {
+    throw formatS3Error(error, `DeleteObject ${key}`);
   }
 }

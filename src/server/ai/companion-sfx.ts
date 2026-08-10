@@ -7,6 +7,7 @@ import {
   formatAiSfxPackForPrompt,
   getAiSfxVariant,
   resolveAiSfxAssetId,
+  volumeForIntensity,
   type AiSfxRole,
 } from "~/domain/ai-sfx-pack";
 import { isListicleEdit } from "~/domain/listicle";
@@ -14,7 +15,6 @@ import { buildNumberedTranscript } from "~/domain/projection";
 import type { Edit, SfxEdit } from "~/domain/project-config";
 import { nextEditId } from "~/domain/project-config";
 import { isQuoteEdit } from "~/domain/quote";
-import { DEFAULT_SFX_VOLUME } from "~/domain/sfx";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
@@ -29,13 +29,21 @@ export type CompanionCandidate = {
 
 export type CompanionSfxAssetDuration = (assetId: string) => number | null;
 
+/** variantId → global asset ids in that pool. */
+export type CompanionSfxPools = ReadonlyMap<string, readonly string[]>;
+
+/** Start the hook riser this many seconds before the title / first beat. */
+const BUILD_LEAD_SEC = 1.2;
+
 const CompanionChoiceSchema = z.object({
   assignments: z.array(
     z.object({
       candidateId: z.string().describe("Id from the candidate list"),
       variantId: z
         .string()
-        .describe('Pack variant id in the candidate\'s role, or "none"'),
+        .describe(
+          'Pack variant id for the candidate role (e.g. motion.soft), or "none"',
+        ),
       reason: z.string().describe("One short sentence"),
     }),
   ),
@@ -43,12 +51,13 @@ const CompanionChoiceSchema = z.object({
 
 export type CompanionSfxDetection = z.infer<typeof CompanionChoiceSchema>;
 
-/** Build optional companion candidates (punch-ins, quote peaks, listicle phases). */
+/** Build optional companion candidates (punch-ins, quotes, listicles, title, hook). */
 export function buildCompanionCandidates(
   edits: readonly Edit[],
   words: readonly GlobalTranscriptWord[],
 ): CompanionCandidate[] {
   const out: CompanionCandidate[] = [];
+  let buildAdded = false;
 
   for (const edit of edits) {
     if (edit.kind === "zoom" && !edit.ease) {
@@ -96,6 +105,53 @@ export function buildCompanionCandidates(
         startSec: valueAt,
         label: `listicle #${edit.id} value "${edit.valueText}"`,
       });
+      out.push({
+        id: `listicle-hit-${edit.id}`,
+        role: "hit",
+        startSec: valueAt,
+        label: `listicle #${edit.id} value weight "${edit.valueText}"`,
+      });
+      continue;
+    }
+
+    if (edit.kind === "vfx" && edit.type === "text") {
+      out.push({
+        id: `title-reveal-${edit.id}`,
+        role: "reveal",
+        startSec: edit.start,
+        label: `title card #${edit.id} "${edit.text}"`,
+      });
+      out.push({
+        id: `title-hit-${edit.id}`,
+        role: "hit",
+        startSec: edit.start,
+        label: `title card #${edit.id} weight "${edit.text}"`,
+      });
+      if (!buildAdded) {
+        out.push({
+          id: `hook-build-${edit.id}`,
+          role: "build",
+          startSec: Math.max(0, edit.start - BUILD_LEAD_SEC),
+          label: `hook riser into title #${edit.id}`,
+        });
+        buildAdded = true;
+      }
+    }
+  }
+
+  // Hook riser even when title card is missing (first keep / earliest punch).
+  if (!buildAdded) {
+    const earliest = out.reduce<number | null>((min, c) => {
+      if (min == null || c.startSec < min) return c.startSec;
+      return min;
+    }, null);
+    if (earliest != null) {
+      out.push({
+        id: "hook-build",
+        role: "build",
+        startSec: Math.max(0, earliest - BUILD_LEAD_SEC),
+        label: "hook riser into first beat",
+      });
     }
   }
 
@@ -117,7 +173,9 @@ export function applyCompanionMinGap(
 ): RankedHit[] {
   const sorted = [...hits].sort(
     (a, b) =>
-      a.startSec - b.startSec || b.priority - a.priority || a.candidateId.localeCompare(b.candidateId),
+      a.startSec - b.startSec ||
+      b.priority - a.priority ||
+      a.candidateId.localeCompare(b.candidateId),
   );
   const kept: RankedHit[] = [];
 
@@ -143,6 +201,7 @@ export function detectionToSfxEdits(
   candidates: readonly CompanionCandidate[],
   existingEdits: readonly { id: number }[],
   durationSecFor: CompanionSfxAssetDuration,
+  pools: CompanionSfxPools,
 ): SfxEdit[] {
   const byId = new Map(candidates.map((c) => [c.id, c]));
   const ranked: RankedHit[] = [];
@@ -169,7 +228,13 @@ export function detectionToSfxEdits(
   const out: SfxEdit[] = [];
 
   for (const hit of kept) {
-    const assetId = resolveAiSfxAssetId(hit.variantId);
+    const variant = getAiSfxVariant(hit.variantId);
+    if (!variant) continue;
+    const assetId = resolveAiSfxAssetId(
+      hit.variantId,
+      hit.candidateId,
+      pools,
+    );
     if (!assetId) continue;
     const dur = durationSecFor(assetId) ?? 0.35;
     const end = hit.startSec + Math.max(0.05, dur);
@@ -180,7 +245,7 @@ export function detectionToSfxEdits(
       end,
       assetId,
       mediaOffsetSec: 0,
-      volume: DEFAULT_SFX_VOLUME,
+      volume: volumeForIntensity(variant.intensity),
     });
     nextId += 1;
   }
@@ -211,9 +276,10 @@ async function callOpenAI(
         role: "system",
         content: [
           "You assign companion SFX variants to visual edit candidates for a talking-head short.",
-          "Each candidate has a fixed role — only pick a variant from that role, or none.",
+          "Each candidate has a fixed role — only pick a variant id from that role (role.soft|medium|hard), or none.",
           "Not every candidate needs SFX. Prefer silence over spam. Skip slow/filler moments.",
-          "Match intensity/vibe to the moment using the pack descriptions.",
+          "Match intensity to the moment using the pack descriptions.",
+          "build is optional hook anticipation; reveal is overlay enter; hit is weight; tick confirms list values; ping is quote sparkle; motion is punch-in whoosh.",
           "Return one assignment per candidate you decide on; omitted candidates are treated as none.",
         ].join(" "),
       },
@@ -247,14 +313,21 @@ async function callOpenAI(
   return parsed;
 }
 
-/** Optional companion SFX edits from punch-ins, quote peaks, and listicles. */
+/** Optional companion SFX edits from punch-ins, quote peaks, listicles, title, hook. */
 export async function generateCompanionSfxEdits(
   words: readonly GlobalTranscriptWord[],
   edits: readonly Edit[],
   durationSecFor: CompanionSfxAssetDuration,
+  pools: CompanionSfxPools,
 ): Promise<SfxEdit[]> {
   const candidates = buildCompanionCandidates(edits, words);
   if (candidates.length === 0) return [];
   const detection = await callOpenAI(candidates, words);
-  return detectionToSfxEdits(detection, candidates, edits, durationSecFor);
+  return detectionToSfxEdits(
+    detection,
+    candidates,
+    edits,
+    durationSecFor,
+    pools,
+  );
 }

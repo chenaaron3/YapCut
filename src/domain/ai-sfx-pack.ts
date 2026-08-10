@@ -1,21 +1,28 @@
 /**
  * Curated AI SFX pack — create-pipeline companion SFX only.
- * Variants point at seeded global Asset ids (`projectId` null).
+ * LLM picks role + intensity; place-time hash picks a concrete global Asset
+ * from `public/sfx/<role>/<intensity>/` (seeded with that relative path).
  */
 
-export const AI_SFX_ROLES = ["motion", "ping", "reveal", "tick"] as const;
+export const AI_SFX_ROLES = [
+  "build",
+  "reveal",
+  "hit",
+  "tick",
+  "ping",
+  "motion",
+] as const;
 export type AiSfxRole = (typeof AI_SFX_ROLES)[number];
 
-export type AiSfxIntensity = "soft" | "medium" | "hard";
+export const AI_SFX_INTENSITIES = ["soft", "medium", "hard"] as const;
+export type AiSfxIntensity = (typeof AI_SFX_INTENSITIES)[number];
 
 export type AiSfxVariant = {
-  /** Stable id for LLM choice, e.g. `motion.whoosh2`. */
-  id: string;
+  /** Stable id for LLM choice, e.g. `motion.soft`. */
+  id: `${AiSfxRole}.${AiSfxIntensity}`;
   role: AiSfxRole;
-  /** Global audio Asset id. */
-  assetId: string;
-  label: string;
   intensity: AiSfxIntensity;
+  label: string;
   /** Short vibe note shown to the LLM. */
   description: string;
 };
@@ -25,184 +32,246 @@ export const COMPANION_SFX_MIN_GAP_SEC = 0.3;
 
 /**
  * Priority when two companions want onsets within {@link COMPANION_SFX_MIN_GAP_SEC}.
- * Higher wins. `reveal` and `tick` share top tier (different listicle phases).
+ * Higher wins.
  */
 export const COMPANION_SFX_ROLE_PRIORITY: Record<AiSfxRole, number> = {
-  tick: 3,
+  build: 4,
   reveal: 3,
+  hit: 3,
+  tick: 3,
   ping: 2,
   motion: 1,
 };
 
+/** Linear gain by intensity (under dialogue). */
+export const AI_SFX_VOLUME_BY_INTENSITY: Record<AiSfxIntensity, number> = {
+  soft: 0.45,
+  medium: 0.65,
+  hard: 0.85,
+};
+
+export function volumeForIntensity(intensity: AiSfxIntensity): number {
+  return AI_SFX_VOLUME_BY_INTENSITY[intensity];
+}
+
+const ROLE_SET = new Set<string>(AI_SFX_ROLES);
+const INTENSITY_SET = new Set<string>(AI_SFX_INTENSITIES);
+
 /**
- * Curated flavors. Keep meme / texture packs out — manual library only.
- * Asset ids are from the seeded global SFX rows.
+ * Catalog: one entry per role × intensity. No asset UUIDs — pools come from
+ * seeded global Assets keyed by relative path.
  */
 export const AI_SFX_PACK: readonly AiSfxVariant[] = [
-  // motion — punch-in only (not slow zooms)
   {
-    id: "motion.swish",
-    role: "motion",
-    assetId: "a71663b9-872c-4622-9cf5-3047a834af1d",
-    label: "Swish",
+    id: "build.soft",
+    role: "build",
     intensity: "soft",
-    description: "Light airy swipe; subtle camera move, calm delivery.",
+    label: "Soft rise",
+    description: "Calm hook anticipation; title can land alone.",
   },
   {
-    id: "motion.whoosh1",
-    role: "motion",
-    assetId: "5075e0fc-6016-4623-a60c-c3a968901a32",
-    label: "Whoosh 1",
+    id: "build.medium",
+    role: "build",
     intensity: "medium",
-    description: "Clean mid whoosh; default punch-in energy.",
+    label: "Clean rise",
+    description: "Default hook tension into title.",
   },
   {
-    id: "motion.whoosh2",
-    role: "motion",
-    assetId: "d26cc940-c387-42ca-a146-1dc7104a28d6",
-    label: "Whoosh 2",
-    intensity: "medium",
-    description: "Slightly brighter whoosh; upbeat or confident line.",
-  },
-  {
-    id: "motion.whoosh3",
-    role: "motion",
-    assetId: "da2612ce-6e8c-42db-8495-563f2573b046",
-    label: "Whoosh 3",
+    id: "build.hard",
+    role: "build",
     intensity: "hard",
-    description: "Punchier whoosh; strong claim or hook hit.",
+    label: "Sharp rise",
+    description: "High-energy hook; bold claim coming.",
   },
   {
-    id: "motion.swish_scifi",
-    role: "motion",
-    assetId: "af5cafb3-9a30-4e73-8da8-02cc01c94669",
-    label: "Sci-fi swish",
-    intensity: "hard",
-    description: "Processed futuristic swipe; techy or dramatic punch-in.",
-  },
-
-  // ping — quote peak emphasis (optional; often none)
-  {
-    id: "ping.ding_light",
-    role: "ping",
-    assetId: "bb5200c8-2bbb-4c2b-9fb1-d10665456799",
-    label: "Ding light",
+    id: "reveal.soft",
+    role: "reveal",
     intensity: "soft",
-    description: "Soft chime; gentle key-word pop inside a quote.",
+    label: "Soft enter",
+    description: "Understated title or quiet tip card appear.",
   },
   {
-    id: "ping.beep",
+    id: "reveal.medium",
+    role: "reveal",
+    intensity: "medium",
+    label: "Card enter",
+    description: "Classic list / tip card or title enter.",
+  },
+  {
+    id: "reveal.hard",
+    role: "reveal",
+    intensity: "hard",
+    label: "Snap enter",
+    description: "Bold title or high-energy indicator appear.",
+  },
+  {
+    id: "hit.soft",
+    role: "hit",
+    intensity: "soft",
+    label: "Soft thud",
+    description: "Gentle weight land; support without boom.",
+  },
+  {
+    id: "hit.medium",
+    role: "hit",
+    intensity: "medium",
+    label: "Body hit",
+    description: "Default weight on title / claim / value land.",
+  },
+  {
+    id: "hit.hard",
+    role: "hit",
+    intensity: "hard",
+    label: "Hard boom",
+    description: "Hook payoff or strongest number drop.",
+  },
+  {
+    id: "tick.soft",
+    role: "tick",
+    intensity: "soft",
+    label: "Soft tap",
+    description: "Quiet listicle value confirm.",
+  },
+  {
+    id: "tick.medium",
+    role: "tick",
+    intensity: "medium",
+    label: "Click",
+    description: "Default listicle value land / UI select.",
+  },
+  {
+    id: "tick.hard",
+    role: "tick",
+    intensity: "hard",
+    label: "Punchy boop",
+    description: "Playful or punchy list item confirm.",
+  },
+  {
+    id: "ping.soft",
     role: "ping",
-    assetId: "eaec1e05-6a3a-4926-91ff-e546fdf28714",
+    intensity: "soft",
+    label: "Soft ding",
+    description: "Gentle quote keyword sparkle; often skip.",
+  },
+  {
+    id: "ping.medium",
+    role: "ping",
+    intensity: "medium",
     label: "Beep",
-    intensity: "medium",
-    description: "Short UI beep; clear but not shouty highlight.",
+    description: "Clear quote peak highlight.",
   },
   {
-    id: "ping.boop_upbeat",
+    id: "ping.hard",
     role: "ping",
-    assetId: "e10961ba-210f-420f-8406-b173cf36aa37",
-    label: "Boop upbeat",
-    intensity: "medium",
-    description: "Playful boop; friendly or witty punch phrase.",
-  },
-  {
-    id: "ping.ding_strong",
-    role: "ping",
-    assetId: "5fc291e4-97fe-4cbc-9194-2b45814ecf8b",
-    label: "Ding strong",
     intensity: "hard",
-    description: "Bright ding; high-stakes or memorable word in the quote.",
+    label: "Strong ding",
+    description: "Memorable / high-stakes word in a quote.",
   },
   {
-    id: "ping.lips_pop",
-    role: "ping",
-    assetId: "b58bcec2-a5df-41ff-b8f9-8913510ab2cf",
-    label: "Lips pop",
+    id: "motion.soft",
+    role: "motion",
     intensity: "soft",
-    description: "Organic pop; soft organic vibe without a hard chime.",
+    label: "Soft swish",
+    description: "Subtle punch-in; calm delivery.",
   },
-
-  // reveal — listicle indicator phase
   {
-    id: "reveal.flip",
-    role: "reveal",
-    assetId: "ed569ef2-08b6-4d4e-ac3b-681863e9b34f",
-    label: "Page flip",
+    id: "motion.medium",
+    role: "motion",
     intensity: "medium",
-    description: "Paper page turn; classic list / tip card enter.",
+    label: "Whoosh",
+    description: "Default punch-in camera energy.",
   },
   {
-    id: "reveal.title_enter",
-    role: "reveal",
-    assetId: "05699f7c-4c11-4af4-bbc6-e21d0c07ee1a",
-    label: "Title enter",
-    intensity: "soft",
-    description: "Soft UI enter; understated indicator appear.",
-  },
-  {
-    id: "reveal.swish",
-    role: "reveal",
-    assetId: "a71663b9-872c-4622-9cf5-3047a834af1d",
-    label: "Swish",
-    intensity: "soft",
-    description: "Light swipe in; quick indicator without paper texture.",
-  },
-
-  // tick — listicle value land
-  {
-    id: "tick.mouse_click",
-    role: "tick",
-    assetId: "8f513e7e-d712-46b7-8617-c8c9981a24bc",
-    label: "Mouse click",
-    intensity: "medium",
-    description: "Crisp click; value lands like a UI select.",
-  },
-  {
-    id: "tick.tap",
-    role: "tick",
-    assetId: "9b5a941f-b282-484e-bdf3-95b86c6172b3",
-    label: "Tap",
-    intensity: "soft",
-    description: "Soft finger tap; quieter value confirm.",
-  },
-  {
-    id: "tick.boop_airplane",
-    role: "tick",
-    assetId: "ce31d48d-9fc1-43e5-9b25-ad1dcc5d781d",
-    label: "Boop airplane",
+    id: "motion.hard",
+    role: "motion",
     intensity: "hard",
-    description: "Snappy cartoon boop; punchy list item land.",
+    label: "Hard whoosh",
+    description: "Strong claim / hook punch-in whoosh.",
   },
 ] as const;
 
 const BY_ID = new Map(AI_SFX_PACK.map((v) => [v.id, v]));
 
 export function getAiSfxVariant(id: string): AiSfxVariant | undefined {
-  return BY_ID.get(id);
+  return BY_ID.get(id as AiSfxVariant["id"]);
 }
 
 export function aiSfxVariantsForRole(role: AiSfxRole): AiSfxVariant[] {
   return AI_SFX_PACK.filter((v) => v.role === role);
 }
 
-/** LLM-facing catalog: roles, ids, intensity, descriptions (not raw asset UUIDs). */
+export function variantIdFor(
+  role: AiSfxRole,
+  intensity: AiSfxIntensity,
+): AiSfxVariant["id"] {
+  return `${role}.${intensity}`;
+}
+
+/** Parse `build/soft/foo.wav` → pool key; ignore `custom/…` and unknown paths. */
+export function parseAiSfxPoolPath(
+  relativePath: string,
+): { role: AiSfxRole; intensity: AiSfxIntensity; variantId: AiSfxVariant["id"] } | null {
+  const cleaned = relativePath.replace(/^\/+/, "").replace(/\\/g, "/");
+  const parts = cleaned.split("/");
+  if (parts.length < 3) return null;
+  const [role, intensity] = parts;
+  if (!role || !intensity) return null;
+  if (!ROLE_SET.has(role) || !INTENSITY_SET.has(intensity)) return null;
+  const r = role as AiSfxRole;
+  const i = intensity as AiSfxIntensity;
+  return { role: r, intensity: i, variantId: variantIdFor(r, i) };
+}
+
+/** Stable hash → index into a sorted pool. */
+export function pickAiSfxAssetId(
+  poolAssetIds: readonly string[],
+  seedKey: string,
+): string | null {
+  if (poolAssetIds.length === 0) return null;
+  const sorted = [...poolAssetIds].sort();
+  let h = 2166136261;
+  for (let i = 0; i < seedKey.length; i++) {
+    h ^= seedKey.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const idx = Math.abs(h) % sorted.length;
+  return sorted[idx] ?? null;
+}
+
+/** LLM-facing catalog: roles, ids, intensity, descriptions (not asset UUIDs). */
 export function formatAiSfxPackForPrompt(): string {
   const lines: string[] = [
-    "AI SFX pack (pick variant id, or none). Stay in the role for each companion.",
+    "AI SFX pack (pick variant id like motion.soft, or none). Stay in the role for each companion.",
   ];
   for (const role of AI_SFX_ROLES) {
     lines.push(`## ${role}`);
     for (const v of aiSfxVariantsForRole(role)) {
-      lines.push(
-        `- ${v.id} [${v.intensity}] ${v.label}: ${v.description}`,
-      );
+      lines.push(`- ${v.id} [${v.intensity}] ${v.label}: ${v.description}`);
     }
   }
   return lines.join("\n");
 }
 
-/** Asset id for a variant, or null if the variant id is unknown. */
-export function resolveAiSfxAssetId(variantId: string): string | null {
-  return getAiSfxVariant(variantId)?.assetId ?? null;
+/** Asset id for a variant pool + seed, or null if unknown / empty pool. */
+export function resolveAiSfxAssetId(
+  variantId: string,
+  seedKey: string,
+  pools: ReadonlyMap<string, readonly string[]>,
+): string | null {
+  const variant = getAiSfxVariant(variantId);
+  if (!variant) return null;
+  const pool = pools.get(variant.id);
+  if (!pool?.length) return null;
+  return pickAiSfxAssetId(pool, seedKey);
+}
+
+/** Expected on-disk folders for seed validation. */
+export function expectedAiSfxPoolDirs(): string[] {
+  const out: string[] = [];
+  for (const role of AI_SFX_ROLES) {
+    for (const intensity of AI_SFX_INTENSITIES) {
+      out.push(`${role}/${intensity}`);
+    }
+  }
+  return out;
 }
