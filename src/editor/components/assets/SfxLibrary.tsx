@@ -1,7 +1,11 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { DEFAULT_SFX_VOLUME, SFX_DRAG_MIME } from "~/domain/sfx";
+import {
+  DEFAULT_SFX_VOLUME,
+  formatSfxLabel,
+  SFX_DRAG_MIME,
+} from "~/domain/sfx";
 import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
 import { cn } from "~/lib/utils";
 
@@ -21,11 +25,6 @@ function folderOf(filename: string | null): string | null {
   if (!filename) return null;
   const parts = filename.split("/");
   return parts.length >= 2 ? (parts[0] ?? null) : null;
-}
-
-function labelOf(filename: string | null, id: string): string {
-  if (!filename) return id.slice(0, 8);
-  return filename.split("/").pop() ?? filename;
 }
 
 function groupSfx(assets: EditorAsset[]) {
@@ -73,7 +72,7 @@ function SfxRow({
   playingKey: string | null;
   onPreview: (key: string, src: string, volume?: number) => void;
 }) {
-  const label = labelOf(asset.originalFilename, asset.id);
+  const label = formatSfxLabel(asset.originalFilename, asset.id);
   const canDrag = asset.kind === "audio" && asset.playbackUrl.length > 0;
 
   return (

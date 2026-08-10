@@ -1,10 +1,6 @@
+import { formatSfxLabel } from "~/domain/sfx";
 import { Label } from "~/components/ui/label";
 import { useEditor } from "~/editor/store";
-
-function sfxOptionLabel(filename: string | null, id: string): string {
-  if (!filename) return id.slice(0, 8);
-  return filename;
-}
 
 export function ProjectSettingsInspector() {
   const assets = useEditor((s) => s.assets);
@@ -17,8 +13,8 @@ export function ProjectSettingsInspector() {
     .filter((a) => a.kind === "audio")
     .slice()
     .sort((a, b) =>
-      sfxOptionLabel(a.originalFilename, a.id).localeCompare(
-        sfxOptionLabel(b.originalFilename, b.id),
+      formatSfxLabel(a.originalFilename, a.id).localeCompare(
+        formatSfxLabel(b.originalFilename, b.id),
       ),
     );
   const defaultSfxId = config?.defaultBRollSfxAssetId ?? null;
@@ -43,7 +39,7 @@ export function ProjectSettingsInspector() {
           ) : null}
           {sfxAssets.map((a) => (
             <option key={a.id} value={a.id}>
-              {sfxOptionLabel(a.originalFilename, a.id)}
+              {formatSfxLabel(a.originalFilename, a.id)}
             </option>
           ))}
         </select>

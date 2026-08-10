@@ -1,4 +1,5 @@
 import type { SfxEdit } from "~/domain/project-config";
+import { formatSfxLabel } from "~/domain/sfx";
 import { Label } from "~/components/ui/label";
 import { SliderField } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
@@ -10,7 +11,7 @@ export function SfxInspector({ edit }: { edit: SfxEdit }) {
   const patchEdit = useEditor((s) => s.patchEdit);
 
   const asset = assets.find((a) => a.id === edit.assetId);
-  const label = asset?.originalFilename ?? edit.assetId.slice(0, 8);
+  const label = formatSfxLabel(asset?.originalFilename, edit.assetId);
   const srcDur = asset?.durationSec ?? null;
   const maxOffset =
     srcDur != null ? Math.max(0, srcDur - MIN_RANGE_SEC) : 0;

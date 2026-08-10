@@ -1,4 +1,5 @@
 import type { SfxEdit } from "~/domain/project-config";
+import { formatSfxLabel } from "~/domain/sfx";
 import { Handle, TrackLabel, useTrackDrag } from "~/editor/components/timeline/shared";
 import { clampRangeEdge } from "~/editor/lib/range";
 import { isSelected } from "~/editor/lib/selection";
@@ -29,9 +30,7 @@ export function SfxTrack({ edits, width }: Props) {
       {edits.map((edit) => {
         const { left, width: w } = rangeStyle(edit.start, edit.end, pxPerSec);
         const asset = assets.find((a) => a.id === edit.assetId);
-        const label =
-          asset?.originalFilename?.split("/").pop() ??
-          edit.assetId.slice(0, 6);
+        const label = formatSfxLabel(asset?.originalFilename, edit.assetId);
         return (
           <button
             key={edit.id}
