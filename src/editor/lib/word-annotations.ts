@@ -171,8 +171,20 @@ export function isSplitHandleRole(role: RangeRole): boolean {
 }
 
 /**
- * Single span driving underline / highlight / handles.
- * Selected edit wins; otherwise earlier entry in `EDIT_CHROME`.
+ * Compare for primary chrome: lower `chromeRank`, then lower `editId`.
+ */
+export function compareChromePriority(
+  a: WordEditSpan,
+  b: WordEditSpan,
+): number {
+  const rankDiff = chromeRank(a.chromeKey) - chromeRank(b.chromeKey);
+  if (rankDiff !== 0) return rankDiff;
+  return a.editId - b.editId;
+}
+
+/**
+ * Single span driving underline / highlight / handles / collapsed marker.
+ * Selected edit wins; otherwise earlier entry in `EDIT_CHROME`, then lower editId.
  */
 export function resolvePrimarySpan(
   spans: readonly WordEditSpan[],
@@ -186,14 +198,16 @@ export function resolvePrimarySpan(
   const pool = selected.length > 0 ? selected : spans;
 
   let best = pool[0]!;
-  let bestRank = chromeRank(best.chromeKey);
   for (let i = 1; i < pool.length; i++) {
     const span = pool[i]!;
-    const rank = chromeRank(span.chromeKey);
-    if (rank < bestRank) {
-      best = span;
-      bestRank = rank;
-    }
+    if (compareChromePriority(span, best) < 0) best = span;
   }
   return best;
+}
+
+/** Markers ordered by shared chrome priority (primary-first). */
+export function sortByChromePriority(
+  spans: readonly WordEditSpan[],
+): WordEditSpan[] {
+  return [...spans].sort(compareChromePriority);
 }

@@ -476,3 +476,175 @@ export function timelineRangeToOutput(
   if (e <= s + EPS) return null;
   return { start: Math.min(s, e), end: Math.max(s, e) };
 }
+
+/** Unique A-roll asset ids in stitch order (contiguous runs). */
+export function arollAssetOrder(arolls: readonly ArollKeep[]): string[] {
+  const ids: string[] = [];
+  for (const keep of arolls) {
+    if (ids[ids.length - 1] !== keep.assetId) ids.push(keep.assetId);
+  }
+  return ids;
+}
+
+function groupArollKeepsByAsset(
+  arolls: readonly ArollKeep[],
+): { assetId: string; keeps: ArollKeep[] }[] {
+  const groups: { assetId: string; keeps: ArollKeep[] }[] = [];
+  for (const keep of arolls) {
+    const last = groups[groups.length - 1];
+    if (last?.assetId === keep.assetId) {
+      last.keeps.push({ ...keep });
+    } else {
+      groups.push({ assetId: keep.assetId, keeps: [{ ...keep }] });
+    }
+  }
+  return groups;
+}
+
+/** One A-roll asset’s contiguous run on the expanded timeline. */
+export type ArollAssetRun = TimelineTime & { assetId: string };
+
+/** Timeline span of each asset run (keeps + gaps) in layout order. */
+export function assetRunTimelineRanges(
+  cells: readonly ArollLayoutCell[],
+): ArollAssetRun[] {
+  const runs: ArollAssetRun[] = [];
+  for (const cell of cells) {
+    const last = runs[runs.length - 1];
+    if (last?.assetId === cell.local.assetId) {
+      last.end = cell.timeline.end;
+    } else {
+      runs.push({
+        assetId: cell.local.assetId,
+        start: cell.timeline.start,
+        end: cell.timeline.end,
+      });
+    }
+  }
+  return runs;
+}
+
+/** Timeline run for one A-roll asset, or null if absent. */
+export function assetRunForAssetId(
+  arolls: readonly ArollKeep[],
+  assetDurationSec: ReadonlyMap<string, number>,
+  assetId: string,
+): ArollAssetRun | null {
+  const runs = assetRunTimelineRanges(
+    buildArollLayout(arolls, assetDurationSec),
+  );
+  return runs.find((r) => r.assetId === assetId) ?? null;
+}
+
+/** True when `timelineSec` falls in the run (end inclusive only on last run). */
+export function timelineSecInAssetRun(
+  run: ArollAssetRun,
+  timelineSec: number,
+  options?: { isLastRun?: boolean },
+): boolean {
+  if (timelineSec < run.start) return false;
+  if (options?.isLastRun) return timelineSec <= run.end;
+  return timelineSec < run.end;
+}
+
+function assetRunAtTimelineSec(
+  runs: readonly ArollAssetRun[],
+  timelineSec: number,
+): ArollAssetRun | null {
+  if (runs.length === 0) return null;
+  for (let i = 0; i < runs.length; i++) {
+    const run = runs[i]!;
+    if (
+      timelineSecInAssetRun(run, timelineSec, {
+        isLastRun: i === runs.length - 1,
+      })
+    ) {
+      return run;
+    }
+  }
+  return null;
+}
+
+function moveIndex<T>(list: readonly T[], from: number, to: number): T[] {
+  if (
+    from === to ||
+    from < 0 ||
+    to < 0 ||
+    from >= list.length ||
+    to >= list.length
+  ) {
+    return [...list];
+  }
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item!);
+  return next;
+}
+
+/**
+ * Move an A-roll asset run from `fromIndex` → `toIndex` (stitch order).
+ * Edits whose `start` falls in a run move with that run; `end` (and listicle
+ * `middle`) are clamped to the run's new timeline end.
+ */
+export function reorderArollAssets(
+  config: ProjectConfig,
+  fromIndex: number,
+  toIndex: number,
+  assetDurationSec: ReadonlyMap<string, number>,
+): ProjectConfig {
+  const currentOrder = arollAssetOrder(config.arolls);
+  const nextOrder = moveIndex(currentOrder, fromIndex, toIndex);
+  if (
+    nextOrder.length === 0 ||
+    nextOrder.every((id, i) => id === currentOrder[i])
+  ) {
+    return config;
+  }
+
+  const groups = groupArollKeepsByAsset(config.arolls);
+  const keepsByAsset = new Map(groups.map((g) => [g.assetId, g.keeps]));
+  const nextArolls = nextOrder.flatMap((id) => keepsByAsset.get(id) ?? []);
+
+  const oldRuns = assetRunTimelineRanges(
+    buildArollLayout(config.arolls, assetDurationSec),
+  );
+  const newRuns = assetRunTimelineRanges(
+    buildArollLayout(nextArolls, assetDurationSec),
+  );
+  const newByAsset = new Map(newRuns.map((r) => [r.assetId, r]));
+
+  const nextEdits: Edit[] = [];
+  for (const edit of config.edits) {
+    const oldRun = assetRunAtTimelineSec(oldRuns, edit.start);
+    if (!oldRun) {
+      nextEdits.push(edit);
+      continue;
+    }
+    const newRun = newByAsset.get(oldRun.assetId);
+    if (!newRun) {
+      nextEdits.push(edit);
+      continue;
+    }
+
+    const delta = newRun.start - oldRun.start;
+    const start = edit.start + delta;
+    const end = Math.min(edit.end + delta, newRun.end);
+    if (end <= start + EPS) continue;
+
+    if (edit.kind === "vfx" && edit.type === "listicle") {
+      let middle = edit.middle;
+      if (middle != null) {
+        middle = Math.min(Math.max(middle + delta, start), end);
+      }
+      nextEdits.push({ ...edit, start, end, middle });
+      continue;
+    }
+
+    nextEdits.push({ ...edit, start, end });
+  }
+
+  return produce(config, (draft) => {
+    draft.arolls = nextArolls;
+    draft.edits = nextEdits;
+  });
+}

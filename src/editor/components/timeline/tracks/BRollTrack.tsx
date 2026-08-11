@@ -1,12 +1,17 @@
-import type { BrollEdit } from "~/domain/project-config";
-import { Handle, TrackLabel, useTrackDrag } from "~/editor/components/timeline/shared";
+import {
+  Handle,
+  TrackLabel,
+  useTrackDrag,
+} from "~/editor/components/timeline/shared";
 import { clampRangeEdge } from "~/editor/lib/range";
-import { isSelected } from "~/editor/lib/selection";
 import { rangeStyle } from "~/editor/lib/timeline-time";
+import { useIsSelected } from "~/editor/lib/use-is-selected";
 import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
+
+import type { BrollEdit } from "~/domain/project-config";
 
 type Props = {
   edits: BrollEdit[];
@@ -14,10 +19,10 @@ type Props = {
 };
 
 export function BRollTrack({ edits, width }: Props) {
+  const isSel = useIsSelected();
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const assets = useEditor((s) => s.assets);
   const patchEditRangeById = useEditor((s) => s.patchEditRangeById);
-  const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
   const snap = useTimelineSnap();
   const { startDrag } = useTrackDrag();
@@ -30,8 +35,7 @@ export function BRollTrack({ edits, width }: Props) {
         const { left, width: w } = rangeStyle(edit.start, edit.end, pxPerSec);
         const asset = assets.find((a) => a.id === edit.assetId);
         const label =
-          asset?.originalFilename?.split("/").pop() ??
-          edit.assetId.slice(0, 6);
+          asset?.originalFilename?.split("/").pop() ?? edit.assetId.slice(0, 6);
         return (
           <button
             key={edit.id}
@@ -39,8 +43,8 @@ export function BRollTrack({ edits, width }: Props) {
             type="button"
             title={`B-roll ${edit.start.toFixed(2)}–${edit.end.toFixed(2)}s · ${label}`}
             className={cn(
-              "absolute top-1 bottom-1 flex items-center overflow-hidden rounded bg-broll/50 px-1 text-[10px] text-black select-none",
-              isSelected(selection, "edit", edit.id) &&
+              "bg-broll/50 absolute top-1 bottom-1 flex items-center overflow-hidden rounded px-1 text-[10px] text-black select-none",
+              isSel("edit", edit.id) &&
                 "z-[2] outline outline-2 outline-white",
             )}
             style={{ left, width: w }}

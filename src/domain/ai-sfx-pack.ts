@@ -7,7 +7,6 @@
 export const AI_SFX_ROLES = [
   "build",
   "reveal",
-  "hit",
   "tick",
   "ping",
   "motion",
@@ -27,7 +26,7 @@ export type AiSfxVariant = {
   description: string;
 };
 
-/** Companion SFX stacking: drop lower-priority hit if closer than this. */
+/** Companion SFX stacking: drop lower-priority onset if closer than this. */
 export const COMPANION_SFX_MIN_GAP_SEC = 0.3;
 
 /**
@@ -37,7 +36,6 @@ export const COMPANION_SFX_MIN_GAP_SEC = 0.3;
 export const COMPANION_SFX_ROLE_PRIORITY: Record<AiSfxRole, number> = {
   build: 4,
   reveal: 3,
-  hit: 3,
   tick: 3,
   ping: 2,
   motion: 1,
@@ -103,27 +101,6 @@ export const AI_SFX_PACK: readonly AiSfxVariant[] = [
     intensity: "hard",
     label: "Snap enter",
     description: "Bold title or high-energy indicator appear.",
-  },
-  {
-    id: "hit.soft",
-    role: "hit",
-    intensity: "soft",
-    label: "Soft thud",
-    description: "Gentle weight land; support without boom.",
-  },
-  {
-    id: "hit.medium",
-    role: "hit",
-    intensity: "medium",
-    label: "Body hit",
-    description: "Default weight on title / claim / value land.",
-  },
-  {
-    id: "hit.hard",
-    role: "hit",
-    intensity: "hard",
-    label: "Hard boom",
-    description: "Hook payoff or strongest number drop.",
   },
   {
     id: "tick.soft",

@@ -52,4 +52,17 @@ test("MediaStack creates private bucket and signed CloudFront distribution", () 
 
   template.resourceCountIs("AWS::CloudFront::PublicKey", 1);
   template.resourceCountIs("AWS::CloudFront::KeyGroup", 1);
+  template.resourceCountIs("AWS::CloudFront::ResponseHeadersPolicy", 1);
+  template.resourceCountIs("AWS::CloudFront::Function", 1);
+
+  template.hasResourceProperties("AWS::CloudFront::ResponseHeadersPolicy", {
+    ResponseHeadersPolicyConfig: {
+      CorsConfig: {
+        AccessControlAllowOrigins: {
+          Items: Match.arrayWith(["http://localhost:3000"]),
+        },
+        OriginOverride: true,
+      },
+    },
+  });
 });

@@ -1,8 +1,8 @@
 import { useCallback, useRef } from "react";
 
 import { TrackLabel } from "~/editor/components/timeline/shared";
-import { isSelected } from "~/editor/lib/selection";
 import { rangeStyle } from "~/editor/lib/timeline-time";
+import { useIsSelected } from "~/editor/lib/use-is-selected";
 import { useWordDragSelect } from "~/editor/lib/use-word-drag-select";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useGlobalWords } from "~/editor/store";
@@ -13,10 +13,10 @@ type Props = {
 };
 
 export function CaptionTrack({ width }: Props) {
+  const isSel = useIsSelected();
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const seekTimeline = useEditor((s) => s.seekTimeline);
   const words = useGlobalWords();
-  const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
   const captionTrackRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +70,7 @@ export function CaptionTrack({ width }: Props) {
       >
         {words.map((word) => {
           const { left, width: w } = rangeStyle(word.start, word.end, pxPerSec);
-          const selected = isSelected(selection, "word", word.globalIndex);
+          const selected = isSel("word", word.globalIndex);
           return (
             <div
               key={word.globalIndex}
@@ -80,7 +80,7 @@ export function CaptionTrack({ width }: Props) {
                 "absolute top-1 bottom-1 z-[1] flex cursor-pointer items-center overflow-hidden rounded px-0.5 text-[10px] select-none",
                 word.inGap ? "text-[#e8eaef]/55" : "text-[#e8eaef]",
                 selected
-                  ? "z-[2] bg-accent/50 outline outline-2 outline-white"
+                  ? "bg-accent/50 z-[2] outline outline-2 outline-white"
                   : word.inGap
                     ? "bg-accent/10"
                     : word.emphasized

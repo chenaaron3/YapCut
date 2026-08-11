@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import { arollAssetOrder } from "~/domain/arolls";
 import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
 import { BrollLibrary } from "~/editor/components/assets/BrollLibrary";
 import { SfxLibrary } from "~/editor/components/assets/SfxLibrary";
@@ -9,24 +10,24 @@ import { cn } from "~/lib/utils";
 
 type Tab = "aroll" | "broll" | "vfx" | "sfx";
 
-function arollAssetIds(configArolls: { assetId: string }[]): Set<string> {
-  return new Set(configArolls.map((k) => k.assetId));
-}
-
 export function AssetsPanel() {
   const assets = useEditor((s) => s.assets);
   const config = useEditor((s) => s.config);
   const [tab, setTab] = useState<Tab>("broll");
 
-  const arollIds = useMemo(
-    () => arollAssetIds(config?.arolls ?? []),
+  const arollOrder = useMemo(
+    () => arollAssetOrder(config?.arolls ?? []),
     [config?.arolls],
   );
 
-  const arollAssets = useMemo(
-    () => assets.filter((a) => arollIds.has(a.id)),
-    [assets, arollIds],
-  );
+  const arollIds = useMemo(() => new Set(arollOrder), [arollOrder]);
+
+  const arollAssets = useMemo(() => {
+    const byId = new Map(assets.map((a) => [a.id, a]));
+    return arollOrder
+      .map((id) => byId.get(id))
+      .filter((a): a is NonNullable<typeof a> => a != null);
+  }, [assets, arollOrder]);
 
   const brollAssets = useMemo(
     () =>

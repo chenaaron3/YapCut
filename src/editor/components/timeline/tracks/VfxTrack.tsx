@@ -1,9 +1,12 @@
 import { clampListicleMiddle, isListicleEdit } from "~/domain/listicle";
-import type { VfxEdit } from "~/domain/project-config";
-import { Handle, TrackLabel, useTrackDrag } from "~/editor/components/timeline/shared";
+import {
+  Handle,
+  TrackLabel,
+  useTrackDrag,
+} from "~/editor/components/timeline/shared";
 import { clampRangeEdge } from "~/editor/lib/range";
-import { isSelected } from "~/editor/lib/selection";
 import { rangeStyle } from "~/editor/lib/timeline-time";
+import { useIsSelected } from "~/editor/lib/use-is-selected";
 import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
@@ -14,10 +17,9 @@ import {
   resolveQuoteTemplate,
 } from "~/remotion/templates/quote";
 import { resolveTemplateId } from "~/remotion/templates/style";
-import {
-  isTextTemplateId,
-  TEXT_TEMPLATES,
-} from "~/remotion/templates/text";
+import { isTextTemplateId, TEXT_TEMPLATES } from "~/remotion/templates/text";
+
+import type { VfxEdit } from "~/domain/project-config";
 
 type Props = {
   edits: VfxEdit[];
@@ -41,19 +43,15 @@ function vfxCellLabel(edit: VfxEdit): string {
     return value || indicator || "Listicle";
   }
   return resolveQuoteTemplate(
-    resolveTemplateId(
-      edit.style,
-      isQuoteTemplateId,
-      DEFAULT_QUOTE_TEMPLATE_ID,
-    ),
+    resolveTemplateId(edit.style, isQuoteTemplateId, DEFAULT_QUOTE_TEMPLATE_ID),
   ).label;
 }
 
 export function VfxTrack({ edits, width }: Props) {
+  const isSel = useIsSelected();
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const patchEditRangeById = useEditor((s) => s.patchEditRangeById);
   const patchEdit = useEditor((s) => s.patchEdit);
-  const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
   const snap = useTimelineSnap();
   const { startDrag } = useTrackDrag();
@@ -65,9 +63,7 @@ export function VfxTrack({ edits, width }: Props) {
       {edits.map((edit) => {
         const { left, width: w } = rangeStyle(edit.start, edit.end, pxPerSec);
         const middleLeft =
-          isListicleEdit(edit) &&
-          edit.middle != null &&
-          edit.end > edit.start
+          isListicleEdit(edit) && edit.middle != null && edit.end > edit.start
             ? (edit.middle - edit.start) * pxPerSec
             : null;
         return (
@@ -77,8 +73,8 @@ export function VfxTrack({ edits, width }: Props) {
             type="button"
             title={`${vfxCellLabel(edit)}  ${edit.start.toFixed(2)}–${edit.end.toFixed(2)}s`}
             className={cn(
-              "absolute top-1 bottom-1 flex items-center overflow-hidden rounded bg-vfx px-1.5 text-[10px] text-[#1a1508] select-none",
-              isSelected(selection, "edit", edit.id) &&
+              "bg-vfx absolute top-1 bottom-1 flex items-center overflow-hidden rounded px-1.5 text-[10px] text-[#1a1508] select-none",
+              isSel("edit", edit.id) &&
                 "z-[2] outline outline-2 outline-white",
             )}
             style={{ left, width: w }}

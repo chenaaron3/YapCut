@@ -105,12 +105,6 @@ export function buildCompanionCandidates(
         startSec: valueAt,
         label: `listicle #${edit.id} value "${edit.valueText}"`,
       });
-      out.push({
-        id: `listicle-hit-${edit.id}`,
-        role: "hit",
-        startSec: valueAt,
-        label: `listicle #${edit.id} value weight "${edit.valueText}"`,
-      });
       continue;
     }
 
@@ -120,12 +114,6 @@ export function buildCompanionCandidates(
         role: "reveal",
         startSec: edit.start,
         label: `title card #${edit.id} "${edit.text}"`,
-      });
-      out.push({
-        id: `title-hit-${edit.id}`,
-        role: "hit",
-        startSec: edit.start,
-        label: `title card #${edit.id} weight "${edit.text}"`,
       });
       if (!buildAdded) {
         out.push({
@@ -279,7 +267,7 @@ async function callOpenAI(
           "Each candidate has a fixed role — only pick a variant id from that role (role.soft|medium|hard), or none.",
           "Not every candidate needs SFX. Prefer silence over spam. Skip slow/filler moments.",
           "Match intensity to the moment using the pack descriptions.",
-          "build is optional hook anticipation; reveal is overlay enter; hit is weight; tick confirms list values; ping is quote sparkle; motion is punch-in whoosh.",
+          "build is optional hook anticipation; reveal is overlay enter; tick confirms list values; ping is quote sparkle; motion is punch-in whoosh.",
           "Return one assignment per candidate you decide on; omitted candidates are treated as none.",
         ].join(" "),
       },

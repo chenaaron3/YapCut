@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
+import { arollAssetOrder } from "~/domain/arolls";
 import {
   emptyProjectConfig,
   parseProjectConfig,
@@ -303,6 +304,17 @@ export const projectRouter = createTRPCRouter({
           updatedAt: now,
         })
         .where(eq(projects.id, input.id));
+
+      // Keep A-roll Asset.sortOrder aligned with stitch order (config.arolls).
+      const order = arollAssetOrder(input.config.arolls);
+      for (let i = 0; i < order.length; i++) {
+        await ctx.db
+          .update(assets)
+          .set({ sortOrder: i, updatedAt: now })
+          .where(
+            and(eq(assets.id, order[i]!), eq(assets.projectId, input.id)),
+          );
+      }
 
       return { configUpdatedAt: now.toISOString() };
     }),

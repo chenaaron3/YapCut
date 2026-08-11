@@ -6,6 +6,37 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import * as fs from "node:fs";
 
+/** CloudFront Function body: allowlisted OPTIONS preflight (no signed URL). */
+function corsOptionsFunctionSource(allowedOrigins: string[]): string {
+  return `function handler(event) {
+  var request = event.request;
+  if (request.method !== 'OPTIONS') return request;
+  var allowed = ${JSON.stringify(allowedOrigins)};
+  var origin = request.headers.origin ? request.headers.origin.value : '';
+  if (allowed.indexOf(origin) === -1) {
+    return {
+      statusCode: 403,
+      statusDescription: 'Forbidden',
+      headers: { 'content-type': { value: 'text/plain' } },
+      body: 'Origin not allowed'
+    };
+  }
+  return {
+    statusCode: 204,
+    statusDescription: 'No Content',
+    headers: {
+      'access-control-allow-origin': { value: origin },
+      'access-control-allow-methods': { value: 'GET, HEAD, OPTIONS' },
+      'access-control-allow-headers': { value: '*' },
+      'access-control-max-age': { value: '86400' },
+      'access-control-expose-headers': { value: 'ETag, Content-Length, Content-Range, Accept-Ranges' },
+      'vary': { value: 'Origin' }
+    }
+  };
+}
+`;
+}
+
 export interface MediaStackProps extends cdk.StackProps {
   /** Absolute path to CloudFront public key PEM (PKCS#8). */
   readonly publicKeyPemPath: string;
@@ -70,6 +101,38 @@ export class MediaStack extends cdk.Stack {
 
     this.keyPairId = publicKey.publicKeyId;
 
+    // Remotion MediaPlayer uses fetch(+ Range) → needs CORS on CF responses.
+    // S3 bucket CORS alone is not enough (reads go through CloudFront OAC).
+    const corsResponseHeaders = new cloudfront.ResponseHeadersPolicy(
+      this,
+      "MediaCorsHeaders",
+      {
+        comment: "Browser GET/HEAD for editor + Remotion preview",
+        corsBehavior: {
+          accessControlAllowCredentials: false,
+          accessControlAllowHeaders: ["*"],
+          accessControlAllowMethods: ["GET", "HEAD", "OPTIONS"],
+          accessControlAllowOrigins: corsOrigins,
+          accessControlExposeHeaders: [
+            "ETag",
+            "Content-Length",
+            "Content-Range",
+            "Accept-Ranges",
+          ],
+          accessControlMaxAge: cdk.Duration.seconds(600),
+          originOverride: true,
+        },
+      },
+    );
+
+    // Trusted key groups reject unsigned OPTIONS; answer preflight at the edge.
+    const corsOptionsFn = new cloudfront.Function(this, "CorsOptionsFn", {
+      comment: "Signed-URL CDN: answer CORS preflight without a signature",
+      code: cloudfront.FunctionCode.fromInline(
+        corsOptionsFunctionSource(corsOrigins),
+      ),
+    });
+
     this.distribution = new cloudfront.Distribution(this, "Cdn", {
       comment: "Talking Head media CDN",
       defaultBehavior: {
@@ -80,6 +143,14 @@ export class MediaStack extends cdk.Stack {
         compress: true,
         trustedKeyGroups: [keyGroup],
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
+        responseHeadersPolicy: corsResponseHeaders,
+        functionAssociations: [
+          {
+            function: corsOptionsFn,
+            eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+          },
+        ],
       },
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,

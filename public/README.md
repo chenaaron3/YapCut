@@ -62,30 +62,6 @@ Title card start and listicle indicator appear. “Something just showed up.”
 
 ---
 
-### `hit` — weight / thud
-
-Land moment: title weight, hard listicle value. Mass, not air (not a whoosh).
-
-#### `soft` — gentle land; support without boom
-
-- Soft muffled thud, dull body hit, short, no reverb, quiet weight — **0.30s**
-- Light wooden knock, single hit, dry, mid-low, gentle confirmation thud — **0.25s**
-- Soft tom drum hit, muted, short decay, subtle impact under dialogue — **0.35s**
-
-#### `medium` — default weight on claim / title / value
-
-- Tight mid bass hit, punchy body impact, short, YouTube emphasis thud — **0.40s**
-- Clean deep hit, one shot, controlled low end, no long cinematic tail — **0.45s**
-- Punchy impact thump, dry studio hit, half second, lands on text pop — **0.50s**
-
-#### `hard` — hook payoff or strongest number
-
-- Short sub-bass drop hit, heavy, tight decay under 400ms, no rumble tail — **0.40s**
-- Cinematic boom trimmed short, chest punch, abrupt end, mono-friendly — **0.50s**
-- Heavy slam impact, hard transient then quick fade, powerful but brief — **0.45s**
-
----
-
 ### `tick` — listicle value confirm
 
 Value text lands (stagger middle, or start if none). “Checked / selected.”
@@ -136,7 +112,7 @@ Last emphasized word inside a quote. Often skipped (`none`). Bright and short, n
 
 ### `motion` — punch-in camera energy
 
-Hard zoom (no ease) start. Air / swipe under voice — quieter than hits.
+Hard zoom (no ease) start. Air / swipe under voice — quieter than overlay enters.
 
 #### `soft` — subtle punch; calm delivery
 
@@ -164,7 +140,6 @@ Hard zoom (no ease) start. Air / swipe under voice — quieter than hits.
 |------|-----|------------|
 | `build` | Anticipation | Hook open → into title |
 | `reveal` | Overlay enter | Title card + listicle indicator |
-| `hit` | Weight / thud | Title land, hard listicle value |
 | `tick` | Value confirm | Listicle value land |
 | `ping` | Word sparkle | Quote peak emphasis |
 | `motion` | Camera energy | Punch-in zoom only |

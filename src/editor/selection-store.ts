@@ -5,13 +5,17 @@ import {
   replaceSelection,
   selectWordRange,
   toggleSelection,
-  type ProjectPanel,
-  type Selection,
-  type SelectionKind,
+} from "~/editor/lib/selection";
+
+import type {
+  ProjectPanel,
+  Selection,
+  SelectionId,
+  SelectionKind,
 } from "~/editor/lib/selection";
 
 export { isSelected };
-export type { ProjectPanel, Selection, SelectionKind };
+export type { ProjectPanel, Selection, SelectionId, SelectionKind };
 
 type SelectionState = {
   selection: Selection | null;
@@ -25,7 +29,11 @@ type SelectionActions = {
    * Select by kind + id. Pass `toggle: true` to add/remove from multi-select.
    * `id: null` clears selection of that kind.
    */
-  select: (kind: SelectionKind, id: number | null, toggle?: boolean) => void;
+  select: (
+    kind: SelectionKind,
+    id: SelectionId | null,
+    toggle?: boolean,
+  ) => void;
   /** Open the Captions project-field inspector. */
   openCaptionsPanel: () => void;
   /** Open the Project settings inspector. */
@@ -56,8 +64,7 @@ export const useSelection = create<SelectionState & SelectionActions>(
     select: (kind, id, toggle = false) => {
       if (id == null) {
         set({
-          selection:
-            get().selection?.kind === kind ? null : get().selection,
+          selection: get().selection?.kind === kind ? null : get().selection,
           projectPanel: null,
         });
         return;
@@ -75,7 +82,11 @@ export const useSelection = create<SelectionState & SelectionActions>(
         });
       }
 
-      if (kind === "edit" && isSelected(get().selection, "edit", id)) {
+      if (
+        kind === "edit" &&
+        typeof id === "number" &&
+        isSelected(get().selection, "edit", id)
+      ) {
         seekEditStart(id);
       }
     },
@@ -96,6 +107,3 @@ export const useSelection = create<SelectionState & SelectionActions>(
   }),
 );
 
-export function useIsSelected(kind: SelectionKind, id: number): boolean {
-  return useSelection((s) => isSelected(s.selection, kind, id));
-}

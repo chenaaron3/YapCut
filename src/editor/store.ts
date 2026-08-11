@@ -10,6 +10,7 @@ import {
   keepCellIdForArollIndex,
   layoutTimelineDuration,
   outputToTimelineSec,
+  reorderArollAssets,
   snapTimelineSec,
   timelineToOutputSec,
 } from "~/domain/arolls";
@@ -125,6 +126,16 @@ type EditorActions = {
   setDefaultBRollSfxAssetId: (assetId: string | null) => void;
   /** Merge newly uploaded assets into the editor library. */
   addAssets: (assets: EditorAsset[]) => void;
+  /**
+   * Move an A-roll asset run from `fromIndex` → `toIndex` (stitch order).
+   * Edits starting in a run move with it. `Asset.sortOrder` syncs on config save.
+   * Pass `live: true` during drag (pair with `beginGesture`).
+   */
+  reorderArollAssets: (
+    fromIndex: number,
+    toIndex: number,
+    live?: boolean,
+  ) => void;
 
   // —— Read (get) ——
   getGlobalWords: () => GlobalTranscriptWord[];
@@ -543,6 +554,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         if (selection.ids.length === 0) return false;
         const layout = buildArollLayout(config.arolls, durations);
         const cells = selection.ids
+          .filter((id): id is number => typeof id === "number")
           .map((id) => layout.find((c) => c.id === id))
           .filter((c): c is NonNullable<typeof c> => c != null);
         if (cells.length === 0) return false;
@@ -570,6 +582,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         if (selection.ids.length === 0) return false;
         let next = config;
         for (const id of selection.ids) {
+          if (typeof id !== "number") continue;
           next = removeEdit(next, id);
         }
         commit({
@@ -691,6 +704,19 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       });
     },
 
+    reorderArollAssets: (fromIndex, toIndex, live = false) => {
+      const { config, transcriptsByAssetId, assets } = get();
+      if (!config || fromIndex === toIndex) return;
+      const nextConfig = reorderArollAssets(
+        config,
+        fromIndex,
+        toIndex,
+        durationMap(assets),
+      );
+      if (nextConfig === config) return;
+      commit({ config: nextConfig, transcriptsByAssetId }, { live });
+    },
+
     cutWord: (globalIndex) => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config) return;
@@ -737,7 +763,9 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { selection, clearSelection } = useSelection.getState();
       if (selection?.kind === "edit") {
         const kept = new Set(nextConfig.edits.map((e) => e.id));
-        if (selection.ids.some((id) => !kept.has(id))) {
+        if (
+          selection.ids.some((id) => typeof id !== "number" || !kept.has(id))
+        ) {
           clearSelection();
         }
       }
@@ -747,7 +775,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { selection } = useSelection.getState();
       if (selection?.kind !== "edit") return;
       const id = selection.ids[0];
-      if (id == null) return;
+      if (typeof id !== "number") return;
       get().patchEditRangeById(id, start, end);
     },
 
@@ -757,7 +785,10 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const duration = layoutTimelineDuration(layoutFor(config, assets));
       commit(
         {
-          config: patchEditRange(config, id, { start, end }, duration),
+          config: patchEditRange(config, id, { start, end }, duration, {
+            srcDurationSec: (assetId) =>
+              assets.find((a) => a.id === assetId)?.durationSec ?? null,
+          }),
           transcriptsByAssetId,
         },
         { live: true },

@@ -78,16 +78,33 @@ export function removeEdit(config: ProjectConfig, id: number): ProjectConfig {
   });
 }
 
+/**
+ * After timeline clamp: keep media-backed edits within remaining source media.
+ * Keeps the proposed start and clamps end (so start-drag can slide a max-length clip).
+ */
+function clampMediaEditRange(
+  existing: Edit,
+  range: TimelineTime,
+  ctx?: PatchEditContext,
+): TimelineTime {
+  if (!hasMediaRef(existing)) return range;
+  const src = ctx?.srcDurationSec?.(existing.assetId) ?? null;
+  return clampTimelineRangeToMedia(range, src, existing.mediaOffsetSec);
+}
+
 export function patchEditRange(
   config: ProjectConfig,
   id: number,
   range: TimelineTime,
   timelineDuration: number,
+  ctx?: PatchEditContext,
 ): ProjectConfig {
-  const clamped = clampRange(range, timelineDuration);
+  let clamped = clampRange(range, timelineDuration);
   if (!clamped) return config;
   const existing = config.edits.find((e) => e.id === id);
   if (!existing) return config;
+  clamped = clampMediaEditRange(existing, clamped, ctx);
+  if (clamped.end - clamped.start < MIN_RANGE_SEC) return config;
   if (
     existing.kind === "vfx" &&
     existing.type === "quote" &&

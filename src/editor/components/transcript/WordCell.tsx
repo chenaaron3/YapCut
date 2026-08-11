@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { quoteSeed } from "~/domain/quote";
 import { zoomSeed } from "~/domain/zoom";
-import { EditMarker } from "~/editor/components/transcript/EditMarker";
+import { EditMarkerCluster } from "~/editor/components/transcript/EditMarkerCluster";
 import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
 import { WordContextMenu } from "~/editor/components/transcript/WordContextMenu";
 import { chromeByKey } from "~/editor/lib/edit-chrome";
@@ -10,13 +10,15 @@ import {
   assetDropKindFromTypes,
   placeEditFromAssetDrop,
 } from "~/editor/lib/place-asset-drop";
-import { isSelected } from "~/editor/lib/selection";
+import { isChromeKeyVisible } from "~/editor/lib/transcript-chrome-visibility";
+import { useIsSelected } from "~/editor/lib/use-is-selected";
 import {
   isMarkerRole,
   resolvePrimarySpan,
 } from "~/editor/lib/word-annotations";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
+import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
 import type { GlobalTranscriptWord } from "~/domain/transcript";
@@ -37,6 +39,7 @@ export function WordCell({
   onWordDragStart,
   onResizeEdge,
 }: Props) {
+  const isSel = useIsSelected();
   const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
   const seekTimeline = useEditor((s) => s.seekTimeline);
@@ -47,11 +50,16 @@ export function WordCell({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(word.text);
 
-  const selected = isSelected(selection, "word", word.globalIndex);
-  const markers = annotation.spans.filter((s) => isMarkerRole(s.role));
-  const primary = resolvePrimarySpan(annotation.spans, selection);
+  const chromeVisible = useTranscriptUi((s) => s.visible);
+
+  const selected = isSel("word", word.globalIndex);
+  const visibleSpans = annotation.spans.filter((s) =>
+    isChromeKeyVisible(s.chromeKey, chromeVisible),
+  );
+  const markers = visibleSpans.filter((s) => isMarkerRole(s.role));
+  const primary = resolvePrimarySpan(visibleSpans, selection);
   const primarySelected =
-    primary != null && isSelected(selection, "edit", primary.editId);
+    primary != null && isSel("edit", primary.editId);
   const primaryChrome = primary ? chromeByKey(primary.chromeKey) : null;
 
   const commitText = () => {
@@ -87,15 +95,13 @@ export function WordCell({
 
   return (
     <>
-      {markers.map((span) => (
-        <EditMarker
-          key={`${span.chromeKey}-${span.editId}`}
-          span={span}
-          selected={isSelected(selection, "edit", span.editId)}
-          onSelect={(editId, toggle) => select("edit", editId, toggle)}
-          onDragStart={(editId) => onResizeEdge?.("start", editId)}
-        />
-      ))}
+      <EditMarkerCluster
+        wordIndex={word.globalIndex}
+        markers={markers}
+        isEditSelected={(editId) => isSel("edit", editId)}
+        onSelect={(editId, toggle) => select("edit", editId, toggle)}
+        onDragStart={(editId) => onResizeEdge?.("start", editId)}
+      />
 
       <span
         className="relative inline-block"
@@ -131,7 +137,8 @@ export function WordCell({
               word.inGap && "line-through opacity-40",
               word.emphasized && "font-semibold text-amber-300",
               selected && "bg-primary/35",
-              !selected && primaryChrome?.underlineClass,
+              // Underline only when the primary edit is selected — idle markers carry the signal.
+              primarySelected && primaryChrome?.underlineClass,
               primarySelected && primaryChrome?.highlightClass,
               dropActive === "broll" && "bg-broll/30 ring-broll ring-1",
               dropActive === "sfx" && "bg-sfx/30 ring-sfx ring-1",

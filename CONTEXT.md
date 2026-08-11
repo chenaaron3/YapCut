@@ -70,7 +70,7 @@ An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, lis
 _Avoid_: nesting SFX on zoom/vfx; free-placement SFX as gap filler; SFX on sparse outer emphasis; SFX on slow zooms
 
 **AI SFX pack**:
-Curated role × intensity (`soft`/`medium`/`hard`) for create AI only. Roles: `build` (hook riser), `reveal` (title + listicle indicator), `hit` (title/value weight), `tick` (listicle value), `ping` (quote peak), `motion` (punch-in). LLM picks `role.intensity` or `none`; place-time hash picks one Asset from `public/sfx/<role>/<intensity>/`. Intensity sets volume. `custom/memes/` is manual library only.
+Curated role × intensity (`soft`/`medium`/`hard`) for create AI only. Roles: `build` (hook riser), `reveal` (title + listicle indicator), `tick` (listicle value), `ping` (quote peak), `motion` (punch-in). LLM picks `role.intensity` or `none`; place-time hash picks one Asset from `public/sfx/<role>/<intensity>/`. Intensity sets volume. `custom/memes/` is manual library only.
 _Avoid_: letting the LLM choose from the entire global library; `texture` roles (typing/flash); meme in AI pool; hardcoding asset UUIDs in the pack
 
 **Beat**:
@@ -126,7 +126,7 @@ React editor + Remotion player/export. Composes View primitives. Kind modules ch
 ### View — transcript primitives
 
 **Transcript marker**, **Handle**, **Highlight**, **Underline**:
-Same composition rules as prototype: marker ⇒ idle underline; selected ⇒ highlight + handles. Appearance is kind-specific.
+Markers show idle; underline + highlight + handles only when the edit is selected. Appearance is kind-specific. Multiple start markers on one word collapse to a primary chip (shared priority with underline: B-roll → VFX → SFX → Zoom; selected wins) plus vertical color dots for the rest; click expands inline to all chips (one cluster open at a time; primary click toggles shut; collapses when selection leaves the cluster). Transcript header toggles (session-only) can hide chrome per kind (B-roll / VFX / SFX / Zoom) without affecting timeline or player.
 
 ### View — timeline primitives
 
@@ -169,7 +169,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    4. quotes (punch phrases; greedy ~every 4–5s when punch lines exist; no overlap with listicle; may overlap text/zoom)
    5. emphasis (sparse outside quotes; most content words inside quotes)
    6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
-   7. companion SFX (role.intensity from AI SFX pack; hash-pick asset from pool; 300ms min-gap; priority build → reveal/hit/tick → quote ping → punch-in motion)
+   7. companion SFX (role.intensity from AI SFX pack; hash-pick asset from pool; 300ms min-gap; priority build → reveal/tick → quote ping → punch-in motion)
    Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
 5. Seed default `captions` TemplateStyle → `ready` (create only)
 
@@ -216,7 +216,7 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - Exact default duration/range for seeded title `vfx/text`
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid
-- ~~Overlapping idle underlines: stack vs priority~~ → **priority**: all start markers show; underline/highlight/handles use one primary (selected wins, else earlier entry in `EDIT_CHROME`)
-- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority build → reveal/hit/tick → quote ping → punch-in motion
+- ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle → SFX → Zoom; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary)
+- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority build → reveal/tick → quote ping → punch-in motion
 - ~~Aggressive quote cadence hard quota vs soft~~ → **greedy soft prompt** (~every 4–5s when punch lines exist)
 

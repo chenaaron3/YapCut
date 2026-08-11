@@ -1,13 +1,18 @@
-import type { SfxEdit } from "~/domain/project-config";
 import { formatSfxLabel } from "~/domain/sfx";
-import { Handle, TrackLabel, useTrackDrag } from "~/editor/components/timeline/shared";
+import {
+  Handle,
+  TrackLabel,
+  useTrackDrag,
+} from "~/editor/components/timeline/shared";
 import { clampRangeEdge } from "~/editor/lib/range";
-import { isSelected } from "~/editor/lib/selection";
 import { rangeStyle } from "~/editor/lib/timeline-time";
+import { useIsSelected } from "~/editor/lib/use-is-selected";
 import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
+
+import type { SfxEdit } from "~/domain/project-config";
 
 type Props = {
   edits: SfxEdit[];
@@ -15,10 +20,10 @@ type Props = {
 };
 
 export function SfxTrack({ edits, width }: Props) {
+  const isSel = useIsSelected();
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const assets = useEditor((s) => s.assets);
   const patchEditRangeById = useEditor((s) => s.patchEditRangeById);
-  const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
   const snap = useTimelineSnap();
   const { startDrag } = useTrackDrag();
@@ -38,8 +43,8 @@ export function SfxTrack({ edits, width }: Props) {
             type="button"
             title={`SFX ${edit.start.toFixed(2)}–${edit.end.toFixed(2)}s · ${label}`}
             className={cn(
-              "absolute top-1 bottom-1 flex items-center overflow-hidden rounded bg-sfx/50 px-1 text-[10px] text-black select-none",
-              isSelected(selection, "edit", edit.id) &&
+              "bg-sfx/50 absolute top-1 bottom-1 flex items-center overflow-hidden rounded px-1 text-[10px] text-black select-none",
+              isSel("edit", edit.id) &&
                 "z-[2] outline outline-2 outline-white",
             )}
             style={{ left, width: w }}

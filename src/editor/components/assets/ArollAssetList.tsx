@@ -1,34 +1,136 @@
+"use client";
+
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useRef, useState } from "react";
+
+import {
+  ArollRowContent,
+  SortableArollRow,
+} from "~/editor/components/assets/ArollRow";
+import { useEditor } from "~/editor/store";
+
+import type {
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+} from "@dnd-kit/core";
 import type { EditorAsset } from "~/editor/store";
 
 export function ArollAssetList({ assets }: { assets: EditorAsset[] }) {
+  const reorderArollAssets = useEditor((s) => s.reorderArollAssets);
+  const beginGesture = useEditor((s) => s.beginGesture);
+  const undo = useEditor((s) => s.undo);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const gestureStartedRef = useRef(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const activeAsset =
+    activeId == null ? null : (assets.find((a) => a.id === activeId) ?? null);
+
+  const onDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+    setPlayingId(null);
+    gestureStartedRef.current = false;
+  };
+
+  const onDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const fromIndex = assets.findIndex((a) => a.id === active.id);
+    const toIndex = assets.findIndex((a) => a.id === over.id);
+    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+    if (!gestureStartedRef.current) {
+      beginGesture();
+      gestureStartedRef.current = true;
+    }
+    reorderArollAssets(fromIndex, toIndex, true);
+  };
+
+  const onDragEnd = (_event: DragEndEvent) => {
+    setActiveId(null);
+    gestureStartedRef.current = false;
+  };
+
+  const onDragCancel = () => {
+    setActiveId(null);
+    if (gestureStartedRef.current) {
+      undo();
+    }
+    gestureStartedRef.current = false;
+  };
+
   if (assets.length === 0) {
     return (
       <div className="p-2">
-        <p className="px-1 text-xs text-muted-foreground">No A-roll</p>
+        <p className="text-muted-foreground px-1 text-xs">No A-roll</p>
       </div>
     );
   }
 
   return (
-    <div className="p-2">
-      <ul className="flex flex-col gap-1">
-        {assets.map((asset) => (
-          <li
-            key={asset.id}
-            className="rounded-md bg-panel-2 px-2 py-2 text-sm"
-          >
-            <div className="truncate font-medium">
-              {asset.originalFilename ?? asset.id.slice(0, 8)}
-            </div>
-            <div className="mt-0.5 text-xs text-muted-foreground">
-              {asset.kind}
-              {asset.durationSec != null
-                ? ` · ${asset.durationSec.toFixed(1)}s`
-                : null}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDragCancel={onDragCancel}
+      autoScroll={{
+        threshold: { x: 0.15, y: 0.15 },
+        acceleration: 12,
+        interval: 5,
+      }}
+    >
+      <SortableContext
+        items={assets.map((a) => a.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <ul className="flex flex-col gap-1 p-2">
+          {assets.map((asset) => (
+            <SortableArollRow
+              key={asset.id}
+              asset={asset}
+              playing={playingId === asset.id}
+              onTogglePlay={() =>
+                setPlayingId((id) => (id === asset.id ? null : asset.id))
+              }
+            />
+          ))}
+        </ul>
+      </SortableContext>
+      <DragOverlay dropAnimation={null}>
+        {activeAsset ? (
+          <ArollRowContent
+            asset={activeAsset}
+            playing={false}
+            onTogglePlay={() => undefined}
+            selected
+            dragging
+          />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

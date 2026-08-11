@@ -1,5 +1,7 @@
+import { isSelected } from "~/editor/lib/selection";
+
 import type { GlobalTranscriptWord } from "~/domain/transcript";
-import { isSelected, type Selection } from "~/editor/lib/selection";
+import type { Selection } from "~/editor/lib/selection";
 
 /** Range for word actions: expand to selection when the word is selected. */
 export function wordActionRange(
@@ -12,6 +14,7 @@ export function wordActionRange(
     isSelected(selection, "word", word.globalIndex)
   ) {
     const selected = selection.ids
+      .filter((i): i is number => typeof i === "number")
       .map((i) => words[i])
       .filter((w): w is GlobalTranscriptWord => w != null);
     if (selected.length > 0) {

@@ -1,15 +1,18 @@
+import { arollIndexForKeepCell } from "~/domain/arolls";
 import {
-  arollIndexForKeepCell,
-  type ArollLayoutCell,
-} from "~/domain/arolls";
-import { Handle, TrackLabel, useTrackDrag } from "~/editor/components/timeline/shared";
+  Handle,
+  TrackLabel,
+  useTrackDrag,
+} from "~/editor/components/timeline/shared";
 import { VoiceBand } from "~/editor/components/timeline/tracks/VoiceBand";
 import { clampRangeEdge } from "~/editor/lib/range";
-import { isSelected } from "~/editor/lib/selection";
+import { useIsSelected } from "~/editor/lib/use-is-selected";
 import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useGlobalWords } from "~/editor/store";
 import { cn } from "~/lib/utils";
+
+import type { ArollLayoutCell } from "~/domain/arolls";
 
 type Props = {
   layout: ArollLayoutCell[];
@@ -17,11 +20,11 @@ type Props = {
 };
 
 export function VideoTrack({ layout, width }: Props) {
+  const isSel = useIsSelected();
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const seekTimeline = useEditor((s) => s.seekTimeline);
   const patchArollRange = useEditor((s) => s.patchArollRange);
   const words = useGlobalWords();
-  const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
   const snap = useTimelineSnap();
   const { startDrag } = useTrackDrag();
@@ -30,7 +33,7 @@ export function VideoTrack({ layout, width }: Props) {
     <TrackLabel label="Video" width={width}>
       {layout.map((cell) => {
         const localDur = cell.local.end - cell.local.start;
-        const selected = isSelected(selection, "aroll", cell.id);
+        const selected = isSel("aroll", cell.id);
         const style = {
           left: cell.timeline.start * pxPerSec,
           width: Math.max(

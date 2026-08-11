@@ -4,6 +4,7 @@ import { Settings } from "lucide-react";
 
 import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
 import { InspectorPanel } from "~/editor/components/inspector/InspectorPanel";
+import { TranscriptChromeVisibilityToggles } from "~/editor/components/transcript/TranscriptChromeVisibilityToggles";
 import { WordCell } from "~/editor/components/transcript/WordCell";
 import { useRangeResize } from "~/editor/components/transcript/hooks/useRangeResize";
 import { useWordDragSelect } from "~/editor/lib/use-word-drag-select";
@@ -52,6 +53,7 @@ export function TranscriptPanel() {
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-3 py-2">
         <ProjectTitleField />
         <div className="flex shrink-0 items-center gap-2">
+          <TranscriptChromeVisibilityToggles />
           <button
             type="button"
             className={cn(
