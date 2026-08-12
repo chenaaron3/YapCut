@@ -13,6 +13,10 @@ export type ListiclePreviewPair = {
   indicator: CaptionGroupStyle;
   value: CaptionGroupStyle;
   stacked: boolean;
+  indicatorText?: string;
+  valueText?: string;
+  /** Default true — listicle stagger. False for title + subheading. */
+  staggered?: boolean;
 };
 
 export function captionFocusY(styleY: number): number {

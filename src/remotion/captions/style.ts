@@ -163,6 +163,7 @@ export const BACKGROUND_KINDS = [
   "wrap",
   "rounded",
   "scrap",
+  "ribbon",
 ] as const;
 export type BackgroundKind = (typeof BACKGROUND_KINDS)[number];
 
@@ -239,6 +240,11 @@ export type CaptionGroupStyle = {
   /** Optional deltas merged onto `wordStyle` for active/future words. */
   activeWordStyle?: WordStyleDelta;
   futureWordStyle?: WordStyleDelta;
+  /**
+   * StaticGroupView curve (CapCut-style). 0/omit = flat.
+   * Positive = rainbow (up in the middle); negative = frown. −100…100.
+   */
+  arc?: number;
 };
 
 /** User-editable overrides persisted with a templateId. */
@@ -248,6 +254,8 @@ export type CaptionStyleOverrides = {
   captionsAtATime?: number;
   /** Patches `wordStyle.fill`. */
   fill?: string;
+  /** Patches `arc` (StaticGroupView). */
+  arc?: number;
 };
 
 /** Fallback caption look when a group omits style. */
@@ -301,6 +309,19 @@ export function clampCaptionsAtATime(n: number): number {
   return Math.min(8, Math.max(1, Math.round(n)));
 }
 
+export const CAPTION_ARC_MIN = -100;
+export const CAPTION_ARC_MAX = 100;
+
+export function clampCaptionArc(n: number): number {
+  if (!Number.isFinite(n)) return 0;
+  return Math.min(CAPTION_ARC_MAX, Math.max(CAPTION_ARC_MIN, Math.round(n)));
+}
+
+/** Resolved curve amount; 0 means flat (flex row). */
+export function captionArc(style: CaptionGroupStyle): number {
+  return clampCaptionArc(style.arc ?? 0);
+}
+
 export function mergeWordStyle(
   base: WordStyle,
   delta?: WordStyleDelta | null,
@@ -334,6 +355,7 @@ export function applyCaptionOverrides(
       overrides.captionsAtATime != null
         ? clampCaptionsAtATime(overrides.captionsAtATime)
         : style.captionsAtATime,
+    arc: overrides.arc != null ? clampCaptionArc(overrides.arc) : style.arc,
     wordStyle: {
       ...style.wordStyle,
       fill: overrides.fill?.trim()
@@ -353,6 +375,9 @@ export function captionStyleOverridesFrom(
   if (style.fontSize !== template.fontSize) out.fontSize = style.fontSize;
   if (style.captionsAtATime !== template.captionsAtATime) {
     out.captionsAtATime = style.captionsAtATime;
+  }
+  if (captionArc(style) !== captionArc(template)) {
+    out.arc = captionArc(style);
   }
   if (style.wordStyle.fill !== template.wordStyle.fill) {
     out.fill = style.wordStyle.fill;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 
 import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
@@ -12,6 +12,11 @@ import {
   resolveCaptionWordVisual,
   typewriterLetterVisible,
 } from "./caption-word-visual";
+import {
+  ArcLayoutContext,
+  transformCaptionWord,
+  wordGlyphOffset,
+} from "./arc-layout";
 
 export type { CaptionWordVisual } from "./caption-word-visual";
 export { resolveCaptionWordVisual } from "./caption-word-visual";
@@ -60,11 +65,93 @@ export const CaptionWordSpan: React.FC<{
     cycleWordStates,
   });
 
+  const arcLayout = useContext(ArcLayoutContext);
+
   if (!visual.mount) return null;
 
   const whitespace = /^\s+$/.test(word.text);
   const typewriter = groupStyle.animation === "typewriter";
-  const letterReveal = typewriter && word.text.length > 1 && !whitespace;
+  const glyphs = Array.from(
+    transformCaptionWord(word.text, groupStyle.textTransform),
+  );
+  const letterReveal = typewriter && glyphs.length > 1 && !whitespace;
+
+  if (arcLayout && !whitespace) {
+    const start = wordGlyphOffset(words, index, groupStyle);
+    const lastVisible = glyphs.reduce((last, _ch, i) => {
+      if (typewriter && !typewriterLetterVisible(word, i, glyphs.length, frame)) {
+        return last;
+      }
+      return i;
+    }, -1);
+    const showCursor =
+      !silhouette &&
+      typewriter &&
+      frame < groupEndFrame &&
+      lastVisibleWordIndex(words, frame, false) === index &&
+      typewriterCursorBlink(frame);
+    const cursorPose =
+      lastVisible >= 0
+        ? (arcLayout.glyphs[start + lastVisible + 1] ??
+          arcLayout.glyphs[start + lastVisible])
+        : null;
+
+    return (
+      <>
+        {glyphs.map((ch, i) => {
+          if (
+            typewriter &&
+            !typewriterLetterVisible(word, i, glyphs.length, frame)
+          ) {
+            return null;
+          }
+          const pose = arcLayout.glyphs[start + i];
+          if (!pose) return null;
+          return (
+            <span
+              key={i}
+              style={{
+                position: "absolute",
+                left: pose.x,
+                top: pose.y,
+                transform: `translate(-50%, -100%) rotate(${pose.rotate}deg)`,
+                transformOrigin: "center bottom",
+                whiteSpace: "pre",
+                ...(silhouette
+                  ? {
+                      opacity: visual.opacity > 0 ? 1 : 0,
+                      color: "transparent",
+                      WebkitTextFillColor: "transparent",
+                    }
+                  : {
+                      opacity: visual.opacity,
+                      ...visual.wordCss,
+                    }),
+              }}
+            >
+              {ch}
+            </span>
+          );
+        })}
+        {showCursor && cursorPose ? (
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: cursorPose.x,
+              top: cursorPose.y,
+              transform: `translate(-50%, -100%) rotate(${cursorPose.rotate}deg)`,
+              transformOrigin: "center bottom",
+              width: "0.08em",
+              minWidth: 3,
+              height: "0.85em",
+              backgroundColor: groupStyle.wordStyle.fill,
+            }}
+          />
+        ) : null}
+      </>
+    );
+  }
 
   const content = letterReveal
     ? Array.from(word.text).map((ch, i) => {

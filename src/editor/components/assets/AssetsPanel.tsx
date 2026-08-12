@@ -14,7 +14,7 @@ type Tab = "aroll" | "broll" | "vfx" | "sfx" | "music";
 export function AssetsPanel() {
   const assets = useEditor((s) => s.assets);
   const config = useEditor((s) => s.config);
-  const [tab, setTab] = useState<Tab>("broll");
+  const [tab, setTab] = useState<Tab>("vfx");
 
   const arollOrder = useMemo(
     () => arollAssetOrder(config?.arolls ?? []),
@@ -51,7 +51,7 @@ export function AssetsPanel() {
 
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden border-r border-border bg-panel">
-      <div className="flex shrink-0 gap-1 border-b border-border px-2 py-1.5">
+      <div className="flex shrink-0 flex-nowrap gap-1 overflow-x-auto border-b border-border px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {(
           [
             ["aroll", "A-roll"],
@@ -65,7 +65,7 @@ export function AssetsPanel() {
             key={id}
             type="button"
             className={cn(
-              "rounded px-2 py-1 text-[11px] font-medium",
+              "shrink-0 whitespace-nowrap rounded px-2 py-1 text-[11px] font-medium",
               tab === id
                 ? "bg-panel-2 text-foreground"
                 : "text-muted-foreground hover:text-foreground",

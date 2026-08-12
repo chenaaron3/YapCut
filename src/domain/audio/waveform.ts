@@ -76,10 +76,10 @@ export function sampleWaveformGrid(
   return out;
 }
 
-export function peakMax(peaks: ArrayLike<number>): number {
+export function peakMax(peaks: Iterable<number>): number {
   let max = 0;
-  for (let i = 0; i < peaks.length; i++) {
-    if (peaks[i]! > max) max = peaks[i]!;
+  for (const peak of peaks) {
+    if (peak > max) max = peak;
   }
   return max;
 }

@@ -36,7 +36,7 @@ export function CaptionTemplatePreview({
   playing?: boolean;
   className?: string;
   variant?: "dynamic" | "static";
-  /** When set, shows indicator + value placeholders instead of caption phrases. */
+  /** When set, shows a dual-layer pair (listicle, or title + subheading). */
   pair?: ListiclePreviewPair | null;
   /** Restart the preview loop when the selected/hovered template changes. */
   restartKey?: string;

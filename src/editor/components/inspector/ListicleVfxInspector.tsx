@@ -3,7 +3,12 @@ import { SliderField, TextField } from "~/editor/components/inspector/field";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
-import { applyCaptionOverrides } from "~/remotion/captions/style";
+import {
+  applyCaptionOverrides,
+  CAPTION_ARC_MAX,
+  CAPTION_ARC_MIN,
+  captionArc,
+} from "~/remotion/captions/style";
 import {
   DEFAULT_LISTICLE_TEMPLATE_ID,
   isListicleTemplateId,
@@ -98,6 +103,31 @@ export function ListicleVfxInspector({ edit }: { edit: VfxListicleEdit }) {
           patchListicleStyle(
             {
               overrides: normalizeCaptionOverrides({ ...overrides, y }),
+            },
+            true,
+          )
+        }
+      />
+
+      <SliderField
+        label="Arc"
+        value={captionArc(styles.indicator)}
+        min={CAPTION_ARC_MIN}
+        max={CAPTION_ARC_MAX}
+        step={1}
+        display={String(captionArc(styles.indicator))}
+        onLiveChange={(arc) =>
+          patchListicleStyle(
+            {
+              overrides: normalizeCaptionOverrides({ ...overrides, arc }),
+            },
+            true,
+          )
+        }
+        onCommit={(arc) =>
+          patchListicleStyle(
+            {
+              overrides: normalizeCaptionOverrides({ ...overrides, arc }),
             },
             true,
           )

@@ -16,15 +16,14 @@ export type StyleTemplateChip = {
   id: string;
   label: string;
   style: CaptionGroupStyle;
-  /** Optional dual-layer preview (listicle indicator + value). */
+  /** Optional dual-layer preview (listicle, or title + subheading). */
   previewPair?: ListiclePreviewPair;
 };
 
 function resolvePreviewPair(
   chip: StyleTemplateChip | null | undefined,
-  fallback?: ListiclePreviewPair | null,
 ): ListiclePreviewPair | null {
-  return chip?.previewPair ?? fallback ?? null;
+  return chip?.previewPair ?? null;
 }
 
 /** Shared template preview + chip picker for Captions, Quote, and Title inspectors. */
@@ -54,7 +53,7 @@ export function StyleTemplatePicker({
     : (fallbackStyle ?? selected?.style ?? null);
   const previewPair = previewingOther
     ? resolvePreviewPair(hovered)
-    : resolvePreviewPair(selected, fallbackPair);
+    : (fallbackPair ?? resolvePreviewPair(selected));
   const previewLabel = previewingOther ? hovered.label : (selected?.label ?? null);
 
   return (

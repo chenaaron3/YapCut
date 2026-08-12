@@ -1,7 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { mixPlaybackVolume } from "~/domain/audio/mix-levels";
+import { sfxPlaybackVolume } from "~/domain/audio/mix-levels";
 import {
   DEFAULT_SFX_VOLUME,
   formatSfxLabel,
@@ -122,7 +122,7 @@ function SfxRow({
           onPreview(
             asset.id,
             asset.playbackUrl,
-            mixPlaybackVolume(DEFAULT_SFX_VOLUME, asset.lufs, asset.truePeakDb),
+            sfxPlaybackVolume(DEFAULT_SFX_VOLUME, asset.lufs, asset.truePeakDb),
           );
         }}
         title={playingKey === asset.id ? "Stop" : "Preview"}

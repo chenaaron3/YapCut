@@ -1,5 +1,6 @@
 import {
   DEFAULT_CAPTION_STYLE,
+  clampCaptionArc,
   clampCaptionY,
   clampCaptionsAtATime,
   isBackgroundKind,
@@ -162,6 +163,11 @@ export function normalizeCaptionStyle(
   const textAlign = isCaptionTextAlign(src.textAlign)
     ? src.textAlign
     : fallback.textAlign;
+  const arcRaw = Number(src.arc);
+  const arc =
+    "arc" in src && Number.isFinite(arcRaw)
+      ? clampCaptionArc(arcRaw)
+      : fallback.arc;
 
   const background = parseBackground(
     src.background,
@@ -198,6 +204,7 @@ export function normalizeCaptionStyle(
     wordStyle,
     activeWordStyle,
     futureWordStyle,
+    arc,
   };
 }
 
@@ -223,6 +230,10 @@ export function normalizeCaptionOverrides(
   if ("fill" in raw) {
     const fill = asTrimmedString(raw.fill);
     if (fill) out.fill = fill;
+  }
+  if ("arc" in raw) {
+    const arc = Number(raw.arc);
+    if (Number.isFinite(arc)) out.arc = clampCaptionArc(arc);
   }
 
   return out;

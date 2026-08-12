@@ -33,7 +33,10 @@ function vfxCellLabel(edit: VfxEdit): string {
       : null;
     const templateLabel = tid ? TEXT_TEMPLATES[tid]?.label : null;
     const text = edit.text.trim();
+    const sub = edit.subheading?.trim() ?? "";
+    if (text && sub) return `${text} · ${sub}`;
     if (text) return text;
+    if (sub) return sub;
     return templateLabel ?? "Title";
   }
   if (edit.type === "listicle") {

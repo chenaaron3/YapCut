@@ -218,7 +218,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - ProjectConfig.arolls reference project video Assets
 - `music` is a Project field (one looping bed or null); project-scoped audio uploads are music, not SFX
 - Edits use timeline time; arolls use local time; Remotion maps timeline → output
-- On-screen title is a `vfx`/`text` Edit (seeded, deletable); `Project.title` is metadata only and is not kept in sync after seed
+- On-screen title is a `vfx`/`text` Edit (seeded, deletable) with optional `subheading`; `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
 - Emphasis look is a Project field (`emphasisStyle`); quote may sparse-merge the same `EmphasisStyle` shape on top; AI never writes emphasis style
 - Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
@@ -236,7 +236,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 | sfx | Edit | yes | Edit cell | Audio layer |
 | zoom | Edit | yes | Edit cell | Zoom |
 | vfx/quote | Edit | yes | Edit cell | Caption style override (+ text as applicable) |
-| vfx/text | Edit | yes | Edit cell | Text overlay |
+| vfx/text | Edit | yes | Edit cell | Text overlay (optional subheading) |
 | vfx/listicle | Edit | yes | Edit cell | Listicle overlay (shared `listicleStyle`) |
 | vfx/shake | Edit | yes | Edit cell | ScreenShake (wraps A-roll/zoom/b-roll; captions/text outside) |
 | captions | Project field | no | optional track | Text overlay (words from projection) |

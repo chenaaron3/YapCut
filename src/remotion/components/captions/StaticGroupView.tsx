@@ -19,7 +19,7 @@ export const StaticGroupView: React.FC<{
   group: CaptionGroupProp;
   frame: number;
   fps: number;
-  /** Flow layout for stacked listicle pairs (no absolute Y). */
+  /** Flow layout for stacked caption pairs (no absolute Y). */
   embedded?: boolean;
 }> = ({ group, frame, fps, embedded = false }) => {
   const style = group.style ?? DEFAULT_CAPTION_STYLE;

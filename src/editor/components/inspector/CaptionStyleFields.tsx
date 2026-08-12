@@ -9,7 +9,11 @@ import {
   SliderField,
 } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
-import type { CaptionStyleOverrides } from "~/remotion/captions/style";
+import {
+  CAPTION_ARC_MAX,
+  CAPTION_ARC_MIN,
+  type CaptionStyleOverrides,
+} from "~/remotion/captions/style";
 
 /** Minimal editable caption overrides (template owns the rest). */
 export function CaptionStyleFields({
@@ -18,19 +22,24 @@ export function CaptionStyleFields({
   resolvedY,
   resolvedFontSize,
   resolvedCaptionsAtATime,
+  resolvedArc,
   onPatch,
   defaultOpen = false,
   showCaptionsAtATime = true,
+  showArc = false,
 }: {
   overrides: CaptionStyleOverrides;
   resolvedFill: string;
   resolvedY: number;
   resolvedFontSize: number;
   resolvedCaptionsAtATime?: number;
+  resolvedArc?: number;
   onPatch: (partial: CaptionStyleOverrides, live?: boolean) => void;
   defaultOpen?: boolean;
   /** Caption/quote grouping; text VFX always show the full phrase. */
   showCaptionsAtATime?: boolean;
+  /** StaticGroupView curve (text VFX). */
+  showArc?: boolean;
 }) {
   const words = resolvedCaptionsAtATime ?? 1;
   const fill = overrides.fill ?? resolvedFill;
@@ -126,6 +135,18 @@ export function CaptionStyleFields({
         onLiveChange={(y) => onPatch({ y }, true)}
         onCommit={(y) => onPatch({ y }, true)}
       />
+      {showArc ? (
+        <SliderField
+          label="Arc"
+          value={resolvedArc ?? 0}
+          min={CAPTION_ARC_MIN}
+          max={CAPTION_ARC_MAX}
+          step={1}
+          display={String(resolvedArc ?? 0)}
+          onLiveChange={(arc) => onPatch({ arc }, true)}
+          onCommit={(arc) => onPatch({ arc }, true)}
+        />
+      ) : null}
     </InspectorCollapsible>
   );
 }

@@ -1,4 +1,5 @@
 import {
+  AUDIO_LOUDNESS_MAX_GAIN,
   AUDIO_LOUDNESS_TARGET_LUFS,
   gainFromLoudness,
 } from "~/domain/audio/loudness";
@@ -8,6 +9,12 @@ export const AROLL_TARGET_LUFS = -14.5;
 
 /** SFX punctuate ~6 dB below voice (target band −18 to −22). */
 export const SFX_TARGET_LUFS = -20;
+
+/**
+ * Short one-shots measure quiet on integrated LUFS but peak near 0 dBTP.
+ * After mix, cap true peak so transients sit under voice.
+ */
+export const SFX_MAX_TRUE_PEAK_DB = -12;
 
 /** Full music bed ~14 dB below voice (target band −24 to −32). */
 export const MUSIC_TARGET_LUFS = -28;
@@ -40,11 +47,37 @@ export function arollPlaybackGain(
   return gainFromLoudness(lufs, truePeakDb, AROLL_TARGET_LUFS);
 }
 
-/** Mix slider × library-normalize gain (SFX / music). */
+function capGainToTruePeak(
+  gain: number,
+  truePeakDb: number | null | undefined,
+  maxTruePeakDb: number,
+): number {
+  if (gain <= 0 || truePeakDb == null || !Number.isFinite(truePeakDb)) {
+    return gain;
+  }
+  const peakCap = 10 ** ((maxTruePeakDb - truePeakDb) / 20);
+  if (!Number.isFinite(peakCap) || peakCap <= 0) return gain;
+  return Math.min(gain, peakCap, AUDIO_LOUDNESS_MAX_GAIN);
+}
+
+/** Mix slider × library-normalize gain (music). */
 export function mixPlaybackVolume(
   mixVolume: number,
   lufs: number | null | undefined,
   truePeakDb: number | null | undefined,
 ): number {
   return Math.max(0, mixVolume * libraryPlaybackGain(lufs, truePeakDb));
+}
+
+/** SFX mix, with a true-peak ceiling so one-shots don't overpower voice. */
+export function sfxPlaybackVolume(
+  mixVolume: number,
+  lufs: number | null | undefined,
+  truePeakDb: number | null | undefined,
+): number {
+  return capGainToTruePeak(
+    mixPlaybackVolume(mixVolume, lufs, truePeakDb),
+    truePeakDb,
+    SFX_MAX_TRUE_PEAK_DB,
+  );
 }

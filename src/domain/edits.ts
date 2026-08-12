@@ -302,6 +302,7 @@ const PLAIN_PATCH_KEYS = [
   "middle",
   "assetId",
   "text",
+  "subheading",
   "indicatorText",
   "valueText",
   "hideCaptions",

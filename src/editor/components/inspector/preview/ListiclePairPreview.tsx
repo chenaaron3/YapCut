@@ -20,10 +20,10 @@ function buildPreviewOverlay(pair: ListiclePreviewPair): ListicleOverlayProp {
   return {
     id: 0,
     startFrame: 0,
-    middleFrame: LISTICLE_PREVIEW_MIDDLE,
+    middleFrame: pair.staggered === false ? null : LISTICLE_PREVIEW_MIDDLE,
     endFrame: LISTICLE_PREVIEW_END,
-    indicatorText: LISTICLE_PREVIEW_INDICATOR,
-    valueText: LISTICLE_PREVIEW_VALUE,
+    indicatorText: pair.indicatorText ?? LISTICLE_PREVIEW_INDICATOR,
+    valueText: pair.valueText ?? LISTICLE_PREVIEW_VALUE,
     indicatorStyle: pair.indicator,
     valueStyle: pair.value,
     stacked: pair.stacked,

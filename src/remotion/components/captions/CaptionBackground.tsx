@@ -14,6 +14,27 @@ function scrapClipPath(index: number): string {
   return variants[index % variants.length]!;
 }
 
+/** Continuous torn-paper strip (jagged top + bottom, hugs the text box). */
+export function ribbonClipPath(): string {
+  const steps = 18;
+  const top: string[] = [];
+  const bot: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const x = 0.6 + t * 98.8;
+    const jag =
+      Math.sin(t * Math.PI * 5.2) * 0.45 +
+      Math.sin(t * Math.PI * 9.1) * 0.28 +
+      Math.sin(t * Math.PI * 2.4) * 0.18;
+    const notch = i % 3 === 0 ? 2.2 : i % 3 === 1 ? -1.1 : 0.6;
+    const topY = 7.5 + jag * 7.5 + notch;
+    const botY = 92.5 - jag * 7.2 - (i % 3 === 2 ? 2.4 : 0.4);
+    top.push(`${x.toFixed(2)}% ${Math.min(16, Math.max(1.5, topY)).toFixed(2)}%`);
+    bot.push(`${x.toFixed(2)}% ${Math.min(98.5, Math.max(84, botY)).toFixed(2)}%`);
+  }
+  return `polygon(${top.join(", ")}, ${bot.reverse().join(", ")})`;
+}
+
 export function scrapRotationDeg(index: number): number {
   return ((index * 37) % 13) - 6;
 }
@@ -48,7 +69,7 @@ export function applyColorOpacity(color: string, alpha: number): string {
   return c;
 }
 
-/** CSS chrome for box / rounded / scrap. */
+/** CSS chrome for box / rounded / scrap / ribbon. */
 export function backgroundChromeStyle(
   background: BackgroundStyle | null | undefined,
   index = 0,
@@ -96,6 +117,14 @@ export function backgroundChromeStyle(
     };
   }
 
+  if (background.kind === "ribbon") {
+    return {
+      backgroundColor: color !== undefined && color !== "" ? color : "#FFFFFF",
+      padding: "0.42em 0.78em 0.38em",
+      clipPath: ribbonClipPath(),
+    };
+  }
+
   return {};
 }
 
@@ -125,6 +154,13 @@ export function wordBackgroundChromeStyle(
     return {
       backgroundColor: fill,
       clipPath: scrapClipPath(index),
+    };
+  }
+
+  if (background.kind === "ribbon") {
+    return {
+      backgroundColor: fill,
+      clipPath: ribbonClipPath(),
     };
   }
 

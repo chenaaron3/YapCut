@@ -1,4 +1,4 @@
-import { arollPlaybackGain, mixPlaybackVolume } from "~/domain/audio/mix-levels";
+import { arollPlaybackGain, mixPlaybackVolume, sfxPlaybackVolume } from "~/domain/audio/mix-levels";
 import { buildArollLayout, timelineRangeToOutput } from "~/domain/arolls";
 import {
   pickEmphasisStyle,
@@ -339,6 +339,7 @@ function buildTextOverlays(
         secToFrame(range.end, fps),
       ),
       text: e.text,
+      subheading: e.subheading ?? "",
       style: e.style,
     });
   }
@@ -485,7 +486,7 @@ function buildSfx(
       ),
       src,
       mediaOffsetSec: e.mediaOffsetSec,
-      volume: mixPlaybackVolume(e.volume, loud.lufs, loud.truePeakDb),
+      volume: sfxPlaybackVolume(e.volume, loud.lufs, loud.truePeakDb),
     });
   }
   return out;

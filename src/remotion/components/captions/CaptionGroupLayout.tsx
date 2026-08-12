@@ -5,10 +5,15 @@ import React, {
   type ReactNode,
 } from "react";
 
-import { DEFAULT_CAPTION_STYLE } from "~/remotion/captions/style";
+import {
+  DEFAULT_CAPTION_STYLE,
+  type BackgroundKind,
+  type CaptionGroupStyle,
+} from "~/remotion/captions/style";
 import type { CaptionGroupProp } from "~/remotion/types";
 
 import { CaptionBackground } from "./CaptionBackground";
+import { ArcLayoutContext, layoutCaptionArc } from "./arc-layout";
 import { captionGroupCss } from "./caption-style-css";
 
 function rowJustify(
@@ -17,6 +22,15 @@ function rowJustify(
   if (textAlign === "left") return "flex-start";
   if (textAlign === "right") return "flex-end";
   return "center";
+}
+
+function hugsContent(kind: BackgroundKind): boolean {
+  return kind === "box" || kind === "ribbon";
+}
+
+function wordRowGap(style: CaptionGroupStyle): string {
+  const kind = style.wordStyle.background?.kind;
+  return kind === "scrap" || kind === "rounded" ? "0.45em 0.55em" : "0.35em";
 }
 
 /** Marker: splits static overlay words onto the next line. */
@@ -51,6 +65,101 @@ function spacedWords(line: ReactNode[]): ReactNode[] {
   return line.flatMap((child, j) => (j === 0 ? [child] : [" ", child]));
 }
 
+function groupShellStyle(
+  style: CaptionGroupStyle,
+  embedded: boolean,
+  shellStyle: CSSProperties | undefined,
+): CSSProperties {
+  const justify = rowJustify(style.textAlign);
+  if (embedded) {
+    return {
+      position: "relative",
+      display: "flex",
+      justifyContent: justify,
+      width: "100%",
+      ...shellStyle,
+    };
+  }
+  return {
+    position: "absolute",
+    top: `${style.y * 100}%`,
+    left: 0,
+    right: 0,
+    display: "flex",
+    justifyContent: justify,
+    transform: "translateY(-50%)",
+    ...shellStyle,
+  };
+}
+
+/**
+ * Inline/flex word packing. ContourBoard (`wrap`) needs inline line boxes;
+ * everything else is a flex row (or column of rows).
+ */
+function packFlow(
+  children: ReactNode,
+  style: CaptionGroupStyle,
+  textStyle: CSSProperties,
+): { innerStyle: CSSProperties; body: ReactNode } {
+  const wrap = style.background.kind === "wrap";
+  const gap = wordRowGap(style);
+  const rowStyle: CSSProperties = {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: rowJustify(style.textAlign),
+    gap,
+  };
+  const lines = partitionLines(children);
+  const multiLine = lines.length > 1;
+
+  if (wrap) {
+    const body = lines.flatMap((line, i) => {
+      const words = spacedWords(line);
+      if (i === 0) return words;
+      return [<br key={`br-${i}`} />, ...words];
+    });
+    return {
+      innerStyle: { ...textStyle, width: "100%", maxWidth: "100%" },
+      body,
+    };
+  }
+
+  const body = multiLine
+    ? lines.map((line, i) => (
+        <span
+          key={`line-${i}`}
+          style={{
+            ...rowStyle,
+            width: "100%",
+            minHeight: line.length === 0 ? "1em" : undefined,
+          }}
+        >
+          {line}
+        </span>
+      ))
+    : (lines[0] ?? []);
+
+  return {
+    innerStyle: {
+      ...textStyle,
+      ...(multiLine
+        ? {
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "stretch",
+            justifyContent: "center",
+          }
+        : rowStyle),
+      gap,
+      width: hugsContent(style.background.kind) ? "auto" : "100%",
+      maxWidth: "100%",
+    },
+    body,
+  };
+}
+
 export type CaptionGroupLayoutProps = {
   group: CaptionGroupProp;
   /** Outer transform/opacity (e.g. group enter/exit). */
@@ -66,6 +175,7 @@ export type CaptionGroupLayoutProps = {
 /**
  * Shared caption shell: safe-area Y, background, word row.
  * Motion policy and word paint live in the calling view (as children).
+ * Inner packing is flow (flex/wrap) or arc (glyph poses on {@link CaptionWordSpan}).
  */
 export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
   group,
@@ -74,105 +184,40 @@ export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
   children,
 }) => {
   const style = group.style ?? DEFAULT_CAPTION_STYLE;
-  const background = style.background;
-  const textAlign = style.textAlign;
-  const wrap = background.kind === "wrap";
-  const baseText = captionGroupCss(style);
   const textStyle: CSSProperties = {
-    ...baseText,
+    ...captionGroupCss(style),
     color: style.wordStyle.fill,
   };
-  const gap =
-    style.wordStyle.background?.kind === "scrap" ||
-    style.wordStyle.background?.kind === "rounded"
-      ? "0.45em 0.55em"
-      : "0.35em";
-
-  const lines = partitionLines(children);
-  const multiLine = lines.length > 1;
-
-  // ContourBoard needs inline line boxes — spaces between words, <br> between lines.
-  const wrapContent = lines.flatMap((line, i) => {
-    const words = spacedWords(line);
-    if (i === 0) return words;
-    return [<br key={`br-${i}`} />, ...words];
-  });
-
-  const rowStyle: CSSProperties = {
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent: rowJustify(textAlign),
-    gap,
-  };
-
-  const flexContent = multiLine
-    ? lines.map((line, i) => (
-        <span
-          key={`line-${i}`}
-          style={{
-            ...rowStyle,
-            width: "100%",
-            minHeight: line.length === 0 ? "1em" : undefined,
-          }}
-        >
-          {line}
-        </span>
-      ))
-    : (lines[0] ?? []);
-
-  const innerStyle: CSSProperties = wrap
+  const arc = layoutCaptionArc(group, style);
+  const packed = arc
     ? {
-        ...textStyle,
-        width: "100%",
-        maxWidth: "100%",
+        innerStyle: {
+          ...textStyle,
+          textTransform: "none" as const,
+          position: "relative" as const,
+          width: arc.width,
+          height: arc.height,
+          maxWidth: "100%",
+        },
+        body: children,
+        background:
+          style.background.kind === "wrap"
+            ? { kind: "none" as const }
+            : style.background,
       }
-    : {
-        ...textStyle,
-        ...(multiLine
-          ? {
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "stretch",
-              justifyContent: "center",
-            }
-          : rowStyle),
-        gap,
-        width: background.kind === "box" ? "auto" : "100%",
-        maxWidth: "100%",
-      };
+    : { ...packFlow(children, style, textStyle), background: style.background };
 
   return (
-    <div
-      style={
-        embedded
-          ? {
-              position: "relative",
-              display: "flex",
-              justifyContent: rowJustify(textAlign),
-              width: "100%",
-              ...shellStyle,
-            }
-          : {
-              position: "absolute",
-              top: `${style.y * 100}%`,
-              left: 0,
-              right: 0,
-              display: "flex",
-              justifyContent: rowJustify(textAlign),
-              transform: "translateY(-50%)",
-              ...shellStyle,
-            }
-      }
-    >
+    <div style={groupShellStyle(style, embedded, shellStyle)}>
       <CaptionBackground
-        background={background}
-        textAlign={textAlign}
+        background={packed.background}
+        textAlign={style.textAlign}
         textStyle={textStyle}
-        style={innerStyle}
+        style={packed.innerStyle}
       >
-        {wrap ? wrapContent : flexContent}
+        <ArcLayoutContext.Provider value={arc}>
+          {packed.body}
+        </ArcLayoutContext.Provider>
       </CaptionBackground>
     </div>
   );

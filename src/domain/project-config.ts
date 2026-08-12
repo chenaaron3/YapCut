@@ -60,6 +60,8 @@ export type VfxTextEdit = EditBase & {
   kind: "vfx";
   type: "text";
   text: string;
+  /** Second line under the title; omit/empty = heading only. */
+  subheading?: string;
   style?: TemplateStyle;
 };
 
@@ -226,6 +228,7 @@ const vfxTextEditSchema = editBaseSchema.extend({
   kind: z.literal("vfx"),
   type: z.literal("text"),
   text: z.string(),
+  subheading: z.string().optional(),
   style: templateStyleSchema.optional(),
 });
 

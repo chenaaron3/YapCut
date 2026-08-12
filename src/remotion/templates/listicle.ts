@@ -5,7 +5,10 @@ import {
   type CaptionGroupStyle,
 } from "~/remotion/captions/style";
 
-export const LISTICLE_TEMPLATE_IDS = ["black-board", "red-teal"] as const;
+export const LISTICLE_TEMPLATE_IDS = [
+  "black-board",
+  "red-teal",
+] as const;
 
 export type ListicleTemplateId = (typeof LISTICLE_TEMPLATE_IDS)[number];
 
@@ -131,7 +134,10 @@ export function resolveListicleTextStyles(
   const normalized = normalizeCaptionOverrides(overrides);
   return {
     indicator: applyCaptionOverrides(template.indicatorStyle, normalized),
-    value: applyCaptionOverrides(template.valueStyle, normalized),
+    value: applyCaptionOverrides(template.valueStyle, {
+      ...normalized,
+      arc: undefined,
+    }),
     stacked: template.stacked,
   };
 }

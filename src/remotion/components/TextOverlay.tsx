@@ -2,33 +2,71 @@ import { useMemo } from "react";
 import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 
 import { buildStaticGroup } from "~/remotion/components/captions/static-group";
+import { StackedCaptionPair } from "~/remotion/components/captions/StackedCaptionPair";
 import { StaticGroupView } from "~/remotion/components/captions/StaticGroupView";
 import { SAFE_AREA } from "~/remotion/constants";
-import { resolveTemplateStyle } from "~/remotion/templates/style";
+import { resolveTemplateId } from "~/remotion/templates/style";
 import {
   DEFAULT_TEXT_TEMPLATE_ID,
   isTextTemplateId,
-  resolveTextTemplateStyle,
+  resolveTextLayerStyles,
 } from "~/remotion/templates/text";
 import type { TextOverlayProp } from "~/remotion/types";
+
+import type { CaptionGroupStyle } from "~/remotion/captions/style";
+
+function StaticLayer({
+  text,
+  style,
+  durationFrames,
+  frame,
+  fps,
+  embedded,
+}: {
+  text: string;
+  style: CaptionGroupStyle;
+  durationFrames: number;
+  frame: number;
+  fps: number;
+  embedded: boolean;
+}) {
+  const group = useMemo(
+    () => buildStaticGroup(text, style, fps, durationFrames),
+    [text, style, fps, durationFrames],
+  );
+
+  if (!text.trim() || frame < 0 || frame >= durationFrames) return null;
+
+  return (
+    <StaticGroupView
+      group={group}
+      frame={frame}
+      fps={fps}
+      embedded={embedded}
+    />
+  );
+}
 
 function TextOverlayItem({ overlay }: { overlay: TextOverlayProp }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const style = resolveTemplateStyle(
+  const templateId = resolveTemplateId(
     overlay.style,
     isTextTemplateId,
     DEFAULT_TEXT_TEMPLATE_ID,
-    resolveTextTemplateStyle,
+  );
+  const { heading, subheading } = resolveTextLayerStyles(
+    templateId,
+    overlay.style?.overrides,
   );
   const durationFrames = Math.max(1, overlay.endFrame - overlay.startFrame);
-
-  const group = useMemo(
-    () => buildStaticGroup(overlay.text, style, fps, durationFrames),
-    [overlay.text, style, fps, durationFrames],
-  );
+  const headingText = overlay.text.trim();
+  const subText = overlay.subheading.trim();
 
   if (frame >= durationFrames) return null;
+  if (!headingText && !subText) return null;
+
+  const stacked = Boolean(headingText && subText);
 
   return (
     <AbsoluteFill
@@ -42,7 +80,37 @@ function TextOverlayItem({ overlay }: { overlay: TextOverlayProp }) {
         height: "auto",
       }}
     >
-      <StaticGroupView group={group} frame={frame} fps={fps} />
+      {stacked ? (
+        <StackedCaptionPair y={heading.y}>
+          <StaticLayer
+            text={headingText}
+            style={heading}
+            durationFrames={durationFrames}
+            frame={frame}
+            fps={fps}
+            embedded
+          />
+          <StaticLayer
+            text={subText}
+            style={subheading}
+            durationFrames={durationFrames}
+            frame={frame}
+            fps={fps}
+            embedded
+          />
+        </StackedCaptionPair>
+      ) : (
+        <StaticLayer
+          text={headingText || subText}
+          style={
+            headingText ? heading : { ...subheading, y: heading.y }
+          }
+          durationFrames={durationFrames}
+          frame={frame}
+          fps={fps}
+          embedded={false}
+        />
+      )}
     </AbsoluteFill>
   );
 }

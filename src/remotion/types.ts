@@ -49,6 +49,8 @@ export type TextOverlayProp = {
   startFrame: number;
   endFrame: number;
   text: string;
+  /** Empty = heading only. */
+  subheading: string;
   style?: TemplateStyle;
 };
 

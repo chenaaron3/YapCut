@@ -7,13 +7,12 @@ import {
 } from "remotion";
 
 import { buildStaticGroup } from "~/remotion/components/captions/static-group";
+import { StackedCaptionPair } from "~/remotion/components/captions/StackedCaptionPair";
 import { StaticGroupView } from "~/remotion/components/captions/StaticGroupView";
 import { SAFE_AREA } from "~/remotion/constants";
 
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type { ListicleOverlayProp } from "~/remotion/types";
-
-const STACK_GAP_PX = 10;
 
 type PhaseTiming = { start: number; duration: number };
 
@@ -162,22 +161,10 @@ export function ListiclePairView({
       }}
     >
       {overlay.stacked ? (
-        <div
-          style={{
-            position: "absolute",
-            top: `${overlay.valueStyle.y * 100}%`,
-            left: 0,
-            right: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: STACK_GAP_PX,
-            transform: "translateY(-50%)",
-          }}
-        >
+        <StackedCaptionPair y={overlay.valueStyle.y}>
           {indicator}
           {value}
-        </div>
+        </StackedCaptionPair>
       ) : (
         <>
           {indicator}
