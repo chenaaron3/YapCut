@@ -1,64 +1,33 @@
-import { Eye, EyeOff, type LucideIcon } from "lucide-react";
+import { ChevronDown, Eye, EyeOff, Layers } from "lucide-react";
 
-import type { Edit } from "~/domain/project-config";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import {
   chromeByKey,
   chromeForEdit,
   EDIT_CHROME,
 } from "~/editor/lib/edit-chrome";
-import type { TranscriptChromeGroup } from "~/editor/lib/transcript-chrome-visibility";
 import { useEditor } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
-const TOGGLE_STYLE: Record<
-  TranscriptChromeGroup,
-  { onClass: string; badgeClass: string }
-> = {
-  broll: {
-    onClass: "bg-broll/25 text-broll",
-    badgeClass: "bg-broll text-black",
-  },
-  "vfx:text": {
-    onClass: "bg-vfx/25 text-vfx",
-    badgeClass: "bg-vfx text-black",
-  },
-  "vfx:quote": {
-    onClass: "bg-vfx/25 text-vfx",
-    badgeClass: "bg-vfx text-black",
-  },
-  "vfx:listicle": {
-    onClass: "bg-vfx/25 text-vfx",
-    badgeClass: "bg-vfx text-black",
-  },
-  "vfx:shake": {
-    onClass: "bg-vfx/25 text-vfx",
-    badgeClass: "bg-vfx text-black",
-  },
-  sfx: {
-    onClass: "bg-sfx/25 text-sfx",
-    badgeClass: "bg-sfx text-black",
-  },
-  zoom: {
-    onClass: "bg-zoom/25 text-zoom",
-    badgeClass: "bg-zoom text-white",
-  },
-};
+import type { Edit } from "~/domain/project-config";
+import type { TranscriptChromeGroup } from "~/editor/lib/transcript-chrome-visibility";
 
-const TOGGLES: readonly {
-  group: TranscriptChromeGroup;
-  Icon: LucideIcon;
-  onClass: string;
-  badgeClass: string;
-}[] = EDIT_CHROME.map((spec) => {
-  const style = TOGGLE_STYLE[spec.key];
-  return {
-    group: spec.key,
-    Icon: spec.Icon,
-    onClass: style.onClass,
-    badgeClass: style.badgeClass,
-  };
-});
+const VISIBILITY_LABEL: Record<TranscriptChromeGroup, string> = {
+  broll: "B-roll",
+  "vfx:text": "Text",
+  "vfx:quote": "Quote",
+  "vfx:listicle": "Listicle",
+  "vfx:shake": "Shake",
+  sfx: "SFX",
+  zoom: "Zoom",
+};
 
 function countEditsByGroup(
   edits: readonly Edit[],
@@ -72,7 +41,7 @@ function countEditsByGroup(
   return counts;
 }
 
-/** Multi-toggle: which edit kinds show chrome in the transcript (session-only). */
+/** Compact trigger + menu: which edit kinds show chrome in the transcript. */
 export function TranscriptChromeVisibilityToggles() {
   const visible = useTranscriptUi((s) => s.visible);
   const toggleVisible = useTranscriptUi((s) => s.toggleVisible);
@@ -80,85 +49,99 @@ export function TranscriptChromeVisibilityToggles() {
   const edits = useEditor((s) => s.config?.edits ?? []);
   const counts = countEditsByGroup(edits);
 
-  const shown = TOGGLES.filter((t) => (counts[t.group] ?? 0) > 0);
+  const shown = EDIT_CHROME.filter((spec) => (counts[spec.key] ?? 0) > 0);
   if (shown.length === 0) return null;
 
-  const onCount = shown.filter((t) => visible[t.group]).length;
+  const onCount = shown.filter((spec) => visible[spec.key]).length;
   const majorityOn = onCount > shown.length / 2;
   const MasterIcon = majorityOn ? Eye : EyeOff;
   const masterLabel = majorityOn
     ? "Hide all edits in transcript"
     : "Show all edits in transcript";
+  const totalEdits = shown.reduce(
+    (sum, spec) => sum + (counts[spec.key] ?? 0),
+    0,
+  );
+  const typeLabel = totalEdits === 1 ? "1 edit" : `${totalEdits} edits`;
 
   return (
-    <div
-      className="flex items-center gap-0.5"
-      role="group"
-      aria-label="Edit visibility toggles"
-    >
-      {shown.map(({ group, Icon, onClass, badgeClass }) => {
-        const on = visible[group];
-        const count = counts[group] ?? 0;
-        const titleLabel = chromeByKey(group).label;
-        return (
+    <DropdownMenu modal={false} highlightItemOnHover={false}>
+      <DropdownMenuTrigger
+        render={
           <button
-            key={group}
             type="button"
-            title={
-              on
-                ? `Hide ${titleLabel} in transcript`
-                : `Show ${titleLabel} in transcript`
-            }
-            aria-label={
-              on
-                ? `Hide ${titleLabel} in transcript (${count})`
-                : `Show ${titleLabel} in transcript (${count})`
-            }
-            aria-pressed={on}
-            className={cn(
-              "relative rounded p-1 transition-colors",
-              on
-                ? onClass
-                : "text-muted-foreground/40 hover:bg-panel-2 hover:text-muted-foreground",
-            )}
+            className="border-border bg-panel-2 hover:border-muted-foreground/40 inline-flex h-7 items-center gap-2 rounded-md border px-2.5 text-xs font-medium"
+            aria-label={`Toggle visibility, ${typeLabel}`}
+            title="Show or hide edit markers in the transcript"
+          />
+        }
+      >
+        <Layers className="text-muted-foreground size-3.5" />
+        {typeLabel}
+        <ChevronDown className="text-muted-foreground size-3.5 in-data-popup-open:rotate-180" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        sideOffset={6}
+        className="w-max min-w-0 p-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 px-2 py-1">
+          <p className="flex-1 text-xs font-semibold whitespace-nowrap">
+            Toggle visibility
+          </p>
+          <button
+            type="button"
+            title={masterLabel}
+            aria-label={masterLabel}
+            aria-pressed={majorityOn}
+            className="text-muted-foreground hover:bg-panel-2 hover:text-foreground flex size-6 items-center justify-center rounded-md"
             onClick={(e) => {
               e.stopPropagation();
-              toggleVisible(group);
+              setGroupsVisible(
+                shown.map((spec) => spec.key),
+                !majorityOn,
+              );
             }}
           >
-            <Icon className="size-3.5" strokeWidth={2.25} />
-            <span
-              className={cn(
-                "pointer-events-none absolute -right-0.5 -top-0.5 flex h-2.5 min-w-2.5 items-center justify-center rounded-full px-0.5 text-[8px] font-semibold leading-none",
-                on ? badgeClass : "bg-muted-foreground/50 text-background",
-              )}
-            >
-              {count > 99 ? "99+" : count}
-            </span>
+            <MasterIcon className="size-3.5" />
           </button>
-        );
-      })}
-      <button
-        type="button"
-        title={masterLabel}
-        aria-label={masterLabel}
-        aria-pressed={majorityOn}
-        className={cn(
-          "ml-0.5 rounded p-1 transition-colors",
-          majorityOn
-            ? "bg-foreground/10 text-foreground"
-            : "text-muted-foreground/40 hover:bg-panel-2 hover:text-muted-foreground",
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          setGroupsVisible(
-            shown.map((t) => t.group),
-            !majorityOn,
+        </div>
+        <DropdownMenuSeparator className="mx-0" />
+        {shown.map((spec) => {
+          const on = visible[spec.key];
+          const count = counts[spec.key] ?? 0;
+          const label =
+            VISIBILITY_LABEL[spec.key] ?? chromeByKey(spec.key).label;
+          const RowIcon = on ? Eye : EyeOff;
+          return (
+            <DropdownMenuItem
+              key={spec.key}
+              closeOnClick={false}
+              aria-pressed={on}
+              label={label}
+              className={cn(
+                "h-8 gap-2 px-2 text-xs hover:bg-panel-2",
+                "focus:bg-panel-2 focus:text-foreground data-highlighted:bg-panel-2 data-highlighted:text-foreground",
+                !on && "text-muted-foreground/50",
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleVisible(spec.key);
+              }}
+            >
+              <span
+                className={cn("size-2 shrink-0 rounded-full", spec.dotClass)}
+              />
+              <span className="pr-4 whitespace-nowrap">{label}</span>
+              <span className="text-muted-foreground ml-auto text-[11px] tabular-nums">
+                {count}
+              </span>
+              <RowIcon className="text-muted-foreground size-3.5" />
+            </DropdownMenuItem>
           );
-        }}
-      >
-        <MasterIcon className="size-3.5" strokeWidth={2.25} />
-      </button>
-    </div>
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

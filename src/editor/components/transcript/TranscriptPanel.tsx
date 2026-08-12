@@ -1,12 +1,11 @@
-import type { ReactNode } from "react";
+import { Captions, Settings2 } from "lucide-react";
 import { useMemo } from "react";
-import { Settings } from "lucide-react";
 
-import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
 import { InspectorPanel } from "~/editor/components/inspector/InspectorPanel";
+import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
+import { useRangeResize } from "~/editor/components/transcript/hooks/useRangeResize";
 import { TranscriptChromeVisibilityToggles } from "~/editor/components/transcript/TranscriptChromeVisibilityToggles";
 import { WordCell } from "~/editor/components/transcript/WordCell";
-import { useRangeResize } from "~/editor/components/transcript/hooks/useRangeResize";
 import { useWordDragSelect } from "~/editor/lib/use-word-drag-select";
 import {
   buildWordAnnotations,
@@ -16,10 +15,10 @@ import { useSelection } from "~/editor/selection-store";
 import { useEditor, useGlobalWords } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
+import type { ReactNode } from "react";
+
 export function TranscriptPanel() {
   const config = useEditor((s) => s.config);
-  const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
-  const saving = useEditor((s) => s.saving);
   const words = useGlobalWords();
   const projectPanel = useSelection((s) => s.projectPanel);
   const clearSelection = useSelection((s) => s.clearSelection);
@@ -49,55 +48,45 @@ export function TranscriptPanel() {
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-border bg-panel">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-3 py-2">
+    <div className="border-border bg-panel flex min-h-0 min-w-0 flex-col overflow-hidden border-r">
+      <div className="border-border flex shrink-0 items-center justify-between gap-3 border-b px-3 py-2">
         <ProjectTitleField />
         <div className="flex shrink-0 items-center gap-2">
           <TranscriptChromeVisibilityToggles />
           <button
             type="button"
             className={cn(
-              "rounded px-1.5 py-0.5 text-[11px] transition-colors",
+              "inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors",
               projectPanel === "captions"
                 ? "bg-primary/20 text-foreground"
                 : "text-muted-foreground hover:bg-panel-2 hover:text-foreground",
             )}
+            title="Open caption style inspector"
             onClick={(e) => {
               e.stopPropagation();
               openCaptionsPanel();
             }}
           >
+            <Captions className="size-3.5" />
             Captions
           </button>
           <button
             type="button"
             className={cn(
-              "rounded p-1 transition-colors",
+              "inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors",
               projectPanel === "settings"
                 ? "bg-primary/20 text-foreground"
                 : "text-muted-foreground hover:bg-panel-2 hover:text-foreground",
             )}
-            aria-label="Project settings"
             title="Project settings"
             onClick={(e) => {
               e.stopPropagation();
               openSettingsPanel();
             }}
           >
-            <Settings className="size-3.5" />
+            <Settings2 className="size-3.5" />
+            Settings
           </button>
-          <span
-            className={cn(
-              "text-[11px]",
-              saving
-                ? "text-muted-foreground"
-                : dirty
-                  ? "text-amber-300"
-                  : "text-muted-foreground/70",
-            )}
-          >
-            {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
-          </span>
         </div>
       </div>
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -110,7 +99,9 @@ export function TranscriptPanel() {
         >
           <div className="px-6 py-5 text-[18px] leading-[1.85]">
             {words.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No transcript words.</p>
+              <p className="text-muted-foreground text-sm">
+                No transcript words.
+              </p>
             ) : (
               nodes
             )}

@@ -16,7 +16,9 @@ export abstract class ScheduleUploadService {
 }
 
 export class NoopScheduleUploadService extends ScheduleUploadService {
-  start(_job: ScheduleUploadJob): void {}
+  start(_job: ScheduleUploadJob): void {
+    void _job;
+  }
 }
 
 class DevScheduleUploadService extends ScheduleUploadService {

@@ -1,4 +1,4 @@
-import { ChevronDown, ExternalLink } from "lucide-react";
+import { ChevronDown, CloudUpload, ExternalLink } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
@@ -161,7 +161,8 @@ export function ExportButton() {
       disabled={exporting}
       onClick={() => void onExport()}
     >
-      {exporting ? `Exporting… ${pct}%` : "Export"}
+      <CloudUpload className="size-3.5" />
+      {exporting ? `Exporting… ${pct}%` : "Export video"}
     </Button>
   );
 

@@ -13,6 +13,26 @@ import { bindEditorSavers, useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 
+function SaveStatusBadge() {
+  const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
+  const saving = useEditor((s) => s.saving);
+  const label = saving ? "Saving…" : dirty ? "Unsaved" : "Saved";
+  return (
+    <span
+      className="border-border bg-panel-2 text-muted-foreground inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11px]"
+      title={label}
+    >
+      <span
+        className={cn(
+          "size-1.5 rounded-full",
+          saving ? "bg-muted-foreground" : dirty ? "bg-amber-400" : "bg-sfx",
+        )}
+      />
+      {label}
+    </span>
+  );
+}
+
 /** Client-only: `next/dynamic` with `ssr:false` steals refs, so load the panel
  *  (not the Remotion Player) dynamically and import Player normally inside. */
 const PlayerPanel = dynamic(
@@ -256,6 +276,7 @@ export function EditorShell({ projectId }: Props) {
           ) : null}
         </div>
         <div className="flex items-center gap-2">
+          <SaveStatusBadge />
           <AiAssistButton />
           <ExportButton />
         </div>

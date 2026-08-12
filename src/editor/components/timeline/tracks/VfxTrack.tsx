@@ -95,6 +95,10 @@ export function VfxTrack({ edits, width }: Props) {
               <span
                 role="slider"
                 aria-label="Move listicle split"
+                aria-valuenow={edit.middle}
+                aria-valuemin={edit.start}
+                aria-valuemax={edit.end}
+                aria-orientation="horizontal"
                 className="absolute top-0 bottom-0 z-[3] w-1 -translate-x-1/2 cursor-ew-resize bg-amber-300/90"
                 style={{ left: middleLeft }}
                 onMouseDown={(e) => {

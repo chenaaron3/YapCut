@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { Sparkles } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "~/components/ui/button";
 import { useEditor } from "~/editor/store";
@@ -64,10 +64,10 @@ export function AiAssistButton() {
         size="sm"
         disabled={disabled}
         onClick={() => void onClick()}
-        title="Re-run create AI assist"
+        title="Generate a new set of edits with AI"
       >
         <Sparkles className="size-3.5" />
-        {busy ? "AI…" : "AI"}
+        {busy ? "Generating…" : "Generate edits"}
       </Button>
     </div>
   );
