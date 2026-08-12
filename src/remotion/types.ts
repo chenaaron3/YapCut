@@ -89,6 +89,14 @@ export type SfxClipProp = {
   volume: number;
 };
 
+/** Baked camera-shake clip (intensity = fraction of composition size). */
+export type ShakeClipProp = {
+  id: number;
+  startFrame: number;
+  endFrame: number;
+  intensity: number;
+};
+
 export type ProjectProps = {
   fps: number;
   width: number;
@@ -99,6 +107,7 @@ export type ProjectProps = {
   zooms: ZoomProp[];
   textOverlays: TextOverlayProp[];
   listicleOverlays: ListicleOverlayProp[];
+  shakes: ShakeClipProp[];
   brolls: BrollClipProp[];
   sfx: SfxClipProp[];
 };

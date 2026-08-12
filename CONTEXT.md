@@ -25,7 +25,7 @@ Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set
 _Avoid_: is_visual / is_audio booleans, public URLs as source of truth
 
 **Transcript**:
-Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: sparse in open captions, denser (most content words) inside a quote punch phrase.
+Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: two AI passes unioned — sparse across the whole script, then denser (most content words) inside each quote punch phrase.
 _Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type
 
 **Aroll keep** (`ArollKeep`):
@@ -51,7 +51,7 @@ _Avoid_: uuid, array index, string ids
 broll | sfx | zoom | vfx
 ```
 - **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
-- **vfx** — `type: "quote" | "text" | "listicle"` (location/shake/cutout out of scope)
+- **vfx** — `type: "quote" | "text" | "listicle" | "shake"` (location/cutout out of scope)
 
 **Punch-in**:
 Hard zoom (`ease` false/omitted). Create zoom AI prefers these as intentional camera hits.
@@ -62,15 +62,15 @@ Eased zoom used by **pacing reconcile** on bare sentences (no overlapping edits,
 _Avoid_: filling dry stretches with standalone SFX; partial-sentence slow zooms
 
 **Punch phrase**:
-Short high-impact word span for a quote VFX (~3–8 words), not a full sentence.
-_Avoid_: quote-as-paragraph, quote overlapping listicle
+Short high-impact key-phrase span for a quote VFX (~3–10 words), not a full sentence. AI always starts the first quote at word 0 (hook); later quotes only on true key phrases, ≥5 words between spans — prefer spaced subsets over merging past the word limit.
+_Avoid_: quote-as-paragraph, quote overlapping listicle, packing ordinary connective speech, back-to-back quotes
 
 **Companion SFX**:
-An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, listicle indicator/value, title card, hook riser). Optional per candidate (`none` allowed). Not used to plug pacing gaps.
+An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, listicle indicator/value, title card). Optional per candidate (`none` allowed). Not used to plug pacing gaps. AI does not place hook-riser (`build`) companions.
 _Avoid_: nesting SFX on zoom/vfx; free-placement SFX as gap filler; SFX on sparse outer emphasis; SFX on slow zooms
 
 **AI SFX pack**:
-Curated role × intensity (`soft`/`medium`/`hard`) for create AI only. Roles: `build` (hook riser), `reveal` (title + listicle indicator), `tick` (listicle value), `ping` (quote peak), `motion` (punch-in). LLM picks `role.intensity` or `none`; place-time hash picks one Asset from `public/sfx/<role>/<intensity>/`. Intensity sets volume. `custom/memes/` is manual library only.
+Curated role × intensity (`soft`/`medium`/`hard`) for create AI only. Roles: `reveal` (title + listicle indicator), `tick` (listicle value), `ping` (quote peak), `motion` (punch-in); pack also has `build` (hook riser) but AI does not candidate it. LLM picks `role.intensity` or `none`; place-time hash picks one Asset from `public/sfx/<role>/<intensity>/`. Intensity sets volume. `custom/memes/` is manual library only.
 _Avoid_: letting the LLM choose from the entire global library; `texture` roles (typing/flash); meme in AI pool; hardcoding asset UUIDs in the pack
 
 **Beat**:
@@ -135,8 +135,8 @@ A-roll track shows keep/gap cells from `arolls`. Each Edit gets an Edit cell on 
 
 ### View — player primitives
 
-**Text overlay**, **Zoom**, **Media layer**, **Audio layer**:
-Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics.
+**Text overlay**, **Zoom**, **ScreenShake**, **Media layer**, **Audio layer**:
+Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside.
 
 **ProjectProps**:
 Fully resolved render DTO (defaults materialized). Built from ProjectConfig + assets + projected transcripts.
@@ -166,10 +166,10 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    1. title if empty → `Project.title` + seed `vfx/text`
    2. punch-in zooms
    3. listicles
-   4. quotes (punch phrases; greedy ~every 4–5s when punch lines exist; no overlap with listicle; may overlap text/zoom)
-   5. emphasis (sparse outside quotes; most content words inside quotes)
+   4. quotes (key phrases ~3–10 words; first starts at word 0 / hook end by LLM; ≥5 words between; no overlap with listicle; may overlap text/zoom)
+   5. emphasis — two LLM passes unioned: sparse over whole script, then denser inside quote ranges
    6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
-   7. companion SFX (role.intensity from AI SFX pack; hash-pick asset from pool; 300ms min-gap; priority build → reveal/tick → quote ping → punch-in motion)
+   7. companion SFX (role.intensity from AI SFX pack; hash-pick asset from pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no hook-riser/`build` candidates)
    Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
 5. Seed default `captions` TemplateStyle → `ready` (create only)
 
@@ -198,13 +198,14 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 | vfx/quote | Edit | yes | Edit cell | Caption style override (+ text as applicable) |
 | vfx/text | Edit | yes | Edit cell | Text overlay |
 | vfx/listicle | Edit | yes | Edit cell | Listicle overlay (shared `listicleStyle`) |
+| vfx/shake | Edit | yes | Edit cell | ScreenShake (wraps A-roll/zoom/b-roll; captions/text outside) |
 | captions | Project field | no | optional track | Text overlay (words from projection) |
 | arolls | topology | — | Keep/gap cells | A-roll Media |
 | emphasis | Transcript word flag | (caption styling) | — | caption word style |
 
 ## Deprioritized / out of scope
 
-- Location VFX, shake VFX, cutout greenscreen
+- Location VFX, cutout greenscreen
 - Music (Project field later)
 - Listicle/emphasis process flags
 - Teams/sharing; user upload to global library
@@ -216,7 +217,7 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - Exact default duration/range for seeded title `vfx/text`
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid
-- ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle → SFX → Zoom; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary)
-- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority build → reveal/tick → quote ping → punch-in motion
-- ~~Aggressive quote cadence hard quota vs soft~~ → **greedy soft prompt** (~every 4–5s when punch lines exist)
+- ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle/shake → SFX → Zoom; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary)
+- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority reveal/tick → quote ping → punch-in motion (pack still has `build` but AI does not candidate it)
+- ~~Aggressive quote cadence hard quota vs soft~~ → **key-phrase only** (~3–10 words; first quote from word 0; ≥5 words between — spaced subsets)
 

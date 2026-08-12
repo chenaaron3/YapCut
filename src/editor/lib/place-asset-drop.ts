@@ -91,7 +91,11 @@ export function placeEditFromAssetDrop(
     placeEditOnWord(globalIndex, listicleSeedFromWords(words, range));
     return true;
   }
-  if (payload?.type === "quote" || payload?.type === "text") {
+  if (
+    payload?.type === "quote" ||
+    payload?.type === "text" ||
+    payload?.type === "shake"
+  ) {
     placeEditOnWord(globalIndex, vfxSeedFromPreset(payload.type));
   }
   return true;

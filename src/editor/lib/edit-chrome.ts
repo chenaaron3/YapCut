@@ -3,6 +3,7 @@ import {
   ListOrdered,
   Quote,
   Type,
+  Vibrate,
   Volume2,
   ZoomIn,
   type LucideIcon,
@@ -20,6 +21,7 @@ export type EditChromeKey =
   | "vfx:text"
   | "vfx:quote"
   | "vfx:listicle"
+  | "vfx:shake"
   | "broll"
   | "sfx";
 
@@ -82,6 +84,17 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
     highlightClass: "bg-vfx/20",
     matches: (e) => e.kind === "vfx" && e.type === "listicle",
+  },
+  {
+    key: "vfx:shake",
+    label: "shake",
+    Icon: Vibrate,
+    markerClass: "bg-vfx/80 text-black",
+    markerSelectedClass: "bg-vfx text-black",
+    dotClass: "bg-vfx",
+    underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
+    highlightClass: "bg-vfx/20",
+    matches: (e) => e.kind === "vfx" && e.type === "shake",
   },
   {
     key: "sfx",

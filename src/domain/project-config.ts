@@ -76,6 +76,16 @@ export type VfxListicleEdit = EditBase &
     valueText: string;
   };
 
+/**
+ * Camera shake VFX — amplitude as a fraction of composition size.
+ * Omit `intensity` for the default (see `DEFAULT_SHAKE_INTENSITY`).
+ */
+export type VfxShakeEdit = EditBase & {
+  kind: "vfx";
+  type: "shake";
+  intensity?: number;
+};
+
 /** Normalized transform applied at props / overlay time. */
 export type Transform = {
   scale: number;
@@ -112,7 +122,11 @@ export type SfxEdit = EditBase &
     kind: "sfx";
   };
 
-export type VfxEdit = VfxTextEdit | VfxQuoteEdit | VfxListicleEdit;
+export type VfxEdit =
+  | VfxTextEdit
+  | VfxQuoteEdit
+  | VfxListicleEdit
+  | VfxShakeEdit;
 
 export type Edit = BrollEdit | SfxEdit | ZoomEdit | VfxEdit;
 
@@ -205,6 +219,12 @@ const vfxListicleEditSchema = editBaseSchema.extend({
   hideCaptions: z.boolean().default(true),
 });
 
+const vfxShakeEditSchema = editBaseSchema.extend({
+  kind: z.literal("vfx"),
+  type: z.literal("shake"),
+  intensity: z.number().optional(),
+});
+
 const transformSchema = z.object({
   scale: z.number(),
   offsetX: z.number(),
@@ -240,6 +260,7 @@ export const projectConfigSchema = z.object({
       vfxTextEditSchema,
       vfxQuoteEditSchema,
       vfxListicleEditSchema,
+      vfxShakeEditSchema,
       brollEditSchema,
       sfxEditSchema,
     ]),

@@ -4,7 +4,7 @@ export const COMPOSITION_HEIGHT = 1920;
 export const COMPOSITION_FPS = 30;
 
 /** Premount media before cuts so preview can decode ahead of the playhead. */
-export const PREMOUNT_SEC = 1.5;
+export const PREMOUNT_SEC = 3;
 
 /** Remotion composition id (Player + Lambda). */
 export const COMPOSITION_ID = "TalkingHead";

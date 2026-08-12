@@ -42,6 +42,7 @@ function vfxCellLabel(edit: VfxEdit): string {
     if (value && indicator) return `${indicator} · ${value}`;
     return value || indicator || "Listicle";
   }
+  if (edit.type === "shake") return "Shake";
   return resolveQuoteTemplate(
     resolveTemplateId(edit.style, isQuoteTemplateId, DEFAULT_QUOTE_TEMPLATE_ID),
   ).label;

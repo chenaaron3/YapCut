@@ -16,6 +16,7 @@ import {
   type Transform,
 } from "~/domain/project-config";
 import { quoteRangeConflicts } from "~/domain/quote";
+import { isShakeEdit, withShakeIntensity } from "~/domain/shake";
 import { sfxSeed } from "~/domain/sfx";
 import type { TimelineTime } from "~/domain/time";
 import { withTransform } from "~/domain/transform";
@@ -360,6 +361,14 @@ function applyKenBurnsPatch(edit: Edit, patch: EditPatch): Edit {
   return withBrollKenBurns(edit, patch.kenBurns ?? null);
 }
 
+function applyShakeIntensityPatch(edit: Edit, patch: EditPatch): Edit {
+  if (!("intensity" in patch) || typeof patch.intensity !== "number") {
+    return edit;
+  }
+  if (!isShakeEdit(edit)) return edit;
+  return withShakeIntensity(edit, patch.intensity);
+}
+
 export function patchEdit(
   config: ProjectConfig,
   id: number,
@@ -374,6 +383,7 @@ export function patchEdit(
     next = applyTransformPatch(next, patch);
     next = applyMediaPatch(next, patch, ctx);
     next = applyKenBurnsPatch(next, patch);
+    next = applyShakeIntensityPatch(next, patch);
     draft.edits[idx] = next;
   });
 }

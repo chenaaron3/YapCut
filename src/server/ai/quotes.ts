@@ -13,7 +13,9 @@ import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
 const MAX_QUOTES = 30;
 const MIN_WORDS = 3;
-const MAX_WORDS = 8;
+const MAX_WORDS = 10;
+/** Minimum words between the end of one quote and the start of the next. */
+const MIN_GAP_WORDS = 5;
 
 export const QuoteDetectionSchema = z.object({
   quotes: z
@@ -23,24 +25,70 @@ export const QuoteDetectionSchema = z.object({
           .number()
           .int()
           .nonnegative()
-          .describe("First word of the punch phrase"),
+          .describe("First word of the key phrase"),
         endWordIndex: z
           .number()
           .int()
           .nonnegative()
-          .describe("Last word of the punch phrase (inclusive)"),
+          .describe("Last word of the key phrase (inclusive)"),
         reason: z
           .string()
-          .describe("Why this punch phrase deserves a quote card"),
+          .describe("Why this key phrase deserves a quote card"),
       }),
     )
     .max(MAX_QUOTES)
     .describe(
-      "Pack the video with punch-phrase quotes — prefer many good ones over sparse restraint",
+      "Key-phrase quotes only — sparse, high-impact fragments; first must start at word 0",
     ),
 });
 
 export type QuoteDetection = z.infer<typeof QuoteDetectionSchema>;
+
+function spanWords(start: number, end: number): number {
+  return end - start + 1;
+}
+
+/** Ensure opening quote starts at word 0; drop empty / invalid spans. */
+export function normalizeQuoteDetection(
+  detection: QuoteDetection,
+  wordCount: number,
+): QuoteDetection {
+  if (wordCount < MIN_WORDS) return { quotes: [] };
+
+  const quotes = detection.quotes
+    .map((q) => ({
+      ...q,
+      startWordIndex: Math.max(0, Math.min(q.startWordIndex, wordCount - 1)),
+      endWordIndex: Math.max(0, Math.min(q.endWordIndex, wordCount - 1)),
+    }))
+    .filter((q) => {
+      if (q.endWordIndex < q.startWordIndex) return false;
+      const span = spanWords(q.startWordIndex, q.endWordIndex);
+      return span >= MIN_WORDS && span <= MAX_WORDS;
+    })
+    .sort((a, b) => a.startWordIndex - b.startWordIndex);
+
+  const maxHookEnd = Math.min(MAX_WORDS - 1, wordCount - 1);
+  if (quotes.length === 0 || quotes[0]!.startWordIndex !== 0) {
+    const candidateEnd =
+      quotes[0] != null
+        ? Math.min(quotes[0].endWordIndex, maxHookEnd)
+        : maxHookEnd;
+    const end = Math.max(MIN_WORDS - 1, candidateEnd);
+    return {
+      quotes: [
+        {
+          startWordIndex: 0,
+          endWordIndex: end,
+          reason: quotes[0]?.reason ?? "Opening hook key phrase",
+        },
+        ...quotes.filter((q) => q.startWordIndex > end),
+      ].slice(0, MAX_QUOTES),
+    };
+  }
+
+  return { quotes: quotes.slice(0, MAX_QUOTES) };
+}
 
 export function detectionToQuoteEdits(
   detection: QuoteDetection,
@@ -50,11 +98,17 @@ export function detectionToQuoteEdits(
   let nextId = nextEditId(existingEdits);
   const placed: VfxQuoteEdit[] = [];
   const seed = quoteSeed();
+  const normalized = normalizeQuoteDetection(detection, words.length);
 
-  for (const item of detection.quotes.slice(0, MAX_QUOTES)) {
+  let lastEndWord = -(MIN_GAP_WORDS + 1);
+
+  for (const item of normalized.quotes.slice(0, MAX_QUOTES)) {
     if (item.endWordIndex < item.startWordIndex) continue;
-    const span = item.endWordIndex - item.startWordIndex + 1;
+    const span = spanWords(item.startWordIndex, item.endWordIndex);
     if (span < MIN_WORDS || span > MAX_WORDS) continue;
+
+    // Leave at least MIN_GAP_WORDS between quote spans.
+    if (item.startWordIndex <= lastEndWord + MIN_GAP_WORDS) continue;
 
     const start = wordIndexToTimelineSec(item.startWordIndex, words, "start");
     const end = wordIndexToTimelineSec(item.endWordIndex, words, "end");
@@ -73,6 +127,7 @@ export function detectionToQuoteEdits(
       style: seed.style,
     });
     nextId += 1;
+    lastEndWord = item.endWordIndex;
   }
 
   return placed;
@@ -90,11 +145,12 @@ async function callOpenAI(
       {
         role: "system",
         content: [
-          "You pick punch-phrase quote cards for a talking-head short.",
-          `Each quote is a short high-impact fragment of ${MIN_WORDS}–${MAX_WORDS} words — not a full sentence.`,
-          "Be greedy: quotes are cheap and effective. Aim for about one quote every ~4–5 seconds of speech whenever a punchy fragment exists.",
-          "Cover hooks, claims, contrasts, numbers, and memorable lines. Overlap with zooms/text is fine; do not place on clear listicle indicator/value spans.",
-          "Skip only true filler. Prefer more quotes over leaving long stretches without one.",
+          "You pick key-phrase quote cards for a talking-head short.",
+          `Each quote is a high-impact fragment of ${MIN_WORDS}–${MAX_WORDS} words — not a full sentence or paragraph.`,
+          "Only quote true key phrases (hooks, claims, contrasts, numbers, memorable lines). Skip filler and ordinary connective speech.",
+          "The first quote MUST start at word index 0. Choose endWordIndex where that opening hook key phrase ends (still within the word limit).",
+          `Leave at least ${MIN_GAP_WORDS} words between quotes. If two candidate ranges sit too close, pick a spaced subset inside each range (or drop one) — never merge past the word limit.`,
+          "Overlap with zooms/text is fine; do not place on clear listicle indicator/value spans.",
           "Return startWordIndex/endWordIndex into the numbered transcript.",
           `At most ${MAX_QUOTES} quotes.`,
         ].join(" "),
@@ -118,7 +174,7 @@ async function callOpenAI(
   return parsed;
 }
 
-/** Detect punch-phrase quotes and return timeline VFX edits. */
+/** Detect key-phrase quotes and return timeline VFX edits. */
 export async function generateQuoteEdits(
   words: readonly GlobalTranscriptWord[],
   existingEdits: readonly Edit[],

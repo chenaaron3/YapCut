@@ -7,6 +7,7 @@ import { ListicleVfxInspector } from "~/editor/components/inspector/ListicleVfxI
 import { ProjectSettingsInspector } from "~/editor/components/inspector/ProjectSettingsInspector";
 import { QuoteVfxInspector } from "~/editor/components/inspector/QuoteVfxInspector";
 import { SfxInspector } from "~/editor/components/inspector/SfxInspector";
+import { ShakeVfxInspector } from "~/editor/components/inspector/ShakeVfxInspector";
 import { TextVfxInspector } from "~/editor/components/inspector/TextVfxInspector";
 import { ZoomInspector } from "~/editor/components/inspector/ZoomInspector";
 import { primaryId } from "~/editor/lib/selection";
@@ -48,6 +49,9 @@ export function InspectorPanel() {
     } else if (edit?.kind === "vfx" && edit.type === "listicle") {
       title = "Listicle";
       body = <ListicleVfxInspector edit={edit} />;
+    } else if (edit?.kind === "vfx" && edit.type === "shake") {
+      title = "Shake";
+      body = <ShakeVfxInspector edit={edit} />;
     } else if (edit?.kind === "broll") {
       title = "B-roll";
       body = <BRollInspector edit={edit} />;

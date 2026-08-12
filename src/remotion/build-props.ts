@@ -5,6 +5,7 @@ import {
   PROJECT_FPS,
 } from "~/domain/project-config";
 import { projectOutputWords } from "~/domain/projection";
+import { resolveShakeIntensity } from "~/domain/shake";
 import { resolveTransform } from "~/domain/transform";
 import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/zoom";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
@@ -49,6 +50,7 @@ import type {
   ListicleOverlayProp,
   ProjectProps,
   SfxClipProp,
+  ShakeClipProp,
   TextOverlayProp,
   ZoomProp,
 } from "~/remotion/types";
@@ -389,6 +391,29 @@ function buildBrolls(
   return out;
 }
 
+function buildShakes(
+  edits: ProjectConfig["edits"],
+  cells: ReturnType<typeof buildArollLayout>,
+  fps: number,
+): ShakeClipProp[] {
+  const out: ShakeClipProp[] = [];
+  for (const e of edits) {
+    if (e.kind !== "vfx" || e.type !== "shake") continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+    out.push({
+      id: e.id,
+      startFrame: secToFrame(range.start, fps),
+      endFrame: Math.max(
+        secToFrame(range.start, fps) + 1,
+        secToFrame(range.end, fps),
+      ),
+      intensity: resolveShakeIntensity(e.intensity),
+    });
+  }
+  return out;
+}
+
 function buildSfx(
   edits: ProjectConfig["edits"],
   cells: ReturnType<typeof buildArollLayout>,
@@ -446,6 +471,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
     zooms: buildZooms(input.config.edits, layout, fps),
     textOverlays: buildTextOverlays(input.config.edits, layout, fps),
     listicleOverlays: buildListicleOverlays(input.config, layout, fps),
+    shakes: buildShakes(input.config.edits, layout, fps),
     brolls: buildBrolls(
       input.config.edits,
       layout,

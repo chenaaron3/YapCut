@@ -1,4 +1,4 @@
-import { ListOrdered, Quote, Type } from "lucide-react";
+import { ListOrdered, Quote, Type, Vibrate } from "lucide-react";
 
 import {
   VFX_DRAG_MIME,
@@ -11,6 +11,7 @@ const PRESET_ICON: Record<VfxPresetType, typeof Quote> = {
   quote: Quote,
   text: Type,
   listicle: ListOrdered,
+  shake: Vibrate,
 };
 
 function VfxPresetRow({ preset }: { preset: VfxDragPayload }) {

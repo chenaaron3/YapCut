@@ -21,6 +21,7 @@ const defaultProps: ProjectProps = {
   zooms: [],
   textOverlays: [],
   listicleOverlays: [],
+  shakes: [],
   brolls: [],
   sfx: [],
 };

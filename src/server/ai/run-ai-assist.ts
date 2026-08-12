@@ -12,6 +12,7 @@ import {
   type ArollKeep,
   type Edit,
 } from "~/domain/project-config";
+import { snapWordBoundsToKeepEdges } from "~/domain/snap";
 import type { TranscriptWord } from "~/domain/transcript";
 import {
   generateCompanionSfxEdits,
@@ -101,12 +102,14 @@ export async function runAiAssist(
   const wordsByAssetId = clearEmphasis(input.wordsByAssetId);
   const { arolls, durationByAssetId } = input;
 
-  const timelineWords = projectTimelineWords(
-    arolls,
-    wordsByAssetId,
-    durationByAssetId,
-  );
   const layout = buildArollLayout(arolls, durationByAssetId);
+  const keepRanges = layout
+    .filter((c) => c.kind === "keep")
+    .map((c) => c.timeline);
+  const timelineWords = snapWordBoundsToKeepEdges(
+    projectTimelineWords(arolls, wordsByAssetId, durationByAssetId),
+    keepRanges,
+  );
   const timelineDuration = layoutTimelineDuration(layout);
   const titleStartSec = firstKeepTimelineSec(layout);
 
@@ -187,10 +190,9 @@ export async function runAiAssist(
     );
   }
 
-  const timelineWordsAfterEmphasis = projectTimelineWords(
-    arolls,
-    wordsByAssetId,
-    durationByAssetId,
+  const timelineWordsAfterEmphasis = snapWordBoundsToKeepEdges(
+    projectTimelineWords(arolls, wordsByAssetId, durationByAssetId),
+    keepRanges,
   );
 
   try {

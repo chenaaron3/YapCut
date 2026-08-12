@@ -32,9 +32,6 @@ export type CompanionSfxAssetDuration = (assetId: string) => number | null;
 /** variantId → global asset ids in that pool. */
 export type CompanionSfxPools = ReadonlyMap<string, readonly string[]>;
 
-/** Start the hook riser this many seconds before the title / first beat. */
-const BUILD_LEAD_SEC = 1.2;
-
 const CompanionChoiceSchema = z.object({
   assignments: z.array(
     z.object({
@@ -51,13 +48,12 @@ const CompanionChoiceSchema = z.object({
 
 export type CompanionSfxDetection = z.infer<typeof CompanionChoiceSchema>;
 
-/** Build optional companion candidates (punch-ins, quotes, listicles, title, hook). */
+/** Build optional companion candidates (punch-ins, quotes, listicles, title). */
 export function buildCompanionCandidates(
   edits: readonly Edit[],
   words: readonly GlobalTranscriptWord[],
 ): CompanionCandidate[] {
   const out: CompanionCandidate[] = [];
-  let buildAdded = false;
 
   for (const edit of edits) {
     if (edit.kind === "zoom" && !edit.ease) {
@@ -114,31 +110,6 @@ export function buildCompanionCandidates(
         role: "reveal",
         startSec: edit.start,
         label: `title card #${edit.id} "${edit.text}"`,
-      });
-      if (!buildAdded) {
-        out.push({
-          id: `hook-build-${edit.id}`,
-          role: "build",
-          startSec: Math.max(0, edit.start - BUILD_LEAD_SEC),
-          label: `hook riser into title #${edit.id}`,
-        });
-        buildAdded = true;
-      }
-    }
-  }
-
-  // Hook riser even when title card is missing (first keep / earliest punch).
-  if (!buildAdded) {
-    const earliest = out.reduce<number | null>((min, c) => {
-      if (min == null || c.startSec < min) return c.startSec;
-      return min;
-    }, null);
-    if (earliest != null) {
-      out.push({
-        id: "hook-build",
-        role: "build",
-        startSec: Math.max(0, earliest - BUILD_LEAD_SEC),
-        label: "hook riser into first beat",
       });
     }
   }
@@ -267,7 +238,7 @@ async function callOpenAI(
           "Each candidate has a fixed role — only pick a variant id from that role (role.soft|medium|hard), or none.",
           "Not every candidate needs SFX. Prefer silence over spam. Skip slow/filler moments.",
           "Match intensity to the moment using the pack descriptions.",
-          "build is optional hook anticipation; reveal is overlay enter; tick confirms list values; ping is quote sparkle; motion is punch-in whoosh.",
+          "reveal is overlay enter; tick confirms list values; ping is quote sparkle; motion is punch-in whoosh.",
           "Return one assignment per candidate you decide on; omitted candidates are treated as none.",
         ].join(" "),
       },
@@ -301,7 +272,7 @@ async function callOpenAI(
   return parsed;
 }
 
-/** Optional companion SFX edits from punch-ins, quote peaks, listicles, title, hook. */
+/** Optional companion SFX edits from punch-ins, quote peaks, listicles, title. */
 export async function generateCompanionSfxEdits(
   words: readonly GlobalTranscriptWord[],
   edits: readonly Edit[],

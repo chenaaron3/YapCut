@@ -28,6 +28,7 @@ import {
   wordIndexAtTimelineSec,
 } from "~/domain/projection";
 import { primaryId } from "~/editor/lib/selection";
+import { snapWordActionRangeToKeeps } from "~/editor/lib/snap";
 import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
 import { buildProjectProps } from "~/remotion/build-props";
@@ -699,13 +700,19 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const word = words[globalIndex];
       if (!word) return;
       const { selection } = useSelection.getState();
-      let range = wordActionRange(selection, word, words);
+      const layout = layoutFor(config, assets);
+      const keepRanges = layout
+        .filter((c) => c.kind === "keep")
+        .map((c) => c.timeline);
+      let range = snapWordActionRangeToKeeps(
+        wordActionRange(selection, word, words),
+        words,
+        keepRanges,
+      );
       if (options?.maxDurationSec != null) {
         range = clampTimelineRangeToMedia(range, options.maxDurationSec);
       }
-      const timelineDuration = layoutTimelineDuration(
-        layoutFor(config, assets),
-      );
+      const timelineDuration = layoutTimelineDuration(layout);
       const prevIds = new Set(config.edits.map((e) => e.id));
       const next = placeEdit(config, range, timelineDuration, seed, {
         srcDurationSec: (assetId) =>

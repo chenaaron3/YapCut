@@ -1,45 +1,86 @@
-import { Film, Sparkles, Volume2, ZoomIn, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
+import type { Edit } from "~/domain/project-config";
+import {
+  chromeByKey,
+  chromeForEdit,
+  EDIT_CHROME,
+} from "~/editor/lib/edit-chrome";
 import type { TranscriptChromeGroup } from "~/editor/lib/transcript-chrome-visibility";
+import { useEditor } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
+const TOGGLE_STYLE: Record<
+  TranscriptChromeGroup,
+  { onClass: string; badgeClass: string }
+> = {
+  broll: {
+    onClass: "bg-broll/25 text-broll",
+    badgeClass: "bg-broll text-black",
+  },
+  "vfx:text": {
+    onClass: "bg-vfx/25 text-vfx",
+    badgeClass: "bg-vfx text-black",
+  },
+  "vfx:quote": {
+    onClass: "bg-vfx/25 text-vfx",
+    badgeClass: "bg-vfx text-black",
+  },
+  "vfx:listicle": {
+    onClass: "bg-vfx/25 text-vfx",
+    badgeClass: "bg-vfx text-black",
+  },
+  "vfx:shake": {
+    onClass: "bg-vfx/25 text-vfx",
+    badgeClass: "bg-vfx text-black",
+  },
+  sfx: {
+    onClass: "bg-sfx/25 text-sfx",
+    badgeClass: "bg-sfx text-black",
+  },
+  zoom: {
+    onClass: "bg-zoom/25 text-zoom",
+    badgeClass: "bg-zoom text-white",
+  },
+};
+
 const TOGGLES: readonly {
   group: TranscriptChromeGroup;
-  label: string;
   Icon: LucideIcon;
   onClass: string;
-}[] = [
-  {
-    group: "broll",
-    label: "B-roll",
-    Icon: Film,
-    onClass: "bg-broll/25 text-broll",
-  },
-  {
-    group: "vfx",
-    label: "VFX",
-    Icon: Sparkles,
-    onClass: "bg-vfx/25 text-vfx",
-  },
-  {
-    group: "sfx",
-    label: "SFX",
-    Icon: Volume2,
-    onClass: "bg-sfx/25 text-sfx",
-  },
-  {
-    group: "zoom",
-    label: "Zoom",
-    Icon: ZoomIn,
-    onClass: "bg-zoom/25 text-zoom",
-  },
-];
+  badgeClass: string;
+}[] = EDIT_CHROME.map((spec) => {
+  const style = TOGGLE_STYLE[spec.key];
+  return {
+    group: spec.key,
+    Icon: spec.Icon,
+    onClass: style.onClass,
+    badgeClass: style.badgeClass,
+  };
+});
+
+function countEditsByGroup(
+  edits: readonly Edit[],
+): Partial<Record<TranscriptChromeGroup, number>> {
+  const counts: Partial<Record<TranscriptChromeGroup, number>> = {};
+  for (const edit of edits) {
+    const key = chromeForEdit(edit)?.key;
+    if (!key) continue;
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
 
 /** Multi-toggle: which edit kinds show chrome in the transcript (session-only). */
 export function TranscriptChromeVisibilityToggles() {
   const visible = useTranscriptUi((s) => s.visible);
   const toggleVisible = useTranscriptUi((s) => s.toggleVisible);
+  const edits = useEditor((s) => s.config?.edits ?? []);
+  const counts = countEditsByGroup(edits);
+
+  const shown = TOGGLES.filter((t) => (counts[t.group] ?? 0) > 0);
+  if (shown.length === 0) return null;
 
   return (
     <div
@@ -47,17 +88,27 @@ export function TranscriptChromeVisibilityToggles() {
       role="group"
       aria-label="Transcript chrome visibility"
     >
-      {TOGGLES.map(({ group, label, Icon, onClass }) => {
+      {shown.map(({ group, Icon, onClass, badgeClass }) => {
         const on = visible[group];
+        const count = counts[group] ?? 0;
+        const titleLabel = chromeByKey(group).label;
         return (
           <button
             key={group}
             type="button"
-            title={on ? `Hide ${label} in transcript` : `Show ${label} in transcript`}
-            aria-label={on ? `Hide ${label} in transcript` : `Show ${label} in transcript`}
+            title={
+              on
+                ? `Hide ${titleLabel} in transcript`
+                : `Show ${titleLabel} in transcript`
+            }
+            aria-label={
+              on
+                ? `Hide ${titleLabel} in transcript (${count})`
+                : `Show ${titleLabel} in transcript (${count})`
+            }
             aria-pressed={on}
             className={cn(
-              "rounded p-1 transition-colors",
+              "relative rounded p-1 transition-colors",
               on
                 ? onClass
                 : "text-muted-foreground/40 hover:bg-panel-2 hover:text-muted-foreground",
@@ -68,6 +119,14 @@ export function TranscriptChromeVisibilityToggles() {
             }}
           >
             <Icon className="size-3.5" strokeWidth={2.25} />
+            <span
+              className={cn(
+                "pointer-events-none absolute -right-0.5 -top-0.5 flex h-2.5 min-w-2.5 items-center justify-center rounded-full px-0.5 text-[8px] font-semibold leading-none",
+                on ? badgeClass : "bg-muted-foreground/50 text-background",
+              )}
+            >
+              {count > 99 ? "99+" : count}
+            </span>
           </button>
         );
       })}
