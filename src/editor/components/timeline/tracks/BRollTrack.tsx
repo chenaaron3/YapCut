@@ -17,7 +17,7 @@ type Props = {
 };
 
 export function BRollTrack({ edits, width }: Props) {
-  const isSel = useIsSelected();
+  const isSel = useIsSelected(["edit", "arollAsset"]);
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const assets = useEditor((s) => s.assets);
   const select = useSelection((s) => s.select);

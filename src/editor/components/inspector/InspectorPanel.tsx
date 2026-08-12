@@ -18,7 +18,10 @@ import { useEditor } from "~/editor/store";
  * so opening/closing a selection does not reflow the words.
  */
 export function InspectorPanel() {
-  const selection = useSelection((s) => s.selection);
+  // Ignore word-playback selection churn — inspector only shows edit/project panels.
+  const selection = useSelection((s) =>
+    s.selection?.kind === "edit" ? s.selection : null,
+  );
   const projectPanel = useSelection((s) => s.projectPanel);
   const config = useEditor((s) => s.config);
   const clearSelection = useSelection((s) => s.clearSelection);

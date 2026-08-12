@@ -48,7 +48,7 @@ function vfxCellLabel(edit: VfxEdit): string {
 }
 
 export function VfxTrack({ edits, width }: Props) {
-  const isSel = useIsSelected();
+  const isSel = useIsSelected(["edit", "arollAsset"]);
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const patchEdit = useEditor((s) => s.patchEdit);
   const select = useSelection((s) => s.select);

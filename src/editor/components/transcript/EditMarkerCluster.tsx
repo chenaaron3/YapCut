@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import {
   EditMarker,
   markerLabel,
 } from "~/editor/components/transcript/EditMarker";
 import { chromeByKey } from "~/editor/lib/edit-chrome";
-import { isSelected } from "~/editor/lib/selection";
+import { useEntitySelected } from "~/editor/lib/use-is-selected";
 import {
   resolvePrimarySpan,
   sortByChromePriority,
@@ -19,7 +19,6 @@ type Props = {
   /** Word globalIndex — identity for single-open expand state. */
   wordIndex: number;
   markers: WordEditSpan[];
-  isEditSelected: (editId: number) => boolean;
   onSelect: (editId: number, toggle: boolean) => void;
   onDragStart?: (editId: number, e: React.MouseEvent) => void;
 };
@@ -58,6 +57,17 @@ function MarkerDot({
   );
 }
 
+function MarkerSelected({
+  editId,
+  children,
+}: {
+  editId: number;
+  children: (selected: boolean) => ReactNode;
+}) {
+  const selected = useEntitySelected("edit", editId);
+  return <>{children(selected)}</>;
+}
+
 /**
  * Collapses multiple start markers on one word: primary chip + priority dots.
  * Click expands inline to all chips; primary click toggles shut. One cluster open at a time.
@@ -65,11 +75,9 @@ function MarkerDot({
 export function EditMarkerCluster({
   wordIndex,
   markers,
-  isEditSelected,
   onSelect,
   onDragStart,
 }: Props) {
-  const selection = useSelection((s) => s.selection);
   const expandedWordIndex = useTranscriptUi((s) => s.expandedWordIndex);
   const expandCluster = useTranscriptUi((s) => s.expandCluster);
   const collapseCluster = useTranscriptUi((s) => s.collapseCluster);
@@ -77,10 +85,25 @@ export function EditMarkerCluster({
 
   const expanded = expandedWordIndex === wordIndex;
 
-  const editIds = markers.map((m) => m.editId);
-  const clusterHasSelection = editIds.some((id) =>
-    isSelected(selection, "edit", id),
-  );
+  // Stable across word-playback selection changes (edit selection only).
+  const primaryEditId = useSelection((s) => {
+    return resolvePrimarySpan(markers, s.selection)?.editId ?? null;
+  });
+  const selectedEditKey = useSelection((s) => {
+    const selection = s.selection;
+    if (selection?.kind !== "edit") return "";
+    return markers
+      .filter((m) => selection.ids.includes(m.editId))
+      .map((m) => m.editId)
+      .sort((a, b) => a - b)
+      .join(",");
+  });
+
+  const primary =
+    primaryEditId != null
+      ? (markers.find((m) => m.editId === primaryEditId) ?? null)
+      : null;
+  const clusterHasSelection = selectedEditKey.length > 0;
 
   // Collapse when selection leaves every edit in this cluster (incl. clear).
   useEffect(() => {
@@ -89,8 +112,6 @@ export function EditMarkerCluster({
   }, [expanded, clusterHasSelection, collapseCluster]);
 
   if (markers.length === 0) return null;
-
-  const primary = resolvePrimarySpan(markers, selection);
   if (!primary) return null;
 
   const ordered = sortByChromePriority(markers);
@@ -100,12 +121,16 @@ export function EditMarkerCluster({
   if (!canExpand) {
     return (
       <span className="mr-0.5 inline-flex align-middle">
-        <EditMarker
-          span={primary}
-          selected={isEditSelected(primary.editId)}
-          onSelect={onSelect}
-          onDragStart={onDragStart}
-        />
+        <MarkerSelected editId={primary.editId}>
+          {(selected) => (
+            <EditMarker
+              span={primary}
+              selected={selected}
+              onSelect={onSelect}
+              onDragStart={onDragStart}
+            />
+          )}
+        </MarkerSelected>
       </span>
     );
   }
@@ -116,16 +141,19 @@ export function EditMarkerCluster({
         {ordered.map((span) => {
           const isPrimary = span.editId === primary.editId;
           return (
-            <EditMarker
-              key={`${span.chromeKey}-${span.editId}`}
-              span={span}
-              selected={isEditSelected(span.editId)}
-              onSelect={(editId, toggleSelect) => {
-                onSelect(editId, toggleSelect);
-                if (isPrimary) toggleCluster(wordIndex);
-              }}
-              onDragStart={onDragStart}
-            />
+            <MarkerSelected key={`${span.chromeKey}-${span.editId}`} editId={span.editId}>
+              {(selected) => (
+                <EditMarker
+                  span={span}
+                  selected={selected}
+                  onSelect={(editId, toggleSelect) => {
+                    onSelect(editId, toggleSelect);
+                    if (isPrimary) toggleCluster(wordIndex);
+                  }}
+                  onDragStart={onDragStart}
+                />
+              )}
+            </MarkerSelected>
           );
         })}
       </span>
@@ -134,26 +162,36 @@ export function EditMarkerCluster({
 
   return (
     <span className="mr-0.5 inline-flex items-center gap-0.5 align-middle">
-      <EditMarker
-        span={primary}
-        selected={isEditSelected(primary.editId)}
-        onSelect={(editId, toggleSelect) => {
-          onSelect(editId, toggleSelect);
-          expandCluster(wordIndex);
-        }}
-        onDragStart={onDragStart}
-      />
-      <span className="inline-flex flex-col justify-center gap-px py-px">
-        {secondaries.map((span) => (
-          <MarkerDot
-            key={`${span.chromeKey}-${span.editId}`}
-            span={span}
-            selected={isEditSelected(span.editId)}
+      <MarkerSelected editId={primary.editId}>
+        {(selected) => (
+          <EditMarker
+            span={primary}
+            selected={selected}
             onSelect={(editId, toggleSelect) => {
               onSelect(editId, toggleSelect);
               expandCluster(wordIndex);
             }}
+            onDragStart={onDragStart}
           />
+        )}
+      </MarkerSelected>
+      <span className="inline-flex flex-col justify-center gap-px py-px">
+        {secondaries.map((span) => (
+          <MarkerSelected
+            key={`${span.chromeKey}-${span.editId}`}
+            editId={span.editId}
+          >
+            {(selected) => (
+              <MarkerDot
+                span={span}
+                selected={selected}
+                onSelect={(editId, toggleSelect) => {
+                  onSelect(editId, toggleSelect);
+                  expandCluster(wordIndex);
+                }}
+              />
+            )}
+          </MarkerSelected>
         ))}
       </span>
     </span>

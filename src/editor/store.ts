@@ -262,11 +262,53 @@ function recomputeProps(state: {
   });
 }
 
+type LayoutCache = {
+  config: ProjectConfig;
+  assets: EditorAsset[];
+  value: ArollLayoutCell[];
+};
+
+type WordsCache = {
+  config: ProjectConfig;
+  assets: EditorAsset[];
+  transcriptsByAssetId: Record<string, TranscriptWord[]>;
+  value: GlobalTranscriptWord[];
+};
+
+let layoutCache: LayoutCache | null = null;
+let wordsCache: WordsCache | null = null;
+
 function layoutFor(
   config: ProjectConfig,
   assets: EditorAsset[],
 ): ArollLayoutCell[] {
-  return buildArollLayout(config.arolls, durationMap(assets));
+  if (layoutCache?.config === config && layoutCache.assets === assets) {
+    return layoutCache.value;
+  }
+  const value = buildArollLayout(config.arolls, durationMap(assets));
+  layoutCache = { config, assets, value };
+  return value;
+}
+
+function globalWordsFor(
+  config: ProjectConfig,
+  transcriptsByAssetId: Record<string, TranscriptWord[]>,
+  assets: EditorAsset[],
+): GlobalTranscriptWord[] {
+  if (
+    wordsCache?.config === config &&
+    wordsCache.transcriptsByAssetId === transcriptsByAssetId &&
+    wordsCache.assets === assets
+  ) {
+    return wordsCache.value;
+  }
+  const value = projectTimelineWords(
+    config.arolls,
+    transcriptMap(transcriptsByAssetId),
+    durationMap(assets),
+  );
+  wordsCache = { config, transcriptsByAssetId, assets, value };
+  return value;
 }
 
 export const useEditor = create<EditorState & EditorActions>((set, get) => {
@@ -865,11 +907,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     getGlobalWords: () => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config) return [];
-      return projectTimelineWords(
-        config.arolls,
-        transcriptMap(transcriptsByAssetId),
-        durationMap(assets),
-      );
+      return globalWordsFor(config, transcriptsByAssetId, assets);
     },
 
     getDurationSec: () => {
@@ -891,11 +929,7 @@ export function useGlobalWords(): GlobalTranscriptWord[] {
   const transcriptsByAssetId = useEditor((s) => s.transcriptsByAssetId);
   const assets = useEditor((s) => s.assets);
   if (!config) return [];
-  return projectTimelineWords(
-    config.arolls,
-    transcriptMap(transcriptsByAssetId),
-    durationMap(assets),
-  );
+  return globalWordsFor(config, transcriptsByAssetId, assets);
 }
 
 export const EDITOR_COMPOSITION = {

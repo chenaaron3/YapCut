@@ -11,6 +11,7 @@ import {
 import { Video } from "@remotion/media";
 
 import { containSize } from "~/domain/transform";
+import { PREMOUNT_SEC } from "~/remotion/constants";
 import type { BrollClipProp } from "~/remotion/types";
 
 const FADE_SEC = 0.12;
@@ -97,7 +98,10 @@ export function BRollOverlay({
 }: {
   brolls?: BrollClipProp[] | null;
 }) {
+  const { fps } = useVideoConfig();
   if (!brolls?.length) return null;
+
+  const premountFor = Math.round(PREMOUNT_SEC * fps);
 
   return (
     <>
@@ -108,6 +112,7 @@ export function BRollOverlay({
             key={clip.id}
             from={clip.startFrame}
             durationInFrames={durationInFrames}
+            premountFor={premountFor}
           >
             <Clip clip={clip} />
           </Sequence>

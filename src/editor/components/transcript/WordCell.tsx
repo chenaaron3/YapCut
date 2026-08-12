@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 
 import { quoteSeed } from "~/domain/quote";
 import { zoomSeed } from "~/domain/zoom";
@@ -11,7 +11,7 @@ import {
   placeEditFromAssetDrop,
 } from "~/editor/lib/place-asset-drop";
 import { isChromeKeyVisible } from "~/editor/lib/transcript-chrome-visibility";
-import { useIsSelected } from "~/editor/lib/use-is-selected";
+import { useEntitySelected } from "~/editor/lib/use-is-selected";
 import {
   isMarkerRole,
   resolvePrimarySpan,
@@ -33,14 +33,12 @@ type Props = {
   onResizeEdge?: (edge: ResizeEdge, editId: number) => void;
 };
 
-export function WordCell({
+export const WordCell = memo(function WordCell({
   word,
   annotation,
   onWordDragStart,
   onResizeEdge,
 }: Props) {
-  const isSel = useIsSelected();
-  const selection = useSelection((s) => s.selection);
   const select = useSelection((s) => s.select);
   const seekTimeline = useEditor((s) => s.seekTimeline);
   const patchWord = useEditor((s) => s.patchWord);
@@ -52,14 +50,24 @@ export function WordCell({
 
   const chromeVisible = useTranscriptUi((s) => s.visible);
 
-  const selected = isSel("word", word.globalIndex);
+  const selected = useEntitySelected("word", word.globalIndex, word.assetId);
+
   const visibleSpans = annotation.spans.filter((s) =>
     isChromeKeyVisible(s.chromeKey, chromeVisible),
   );
   const markers = visibleSpans.filter((s) => isMarkerRole(s.role));
-  const primary = resolvePrimarySpan(visibleSpans, selection);
-  const primarySelected =
-    primary != null && isSel("edit", primary.editId);
+
+  // Only re-render when the primary edit for this word changes — word playback
+  // selection does not affect chrome primary resolution.
+  const primaryEditId = useSelection((s) => {
+    return resolvePrimarySpan(visibleSpans, s.selection)?.editId ?? null;
+  });
+  const primary =
+    primaryEditId != null
+      ? (visibleSpans.find((s) => s.editId === primaryEditId) ?? null)
+      : null;
+  const editSelected = useEntitySelected("edit", primaryEditId ?? -1);
+  const primarySelected = primaryEditId != null && editSelected;
   const primaryChrome = primary ? chromeByKey(primary.chromeKey) : null;
 
   const commitText = () => {
@@ -98,7 +106,6 @@ export function WordCell({
       <EditMarkerCluster
         wordIndex={word.globalIndex}
         markers={markers}
-        isEditSelected={(editId) => isSel("edit", editId)}
         onSelect={(editId, toggle) => select("edit", editId, toggle)}
         onDragStart={(editId) => onResizeEdge?.("start", editId)}
       />
@@ -110,13 +117,13 @@ export function WordCell({
         <RangeHandle
           edge="start"
           span={primary}
-          selected={primarySelected}
+          selected={primarySelected && primary != null}
           onResizeEdge={onResizeEdge}
         />
         <RangeHandle
           edge="middle"
           span={primary}
-          selected={primarySelected}
+          selected={primarySelected && primary != null}
           onResizeEdge={onResizeEdge}
         />
 
@@ -138,8 +145,8 @@ export function WordCell({
               word.emphasized && "font-semibold text-amber-300",
               selected && "bg-primary/35",
               // Underline only when the primary edit is selected — idle markers carry the signal.
-              primarySelected && primaryChrome?.underlineClass,
-              primarySelected && primaryChrome?.highlightClass,
+              primarySelected && primary != null && primaryChrome?.underlineClass,
+              primarySelected && primary != null && primaryChrome?.highlightClass,
               dropActive === "broll" && "bg-broll/30 ring-broll ring-1",
               dropActive === "sfx" && "bg-sfx/30 ring-sfx ring-1",
               dropActive === "vfx" && "bg-vfx/30 ring-vfx ring-1",
@@ -193,10 +200,10 @@ export function WordCell({
         <RangeHandle
           edge="end"
           span={primary}
-          selected={primarySelected}
+          selected={primarySelected && primary != null}
           onResizeEdge={onResizeEdge}
         />
       </span>
     </>
   );
-}
+});

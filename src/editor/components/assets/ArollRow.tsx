@@ -6,7 +6,6 @@ import { GripVertical } from "lucide-react";
 
 import { assetRunForAssetId } from "~/domain/arolls";
 import { ArollMiniPlayer } from "~/editor/components/assets/ArollMiniPlayer";
-import { isSelected } from "~/editor/lib/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
@@ -93,8 +92,11 @@ export function SortableArollRow({
   onTogglePlay: () => void;
 }) {
   const select = useSelection((s) => s.select);
-  const selection = useSelection((s) => s.selection);
-  const selected = isSelected(selection, "arollAsset", asset.id);
+  const selected = useSelection((s) =>
+    s.selection?.kind === "arollAsset"
+      ? s.selection.ids.includes(asset.id)
+      : false,
+  );
   const {
     attributes,
     listeners,

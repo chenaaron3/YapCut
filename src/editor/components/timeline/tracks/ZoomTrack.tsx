@@ -17,7 +17,7 @@ type Props = {
 };
 
 export function ZoomTrack({ edits, width }: Props) {
-  const isSel = useIsSelected();
+  const isSel = useIsSelected(["edit", "arollAsset"]);
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const select = useSelection((s) => s.select);
   const { onEdgeMouseDown } = useEditEdgeDrag();

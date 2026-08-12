@@ -20,7 +20,7 @@ type Props = {
 };
 
 export function VideoTrack({ layout, width }: Props) {
-  const isSel = useIsSelected();
+  const isSel = useIsSelected(["aroll", "arollAsset"]);
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const seekTimeline = useEditor((s) => s.seekTimeline);
   const patchArollRange = useEditor((s) => s.patchArollRange);

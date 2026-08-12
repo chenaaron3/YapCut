@@ -34,7 +34,8 @@ export function useEditableTransform(): EditableTransform | null {
     if (!edit || edit.kind !== "broll") return null;
     return s.assets.find((a) => a.id === edit.assetId) ?? null;
   });
-  const timelineSec = useEditor((s) => s.timelineSec);
+  // Skip playhead subscriptions while no editable transform is selected.
+  const timelineSec = useEditor((s) => (id == null ? -1 : s.timelineSec));
 
   if (!edit) return null;
 
