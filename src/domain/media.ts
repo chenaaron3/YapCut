@@ -30,6 +30,14 @@ export function maxMediaPlaySec(args: {
   return Math.max(MIN_RANGE_SEC, srcDur - args.mediaOffsetSec);
 }
 
+/** True when the asset has a finite source duration (start-drag moves, not trims). */
+export function isDurationLimitedMedia(args: {
+  mediaOffsetSec: number;
+  srcDurationSec?: number | null;
+}): boolean {
+  return maxMediaPlaySec(args) != null;
+}
+
 /** Shrink a timeline range so it does not exceed remaining source media. */
 export function clampTimelineRangeToMedia(
   range: TimelineTime,

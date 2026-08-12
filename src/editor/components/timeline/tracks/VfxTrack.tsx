@@ -2,9 +2,9 @@ import { clampListicleMiddle, isListicleEdit } from "~/domain/listicle";
 import {
   Handle,
   TrackLabel,
+  useEditEdgeDrag,
   useTrackDrag,
 } from "~/editor/components/timeline/shared";
-import { clampRangeEdge } from "~/editor/lib/range";
 import { rangeStyle } from "~/editor/lib/timeline-time";
 import { useIsSelected } from "~/editor/lib/use-is-selected";
 import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
@@ -50,11 +50,11 @@ function vfxCellLabel(edit: VfxEdit): string {
 export function VfxTrack({ edits, width }: Props) {
   const isSel = useIsSelected();
   const pxPerSec = useEditor((s) => s.pxPerSec);
-  const patchEditRangeById = useEditor((s) => s.patchEditRangeById);
   const patchEdit = useEditor((s) => s.patchEdit);
   const select = useSelection((s) => s.select);
   const snap = useTimelineSnap();
   const { startDrag } = useTrackDrag();
+  const { onEdgeMouseDown } = useEditEdgeDrag();
 
   if (edits.length === 0) return null;
 
@@ -85,21 +85,7 @@ export function VfxTrack({ edits, width }: Props) {
           >
             <Handle
               side="left"
-              onMouseDown={(e) => {
-                select("edit", edit.id);
-                const origin = edit.start;
-                const fixedEnd = edit.end;
-                const id = edit.id;
-                startDrag(e, (dxSec, shiftKey) => {
-                  const raw = Math.max(0, origin + dxSec);
-                  const snapped = snap(raw, shiftKey, "start");
-                  const { start, end } = clampRangeEdge("start", snapped, {
-                    start: origin,
-                    end: fixedEnd,
-                  });
-                  patchEditRangeById(id, start, end);
-                });
-              }}
+              onMouseDown={(e) => onEdgeMouseDown(e, edit, "start")}
             />
             <span className="truncate">{vfxCellLabel(edit)}</span>
             {middleLeft != null &&
@@ -127,21 +113,7 @@ export function VfxTrack({ edits, width }: Props) {
             ) : null}
             <Handle
               side="right"
-              onMouseDown={(e) => {
-                select("edit", edit.id);
-                const origin = edit.end;
-                const fixedStart = edit.start;
-                const id = edit.id;
-                startDrag(e, (dxSec, shiftKey) => {
-                  const raw = origin + dxSec;
-                  const snapped = snap(raw, shiftKey, "end");
-                  const { start, end } = clampRangeEdge("end", snapped, {
-                    start: fixedStart,
-                    end: origin,
-                  });
-                  patchEditRangeById(id, start, end);
-                });
-              }}
+              onMouseDown={(e) => onEdgeMouseDown(e, edit, "end")}
             />
           </button>
         );

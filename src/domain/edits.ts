@@ -3,6 +3,7 @@ import { produce } from "immer";
 import { withBrollKenBurns } from "~/domain/broll";
 import {
   clampTimelineRangeToMedia,
+  isDurationLimitedMedia,
   withMediaOffset,
   withVolume,
 } from "~/domain/media";
@@ -78,46 +79,144 @@ export function removeEdit(config: ProjectConfig, id: number): ProjectConfig {
   });
 }
 
+export type RangeEdge = "start" | "end";
+
+function srcDurationOf(
+  edit: Edit,
+  ctx?: PatchEditContext,
+): number | null {
+  if (!hasMediaRef(edit)) return null;
+  return ctx?.srcDurationSec?.(edit.assetId) ?? null;
+}
+
+function isDurationLimitedEdit(
+  edit: Edit,
+  srcDurationSec: number | null,
+): edit is Edit & MediaRef & { start: number; end: number } {
+  return (
+    hasMediaRef(edit) &&
+    isDurationLimitedMedia({
+      mediaOffsetSec: edit.mediaOffsetSec,
+      srcDurationSec,
+    })
+  );
+}
+
 /**
- * After timeline clamp: keep media-backed edits within remaining source media.
- * Keeps the proposed start and clamps end (so start-drag can slide a max-length clip).
+ * Propose a new range from dragging one edge.
+ * Duration-limited media: start = move (preserve duration); end = resize.
+ * Otherwise both edges resize with a fixed opposite edge.
  */
+export function rangeFromEdgeDrag(
+  existing: { start: number; end: number },
+  edge: RangeEdge,
+  value: number,
+  opts?: { mediaOffsetSec?: number; srcDurationSec?: number | null },
+): TimelineTime {
+  if (edge === "start") {
+    const durationLimited =
+      opts?.mediaOffsetSec != null &&
+      isDurationLimitedMedia({
+        mediaOffsetSec: opts.mediaOffsetSec,
+        srcDurationSec: opts.srcDurationSec,
+      });
+    if (durationLimited) {
+      const dur = existing.end - existing.start;
+      const start = Math.max(0, value);
+      return { start, end: start + dur };
+    }
+    const start = Math.min(Math.max(0, value), existing.end - MIN_RANGE_SEC);
+    return { start, end: existing.end };
+  }
+  const end = Math.max(value, existing.start + MIN_RANGE_SEC);
+  return { start: existing.start, end };
+}
+
+/** End-edge / absolute resize: keep media-backed edits within source media. */
 function clampMediaEditRange(
   existing: Edit,
   range: TimelineTime,
   ctx?: PatchEditContext,
 ): TimelineTime {
   if (!hasMediaRef(existing)) return range;
-  const src = ctx?.srcDurationSec?.(existing.assetId) ?? null;
+  const src = srcDurationOf(existing, ctx);
   return clampTimelineRangeToMedia(range, src, existing.mediaOffsetSec);
 }
 
-export function patchEditRange(
-  config: ProjectConfig,
-  id: number,
+/** Keep duration; slide into [0, timelineDuration]. */
+function fitMoveInTimeline(
   range: TimelineTime,
   timelineDuration: number,
-  ctx?: PatchEditContext,
+): TimelineTime | null {
+  const dur = range.end - range.start;
+  if (dur < MIN_RANGE_SEC) return null;
+  let start = Math.max(0, range.start);
+  let end = start + dur;
+  if (end > timelineDuration) {
+    end = timelineDuration;
+    start = end - dur;
+  }
+  if (start < 0 || end - start < MIN_RANGE_SEC) return null;
+  return { start, end };
+}
+
+function applyEditRange(
+  config: ProjectConfig,
+  existing: Edit,
+  range: TimelineTime,
 ): ProjectConfig {
-  let clamped = clampRange(range, timelineDuration);
-  if (!clamped) return config;
-  const existing = config.edits.find((e) => e.id === id);
-  if (!existing) return config;
-  clamped = clampMediaEditRange(existing, clamped, ctx);
-  if (clamped.end - clamped.start < MIN_RANGE_SEC) return config;
+  if (
+    Math.abs(range.start - existing.start) < EPS &&
+    Math.abs(range.end - existing.end) < EPS
+  ) {
+    return config;
+  }
   if (
     existing.kind === "vfx" &&
     existing.type === "quote" &&
-    quoteRangeConflicts(config.edits, clamped, id)
+    quoteRangeConflicts(config.edits, range, existing.id)
   ) {
     return config;
   }
   return produce(config, (draft) => {
-    const edit = draft.edits.find((e) => e.id === id);
+    const edit = draft.edits.find((e) => e.id === existing.id);
     if (!edit) return;
-    edit.start = clamped.start;
-    edit.end = clamped.end;
+    edit.start = range.start;
+    edit.end = range.end;
   });
+}
+
+/** Drag one edge — move vs trim policy lives in `rangeFromEdgeDrag`. */
+export function patchEditRange(
+  config: ProjectConfig,
+  id: number,
+  edge: RangeEdge,
+  value: number,
+  timelineDuration: number,
+  ctx?: PatchEditContext,
+): ProjectConfig {
+  const existing = config.edits.find((e) => e.id === id);
+  if (!existing) return config;
+  const src = srcDurationOf(existing, ctx);
+  const proposed = rangeFromEdgeDrag(existing, edge, value, {
+    mediaOffsetSec: hasMediaRef(existing) ? existing.mediaOffsetSec : undefined,
+    srcDurationSec: src,
+  });
+
+  let clamped: TimelineTime | null;
+  if (edge === "start" && isDurationLimitedEdit(existing, src)) {
+    clamped = fitMoveInTimeline(
+      clampTimelineRangeToMedia(proposed, src, existing.mediaOffsetSec),
+      timelineDuration,
+    );
+  } else {
+    clamped = clampRange(proposed, timelineDuration);
+    if (!clamped) return config;
+    clamped = clampMediaEditRange(existing, clamped, ctx);
+  }
+
+  if (!clamped || clamped.end - clamped.start < MIN_RANGE_SEC) return config;
+  return applyEditRange(config, existing, clamped);
 }
 
 function appendEdit(

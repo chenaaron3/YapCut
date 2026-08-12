@@ -16,9 +16,10 @@ import {
 } from "~/domain/arolls";
 import {
   patchEdit as applyPatchEdit,
-  patchEditRange,
+  patchEditRange as applyPatchEditRange,
   placeEdit,
   removeEdit,
+  type RangeEdge,
 } from "~/domain/edits";
 import { clampTimelineRangeToMedia } from "~/domain/media";
 import { PROJECT_FPS } from "~/domain/project-config";
@@ -143,9 +144,8 @@ type EditorActions = {
   getLayout: () => ArollLayoutCell[];
 
   // —— Update (patches) ——
-  patchSelectedEditRange: (start: number, end: number) => void;
-  /** Live range patch for a specific edit (timeline handle drag). */
-  patchEditRangeById: (id: number, start: number, end: number) => void;
+  /** Live edge drag — domain owns move vs trim for duration-limited media. */
+  patchEditRange: (id: number, edge: RangeEdge, value: number) => void;
   /** Live keep-edge patch; `arollIndex` is index in `config.arolls`. */
   patchArollRange: (
     arollIndex: number,
@@ -771,28 +771,16 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       }
     },
 
-    patchSelectedEditRange: (start, end) => {
-      const { selection } = useSelection.getState();
-      if (selection?.kind !== "edit") return;
-      const id = selection.ids[0];
-      if (typeof id !== "number") return;
-      get().patchEditRangeById(id, start, end);
-    },
-
-    patchEditRangeById: (id, start, end) => {
+    patchEditRange: (id, edge, value) => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config) return;
       const duration = layoutTimelineDuration(layoutFor(config, assets));
-      commit(
-        {
-          config: patchEditRange(config, id, { start, end }, duration, {
-            srcDurationSec: (assetId) =>
-              assets.find((a) => a.id === assetId)?.durationSec ?? null,
-          }),
-          transcriptsByAssetId,
-        },
-        { live: true },
-      );
+      const next = applyPatchEditRange(config, id, edge, value, duration, {
+        srcDurationSec: (assetId) =>
+          assets.find((a) => a.id === assetId)?.durationSec ?? null,
+      });
+      if (next === config) return;
+      commit({ config: next, transcriptsByAssetId }, { live: true });
     },
 
     patchArollRange: (arollIndex, edge, targetTimelineSec) => {

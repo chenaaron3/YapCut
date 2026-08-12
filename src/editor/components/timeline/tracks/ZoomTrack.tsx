@@ -1,12 +1,10 @@
 import {
   Handle,
   TrackLabel,
-  useTrackDrag,
+  useEditEdgeDrag,
 } from "~/editor/components/timeline/shared";
-import { clampRangeEdge } from "~/editor/lib/range";
 import { rangeStyle } from "~/editor/lib/timeline-time";
 import { useIsSelected } from "~/editor/lib/use-is-selected";
-import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
@@ -21,10 +19,8 @@ type Props = {
 export function ZoomTrack({ edits, width }: Props) {
   const isSel = useIsSelected();
   const pxPerSec = useEditor((s) => s.pxPerSec);
-  const patchEditRangeById = useEditor((s) => s.patchEditRangeById);
   const select = useSelection((s) => s.select);
-  const snap = useTimelineSnap();
-  const { startDrag } = useTrackDrag();
+  const { onEdgeMouseDown } = useEditEdgeDrag();
 
   if (edits.length === 0) return null;
 
@@ -51,40 +47,12 @@ export function ZoomTrack({ edits, width }: Props) {
           >
             <Handle
               side="left"
-              onMouseDown={(e) => {
-                select("edit", edit.id);
-                const origin = edit.start;
-                const fixedEnd = edit.end;
-                const id = edit.id;
-                startDrag(e, (dxSec, shiftKey) => {
-                  const raw = Math.max(0, origin + dxSec);
-                  const snapped = snap(raw, shiftKey, "start");
-                  const { start, end } = clampRangeEdge("start", snapped, {
-                    start: origin,
-                    end: fixedEnd,
-                  });
-                  patchEditRangeById(id, start, end);
-                });
-              }}
+              onMouseDown={(e) => onEdgeMouseDown(e, edit, "start")}
             />
             {(edit.scale ?? 1.5).toFixed(2)}x
             <Handle
               side="right"
-              onMouseDown={(e) => {
-                select("edit", edit.id);
-                const origin = edit.end;
-                const fixedStart = edit.start;
-                const id = edit.id;
-                startDrag(e, (dxSec, shiftKey) => {
-                  const raw = origin + dxSec;
-                  const snapped = snap(raw, shiftKey, "end");
-                  const { start, end } = clampRangeEdge("end", snapped, {
-                    start: fixedStart,
-                    end: origin,
-                  });
-                  patchEditRangeById(id, start, end);
-                });
-              }}
+              onMouseDown={(e) => onEdgeMouseDown(e, edit, "end")}
             />
           </button>
         );

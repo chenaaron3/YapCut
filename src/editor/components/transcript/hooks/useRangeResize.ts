@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef } from "react";
 import { buildArollLayout } from "~/domain/arolls";
 import { clampListicleMiddle, isListicleEdit } from "~/domain/listicle";
 import type { ResizeEdge } from "~/editor/components/transcript/RangeHandle";
-import { clampRangeEdge, MIN_RANGE_SEC } from "~/editor/lib/range";
 import { snapTranscriptCaptionEdge } from "~/editor/lib/snap";
 import { wordIndexFromPoint } from "~/editor/lib/use-word-drag-select";
 import { useSelection } from "~/editor/selection-store";
@@ -24,7 +23,7 @@ export function useRangeResize() {
   const words = useGlobalWords();
   const clearSelection = useSelection((s) => s.clearSelection);
   const beginGesture = useEditor((s) => s.beginGesture);
-  const patchSelectedEditRange = useEditor((s) => s.patchSelectedEditRange);
+  const patchEditRange = useEditor((s) => s.patchEditRange);
   const patchEdit = useEditor((s) => s.patchEdit);
 
   const resizeRef = useRef<ResizeState | null>(null);
@@ -96,15 +95,7 @@ export function useRangeResize() {
         return;
       }
 
-      const { start, end } = clampRangeEdge(resize.edge, value, edit);
-      if (
-        Math.abs(start - edit.start) < 0.0005 &&
-        Math.abs(end - edit.end) < 0.0005
-      ) {
-        return;
-      }
-      if (end - start < MIN_RANGE_SEC) return;
-      patchSelectedEditRange(start, end);
+      patchEditRange(edit.id, resize.edge, value);
     };
 
     const onUp = () => {
@@ -133,7 +124,7 @@ export function useRangeResize() {
     indexedWords,
     keepRanges,
     patchEdit,
-    patchSelectedEditRange,
+    patchEditRange,
   ]);
 
   const beginResize = (edge: ResizeEdge, editId: number) => {

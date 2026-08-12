@@ -4,6 +4,9 @@ import {
   type ReactNode,
 } from "react";
 
+import type { RangeEdge } from "~/domain/edits";
+import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
+import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
@@ -97,4 +100,32 @@ export function useTrackDrag() {
   );
 
   return { startDrag };
+}
+
+/** Timeline edit handle → `patchEditRange` (domain owns move vs trim). */
+export function useEditEdgeDrag() {
+  const patchEditRange = useEditor((s) => s.patchEditRange);
+  const select = useSelection((s) => s.select);
+  const snap = useTimelineSnap();
+  const { startDrag } = useTrackDrag();
+
+  const onEdgeMouseDown = useCallback(
+    (
+      e: ReactMouseEvent,
+      edit: { id: number; start: number; end: number },
+      edge: RangeEdge,
+    ) => {
+      select("edit", edit.id);
+      const origin = edge === "start" ? edit.start : edit.end;
+      const id = edit.id;
+      startDrag(e, (dxSec, shiftKey) => {
+        const raw =
+          edge === "start" ? Math.max(0, origin + dxSec) : origin + dxSec;
+        patchEditRange(id, edge, snap(raw, shiftKey, edge));
+      });
+    },
+    [patchEditRange, select, snap, startDrag],
+  );
+
+  return { onEdgeMouseDown };
 }

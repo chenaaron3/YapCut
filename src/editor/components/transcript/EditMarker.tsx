@@ -47,7 +47,7 @@ export function EditMarker({
   return (
     <button
       type="button"
-      title={`${label} — drag to move start`}
+      title={`${label} — drag to move`}
       aria-label={label}
       className={cn(
         "relative inline-flex size-[1.1em] shrink-0 cursor-ew-resize items-center justify-center overflow-hidden rounded-sm align-middle select-none",
