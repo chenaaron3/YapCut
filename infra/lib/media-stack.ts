@@ -159,7 +159,7 @@ export class MediaStack extends cdk.Stack {
 
     // Managed policy document the app IAM user/role should attach (least privilege).
     const appPolicy = new iam.ManagedPolicy(this, "AppMediaPolicy", {
-      description: "Talking Head app: S3 media read/write",
+      description: "Talking Head app: S3 media read/write + CloudFront invalidate",
       statements: [
         new iam.PolicyStatement({
           sid: "ObjectRW",
@@ -176,6 +176,13 @@ export class MediaStack extends cdk.Stack {
           sid: "BucketList",
           actions: ["s3:ListBucket", "s3:ListBucketMultipartUploads"],
           resources: [this.bucket.bucketArn],
+        }),
+        new iam.PolicyStatement({
+          sid: "CloudFrontInvalidate",
+          actions: ["cloudfront:CreateInvalidation"],
+          resources: [
+            `arn:aws:cloudfront::${cdk.Stack.of(this).account}:distribution/${this.distribution.distributionId}`,
+          ],
         }),
       ],
     });
@@ -197,6 +204,7 @@ export class MediaStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "CloudFrontDistributionId", {
       value: this.distribution.distributionId,
+      description: "→ CLOUDFRONT_DISTRIBUTION_ID (SFX seed CDN invalidate)",
     });
 
     new cdk.CfnOutput(this, "CloudFrontKeyPairId", {

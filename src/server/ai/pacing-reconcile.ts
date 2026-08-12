@@ -12,7 +12,7 @@ import { TRANSFORM_DEFAULTS } from "~/domain/transform";
 import { ZOOM_STRENGTH } from "~/domain/zoom";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
-const SLOW_ZOOM_SCALE = ZOOM_STRENGTH.light;
+const SLOW_ZOOM_SCALE = ZOOM_STRENGTH.strong;
 
 export const PacingReconcileSchema = z.object({
   decisions: z

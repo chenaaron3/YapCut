@@ -106,7 +106,12 @@ export async function putObject(options: {
 
 export async function headObject(
   key: string,
-): Promise<{ contentLength?: number; contentType?: string } | null> {
+): Promise<{
+  contentLength?: number;
+  contentType?: string;
+  /** S3 ETag (quoted); for single-part PutObject this is the MD5 hex. */
+  etag?: string;
+} | null> {
   try {
     const result = await getS3Client().send(
       new HeadObjectCommand({
@@ -117,6 +122,7 @@ export async function headObject(
     return {
       contentLength: result.ContentLength,
       contentType: result.ContentType,
+      etag: result.ETag,
     };
   } catch (error) {
     const status = awsHttpStatus(error);

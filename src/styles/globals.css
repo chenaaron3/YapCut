@@ -1,5 +1,5 @@
 /* Must precede other @imports — Tailwind expands into rules. */
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,700;1,700&family=Montserrat:ital,wght@0,900;1,900&family=Nunito:wght@800&family=Pacifico&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Anton&family=Baloo+2:wght@800&family=Black+Ops+One&family=Caveat:wght@700&family=Great+Vibes&family=Homemade+Apple&family=Inter:ital,wght@0,700;1,700&family=Montserrat:ital,wght@0,900;1,900&family=Nunito:wght@800&family=Oswald:wght@700&family=Pacifico&family=Pinyon+Script&family=Playfair+Display:wght@700&family=Poiret+One&family=Poppins:wght@700&display=swap");
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -14,6 +14,18 @@
     local("Proxima Nova Semibold"),
     local("ProximaNova-Semibold"),
     local("Proxima Nova");
+}
+
+@font-face {
+  font-family: "Bootzy TM";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    local("Bootzy TM"),
+    local("BootzyTM"),
+    url("/fonts/BootzyTM.woff2") format("woff2"),
+    url("/fonts/BootzyTM.ttf") format("truetype");
 }
 
 @custom-variant dark (&:is(.dark *));

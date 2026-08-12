@@ -11,10 +11,23 @@ export function getPlayer(): PlayerRef | null {
   return player;
 }
 
+/** Remotion sticky-mutes after a failed AudioContext.resume(); we have no mute UI. */
+export function ensurePlayerAudible(target: PlayerRef | null = player) {
+  if (target?.isMuted()) target.unmute();
+}
+
 export function togglePlayback() {
   if (!player) return;
-  if (player.isPlaying()) player.pause();
-  else player.play();
+  if (player.isPlaying()) {
+    if (player.isMuted()) {
+      player.unmute();
+      return;
+    }
+    player.pause();
+    return;
+  }
+  ensurePlayerAudible(player);
+  player.play();
 }
 
 export function peekPlayAfterSeek() {

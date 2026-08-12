@@ -1,5 +1,6 @@
 import React, {
   Children,
+  isValidElement,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -16,6 +17,38 @@ function rowJustify(
   if (textAlign === "left") return "flex-start";
   if (textAlign === "right") return "flex-end";
   return "center";
+}
+
+/** Marker: splits static overlay words onto the next line. */
+export function CaptionLineBreak({
+  hidden = false,
+}: {
+  hidden?: boolean;
+  silhouette?: boolean;
+}) {
+  if (hidden) return null;
+  return <span data-caption-line-break="" />;
+}
+
+function isLineBreakChild(child: ReactNode): boolean {
+  return isValidElement(child) && child.type === CaptionLineBreak;
+}
+
+function partitionLines(children: ReactNode): ReactNode[][] {
+  const items = Children.toArray(children);
+  const lines: ReactNode[][] = [[]];
+  for (const child of items) {
+    if (isLineBreakChild(child)) {
+      lines.push([]);
+    } else {
+      lines[lines.length - 1]!.push(child);
+    }
+  }
+  return lines;
+}
+
+function spacedWords(line: ReactNode[]): ReactNode[] {
+  return line.flatMap((child, j) => (j === 0 ? [child] : [" ", child]));
 }
 
 export type CaptionGroupLayoutProps = {
@@ -55,12 +88,39 @@ export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
       ? "0.45em 0.55em"
       : "0.35em";
 
-  // ContourBoard needs inline line boxes — insert spaces between word children.
-  const content = wrap
-    ? Children.toArray(children).flatMap((child, i) =>
-        i === 0 ? [child] : [" ", child],
-      )
-    : children;
+  const lines = partitionLines(children);
+  const multiLine = lines.length > 1;
+
+  // ContourBoard needs inline line boxes — spaces between words, <br> between lines.
+  const wrapContent = lines.flatMap((line, i) => {
+    const words = spacedWords(line);
+    if (i === 0) return words;
+    return [<br key={`br-${i}`} />, ...words];
+  });
+
+  const rowStyle: CSSProperties = {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: rowJustify(textAlign),
+    gap,
+  };
+
+  const flexContent = multiLine
+    ? lines.map((line, i) => (
+        <span
+          key={`line-${i}`}
+          style={{
+            ...rowStyle,
+            width: "100%",
+            minHeight: line.length === 0 ? "1em" : undefined,
+          }}
+        >
+          {line}
+        </span>
+      ))
+    : (lines[0] ?? []);
 
   const innerStyle: CSSProperties = wrap
     ? {
@@ -70,11 +130,14 @@ export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
       }
     : {
         ...textStyle,
-        display: "flex",
-        flexDirection: "row",
-        flexWrap: "wrap",
-        alignItems: "center",
-        justifyContent: rowJustify(textAlign),
+        ...(multiLine
+          ? {
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "stretch",
+              justifyContent: "center",
+            }
+          : rowStyle),
         gap,
         width: background.kind === "box" ? "auto" : "100%",
         maxWidth: "100%",
@@ -109,7 +172,7 @@ export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
         textStyle={textStyle}
         style={innerStyle}
       >
-        {content}
+        {wrap ? wrapContent : flexContent}
       </CaptionBackground>
     </div>
   );

@@ -2,7 +2,7 @@ import { CaptionStyleFields } from "~/editor/components/inspector/CaptionStyleFi
 import { EmphasisStyleFields } from "~/editor/components/inspector/EmphasisStyleFields";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
-import { normalizeEmphasisStyle } from "~/domain/emphasis-style";
+import { applyEmphasisPatch } from "~/domain/emphasis-style";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
 import {
@@ -25,7 +25,7 @@ export function CaptionsInspector() {
     resolveCaptionTemplateStyle(templateId),
     overrides,
   );
-  const emphasisStyle = normalizeEmphasisStyle(config?.emphasisStyle);
+  const emphasisStyle = config?.emphasisStyle ?? {};
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
@@ -63,10 +63,9 @@ export function CaptionsInspector() {
         }
       />
       <EmphasisStyleFields
-        mode="project"
         value={emphasisStyle}
-        onChange={(next, live) =>
-          patchEmphasisStyle(normalizeEmphasisStyle(next), live)
+        onPatch={(partial, live) =>
+          patchEmphasisStyle(applyEmphasisPatch(emphasisStyle, partial), live)
         }
       />
     </div>

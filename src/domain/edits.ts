@@ -1,7 +1,6 @@
 import { produce } from "immer";
 
 import { withBrollKenBurns } from "~/domain/broll";
-import type { QuoteEmphasisStyle } from "~/domain/emphasis-style";
 import {
   clampTimelineRangeToMedia,
   isDurationLimitedMedia,
@@ -16,11 +15,7 @@ import {
   type ProjectConfig,
   type Transform,
 } from "~/domain/project-config";
-import {
-  isQuoteEdit,
-  quoteRangeConflicts,
-  withQuoteEmphasisStyle,
-} from "~/domain/quote";
+import { quoteRangeConflicts } from "~/domain/quote";
 import { isShakeEdit, withShakeIntensity } from "~/domain/shake";
 import { sfxSeed } from "~/domain/sfx";
 import type { TimelineTime } from "~/domain/time";
@@ -48,13 +43,11 @@ export type EditSeed = Edit extends infer E
  * Partial body for an existing edit. Discriminant (`kind` / vfx `type`) is fixed;
  * use remove + place to change identity.
  * `kenBurns: null` clears optional Ken Burns on b-roll.
- * `emphasisStyle: null` clears quote emphasis override.
  */
 export type EditPatch = Edit extends infer E
   ? E extends Edit
-    ? Partial<Omit<E, "id" | "kind" | "type" | "kenBurns" | "emphasisStyle">> & {
+    ? Partial<Omit<E, "id" | "kind" | "type" | "kenBurns">> & {
         kenBurns?: number | null;
-        emphasisStyle?: QuoteEmphasisStyle | null;
       }
     : never
   : never;
@@ -314,6 +307,7 @@ const PLAIN_PATCH_KEYS = [
   "hideCaptions",
   "style",
   "ease",
+  "emphasisStyle",
 ] as const;
 
 function applyPlainPatch(edit: Edit, patch: EditPatch): Edit {
@@ -368,11 +362,6 @@ function applyKenBurnsPatch(edit: Edit, patch: EditPatch): Edit {
   return withBrollKenBurns(edit, patch.kenBurns ?? null);
 }
 
-function applyEmphasisStylePatch(edit: Edit, patch: EditPatch): Edit {
-  if (!("emphasisStyle" in patch) || !isQuoteEdit(edit)) return edit;
-  return withQuoteEmphasisStyle(edit, patch.emphasisStyle ?? null);
-}
-
 function applyShakeIntensityPatch(edit: Edit, patch: EditPatch): Edit {
   if (!("intensity" in patch) || typeof patch.intensity !== "number") {
     return edit;
@@ -395,7 +384,6 @@ export function patchEdit(
     next = applyTransformPatch(next, patch);
     next = applyMediaPatch(next, patch, ctx);
     next = applyKenBurnsPatch(next, patch);
-    next = applyEmphasisStylePatch(next, patch);
     next = applyShakeIntensityPatch(next, patch);
     draft.edits[idx] = next;
   });

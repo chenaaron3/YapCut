@@ -106,6 +106,7 @@ export const projectRouter = createTRPCRouter({
           config: true,
           configUpdatedAt: true,
           exportS3Key: true,
+          coverS3Key: true,
           exportBucketName: true,
           updatedAt: true,
           createdAt: true,
@@ -147,10 +148,18 @@ export const projectRouter = createTRPCRouter({
               objectKey: project.exportS3Key,
             })
           : null;
+      const coverDownloadUrl =
+        project.coverS3Key && project.exportBucketName
+          ? await exportDownloadUrl({
+              bucketName: project.exportBucketName,
+              objectKey: project.coverS3Key,
+            })
+          : null;
 
       return {
         ...project,
         downloadUrl,
+        coverDownloadUrl,
         config: isEmptyConfig(project.config)
           ? emptyProjectConfig()
           : parseProjectConfig(project.config),

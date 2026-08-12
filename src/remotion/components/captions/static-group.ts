@@ -1,7 +1,35 @@
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/types";
 
-import { typewriterWordTimings } from "./caption-animation";
+import {
+  LINE_BREAK_TOKEN,
+  isLineBreakToken,
+  typewriterWordTimings,
+} from "./caption-animation";
+
+export { LINE_BREAK_TOKEN, isLineBreakToken };
+
+/**
+ * Split overlay text into words, keeping `\n` as a line-break token.
+ * Collapses horizontal whitespace; preserves explicit newlines.
+ */
+export function tokenizeStaticText(text: string): string[] {
+  const trimmed = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+  if (!trimmed) return [];
+
+  const tokens: string[] = [];
+  const lines = trimmed.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    if (i > 0) tokens.push(LINE_BREAK_TOKEN);
+    const words = lines[i]!
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .filter((t) => t.length > 0);
+    tokens.push(...words);
+  }
+  return tokens;
+}
 
 /**
  * Build a caption group for {@link StaticGroupView}.
@@ -15,21 +43,15 @@ export function buildStaticGroup(
   durationFrames: number,
 ): CaptionGroupProp {
   const endFrame = Math.max(1, durationFrames);
-  const flat = text.replace(/\s+/g, " ").trim();
-  let words: CaptionWordProp[];
-
-  if (style.animation === "typewriter") {
-    words = typewriterWordTimings(flat, fps, endFrame);
-  } else {
-    words = flat
-      .split(" ")
-      .filter((t) => t.length > 0)
-      .map((word) => ({
-        text: word,
-        startFrame: 0,
-        endFrame,
-      }));
-  }
+  const tokens = tokenizeStaticText(text);
+  const words: CaptionWordProp[] =
+    style.animation === "typewriter"
+      ? typewriterWordTimings(tokens, fps, endFrame)
+      : tokens.map((word) => ({
+          text: word,
+          startFrame: 0,
+          endFrame,
+        }));
 
   return {
     words,

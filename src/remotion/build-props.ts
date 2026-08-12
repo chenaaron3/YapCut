@@ -1,9 +1,7 @@
 import { buildArollLayout, timelineRangeToOutput } from "~/domain/arolls";
 import {
-  normalizeEmphasisStyle,
-  normalizeQuoteEmphasisStyle,
-  resolveEmphasisStyle,
-  type QuoteEmphasisStyle,
+  pickEmphasisStyle,
+  type EmphasisStyle,
   type ResolvedEmphasisStyle,
 } from "~/domain/emphasis-style";
 import {
@@ -64,6 +62,8 @@ import type {
 
 export type BuildProjectPropsInput = {
   config: ProjectConfig;
+  /** Display title for Cover (and future on-export metadata). */
+  title?: string;
   /** assetId → signed playback URL */
   mediaUrls: ReadonlyMap<string, string>;
   transcriptsByAssetId: ReadonlyMap<string, readonly TranscriptWord[]>;
@@ -117,7 +117,7 @@ type OutputQuote = {
   start: number;
   end: number;
   style: CaptionGroupStyle;
-  emphasisStyle?: QuoteEmphasisStyle;
+  emphasisStyle?: EmphasisStyle;
 };
 
 function outputQuotes(
@@ -129,7 +129,6 @@ function outputQuotes(
     if (e.kind !== "vfx" || e.type !== "quote") continue;
     const range = timelineRangeToOutput(cells, e);
     if (!range) continue;
-    const quoteEmphasis = normalizeQuoteEmphasisStyle(e.emphasisStyle);
     out.push({
       id: e.id,
       start: range.start,
@@ -140,9 +139,7 @@ function outputQuotes(
         DEFAULT_QUOTE_TEMPLATE_ID,
         resolveQuoteTemplateStyle,
       ),
-      ...(Object.keys(quoteEmphasis).length > 0
-        ? { emphasisStyle: quoteEmphasis }
-        : {}),
+      emphasisStyle: e.emphasisStyle,
     });
   }
   return out;
@@ -191,8 +188,8 @@ function buildCaptionGroups(
   fps: number,
 ): CaptionGroupProp[] {
   const captionStyle = resolveProjectCaptionStyle(config.captions);
-  const projectEmphasis = normalizeEmphasisStyle(config.emphasisStyle);
-  const defaultEmphasis = resolveEmphasisStyle(projectEmphasis);
+  const projectEmphasis = config.emphasisStyle;
+  const defaultEmphasis = pickEmphasisStyle(projectEmphasis);
   const quotes = outputQuotes(config.edits, cells);
   const hiddenRanges = hiddenCaptionRanges(config.edits, cells);
   const words = projectOutputWords(config.arolls, transcriptsByAssetId);
@@ -220,9 +217,10 @@ function buildCaptionGroups(
     const endFrame = Math.max(startFrame + 3, secToFrame(word.end, fps));
     const quote = quoteForWord(word, quotes);
     const style = quote?.style ?? captionStyle;
-    const emphasisStyle = quote
-      ? resolveEmphasisStyle(projectEmphasis, quote.emphasisStyle)
-      : defaultEmphasis;
+    const emphasisStyle = pickEmphasisStyle(
+      projectEmphasis,
+      quote?.emphasisStyle,
+    );
     styledWords.push({
       text: word.text,
       startFrame,
@@ -481,6 +479,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
   const durationInFrames = Math.max(1, secToFrame(durationSec, fps));
 
   return {
+    title: input.title?.trim() || "Untitled",
     fps,
     width: COMPOSITION_WIDTH,
     height: COMPOSITION_HEIGHT,

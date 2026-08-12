@@ -4,8 +4,12 @@ import { DEFAULT_CAPTION_STYLE } from "~/remotion/captions/style";
 import type { CaptionGroupProp } from "~/remotion/types";
 
 import { resolveEnterExitMotion } from "./caption-animation";
-import { CaptionGroupLayout } from "./CaptionGroupLayout";
+import {
+  CaptionGroupLayout,
+  CaptionLineBreak,
+} from "./CaptionGroupLayout";
 import { CaptionWordSpan } from "./CaptionWordSpan";
+import { isLineBreakToken } from "./static-group";
 
 /**
  * Group-level enter/exit; words paint active style (text VFX).
@@ -48,22 +52,29 @@ export const StaticGroupView: React.FC<{
       shellStyle={shellStyle}
       embedded={embedded}
     >
-      {group.words.map((word, index) => (
-        <CaptionWordSpan
-          key={`${word.startFrame}-${word.text}-${index}`}
-          word={word}
-          index={index}
-          words={group.words}
-          frame={frame}
-          fps={fps}
-          groupStartFrame={group.startFrame}
-          groupEndFrame={group.endFrame}
-          groupStyle={style}
-          emphasisStyle={group.emphasisStyle}
-          animateWord={false}
-          cycleWordStates={false}
-        />
-      ))}
+      {group.words.map((word, index) =>
+        isLineBreakToken(word.text) ? (
+          <CaptionLineBreak
+            key={`${word.startFrame}-br-${index}`}
+            hidden={animation === "typewriter" && frame < word.startFrame}
+          />
+        ) : (
+          <CaptionWordSpan
+            key={`${word.startFrame}-${word.text}-${index}`}
+            word={word}
+            index={index}
+            words={group.words}
+            frame={frame}
+            fps={fps}
+            groupStartFrame={group.startFrame}
+            groupEndFrame={group.endFrame}
+            groupStyle={style}
+            emphasisStyle={group.emphasisStyle}
+            animateWord={false}
+            cycleWordStates={false}
+          />
+        ),
+      )}
     </CaptionGroupLayout>
   );
 };

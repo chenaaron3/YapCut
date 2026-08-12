@@ -101,6 +101,8 @@ export type ShakeClipProp = {
 };
 
 export type ProjectProps = {
+  /** Project.title at props time (Cover still; TalkingHead ignores). */
+  title: string;
   fps: number;
   width: number;
   height: number;

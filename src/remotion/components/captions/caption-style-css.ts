@@ -108,7 +108,7 @@ export function applyEmphasisStyle(
   emphasized: boolean | undefined,
   emphasis: ResolvedEmphasisStyle | null | undefined,
 ): WordStyle {
-  if (!emphasized || !emphasis?.fill) return wordStyle;
+  if (!emphasized || !emphasis) return wordStyle;
   return { ...wordStyle, fill: emphasis.fill };
 }
 

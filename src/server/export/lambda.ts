@@ -1,11 +1,15 @@
 import {
   getRenderProgress,
   renderMediaOnLambda,
+  renderStillOnLambda,
   type AwsRegion,
 } from "@remotion/lambda/client";
 
 import { env } from "~/env";
-import { COMPOSITION_ID } from "~/remotion/constants";
+import {
+  COMPOSITION_ID,
+  COVER_COMPOSITION_ID,
+} from "~/remotion/constants";
 import type { ProjectProps } from "~/remotion/types";
 import { ensureRemotionAwsEnv } from "~/server/export/ensure-remotion-aws-env";
 
@@ -60,6 +64,39 @@ export async function startLambdaRender(options: {
   });
 
   return { renderId, bucketName };
+}
+
+/** Blocking Cover still — result is ready when the promise resolves. */
+export async function renderCoverStill(options: {
+  projectId: string;
+  props: ProjectProps;
+  bucketName: string;
+}): Promise<{ coverS3Key: string }> {
+  ensureRemotionAwsEnv();
+  const { functionName, serveUrl, region } = requireLambdaConfig();
+
+  const result = await renderStillOnLambda({
+    region,
+    functionName,
+    serveUrl,
+    composition: COVER_COMPOSITION_ID,
+    inputProps: options.props,
+    imageFormat: "jpeg",
+    maxRetries: 1,
+    privacy: "public",
+    frame: 0,
+    forceBucketName: options.bucketName,
+    downloadBehavior: {
+      type: "download",
+      fileName: `${options.projectId}-cover.jpg`,
+    },
+  });
+
+  const key = result.outKey;
+  if (!key) {
+    throw new Error("Cover still finished without an output key");
+  }
+  return { coverS3Key: key };
 }
 
 export type LambdaProgress = {

@@ -57,3 +57,7 @@ yarn-error.log*
 
 # Local SFX pack (seeded to S3; not committed)
 /public/sfx/
+
+# Schedule CLI secrets + browser profile
+/secrets/
+/.playwright/

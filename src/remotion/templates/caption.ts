@@ -43,7 +43,7 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     label: "UGC",
     style: {
       fontFamily: "inter",
-      fontSize: 50,
+      fontSize: 75,
       y: TRENDING_CAPTION_Y,
       animation: "none",
       textTransform: "lowercase",

@@ -37,6 +37,7 @@ export function TextVfxInspector({ edit }: { edit: VfxTextEdit }) {
         id="text-vfx-content"
         label="Text"
         value={edit.text}
+        multiline
         onLiveChange={(text) => patchEdit(edit.id, { text }, true)}
       />
       <StyleTemplatePicker

@@ -9,6 +9,9 @@ export const PREMOUNT_SEC = 3;
 /** Remotion composition id (Player + Lambda). */
 export const COMPOSITION_ID = "TalkingHead";
 
+/** Single-frame Cover still (export thumbnail). */
+export const COVER_COMPOSITION_ID = "Cover";
+
 export const SAFE_AREA = {
   top: "12%",
   bottom: "22%",

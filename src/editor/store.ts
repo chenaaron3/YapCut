@@ -254,9 +254,11 @@ function recomputeProps(state: {
   assets: EditorAsset[];
   transcriptsByAssetId: Record<string, TranscriptWord[]>;
   fps: number;
+  title?: string;
 }): ProjectProps {
   return buildProjectProps({
     config: state.config,
+    title: state.title,
     mediaUrls: mediaUrlMap(state.assets),
     transcriptsByAssetId: transcriptMap(state.transcriptsByAssetId),
     assetDurationSec: durationMap(state.assets),
@@ -346,6 +348,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       assets: state.assets,
       transcriptsByAssetId: next.transcriptsByAssetId,
       fps: state.fps,
+      title: state.title,
     });
     const layout = layoutFor(next.config, state.assets);
     const timelineSec = snapTimelineSec(
@@ -376,6 +379,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       assets: state.assets,
       transcriptsByAssetId: snap.transcriptsByAssetId,
       fps: state.fps,
+      title: state.title,
     });
     set({
       config: snap.config,
@@ -436,6 +440,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         assets: data.assets,
         transcriptsByAssetId,
         fps,
+        title: data.title?.trim() ? data.title.trim() : "Untitled",
       });
       const layout = layoutFor(data.config, data.assets);
       const timelineSec = snapTimelineSec(layout, 0);
@@ -752,6 +757,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
           assets: nextAssets,
           transcriptsByAssetId,
           fps,
+          title: get().title,
         }),
       });
     },
@@ -804,6 +810,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         assets: state.assets,
         transcriptsByAssetId: nextTranscripts,
         fps: state.fps,
+        title: state.title,
       });
 
       set({

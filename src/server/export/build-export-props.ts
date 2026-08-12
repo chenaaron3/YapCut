@@ -25,7 +25,7 @@ export async function buildExportProps(
 ): Promise<ProjectProps> {
   const project = await db.query.projects.findFirst({
     where: eq(projects.id, projectId),
-    columns: { id: true, config: true },
+    columns: { id: true, config: true, title: true },
     with: {
       assets: {
         orderBy: [asc(assets.sortOrder)],
@@ -108,6 +108,7 @@ export async function buildExportProps(
 
   return buildProjectProps({
     config,
+    title: project.title ?? undefined,
     mediaUrls,
     transcriptsByAssetId,
     assetDurationSec,

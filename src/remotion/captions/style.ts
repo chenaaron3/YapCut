@@ -5,6 +5,18 @@ export const CAPTION_FONT_IDS = [
   "nunito",
   "inter",
   "proxima-nova",
+  "poppins",
+  "caveat",
+  "baloo-2",
+  "oswald",
+  "playfair-display",
+  "anton",
+  "homemade-apple",
+  "pinyon-script",
+  "poiret-one",
+  "great-vibes",
+  "black-ops-one",
+  "bootzy-tm",
 ] as const;
 export type CaptionFontId = (typeof CAPTION_FONT_IDS)[number];
 
@@ -48,6 +60,66 @@ export const CAPTION_FONTS: Record<CaptionFontId, CaptionFontFace> = {
     family:
       '"Proxima Nova", "Proxima Nova Semibold", "Helvetica Neue", Helvetica, Arial, sans-serif',
     weight: 600,
+  },
+  poppins: {
+    id: "poppins",
+    family: '"Poppins", "Helvetica Neue", Helvetica, Arial, sans-serif',
+    weight: 700,
+  },
+  caveat: {
+    id: "caveat",
+    family: '"Caveat", "Segoe Script", cursive',
+    weight: 700,
+  },
+  "baloo-2": {
+    id: "baloo-2",
+    family: '"Baloo 2", "Arial Rounded MT Bold", sans-serif',
+    weight: 800,
+  },
+  oswald: {
+    id: "oswald",
+    family: '"Oswald", "Arial Narrow", Impact, sans-serif',
+    weight: 700,
+  },
+  "playfair-display": {
+    id: "playfair-display",
+    family: '"Playfair Display", Georgia, "Times New Roman", serif',
+    weight: 700,
+  },
+  anton: {
+    id: "anton",
+    family: '"Anton", Impact, "Arial Black", sans-serif',
+    weight: 400,
+  },
+  "homemade-apple": {
+    id: "homemade-apple",
+    family: '"Homemade Apple", "Segoe Script", cursive',
+    weight: 400,
+  },
+  "pinyon-script": {
+    id: "pinyon-script",
+    family: '"Pinyon Script", "Segoe Script", cursive',
+    weight: 400,
+  },
+  "poiret-one": {
+    id: "poiret-one",
+    family: '"Poiret One", "Helvetica Neue", Helvetica, Arial, sans-serif',
+    weight: 400,
+  },
+  "great-vibes": {
+    id: "great-vibes",
+    family: '"Great Vibes", "Segoe Script", cursive',
+    weight: 400,
+  },
+  "black-ops-one": {
+    id: "black-ops-one",
+    family: '"Black Ops One", Impact, "Arial Black", sans-serif',
+    weight: 400,
+  },
+  "bootzy-tm": {
+    id: "bootzy-tm",
+    family: '"Bootzy TM", "BootzyTM", Impact, "Arial Black", sans-serif',
+    weight: 400,
   },
 };
 

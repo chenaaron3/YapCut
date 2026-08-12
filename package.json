@@ -20,10 +20,13 @@
     "typecheck": "tsc --noEmit",
     "remotion:deploy": "tsx scripts/deploy-remotion-lambda.ts",
     "remotion:studio": "remotion studio src/remotion/index.ts",
-    "seed:global-sfx": "tsx --env-file=.env scripts/seed-global-sfx.ts"
+    "seed:global-sfx": "tsx --env-file=.env scripts/seed-global-sfx.ts",
+    "schedule": "tsx --env-file=.env src/schedule/run.ts",
+    "schedule:login": "tsx --env-file=.env src/schedule/local/login.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.7.2",
+    "@aws-sdk/client-cloudfront": "^3.1108.0",
     "@aws-sdk/client-s3": "^3.1106.0",
     "@aws-sdk/cloudfront-signer": "^3.1098.0",
     "@aws-sdk/s3-request-presigner": "^3.1106.0",
@@ -45,6 +48,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.41.0",
+    "googleapis": "^150.0.1",
     "heic-to": "^1.5.2",
     "immer": "^11.1.16",
     "lucide-react": "^1.30.0",
@@ -77,6 +81,7 @@
     "eslint": "^9.23.0",
     "eslint-config-next": "^15.2.3",
     "eslint-plugin-drizzle": "^0.2.3",
+    "playwright": "^1.62.1",
     "postcss": "^8.5.3",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",

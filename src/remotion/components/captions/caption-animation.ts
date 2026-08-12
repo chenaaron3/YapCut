@@ -12,6 +12,13 @@ import type { CaptionWordProp } from "~/remotion/types";
 export const CURSOR_BLINK_FRAMES = 16;
 export const SLIDE_OFFSET_PX = 28;
 
+/** Explicit line break in static overlay text (Shift+Enter). */
+export const LINE_BREAK_TOKEN = "\n";
+
+export function isLineBreakToken(text: string): boolean {
+  return text === LINE_BREAK_TOKEN;
+}
+
 export type CaptionMotion = {
   opacity: number;
   scale: number;
@@ -233,7 +240,9 @@ export function lastVisibleWordIndex(
 ): number {
   let last = -1;
   for (let i = 0; i < words.length; i++) {
-    if (showAll || frame >= words[i]!.startFrame) last = i;
+    if (showAll || frame >= words[i]!.startFrame) {
+      if (!isLineBreakToken(words[i]!.text)) last = i;
+    }
   }
   return last;
 }
@@ -256,30 +265,41 @@ export function typewriterCursorOn(
   );
 }
 
+/** Char count for typewriter stagger: words + implicit spaces; `\n` is one beat. */
+function typewriterCharCount(tokens: string[]): number {
+  let n = 0;
+  for (let i = 0; i < tokens.length; i++) {
+    n += tokens[i]!.length;
+    const next = tokens[i + 1];
+    if (next && !isLineBreakToken(tokens[i]!) && !isLineBreakToken(next)) n += 1;
+  }
+  return n;
+}
+
 /**
  * Static typewriter: word chunks with global char stagger.
- * Spaces between words are implicit (flex gap); timing includes a beat per space.
+ * Spaces between words on the same line are implicit (flex gap); timing
+ * includes a beat per space. `\n` tokens are explicit line breaks (one beat).
  * Letter reveal inside each word uses {@link wordTypewriterCharStart}.
  * Uses {@link TYPEWRITER_CHAR_DELAY_SEC} when it fits; otherwise compresses to `endFrame`.
  */
 export function typewriterWordTimings(
-  text: string,
+  tokens: string[],
   fps: number,
   endFrame: number,
 ): CaptionWordProp[] {
-  const flat = text.replace(/\s+/g, " ").trim();
-  if (flat.length === 0) return [];
+  if (tokens.length === 0) return [];
 
-  const tokens = flat.split(" ").filter((t) => t.length > 0);
-  const totalChars = flat.length;
+  const totalChars = typewriterCharCount(tokens);
   const groupEnd = Math.max(1, endFrame);
 
   const idealDelay = Math.max(1, Math.round(TYPEWRITER_CHAR_DELAY_SEC * fps));
-  const idealTotal = totalChars * idealDelay;
+  const idealTotal = Math.max(1, totalChars) * idealDelay;
   const fitsIdeal = idealTotal <= groupEnd;
 
   const frameAt = (charIndex: number): number => {
     if (fitsIdeal) return charIndex * idealDelay;
+    if (totalChars <= 0) return 0;
     return Math.min(
       groupEnd - 1,
       Math.floor((charIndex / totalChars) * groupEnd),
@@ -291,10 +311,10 @@ export function typewriterWordTimings(
   return tokens.map((wordText, i) => {
     const startFrame = frameAt(charOffset);
     const wordEndFrame = frameAt(charOffset + wordText.length);
-    if (i < tokens.length - 1) {
-      charOffset += wordText.length + 1;
-    } else {
-      charOffset += wordText.length;
+    charOffset += wordText.length;
+    const next = tokens[i + 1];
+    if (next && !isLineBreakToken(wordText) && !isLineBreakToken(next)) {
+      charOffset += 1;
     }
     return {
       text: wordText,

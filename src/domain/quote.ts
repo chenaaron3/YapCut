@@ -1,7 +1,3 @@
-import {
-  normalizeQuoteEmphasisStyle,
-  type QuoteEmphasisStyle,
-} from "~/domain/emphasis-style";
 import { isListicleEdit } from "~/domain/listicle";
 import type {
   Edit,
@@ -15,25 +11,6 @@ const EPS = 0.001;
 
 export function isQuoteEdit(edit: Edit): edit is VfxQuoteEdit {
   return edit.kind === "vfx" && edit.type === "quote";
-}
-
-/** `null` clears quote emphasis override (`emphasisStyle` omitted). */
-export function withQuoteEmphasisStyle(
-  edit: VfxQuoteEdit,
-  emphasisStyle: QuoteEmphasisStyle | null,
-): VfxQuoteEdit {
-  if (emphasisStyle == null) {
-    const rest = { ...edit };
-    delete rest.emphasisStyle;
-    return rest;
-  }
-  const normalized = normalizeQuoteEmphasisStyle(emphasisStyle);
-  if (Object.keys(normalized).length === 0) {
-    const rest = { ...edit };
-    delete rest.emphasisStyle;
-    return rest;
-  }
-  return { ...edit, emphasisStyle: normalized };
 }
 
 /** Place-time defaults for a quote VFX (range filled by `placeEdit`). */

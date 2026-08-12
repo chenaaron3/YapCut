@@ -1,6 +1,6 @@
-import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useEffect } from "react";
 
 import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
@@ -16,8 +16,7 @@ import { api } from "~/utils/api";
 /** Client-only: `next/dynamic` with `ssr:false` steals refs, so load the panel
  *  (not the Remotion Player) dynamically and import Player normally inside. */
 const PlayerPanel = dynamic(
-  () =>
-    import("~/editor/components/PlayerPanel").then((m) => m.PlayerPanel),
+  () => import("~/editor/components/PlayerPanel").then((m) => m.PlayerPanel),
   { ssr: false },
 );
 
@@ -98,8 +97,7 @@ export function EditorShell({ projectId }: Props) {
   const error = useEditor((s) => s.error);
 
   const updateConfig = api.project.updateConfig.useMutation();
-  const updateTranscriptWords =
-    api.project.updateTranscriptWords.useMutation();
+  const updateTranscriptWords = api.project.updateTranscriptWords.useMutation();
 
   const projectQuery = api.project.byId.useQuery(
     { id: projectId },
@@ -210,7 +208,7 @@ export function EditorShell({ projectId }: Props) {
 
   if (projectQuery.isLoading || loadState === "loading") {
     return (
-      <div className="flex h-dvh items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-dvh items-center justify-center text-sm">
         Loading editor…
       </div>
     );
@@ -220,10 +218,12 @@ export function EditorShell({ projectId }: Props) {
   if (project === null || project === undefined) {
     return (
       <div className="flex h-dvh flex-col items-center justify-center gap-3">
-        <p className="text-sm text-muted-foreground">
-          {projectQuery.isError ? "Failed to load project." : "Project not found."}
+        <p className="text-muted-foreground text-sm">
+          {projectQuery.isError
+            ? "Failed to load project."
+            : "Project not found."}
         </p>
-        <Link href="/projects" className="text-sm text-primary underline">
+        <Link href="/projects" className="text-primary text-sm underline">
           Back to projects
         </Link>
       </div>
@@ -237,15 +237,15 @@ export function EditorShell({ projectId }: Props) {
   return (
     <div
       className={cn(
-        "relative grid h-dvh min-h-0 w-full max-w-[100vw] overflow-hidden bg-background text-foreground",
+        "bg-background text-foreground relative grid h-dvh min-h-0 w-full max-w-[100vw] overflow-hidden",
         "grid-rows-[auto_1fr_320px]",
       )}
     >
-      <header className="flex h-11 shrink-0 items-center justify-between border-b border-border bg-panel px-3">
+      <header className="border-border bg-panel flex h-11 shrink-0 items-center justify-between border-b px-3">
         <div className="flex min-w-0 items-center gap-3">
           <Link
             href="/projects"
-            className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground shrink-0 text-xs"
           >
             ← Projects
           </Link>
@@ -262,14 +262,14 @@ export function EditorShell({ projectId }: Props) {
       </header>
 
       {error ? (
-        <div className="pointer-events-none absolute left-0 right-0 top-11 z-20 px-3 py-2">
+        <div className="pointer-events-none absolute top-11 right-0 left-0 z-20 px-3 py-2">
           <div className="pointer-events-auto rounded-md bg-red-950 px-3 py-2 text-sm text-red-200 shadow-lg">
             {error}
           </div>
         </div>
       ) : null}
 
-      <div className="grid min-h-0 min-w-0 grid-cols-[200px_minmax(0,1fr)_280px] border-b border-border">
+      <div className="border-border grid min-h-0 min-w-0 grid-cols-[200px_minmax(0,1fr)_280px] border-b">
         <AssetsPanel />
         <TranscriptPanel />
         <PlayerPanel />

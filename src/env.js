@@ -24,6 +24,8 @@ export const env = createEnv({
     CLOUDFRONT_DOMAIN: z.string().min(1),
     CLOUDFRONT_KEY_PAIR_ID: z.string().min(1),
     CLOUDFRONT_PRIVATE_KEY: z.string().min(1),
+    /** Optional; used by seed:global-sfx to invalidate CDN after SFX overwrites. */
+    CLOUDFRONT_DISTRIBUTION_ID: z.string().min(1).optional(),
     OPENAI_API_KEY: z.string().min(1),
     REPLICATE_API_TOKEN: z.string().min(1),
     /** When "true", start create via Vercel Workflow SDK; else in-process. */
@@ -65,6 +67,7 @@ export const env = createEnv({
     CLOUDFRONT_DOMAIN: process.env.CLOUDFRONT_DOMAIN,
     CLOUDFRONT_KEY_PAIR_ID: process.env.CLOUDFRONT_KEY_PAIR_ID,
     CLOUDFRONT_PRIVATE_KEY: process.env.CLOUDFRONT_PRIVATE_KEY,
+    CLOUDFRONT_DISTRIBUTION_ID: process.env.CLOUDFRONT_DISTRIBUTION_ID,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN,
     USE_VERCEL_WORKFLOW: process.env.USE_VERCEL_WORKFLOW,

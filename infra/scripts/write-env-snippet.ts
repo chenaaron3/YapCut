@@ -48,6 +48,7 @@ const snippet = [
   `AWS_REGION=${stack.BucketRegion}`,
   `AWS_S3_BUCKET=${stack.BucketName}`,
   `CLOUDFRONT_DOMAIN=${stack.CloudFrontDomain}`,
+  `CLOUDFRONT_DISTRIBUTION_ID=${stack.CloudFrontDistributionId}`,
   `CLOUDFRONT_KEY_PAIR_ID=${stack.CloudFrontKeyPairId}`,
   `CLOUDFRONT_PRIVATE_KEY="${privateKeyEnv}"`,
   "# Attach AppMediaPolicyArn to the IAM user behind AWS_ACCESS_KEY_ID for least privilege:",

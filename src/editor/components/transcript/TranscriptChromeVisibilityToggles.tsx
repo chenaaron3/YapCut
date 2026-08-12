@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import { Eye, EyeOff, type LucideIcon } from "lucide-react";
 
 import type { Edit } from "~/domain/project-config";
 import {
@@ -76,17 +76,25 @@ function countEditsByGroup(
 export function TranscriptChromeVisibilityToggles() {
   const visible = useTranscriptUi((s) => s.visible);
   const toggleVisible = useTranscriptUi((s) => s.toggleVisible);
+  const setGroupsVisible = useTranscriptUi((s) => s.setGroupsVisible);
   const edits = useEditor((s) => s.config?.edits ?? []);
   const counts = countEditsByGroup(edits);
 
   const shown = TOGGLES.filter((t) => (counts[t.group] ?? 0) > 0);
   if (shown.length === 0) return null;
 
+  const onCount = shown.filter((t) => visible[t.group]).length;
+  const majorityOn = onCount > shown.length / 2;
+  const MasterIcon = majorityOn ? Eye : EyeOff;
+  const masterLabel = majorityOn
+    ? "Hide all edits in transcript"
+    : "Show all edits in transcript";
+
   return (
     <div
       className="flex items-center gap-0.5"
       role="group"
-      aria-label="Transcript chrome visibility"
+      aria-label="Edit visibility toggles"
     >
       {shown.map(({ group, Icon, onClass, badgeClass }) => {
         const on = visible[group];
@@ -130,6 +138,27 @@ export function TranscriptChromeVisibilityToggles() {
           </button>
         );
       })}
+      <button
+        type="button"
+        title={masterLabel}
+        aria-label={masterLabel}
+        aria-pressed={majorityOn}
+        className={cn(
+          "ml-0.5 rounded p-1 transition-colors",
+          majorityOn
+            ? "bg-foreground/10 text-foreground"
+            : "text-muted-foreground/40 hover:bg-panel-2 hover:text-muted-foreground",
+        )}
+        onClick={(e) => {
+          e.stopPropagation();
+          setGroupsVisible(
+            shown.map((t) => t.group),
+            !majorityOn,
+          );
+        }}
+      >
+        <MasterIcon className="size-3.5" strokeWidth={2.25} />
+      </button>
     </div>
   );
 }

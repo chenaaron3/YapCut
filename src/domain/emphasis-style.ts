@@ -2,14 +2,13 @@ import { z } from "zod";
 
 import {
   CAPTION_FONT_IDS,
-  isCaptionFontId,
   type CaptionFontId,
 } from "~/remotion/captions/style";
 
 /** Default emphasis scale relative to the surrounding caption/quote group. */
 export const DEFAULT_EMPHASIS_SCALE = 1.15;
 
-/** Default emphasis fill when project/quote leave fill unset. */
+/** Default emphasis fill when style leaves fill unset. */
 export const DEFAULT_EMPHASIS_FILL = "#FFE600";
 
 /** Clamp range for emphasis scale (× group fontSize). */
@@ -17,8 +16,10 @@ export const EMPHASIS_SCALE_MIN = 0.5;
 export const EMPHASIS_SCALE_MAX = 2.5;
 
 /**
- * Project-level emphasis look. Sparse — missing keys resolve at props time.
- * Not a TemplateStyle: no y / words-per-group (those stay on the surrounding group).
+ * Emphasis treatment layered on the current caption/quote group style.
+ * Sparse — missing keys resolve at props time.
+ * Same shape for ProjectConfig and VfxQuoteEdit; quote keys merge over project.
+ * Not a TemplateStyle: no y / words-per-group.
  */
 export type EmphasisStyle = {
   scale?: number;
@@ -27,23 +28,12 @@ export type EmphasisStyle = {
 };
 
 /**
- * Quote override on top of project emphasis.
- * `fill` / `fontFamily` may be `null` = inherit surrounding group (block project).
- * Omit = fall through to project → defaults.
- */
-export type QuoteEmphasisStyle = {
-  scale?: number;
-  fill?: string | null;
-  fontFamily?: CaptionFontId | null;
-};
-
-/**
  * Fully resolved emphasis paint for a caption group.
- * `fill` / `fontFamily` null = do not override the group word paint / font.
+ * `fontFamily` null = keep the surrounding group font.
  */
 export type ResolvedEmphasisStyle = {
   scale: number;
-  fill: string | null;
+  fill: string;
   fontFamily: CaptionFontId | null;
 };
 
@@ -52,114 +42,54 @@ export function clampEmphasisScale(n: number): number {
   return Math.min(EMPHASIS_SCALE_MAX, Math.max(EMPHASIS_SCALE_MIN, n));
 }
 
-function asTrimmedFill(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-/** Normalize a persisted project emphasis object (drop invalid keys). */
-export function normalizeEmphasisStyle(value: unknown): EmphasisStyle {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return {};
-  }
-  const src = value as Record<string, unknown>;
-  const out: EmphasisStyle = {};
-  if ("scale" in src && src.scale != null) {
-    const n = Number(src.scale);
-    if (Number.isFinite(n)) out.scale = clampEmphasisScale(n);
-  }
-  if ("fill" in src) {
-    const fill = asTrimmedFill(src.fill);
-    if (fill) out.fill = fill;
-  }
-  if ("fontFamily" in src && isCaptionFontId(src.fontFamily)) {
-    out.fontFamily = src.fontFamily;
-  }
-  return out;
-}
-
 /**
- * Normalize a quote emphasis override.
- * Preserves explicit `null` sentinels for fill / fontFamily.
+ * Merge quote emphasis over project and materialize defaults.
+ * Project is always present; quote keys override when set.
  */
-export function normalizeQuoteEmphasisStyle(
-  value: unknown,
-): QuoteEmphasisStyle {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return {};
-  }
-  const src = value as Record<string, unknown>;
-  const out: QuoteEmphasisStyle = {};
-  if ("scale" in src && src.scale != null) {
-    const n = Number(src.scale);
-    if (Number.isFinite(n)) out.scale = clampEmphasisScale(n);
-  }
-  if ("fill" in src) {
-    if (src.fill === null) out.fill = null;
-    else {
-      const fill = asTrimmedFill(src.fill);
-      if (fill) out.fill = fill;
-    }
-  }
-  if ("fontFamily" in src) {
-    if (src.fontFamily === null) out.fontFamily = null;
-    else if (isCaptionFontId(src.fontFamily)) {
-      out.fontFamily = src.fontFamily;
-    }
-  }
-  return out;
+export function pickEmphasisStyle(
+  project: EmphasisStyle,
+  quote?: EmphasisStyle | null,
+): ResolvedEmphasisStyle {
+  const s = { ...project, ...quote };
+  return {
+    scale: clampEmphasisScale(s.scale ?? DEFAULT_EMPHASIS_SCALE),
+    fill: s.fill?.trim() ? s.fill.trim() : DEFAULT_EMPHASIS_FILL,
+    fontFamily: s.fontFamily ?? null,
+  };
 }
 
-/** Merge quote override over project base into concrete paint knobs. */
-export function resolveEmphasisStyle(
-  project: EmphasisStyle | null | undefined,
-  quote?: QuoteEmphasisStyle | null,
-): ResolvedEmphasisStyle {
-  const base = project ?? {};
-  const over = quote ?? {};
-
-  const scale = clampEmphasisScale(
-    over.scale ?? base.scale ?? DEFAULT_EMPHASIS_SCALE,
-  );
-
-  let fill: string | null;
-  if ("fill" in over) {
-    fill = over.fill ?? null;
-  } else if (base.fill != null && base.fill.trim()) {
-    fill = base.fill.trim();
-  } else {
-    fill = DEFAULT_EMPHASIS_FILL;
+/** Apply a sparse patch; `undefined` values omit that key from the result. */
+export function applyEmphasisPatch(
+  base: EmphasisStyle,
+  partial: EmphasisStyle,
+): EmphasisStyle {
+  const next: EmphasisStyle = { ...base };
+  if ("scale" in partial) {
+    if (partial.scale === undefined) delete next.scale;
+    else next.scale = partial.scale;
   }
-
-  let fontFamily: CaptionFontId | null;
-  if ("fontFamily" in over) {
-    fontFamily = over.fontFamily ?? null;
-  } else if (base.fontFamily != null && isCaptionFontId(base.fontFamily)) {
-    fontFamily = base.fontFamily;
-  } else {
-    fontFamily = null;
+  if ("fill" in partial) {
+    if (partial.fill === undefined) delete next.fill;
+    else next.fill = partial.fill;
   }
-
-  return { scale, fill, fontFamily };
+  if ("fontFamily" in partial) {
+    if (partial.fontFamily === undefined) delete next.fontFamily;
+    else next.fontFamily = partial.fontFamily;
+  }
+  return next;
 }
 
 const captionFontEnum = z.enum(
   CAPTION_FONT_IDS as unknown as [CaptionFontId, ...CaptionFontId[]],
 );
 
-export const emphasisStyleSchema = z
-  .object({
-    scale: z.number().optional(),
-    fill: z.string().optional(),
-    fontFamily: captionFontEnum.optional(),
-  })
-  .default({});
+const emphasisStyleObjectSchema = z.object({
+  scale: z.number().optional(),
+  fill: z.string().optional(),
+  fontFamily: captionFontEnum.optional(),
+});
 
-export const quoteEmphasisStyleSchema = z
-  .object({
-    scale: z.number().optional(),
-    fill: z.string().nullable().optional(),
-    fontFamily: captionFontEnum.nullable().optional(),
-  })
-  .optional();
+export const emphasisStyleSchema = emphasisStyleObjectSchema.default({});
+
+/** Optional quote override — same shape as project; omit = use project. */
+export const optionalEmphasisStyleSchema = emphasisStyleObjectSchema.optional();

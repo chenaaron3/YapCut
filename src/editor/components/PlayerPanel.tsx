@@ -5,6 +5,7 @@ import type { PlayerRef } from "@remotion/player";
 
 import { TransformOverlay } from "~/editor/components/player/TransformOverlay";
 import {
+  ensurePlayerAudible,
   getPlayer,
   peekPlayAfterSeek,
   setPlayer,
@@ -40,6 +41,11 @@ export function PlayerPanel() {
   const setPlayerRef = useCallback((instance: PlayerRef | null) => {
     ref.current = instance;
     setPlayer(instance);
+  }, []);
+
+  /** Clear Remotion sticky-mute before clickToPlay runs in the same gesture. */
+  const onPlayGesture = useCallback(() => {
+    ensurePlayerAudible(ref.current);
   }, []);
 
   useLayoutEffect(() => {
@@ -113,6 +119,7 @@ export function PlayerPanel() {
           style={{
             aspectRatio: `${COMPOSITION_WIDTH} / ${COMPOSITION_HEIGHT}`,
           }}
+          onPointerDownCapture={onPlayGesture}
         >
           <Player
             ref={setPlayerRef}

@@ -1,9 +1,16 @@
 import { relations, sql } from "drizzle-orm";
-import { index, pgTableCreator, primaryKey } from "drizzle-orm/pg-core";
+import {
+  index,
+  pgEnum,
+  pgTableCreator,
+  primaryKey,
+  unique,
+} from "drizzle-orm/pg-core";
 import type { AdapterAccount } from "next-auth/adapters";
 
 import type { ProjectConfig } from "~/domain/project-config";
 import type { ProjectStatus } from "~/domain/project-status";
+import type { PlatformPublishStatus } from "~/domain/schedule";
 import type { TranscriptStatus, TranscriptWord } from "~/domain/transcript";
 
 /**
@@ -12,6 +19,13 @@ import type { TranscriptStatus, TranscriptWord } from "~/domain/transcript";
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
 export const createTable = pgTableCreator((name) => `talking-head-2_${name}`);
+
+/** Shared by ScheduleSettings.platforms[] and PlatformPublish.platform. */
+export const platformIdEnum = pgEnum("talking_head_2_platform_id", [
+  "youtube",
+  "instagram",
+  "tiktok",
+]);
 
 export const users = createTable("user", (d) => ({
   id: d
@@ -30,9 +44,11 @@ export const users = createTable("user", (d) => ({
   image: d.varchar({ length: 255 }),
 }));
 
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
   accounts: many(accounts),
   projects: many(projects),
+  scheduleSettings: one(scheduleSettings),
+  scheduleEntries: many(scheduleEntries),
 }));
 
 export const accounts = createTable(
@@ -119,9 +135,11 @@ export const projects = createTable(
     configUpdatedAt: d.timestamp({ withTimezone: true }),
     /** Object key in the Remotion Lambda bucket (`exportBucketName`). */
     exportS3Key: d.varchar({ length: 1024 }),
+    /** Styled Cover still key in the same Remotion bucket as the video export. */
+    coverS3Key: d.varchar({ length: 1024 }),
     /** Remotion Lambda render id while `status === "exporting"`. */
     exportRenderId: d.varchar({ length: 128 }),
-    /** Remotion Lambda bucket (progress + final MP4). Kept after export for Download. */
+    /** Remotion Lambda bucket (progress + final MP4 + Cover). Kept after export for Download. */
     exportBucketName: d.varchar({ length: 255 }),
     createdAt: d
       .timestamp({ withTimezone: true })
@@ -139,7 +157,137 @@ export const projects = createTable(
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   user: one(users, { fields: [projects.userId], references: [users.id] }),
   assets: many(assets),
+  scheduleEntry: one(scheduleEntries),
 }));
+
+/** Per-user cadence + platform list for schedule. */
+export const scheduleSettings = createTable("schedule_settings", (d) => ({
+  userId: d
+    .varchar({ length: 255 })
+    .notNull()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** Daily wall-clock slot HH:MM (in `timezone`). */
+  time: d.varchar({ length: 8 }).notNull().default("17:00"),
+  timezone: d.varchar({ length: 64 }).notNull().default("America/New_York"),
+  platforms: platformIdEnum("platforms")
+    .array()
+    .notNull()
+    .default(
+      sql`ARRAY['youtube','instagram','tiktok']::talking_head_2_platform_id[]`,
+    ),
+  updatedAt: d
+    .timestamp({ withTimezone: true })
+    .$defaultFn(() => /* @__PURE__ */ new Date())
+    .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+}));
+
+export const scheduleSettingsRelations = relations(
+  scheduleSettings,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [scheduleSettings.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+/** One Project slotted for publish (strict 1:1). */
+export const scheduleEntries = createTable(
+  "schedule_entry",
+  (d) => ({
+    id: d
+      .varchar({ length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    projectId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .unique()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    scheduledAt: d.timestamp({ withTimezone: true }).notNull(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    updatedAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  }),
+  (t) => [
+    index("schedule_entry_user_id_idx").on(t.userId),
+    index("schedule_entry_scheduled_at_idx").on(t.scheduledAt),
+  ],
+);
+
+export const scheduleEntriesRelations = relations(
+  scheduleEntries,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [scheduleEntries.userId],
+      references: [users.id],
+    }),
+    project: one(projects, {
+      fields: [scheduleEntries.projectId],
+      references: [projects.id],
+    }),
+    platformPublishes: many(platformPublishes),
+  }),
+);
+
+/** Current publish state per platform on a ScheduleEntry. */
+export const platformPublishes = createTable(
+  "platform_publish",
+  (d) => ({
+    id: d
+      .varchar({ length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    scheduleEntryId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .references(() => scheduleEntries.id, { onDelete: "cascade" }),
+    platform: platformIdEnum("platform").notNull(),
+    status: d
+      .varchar({ length: 32 })
+      .$type<PlatformPublishStatus>()
+      .notNull()
+      .default("pending"),
+    postUrl: d.varchar({ length: 2048 }),
+    lastError: d.text(),
+    updatedAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  }),
+  (t) => [
+    index("platform_publish_entry_idx").on(t.scheduleEntryId),
+    unique("platform_publish_entry_platform_uid").on(
+      t.scheduleEntryId,
+      t.platform,
+    ),
+  ],
+);
+
+export const platformPublishesRelations = relations(
+  platformPublishes,
+  ({ one }) => ({
+    scheduleEntry: one(scheduleEntries, {
+      fields: [platformPublishes.scheduleEntryId],
+      references: [scheduleEntries.id],
+    }),
+  }),
+);
 
 export const assets = createTable(
   "asset",

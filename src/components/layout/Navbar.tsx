@@ -15,6 +15,12 @@ export function Navbar() {
         Talking Head
       </Link>
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <Link
+          href="/schedule"
+          className="hidden transition hover:text-foreground sm:inline"
+        >
+          Schedule
+        </Link>
         <span className="hidden sm:inline">{session?.user?.email}</span>
         <Button
           variant="link"

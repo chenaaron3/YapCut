@@ -2,14 +2,12 @@ import { z } from 'zod';
 
 import {
   emphasisStyleSchema,
-  normalizeEmphasisStyle,
-  quoteEmphasisStyleSchema,
+  optionalEmphasisStyleSchema,
   type EmphasisStyle,
-  type QuoteEmphasisStyle,
 } from "~/domain/emphasis-style";
 import type { LocalTime, TimelineTime } from "~/domain/time";
 
-export type { EmphasisStyle, QuoteEmphasisStyle };
+export type { EmphasisStyle };
 
 /** Catalog base + sparse user overrides. */
 export type TemplateStyle = {
@@ -68,8 +66,11 @@ export type VfxQuoteEdit = EditBase & {
   kind: "vfx";
   type: "quote";
   style?: TemplateStyle;
-  /** Sparse override on project `emphasisStyle` (omit = use project). */
-  emphasisStyle?: QuoteEmphasisStyle;
+  /**
+   * Sparse merge over project `emphasisStyle` for emphasized words in this quote.
+   * Omit / `{}` = use project only.
+   */
+  emphasisStyle?: EmphasisStyle;
 };
 
 /**
@@ -151,8 +152,9 @@ export type ProjectConfig = {
    */
   listicleStyle: TemplateStyle;
   /**
-   * Shared emphasis look for caption words (`emphasized`).
-   * Quotes may sparse-override via `VfxQuoteEdit.emphasisStyle`.
+   * Shared emphasis treatment for `emphasized` words.
+   * Applied after the caption/quote group style. Quotes may replace via
+   * `VfxQuoteEdit.emphasisStyle`.
    */
   emphasisStyle: EmphasisStyle;
   /**
@@ -221,7 +223,7 @@ const vfxQuoteEditSchema = editBaseSchema.extend({
   kind: z.literal("vfx"),
   type: z.literal("quote"),
   style: templateStyleSchema.optional(),
-  emphasisStyle: quoteEmphasisStyleSchema,
+  emphasisStyle: optionalEmphasisStyleSchema,
 });
 
 const vfxListicleEditSchema = editBaseSchema.extend({
@@ -292,11 +294,7 @@ export const projectConfigSchema = z.object({
 });
 
 export function parseProjectConfig(value: unknown): ProjectConfig {
-  const parsed = projectConfigSchema.parse(value);
-  return {
-    ...parsed,
-    emphasisStyle: normalizeEmphasisStyle(parsed.emphasisStyle),
-  };
+  return projectConfigSchema.parse(value);
 }
 
 export function nextEditId(edits: readonly Pick<EditBase, "id">[]): EditId {

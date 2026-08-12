@@ -3,6 +3,7 @@ import { AbsoluteFill, Series, useVideoConfig } from "remotion";
 
 import { BRollOverlay } from "~/remotion/components/BRollOverlay";
 import { Captions } from "~/remotion/components/Captions";
+import { EnsureLocalFonts } from "~/remotion/components/EnsureLocalFonts";
 import { ListicleOverlay } from "~/remotion/components/ListicleOverlay";
 import { ScreenShake } from "~/remotion/components/ScreenShake";
 import { SfxAudio } from "~/remotion/components/SfxAudio";
@@ -53,6 +54,7 @@ export function TalkingHead({
 }: TalkingHeadProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
+      <EnsureLocalFonts />
       <ScreenShake shakes={shakes}>
         <Zoom zooms={zooms}>
           {sections.length > 0 ? (

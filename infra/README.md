@@ -33,6 +33,7 @@ Signing **private** key never goes into CloudFormation — only the public key i
 | `BucketName` | `AWS_S3_BUCKET` |
 | `BucketRegion` | `AWS_REGION` |
 | `CloudFrontDomain` | `CLOUDFRONT_DOMAIN` |
+| `CloudFrontDistributionId` | `CLOUDFRONT_DISTRIBUTION_ID` |
 | `CloudFrontKeyPairId` | `CLOUDFRONT_KEY_PAIR_ID` |
 | (local PEM) | `CLOUDFRONT_PRIVATE_KEY` |
 | `AppMediaPolicyArn` | Attach to app IAM user |

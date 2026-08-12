@@ -10,6 +10,10 @@ type State = {
   /** Which edit kinds show chrome in the transcript (session-only). */
   visible: TranscriptChromeVisibility;
   toggleVisible: (group: TranscriptChromeGroup) => void;
+  setGroupsVisible: (
+    groups: readonly TranscriptChromeGroup[],
+    on: boolean,
+  ) => void;
 
   /** At most one marker cluster expanded (word globalIndex). */
   expandedWordIndex: number | null;
@@ -25,6 +29,12 @@ export const useTranscriptUi = create<State>((set, get) => ({
     set((s) => ({
       visible: { ...s.visible, [group]: !s.visible[group] },
     })),
+  setGroupsVisible: (groups, on) =>
+    set((s) => {
+      const visible = { ...s.visible };
+      for (const group of groups) visible[group] = on;
+      return { visible };
+    }),
 
   expandedWordIndex: null,
   expandCluster: (wordIndex) => set({ expandedWordIndex: wordIndex }),

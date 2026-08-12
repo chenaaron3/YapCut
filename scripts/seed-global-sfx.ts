@@ -1,6 +1,8 @@
 /**
  * Upload public/sfx to S3 and insert global Asset rows (`projectId` null).
- * Idempotent on `s3Key`. Prunes obsolete global audio not in the keep set.
+ * Idempotent on `s3Key`. Re-uploads when local bytes differ (size/MD5) or `--force`.
+ * Invalidates CloudFront for overwritten keys when `CLOUDFRONT_DISTRIBUTION_ID` is set.
+ * Prunes obsolete global audio not in the keep set.
  *
  * Layout:
  *   public/sfx/<role>/<intensity>/*   — AI companion pools
@@ -8,8 +10,10 @@
  *
  * Usage:
  *   npm run seed:global-sfx
+ *   npm run seed:global-sfx -- --force
  *   npm run seed:global-sfx -- --dir /path/to/public/sfx
  */
+import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -26,6 +30,7 @@ import {
 } from "~/domain/ai-sfx-pack";
 import { db } from "~/server/db";
 import { assets } from "~/server/db/schema";
+import { invalidateCloudFrontPaths } from "~/server/media/cloudfront";
 import { globalSfxKey } from "~/server/media/keys";
 import { deleteObject, headObject, putObject } from "~/server/media/s3";
 
@@ -42,6 +47,33 @@ function contentTypeFor(filePath: string): string {
   if (ext === ".wav") return "audio/wav";
   if (ext === ".mp3") return "audio/mpeg";
   throw new Error(`Unsupported audio extension: ${ext}`);
+}
+
+function md5Hex(body: Buffer): string {
+  return createHash("md5").update(body).digest("hex");
+}
+
+/** Strip quotes from S3 ETag; multipart ETags contain `-` and are not plain MD5. */
+function normalizeEtag(etag: string | undefined): string | null {
+  if (!etag) return null;
+  const bare = etag.replaceAll('"', "");
+  if (bare.includes("-")) return null;
+  return bare.toLowerCase();
+}
+
+function objectMatchesLocal(
+  head: { contentLength?: number; etag?: string },
+  body: Buffer,
+): boolean {
+  if (head.contentLength != null && head.contentLength !== body.length) {
+    return false;
+  }
+  const remoteMd5 = normalizeEtag(head.etag);
+  if (remoteMd5 != null && remoteMd5 !== md5Hex(body)) {
+    return false;
+  }
+  // Same size and (matching MD5 or multipart/unknown etag) → treat as current.
+  return head.contentLength === body.length;
 }
 
 async function probeDurationSec(filePath: string): Promise<number | null> {
@@ -83,14 +115,15 @@ async function walkAudioFiles(dir: string): Promise<string[]> {
   return out.sort();
 }
 
-function parseDirArg(argv: string[]): string {
+function parseArgs(argv: string[]): { sfxDir: string; force: boolean } {
+  const force = argv.includes("--force");
   const idx = argv.indexOf("--dir");
   if (idx >= 0) {
     const value = argv[idx + 1];
     if (!value) throw new Error("--dir requires a path");
-    return path.resolve(value);
+    return { sfxDir: path.resolve(value), force };
   }
-  return DEFAULT_SFX_DIR;
+  return { sfxDir: DEFAULT_SFX_DIR, force };
 }
 
 function isKeepRelativePath(relativePath: string): boolean {
@@ -99,8 +132,10 @@ function isKeepRelativePath(relativePath: string): boolean {
 }
 
 async function main() {
-  const sfxDir = parseDirArg(process.argv.slice(2));
-  console.log(`[seed-global-sfx] source=${sfxDir}`);
+  const { sfxDir, force } = parseArgs(process.argv.slice(2));
+  console.log(
+    `[seed-global-sfx] source=${sfxDir}${force ? " force=true" : ""}`,
+  );
 
   const files = await walkAudioFiles(sfxDir);
   if (files.length === 0) {
@@ -171,9 +206,11 @@ async function main() {
   const byKey = new Map(existing.map((a) => [a.s3Key, a]));
 
   let uploaded = 0;
+  let reuploaded = 0;
   let skipped = 0;
   let inserted = 0;
   let updated = 0;
+  const invalidateKeys: string[] = [];
 
   for (const relativePath of [...keepRelative].sort()) {
     const filePath = path.join(sfxDir, ...relativePath.split("/"));
@@ -183,10 +220,19 @@ async function main() {
     const body = await readFile(filePath);
 
     const head = await headObject(s3Key);
+    let didReupload = false;
     if (!head) {
       await putObject({ key: s3Key, body, contentType });
       uploaded += 1;
       console.log(`  upload  ${relativePath}`);
+    } else if (force || !objectMatchesLocal(head, body)) {
+      await putObject({ key: s3Key, body, contentType });
+      reuploaded += 1;
+      didReupload = true;
+      invalidateKeys.push(s3Key);
+      console.log(
+        `  reupload  ${relativePath}${force ? " (--force)" : " (content changed)"}`,
+      );
     } else {
       skipped += 1;
     }
@@ -223,6 +269,10 @@ async function main() {
       patch.originalFilename = relativePath;
       needsUpdate = true;
     }
+    // Bump updatedAt when bytes were overwritten even if duration unchanged.
+    if (didReupload) {
+      needsUpdate = true;
+    }
     if (needsUpdate) {
       await db.update(assets).set(patch).where(eq(assets.id, row.id));
       updated += 1;
@@ -248,8 +298,34 @@ async function main() {
     console.log(`  prune  ${row.s3Key} (${row.id})`);
   }
 
+  if (invalidateKeys.length > 0) {
+    try {
+      const result = await invalidateCloudFrontPaths(invalidateKeys);
+      if (result) {
+        console.log(
+          `  invalidate  CloudFront ${result.id} (${result.paths.length} paths)`,
+        );
+      } else {
+        console.warn(
+          `  invalidate  skipped — set CLOUDFRONT_DISTRIBUTION_ID to bust CDN cache after reupload.\n` +
+            `    aws cloudfront create-invalidation --distribution-id <id> --paths ${invalidateKeys
+              .map((k) => `/${k}`)
+              .join(" ")}`,
+        );
+      }
+    } catch (error) {
+      console.warn(
+        `  invalidate  failed: ${error instanceof Error ? error.message : error}\n` +
+          `    Ensure AppMediaPolicy includes cloudfront:CreateInvalidation, or run:\n` +
+          `    aws cloudfront create-invalidation --distribution-id <id> --paths ${invalidateKeys
+            .map((k) => `/${k}`)
+            .join(" ")}`,
+      );
+    }
+  }
+
   console.log(
-    `[seed-global-sfx] done uploaded=${uploaded} s3Skipped=${skipped} inserted=${inserted} updated=${updated} pruned=${pruned}`,
+    `[seed-global-sfx] done uploaded=${uploaded} reuploaded=${reuploaded} s3Skipped=${skipped} inserted=${inserted} updated=${updated} pruned=${pruned}`,
   );
   process.exit(0);
 }

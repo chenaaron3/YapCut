@@ -1,6 +1,6 @@
 # Talking Head 2
 
-Domain language for the project editor, create pipeline, and Remotion render path. Architecture reviews and refactors should use these terms.
+Domain language for the project editor, create pipeline, Remotion render/export path, and publish schedule. Architecture reviews and refactors should use these terms.
 
 Production rewrite of the `talking-head` prototype: T3 stack, S3 assets, Postgres config/transcripts, multi A-roll, unified edits.
 
@@ -25,8 +25,8 @@ Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set
 _Avoid_: is_visual / is_audio booleans, public URLs as source of truth
 
 **Transcript**:
-Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: two AI passes unioned — sparse across the whole script, then denser (most content words) inside each quote punch phrase. Look comes from Project field `emphasisStyle` (scale × group size, fill, optional font); quotes may sparse-override via `VfxQuoteEdit.emphasisStyle` (`fill`/`fontFamily` null = inherit group). Layout (y / words-per-group) always follows the surrounding caption/quote style.
-_Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type, emphasis owning y or captionsAtATime
+Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: two AI passes unioned — sparse across the whole script, then denser (most content words) inside each quote punch phrase. Look is an `EmphasisStyle` treatment layered on the current group style (caption, or caption→quote): scale × group size, fill, optional font. Project field `emphasisStyle` is the base; `VfxQuoteEdit.emphasisStyle` sparse-merges on top. Layout (y / words-per-group) always follows the surrounding group.
+_Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type, null inherit-group sentinels, emphasis owning y or captionsAtATime
 
 **Aroll keep** (`ArollKeep`):
 One segment to keep from an A-roll asset: `{ assetId, start, end }` in **local** asset time. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the timeline / output. Keeps for the same asset are **contiguous** in that list (no interleaving another asset between two keeps of one asset — you cannot cut part of a clip and place it after a different asset).
@@ -94,6 +94,32 @@ Same spirit as prototype: omit means identity at props time; place may write on-
 
 **Clean break**:
 No dual-read of prototype YAML shapes, string edit ids, or `cuts` delete lists.
+
+### Publish / schedule
+
+**ScheduleEntry**:
+One Project slotted for platform publish. Created by an explicit app “Add to schedule” action (not by export, not by the CLI). Requires the Project to be `ready` with both export video and **Cover** keys present. Owns the publish slot (`scheduledAt`), assigned once at Add from cadence and not changed afterward. At most one per Project (v1). Does not snapshot title or media — those are read live from the Project at publish time. Platform outcomes live on child **PlatformPublish** rows. Once created, not deleted or rescheduled.
+_Avoid_: Manifest / ManifestEntry as the persisted document; Episode; stuffing publish URLs onto the Project row; republish history as extra ScheduleEntries; auto-queue on export; CLI creating queue rows; freezing export keys onto the entry; removing or rescheduling ScheduleEntries; queuing without Cover
+
+**PlatformPublish**:
+Current publish state for one platform on one ScheduleEntry (unique per entry+platform). Seeded as `pending` for each platform in **ScheduleSettings** when the entry is added. Transitions: `pending` | `failed` → `uploading` → `succeeded` (post URL) | `failed` (last error). Retry skips `succeeded`. No attempt history in v1.
+_Avoid_: nullable URL fields on ScheduleEntry as the only signal; append-only attempt rows; treating “has URL” as the sole state machine; modeling platform-native “scheduled vs live” beyond the returned URL
+
+**Cover**:
+Styled still for platform thumbnails: first keep frame of the export plus large centered title treatment (prototype look — uppercase yellow title, heavy black stroke). First-class Project export artifact persisted like the video (`coverS3Key` on Project, not an Asset). Required input to **Publisher**. Title text on the still is whatever `Project.title` was at export time; rename after export without re-export is an accepted mismatch vs live upload title.
+_Avoid_: auto-thumb only; ad-hoc ffmpeg first-frame without title styling; local-only `cover.jpg`; Cover as library Asset; deriving cover only at schedule time; blocking publish on title/Cover drift
+
+**Platform**:
+A distribution destination for a ScheduleEntry’s export (v1: youtube, instagram, tiktok).
+_Avoid_: channel, network (ambiguous)
+
+**Publisher**:
+Port that posts one Platform’s media for a ScheduleEntry and returns the resulting post URL (or fails). Orchestration (cadence, ScheduleEntry / PlatformPublish updates) stays outside the Publisher. Inputs are title, publish slot, and opaque media refs for the export (and cover when required) — not local filesystem paths. v1 implementations run in the local schedule CLI.
+_Avoid_: baking Playwright/API details into the schedule domain; path-based schedule inputs; swapping the whole run/DB loop just to change how uploads happen; running Playwright Publishers on Vercel
+
+**ScheduleSettings**:
+Per-user publish cadence and platform list (daily slot time, timezone, ordered platforms). Source of truth in the DB so the app and CLI share one config. Changing platforms/cadence affects **new** ScheduleEntries only — already-queued PlatformPublish rows are not rewritten.
+_Avoid_: schedule.config.yaml as source of truth; env-only cadence; stuffing cadence onto ScheduleEntry; auto-reconciling old entries when settings change
 
 ### Coordinates
 
@@ -175,7 +201,10 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 
 
 **Export workflow**:
-Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920 @ 30fps.
+Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920 @ 30fps. On success writes video export key and **Cover** key on the Project.
+
+**Schedule run** (v1):
+Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (`scheduledAt ≤ now`, oldest first). Triggers: local app **Add to schedule** (background, that Project, skips due filter) and the local CLI (`--project`; `--force` ignores the due filter). Downloads live Project export + **Cover**, invokes **Publisher**s, updates status. Reads **ScheduleSettings** from DB. Does not create queue rows. Not on Vercel.
 
 ## Relationships
 
@@ -185,9 +214,13 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - Edits use timeline time; arolls use local time; Remotion maps timeline → output
 - On-screen title is a `vfx`/`text` Edit (seeded, deletable); `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
-- Emphasis look is a Project field (`emphasisStyle`); quote may sparse-override; AI never writes emphasis style
+- Emphasis look is a Project field (`emphasisStyle`); quote may sparse-merge the same `EmphasisStyle` shape on top; AI never writes emphasis style
 - Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
 - Companion SFX are sibling `sfx` edits; AI chooses optional `role.intensity` from the AI SFX pack only; concrete Asset is hash-picked from the seeded pool
+- A **Project** has at most one **ScheduleEntry** (v1 strict 1:1); publish media is always the Project’s **current** title, export video key, and **Cover** key (nothing frozen onto the entry except the slot)
+- A **ScheduleEntry** has many **PlatformPublish** rows — at most one current row per platform (no attempt history in v1)
+- **Publisher** consumes opaque refs to that export video + Cover (not local filesystem paths)
+- A user has one **ScheduleSettings**; cadence for new **ScheduleEntry** slots is derived from those settings plus existing entries’ `scheduledAt`
 
 ## Composition matrix (v1)
 
@@ -216,8 +249,30 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 ## Flagged ambiguities
 
 - Exact default duration/range for seeded title `vfx/text`
+- ~~When **ScheduleEntry** is created (export time vs first schedule CLI run)~~ → explicit app **Add to schedule**; CLI only uploads/retries queued entries
+- ~~Whether title / media refs are frozen on **ScheduleEntry** at queue time vs always read live from Project~~ → **live from Project** (title, export, Cover); entry stores slot + platform state only
+- ~~**PlatformPublish** status set / when rows are seeded~~ → seeded `pending` from **ScheduleSettings.platforms** at Add; `pending|failed` → `uploading` → `succeeded`|`failed`
+- ~~If **ScheduleSettings** platforms change after entries are queued~~ → settings apply to **new** entries only; existing PlatformPublish rows unchanged
+- ~~Remove / reschedule a **ScheduleEntry**~~ → **no remove, no reschedule** — slot is fixed at Add; entries are permanent
+- ~~Add-to-schedule prerequisites (export + Cover required?)~~ → require export video + **Cover** keys (Project `ready`)
+- ~~v1 UI surface (settings + queue + add)~~ → ScheduleSettings + queue list + Add (no remove/reschedule/calendar)
+- ~~CLI invocation shape (all incomplete vs per-project)~~ → due incomplete by default (`scheduledAt ≤ now`); `--project`; `--force` for early upload; local **Add to schedule** starts the same run in the background with `--force` for that Project
+- ~~Cover still shows title baked at export while Publisher caption/title uses live `Project.title` if renamed after export~~ → **acceptable**; re-export if thumb text must match
+
+## Example dialogue
+
+> **Dev:** "After export, do I run schedule to create the manifest row?"
+> **Domain expert:** "No — **Add to schedule** in the app creates the **ScheduleEntry** and seeds **PlatformPublish** rows. Locally that also starts the upload run in the background. The CLI retries due incomplete platforms."
+>
+> **Dev:** "If I re-export before the CLI runs, which video goes out?"
+> **Domain expert:** "The live Project export and **Cover** — nothing is frozen on the entry except `scheduledAt`."
+>
+> **Dev:** "Can I delete a ScheduleEntry after YouTube succeeded but TikTok failed?"
+> **Domain expert:** "You can’t delete ScheduleEntries at all — the queue is history. Retry TikTok."
+
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
-- Poster/thumbnail for projects grid
+- Poster/thumbnail for projects grid (may reuse **Cover**)
+- ~~whether schedule **Publisher**s require a separate cover Asset vs frame-from-export~~ → **Cover** is a first-class styled Project output (prototype title-on-first-frame look), required for Publisher
 - ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle/shake → SFX → Zoom; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary)
 - ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority reveal/tick → quote ping → punch-in motion (pack still has `build` but AI does not candidate it)
 - ~~Aggressive quote cadence hard quota vs soft~~ → **key-phrase only** (~3–10 words; first quote from word 0; ≥5 words between — spaced subsets)

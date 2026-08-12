@@ -2,16 +2,19 @@ import type { FC } from "react";
 import type { CalculateMetadataFunction } from "remotion";
 import { Composition } from "remotion";
 
+import { Cover } from "~/remotion/Cover";
 import {
   COMPOSITION_FPS,
   COMPOSITION_HEIGHT,
   COMPOSITION_ID,
   COMPOSITION_WIDTH,
+  COVER_COMPOSITION_ID,
 } from "~/remotion/constants";
 import { TalkingHead, type TalkingHeadProps } from "~/remotion/TalkingHead";
 import type { ProjectProps } from "~/remotion/types";
 
 const defaultProps: ProjectProps = {
+  title: "Untitled",
   fps: COMPOSITION_FPS,
   width: COMPOSITION_WIDTH,
   height: COMPOSITION_HEIGHT,
@@ -35,17 +38,36 @@ const calculateMetadata: CalculateMetadataFunction<TalkingHeadProps> = ({
   height: COMPOSITION_HEIGHT,
 });
 
+const calculateCoverMetadata: CalculateMetadataFunction<ProjectProps> = () => ({
+  fps: COMPOSITION_FPS,
+  durationInFrames: 1,
+  width: COMPOSITION_WIDTH,
+  height: COMPOSITION_HEIGHT,
+});
+
 export const RemotionRoot: FC = () => {
   return (
-    <Composition
-      id={COMPOSITION_ID}
-      component={TalkingHead}
-      durationInFrames={defaultProps.durationInFrames}
-      fps={COMPOSITION_FPS}
-      width={COMPOSITION_WIDTH}
-      height={COMPOSITION_HEIGHT}
-      defaultProps={defaultProps}
-      calculateMetadata={calculateMetadata}
-    />
+    <>
+      <Composition
+        id={COMPOSITION_ID}
+        component={TalkingHead}
+        durationInFrames={defaultProps.durationInFrames}
+        fps={COMPOSITION_FPS}
+        width={COMPOSITION_WIDTH}
+        height={COMPOSITION_HEIGHT}
+        defaultProps={defaultProps}
+        calculateMetadata={calculateMetadata}
+      />
+      <Composition
+        id={COVER_COMPOSITION_ID}
+        component={Cover}
+        durationInFrames={1}
+        fps={COMPOSITION_FPS}
+        width={COMPOSITION_WIDTH}
+        height={COMPOSITION_HEIGHT}
+        defaultProps={defaultProps}
+        calculateMetadata={calculateCoverMetadata}
+      />
+    </>
   );
 };

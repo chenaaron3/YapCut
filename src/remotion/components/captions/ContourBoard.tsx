@@ -45,6 +45,7 @@ export const ContourBoard: React.FC<{
   const cloneLayer = (layer: "fill" | "text") =>
     items.map((child, i) => {
       if (!isValidElement(child)) return child;
+      if (child.type === "br") return child;
       const el = child as ReactElement<{ silhouette?: boolean }>;
       return cloneElement(el, {
         key: `${layer}-${el.key ?? i}`,

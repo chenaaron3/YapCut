@@ -28,6 +28,7 @@ const config = {
     "@vercel/oidc",
     "xdg-app-paths",
     "xdg-portable",
+    "playwright",
   ],
 
   /**

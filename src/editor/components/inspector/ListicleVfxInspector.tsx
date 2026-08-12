@@ -42,6 +42,7 @@ export function ListicleVfxInspector({ edit }: { edit: VfxListicleEdit }) {
         id="listicle-value"
         label="Value"
         value={edit.valueText}
+        multiline
         onLiveChange={(valueText) => patchEdit(edit.id, { valueText }, true)}
       />
 
