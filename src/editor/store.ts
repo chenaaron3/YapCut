@@ -40,6 +40,7 @@ import {
 
 import type { ArollLayoutCell } from "~/domain/arolls";
 import type { EditPatch, EditSeed } from "~/domain/edits";
+import type { EmphasisStyle } from "~/domain/emphasis-style";
 import type { ProjectConfig, TemplateStyle } from "~/domain/project-config";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 import type { ProjectProps } from "~/remotion/types";
@@ -157,6 +158,8 @@ type EditorActions = {
   patchCaptions: (patch: Partial<TemplateStyle>, live?: boolean) => void;
   /** Patch Project field `listicleStyle` (shared by all listicle edits). */
   patchListicleStyle: (patch: Partial<TemplateStyle>, live?: boolean) => void;
+  /** Replace Project field `emphasisStyle`. */
+  patchEmphasisStyle: (next: EmphasisStyle, live?: boolean) => void;
   /** Patch fields on an existing edit (discriminant fixed). */
   patchEdit: (id: number, patch: EditPatch, live?: boolean) => void;
   /** Patch a projected word (writes through to the asset transcript). */
@@ -888,6 +891,15 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
             ? { overrides }
             : {}),
         };
+      });
+      commit({ config: next, transcriptsByAssetId }, { live });
+    },
+
+    patchEmphasisStyle: (nextStyle, live = false) => {
+      const { config, transcriptsByAssetId } = get();
+      if (!config) return;
+      const next = produce(config, (draft) => {
+        draft.emphasisStyle = nextStyle;
       });
       commit({ config: next, transcriptsByAssetId }, { live });
     },

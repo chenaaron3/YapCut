@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
+import {
+  emphasisStyleSchema,
+  normalizeEmphasisStyle,
+  quoteEmphasisStyleSchema,
+  type EmphasisStyle,
+  type QuoteEmphasisStyle,
+} from "~/domain/emphasis-style";
 import type { LocalTime, TimelineTime } from "~/domain/time";
+
+export type { EmphasisStyle, QuoteEmphasisStyle };
 
 /** Catalog base + sparse user overrides. */
 export type TemplateStyle = {
@@ -59,6 +68,8 @@ export type VfxQuoteEdit = EditBase & {
   kind: "vfx";
   type: "quote";
   style?: TemplateStyle;
+  /** Sparse override on project `emphasisStyle` (omit = use project). */
+  emphasisStyle?: QuoteEmphasisStyle;
 };
 
 /**
@@ -140,6 +151,11 @@ export type ProjectConfig = {
    */
   listicleStyle: TemplateStyle;
   /**
+   * Shared emphasis look for caption words (`emphasized`).
+   * Quotes may sparse-override via `VfxQuoteEdit.emphasisStyle`.
+   */
+  emphasisStyle: EmphasisStyle;
+  /**
    * Global audio Asset id placed as a sibling `sfx` edit when dropping b-roll.
    * `null` = no entrance SFX on place.
    */
@@ -159,6 +175,7 @@ export const emptyProjectConfig = (): ProjectConfig => ({
   edits: [],
   captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
   listicleStyle: { templateId: DEFAULT_LISTICLE_TEMPLATE_ID },
+  emphasisStyle: {},
   defaultBRollSfxAssetId: null,
 });
 
@@ -204,6 +221,7 @@ const vfxQuoteEditSchema = editBaseSchema.extend({
   kind: z.literal("vfx"),
   type: z.literal("quote"),
   style: templateStyleSchema.optional(),
+  emphasisStyle: quoteEmphasisStyleSchema,
 });
 
 const vfxListicleEditSchema = editBaseSchema.extend({
@@ -269,11 +287,16 @@ export const projectConfigSchema = z.object({
   listicleStyle: templateStyleSchema.default({
     templateId: DEFAULT_LISTICLE_TEMPLATE_ID,
   }),
+  emphasisStyle: emphasisStyleSchema,
   defaultBRollSfxAssetId: z.string().min(1).nullable().default(null),
 });
 
 export function parseProjectConfig(value: unknown): ProjectConfig {
-  return projectConfigSchema.parse(value);
+  const parsed = projectConfigSchema.parse(value);
+  return {
+    ...parsed,
+    emphasisStyle: normalizeEmphasisStyle(parsed.emphasisStyle),
+  };
 }
 
 export function nextEditId(edits: readonly Pick<EditBase, "id">[]): EditId {

@@ -1,3 +1,4 @@
+import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
 import type { TemplateStyle } from "~/domain/project-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
@@ -24,6 +25,8 @@ export type CaptionGroupProp = {
   captionsAtATime: number;
   /** Fully resolved style baked at props time. */
   style?: CaptionGroupStyle;
+  /** Resolved emphasis paint for `emphasized` words (captions/quotes). */
+  emphasisStyle?: ResolvedEmphasisStyle;
 };
 
 export type ZoomProp = {

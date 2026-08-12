@@ -1,6 +1,12 @@
 import { CaptionStyleFields } from "~/editor/components/inspector/CaptionStyleFields";
+import { EmphasisStyleFields } from "~/editor/components/inspector/EmphasisStyleFields";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
+import {
+  normalizeEmphasisStyle,
+  normalizeQuoteEmphasisStyle,
+  resolveEmphasisStyle,
+} from "~/domain/emphasis-style";
 import type { VfxQuoteEdit } from "~/domain/project-config";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
@@ -17,6 +23,8 @@ import {
 
 export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
   const patchEdit = useEditor((s) => s.patchEdit);
+  // Normalize outside the selector — a new object each snapshot loops.
+  const projectEmphasisRaw = useEditor((s) => s.config?.emphasisStyle);
   const templateId = resolveTemplateId(
     edit.style,
     isQuoteTemplateId,
@@ -29,6 +37,10 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
     resolveQuoteTemplateStyle,
   );
   const overrides = normalizeCaptionOverrides(edit.style?.overrides);
+  const quoteEmphasis = normalizeQuoteEmphasisStyle(edit.emphasisStyle);
+  const projectResolved = resolveEmphasisStyle(
+    normalizeEmphasisStyle(projectEmphasisRaw),
+  );
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
@@ -68,6 +80,26 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
             live,
           )
         }
+      />
+      <EmphasisStyleFields
+        mode="quote"
+        value={quoteEmphasis}
+        projectResolved={{
+          scale: projectResolved.scale,
+          fill: projectResolved.fill ?? style.wordStyle.fill,
+          fontFamily: projectResolved.fontFamily,
+        }}
+        onChange={(next, live) => {
+          const normalized = normalizeQuoteEmphasisStyle(next);
+          patchEdit(
+            edit.id,
+            {
+              emphasisStyle:
+                Object.keys(normalized).length > 0 ? normalized : null,
+            },
+            live,
+          );
+        }}
       />
     </div>
   );

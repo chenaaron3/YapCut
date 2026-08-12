@@ -1,5 +1,12 @@
 import { buildArollLayout, timelineRangeToOutput } from "~/domain/arolls";
 import {
+  normalizeEmphasisStyle,
+  normalizeQuoteEmphasisStyle,
+  resolveEmphasisStyle,
+  type QuoteEmphasisStyle,
+  type ResolvedEmphasisStyle,
+} from "~/domain/emphasis-style";
+import {
   editHidesCaptions,
   outputDurationFromArolls,
   PROJECT_FPS,
@@ -110,6 +117,7 @@ type OutputQuote = {
   start: number;
   end: number;
   style: CaptionGroupStyle;
+  emphasisStyle?: QuoteEmphasisStyle;
 };
 
 function outputQuotes(
@@ -121,6 +129,7 @@ function outputQuotes(
     if (e.kind !== "vfx" || e.type !== "quote") continue;
     const range = timelineRangeToOutput(cells, e);
     if (!range) continue;
+    const quoteEmphasis = normalizeQuoteEmphasisStyle(e.emphasisStyle);
     out.push({
       id: e.id,
       start: range.start,
@@ -131,6 +140,9 @@ function outputQuotes(
         DEFAULT_QUOTE_TEMPLATE_ID,
         resolveQuoteTemplateStyle,
       ),
+      ...(Object.keys(quoteEmphasis).length > 0
+        ? { emphasisStyle: quoteEmphasis }
+        : {}),
     });
   }
   return out;
@@ -179,6 +191,8 @@ function buildCaptionGroups(
   fps: number,
 ): CaptionGroupProp[] {
   const captionStyle = resolveProjectCaptionStyle(config.captions);
+  const projectEmphasis = normalizeEmphasisStyle(config.emphasisStyle);
+  const defaultEmphasis = resolveEmphasisStyle(projectEmphasis);
   const quotes = outputQuotes(config.edits, cells);
   const hiddenRanges = hiddenCaptionRanges(config.edits, cells);
   const words = projectOutputWords(config.arolls, transcriptsByAssetId);
@@ -188,6 +202,7 @@ function buildCaptionGroups(
     segmentKey: string;
     captionsAtATime: number;
     style: CaptionGroupStyle;
+    emphasisStyle: ResolvedEmphasisStyle;
   };
 
   // Keep source punctuation through grouping so sentence boundaries work;
@@ -205,6 +220,9 @@ function buildCaptionGroups(
     const endFrame = Math.max(startFrame + 3, secToFrame(word.end, fps));
     const quote = quoteForWord(word, quotes);
     const style = quote?.style ?? captionStyle;
+    const emphasisStyle = quote
+      ? resolveEmphasisStyle(projectEmphasis, quote.emphasisStyle)
+      : defaultEmphasis;
     styledWords.push({
       text: word.text,
       startFrame,
@@ -214,12 +232,15 @@ function buildCaptionGroups(
       segmentKey: String(segment),
       captionsAtATime: style.captionsAtATime,
       style,
+      emphasisStyle,
     });
   }
 
   const styleByKey = new Map<string, CaptionGroupStyle>();
+  const emphasisByKey = new Map<string, ResolvedEmphasisStyle>();
   for (const word of styledWords) {
     styleByKey.set(word.styleKey, word.style);
+    emphasisByKey.set(word.styleKey, word.emphasisStyle);
   }
 
   const displayGroups = groupStyledCaptionWords(styledWords)
@@ -232,12 +253,15 @@ function buildCaptionGroups(
         .filter((w) => w.text.length > 0);
       if (displayWords.length === 0) return null;
       const style = styleByKey.get(group.styleKey) ?? captionStyle;
+      const emphasisStyle =
+        emphasisByKey.get(group.styleKey) ?? defaultEmphasis;
       return {
         words: displayWords,
         startFrame: displayWords[0]!.startFrame,
         endFrame: displayWords[displayWords.length - 1]!.endFrame,
         captionsAtATime: style.captionsAtATime,
         style,
+        emphasisStyle,
       };
     })
     .filter((g): g is NonNullable<typeof g> => g != null);

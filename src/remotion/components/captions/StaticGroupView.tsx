@@ -59,6 +59,7 @@ export const StaticGroupView: React.FC<{
           groupStartFrame={group.startFrame}
           groupEndFrame={group.endFrame}
           groupStyle={style}
+          emphasisStyle={group.emphasisStyle}
           animateWord={false}
           cycleWordStates={false}
         />

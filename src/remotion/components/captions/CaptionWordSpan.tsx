@@ -1,5 +1,6 @@
 import React from "react";
 
+import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type { CaptionWordProp } from "~/remotion/types";
 
@@ -24,6 +25,7 @@ export const CaptionWordSpan: React.FC<{
   groupStartFrame: number;
   groupEndFrame: number;
   groupStyle: CaptionGroupStyle;
+  emphasisStyle?: ResolvedEmphasisStyle | null;
   animateWord: boolean;
   cycleWordStates: boolean;
   /**
@@ -40,6 +42,7 @@ export const CaptionWordSpan: React.FC<{
   groupStartFrame,
   groupEndFrame,
   groupStyle,
+  emphasisStyle,
   animateWord,
   cycleWordStates,
   silhouette = false,
@@ -52,6 +55,7 @@ export const CaptionWordSpan: React.FC<{
     groupStartFrame,
     groupEndFrame,
     groupStyle,
+    emphasisStyle,
     animateWord,
     cycleWordStates,
   });

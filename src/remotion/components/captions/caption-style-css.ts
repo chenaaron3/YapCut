@@ -1,12 +1,13 @@
 import type { CSSProperties } from "react";
 
+import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
 import {
   mergeWordStyle,
   resolveCaptionFont,
   type CaptionGroupStyle,
+  type CaptionFontId,
   type WordStyle,
 } from "~/remotion/captions/style";
-import { EMPHASIS_FILL, EMPHASIS_ON_LIGHT_FILL } from "./caption-animation";
 
 /** Group-level typography (color/stroke/shadow come from WordStyle). */
 export function captionGroupCss(style: CaptionGroupStyle): CSSProperties {
@@ -22,6 +23,16 @@ export function captionGroupCss(style: CaptionGroupStyle): CSSProperties {
     letterSpacing: style.fontFamily === "montserrat" ? "-0.02em" : "0",
     margin: 0,
     maxWidth: "100%",
+  };
+}
+
+/** Per-word font override (emphasis) — family + weight + montserrat tracking. */
+export function captionFontCss(fontFamily: CaptionFontId): CSSProperties {
+  const font = resolveCaptionFont(fontFamily);
+  return {
+    fontFamily: font.family,
+    fontWeight: font.weight,
+    letterSpacing: fontFamily === "montserrat" ? "-0.02em" : "0",
   };
 }
 
@@ -88,43 +99,17 @@ export function blendWordStyles(
   };
 }
 
-export function applyEmphasisFill(
+/**
+ * Apply resolved emphasis fill onto word paint.
+ * Scale / fontFamily are applied as CSS on the word span (not WordStyle).
+ */
+export function applyEmphasisStyle(
   wordStyle: WordStyle,
   emphasized: boolean | undefined,
+  emphasis: ResolvedEmphasisStyle | null | undefined,
 ): WordStyle {
-  if (!emphasized) return wordStyle;
-
-  const lum = hexFillLuminance(wordStyle.fill);
-  const onLight = lum != null && lum > 0.8;
-  const fill = onLight ? EMPHASIS_ON_LIGHT_FILL : EMPHASIS_FILL;
-
-  const border = wordStyle.border ?? (onLight ? DEFAULT_EMPHASIS_BORDER : undefined);
-  const emphasizedBorder =
-    border && onLight
-      ? { ...border, width: border.width + 1 }
-      : border;
-
-  return {
-    ...wordStyle,
-    fill,
-    border: emphasizedBorder,
-    textShadow: wordStyle.textShadow ?? (onLight ? EMPHASIS_TEXT_SHADOW : undefined),
-  };
-}
-
-const DEFAULT_EMPHASIS_BORDER = { width: 6, color: "#000000" };
-
-const EMPHASIS_TEXT_SHADOW =
-  "0 2px 0 #000, 0 4px 14px rgba(0,0,0,0.8)";
-
-function hexFillLuminance(fill: string): number | null {
-  const match = /^#([0-9a-fA-F]{6})$/i.exec(fill.trim());
-  if (!match) return null;
-  const hex = match[1]!;
-  const r = Number.parseInt(hex.slice(0, 2), 16) / 255;
-  const g = Number.parseInt(hex.slice(2, 4), 16) / 255;
-  const b = Number.parseInt(hex.slice(4, 6), 16) / 255;
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (!emphasized || !emphasis?.fill) return wordStyle;
+  return { ...wordStyle, fill: emphasis.fill };
 }
 
 /** @deprecated Use captionGroupCss — kept for any lingering imports. */

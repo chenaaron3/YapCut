@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 
+import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
 import {
   WORD_STATE_BLEND_SEC,
   mergeWordStyle,
@@ -16,8 +17,9 @@ import {
 } from "./caption-animation";
 import { scrapRotationDeg, wordBackgroundChromeStyle } from "./CaptionBackground";
 import {
-  applyEmphasisFill,
+  applyEmphasisStyle,
   blendWordStyles,
+  captionFontCss,
   resolveWordStyleForState,
   wordStyleToCss,
 } from "./caption-style-css";
@@ -36,11 +38,13 @@ function resolvePaintStyle(
   frame: number,
   fps: number,
   cycleStates: boolean,
+  emphasis: ResolvedEmphasisStyle | null | undefined,
 ): WordStyle {
   if (!cycleStates) {
-    return applyEmphasisFill(
+    return applyEmphasisStyle(
       resolveWordStyleForState(groupStyle, "active"),
       word.emphasized,
+      emphasis,
     );
   }
 
@@ -48,7 +52,27 @@ function resolvePaintStyle(
   const from = resolveWordStyleForState(groupStyle, blend.from);
   const to = resolveWordStyleForState(groupStyle, blend.to);
   const mixed = blendWordStyles(from, to, blend.t);
-  return applyEmphasisFill({ ...mixed, background: null }, word.emphasized);
+  return applyEmphasisStyle(
+    { ...mixed, background: null },
+    word.emphasized,
+    emphasis,
+  );
+}
+
+function emphasisTypographyCss(
+  groupStyle: CaptionGroupStyle,
+  emphasized: boolean | undefined,
+  emphasis: ResolvedEmphasisStyle | null | undefined,
+): CSSProperties {
+  if (!emphasized || !emphasis) return {};
+  const css: CSSProperties = {};
+  if (emphasis.scale !== 1) {
+    css.fontSize = groupStyle.fontSize * emphasis.scale;
+  }
+  if (emphasis.fontFamily) {
+    Object.assign(css, captionFontCss(emphasis.fontFamily));
+  }
+  return css;
 }
 
 function hasWordStateDeltas(style: CaptionGroupStyle): boolean {
@@ -108,6 +132,7 @@ export function resolveCaptionWordVisual(input: {
   groupStartFrame: number;
   groupEndFrame: number;
   groupStyle: CaptionGroupStyle;
+  emphasisStyle?: ResolvedEmphasisStyle | null;
   /** When true, apply groupStyle.animation enter/exit on this word. */
   animateWord: boolean;
   /** When true, cycle past/active/future (if deltas exist). */
@@ -121,6 +146,7 @@ export function resolveCaptionWordVisual(input: {
     groupStartFrame,
     groupEndFrame,
     groupStyle,
+    emphasisStyle,
     animateWord,
     cycleWordStates,
   } = input;
@@ -133,6 +159,12 @@ export function resolveCaptionWordVisual(input: {
     frame,
     fps,
     cycleStates,
+    emphasisStyle,
+  );
+  const emphasisCss = emphasisTypographyCss(
+    groupStyle,
+    word.emphasized,
+    emphasisStyle,
   );
   const bg = paint.background;
   const scrap = bg?.kind === "scrap";
@@ -156,7 +188,7 @@ export function resolveCaptionWordVisual(input: {
       return {
         mount: false,
         opacity: 0,
-        wordCss: wordStyleToCss(paint),
+        wordCss: { ...wordStyleToCss(paint), ...emphasisCss },
         backgroundCss: {},
       };
     }
@@ -164,7 +196,10 @@ export function resolveCaptionWordVisual(input: {
       mount: true,
       opacity: paint.opacity ?? 1,
       transform: scrap ? `rotate(${scrapRotationDeg(index)}deg)` : undefined,
-      wordCss: wordStyleToCss({ ...paint, opacity: 1 }),
+      wordCss: {
+        ...wordStyleToCss({ ...paint, opacity: 1 }),
+        ...emphasisCss,
+      },
       backgroundCss,
     };
   }
@@ -174,7 +209,7 @@ export function resolveCaptionWordVisual(input: {
     return {
       mount: false,
       opacity: 0,
-      wordCss: wordStyleToCss(paint),
+      wordCss: { ...wordStyleToCss(paint), ...emphasisCss },
       backgroundCss: {},
     };
   }
@@ -183,7 +218,10 @@ export function resolveCaptionWordVisual(input: {
     mount: true,
     opacity: paint.opacity ?? 1,
     transform: scrap ? `rotate(${scrapRotationDeg(index)}deg)` : undefined,
-    wordCss: wordStyleToCss({ ...paint, opacity: 1 }),
+    wordCss: {
+      ...wordStyleToCss({ ...paint, opacity: 1 }),
+      ...emphasisCss,
+    },
     backgroundCss,
   };
 }

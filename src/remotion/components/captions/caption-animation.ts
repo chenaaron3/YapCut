@@ -9,10 +9,6 @@ import type { CaptionAnimation } from "~/remotion/captions/style";
 
 import type { CaptionWordProp } from "~/remotion/types";
 
-/** Fill used when a word is emphasized (th2: boolean, not pos/neg). */
-export const EMPHASIS_FILL = "#FFE600";
-export const EMPHASIS_ON_LIGHT_FILL = "#FFE600";
-
 export const CURSOR_BLINK_FRAMES = 16;
 export const SLIDE_OFFSET_PX = 28;
 

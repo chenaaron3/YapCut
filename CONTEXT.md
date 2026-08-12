@@ -17,7 +17,7 @@ Sparse JSON document on the Project row: topology (`arolls`), flat `edits`, and 
 _Avoid_: config blob (prefer ProjectConfig), row-per-edit, parallel kind arrays (`bRolls` / `vfx` / …)
 
 **Project field**:
-Project-level config data that is not an Edit and has no EditId. Today: `captions` (`TemplateStyle`), `defaultBRollSfxAssetId` (global audio Asset id or null — place-time sibling `sfx` edit when dropping b-roll). Later: music. Title string is a Project column, not a Project field.
+Project-level config data that is not an Edit and has no EditId. Today: `captions` (`TemplateStyle`), `emphasisStyle`, `listicleStyle`, `defaultBRollSfxAssetId` (global audio Asset id or null — place-time sibling `sfx` edit when dropping b-roll). Later: music. Title string is a Project column, not a Project field.
 _Avoid_: treating captions/music as Edits; nesting entrance SFX on `BrollEdit`; treating on-screen title overlay as the Project.title column
 
 **Asset**:
@@ -25,8 +25,8 @@ Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set
 _Avoid_: is_visual / is_audio booleans, public URLs as source of truth
 
 **Transcript**:
-Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: two AI passes unioned — sparse across the whole script, then denser (most content words) inside each quote punch phrase.
-_Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type
+Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: two AI passes unioned — sparse across the whole script, then denser (most content words) inside each quote punch phrase. Look comes from Project field `emphasisStyle` (scale × group size, fill, optional font); quotes may sparse-override via `VfxQuoteEdit.emphasisStyle` (`fill`/`fontFamily` null = inherit group). Layout (y / words-per-group) always follows the surrounding caption/quote style.
+_Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type, emphasis owning y or captionsAtATime
 
 **Aroll keep** (`ArollKeep`):
 One segment to keep from an A-roll asset: `{ assetId, start, end }` in **local** asset time. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the timeline / output. Keeps for the same asset are **contiguous** in that list (no interleaving another asset between two keeps of one asset — you cannot cut part of a clip and place it after a different asset).
@@ -185,6 +185,7 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 - Edits use timeline time; arolls use local time; Remotion maps timeline → output
 - On-screen title is a `vfx`/`text` Edit (seeded, deletable); `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
+- Emphasis look is a Project field (`emphasisStyle`); quote may sparse-override; AI never writes emphasis style
 - Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
 - Companion SFX are sibling `sfx` edits; AI chooses optional `role.intensity` from the AI SFX pack only; concrete Asset is hash-picked from the seeded pool
 
@@ -201,7 +202,7 @@ Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920
 | vfx/shake | Edit | yes | Edit cell | ScreenShake (wraps A-roll/zoom/b-roll; captions/text outside) |
 | captions | Project field | no | optional track | Text overlay (words from projection) |
 | arolls | topology | — | Keep/gap cells | A-roll Media |
-| emphasis | Transcript word flag | (caption styling) | — | caption word style |
+| emphasis | Transcript word flag + Project `emphasisStyle` (+ quote override) | (caption styling) | — | caption word style |
 
 ## Deprioritized / out of scope
 
