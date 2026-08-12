@@ -4,6 +4,8 @@
  *
  * WhisperX runs as a Replicate prediction; we poll across short steps with
  * `sleep()` so a long transcription cannot hit the function maxDuration.
+ * Loudness/waveform: enqueue fal jobs, then poll across short steps with
+ * `sleep()` (same pattern as WhisperX — no in-process subscribe loop).
  *
  * @see https://workflow-sdk.dev/docs/getting-started/next
  */
@@ -18,12 +20,23 @@ import {
   startAssetWhisperX,
   type CreateAssetRef,
 } from "~/server/create/create-pipeline";
+import { FalMeasureError } from "~/server/media/measure-audio";
+import {
+  finishMeasureAssetJobs,
+  pollMeasureAssetJobs,
+  startMeasureAssetJobs,
+  type MeasureJobSet,
+} from "~/server/media/measure-asset";
 import { getWhisperXPrediction } from "~/server/transcribe/whisperx";
 
 /** Suspend between Replicate polls (no compute while sleeping). */
 const WHISPERX_POLL_SLEEP = "15s";
 /** ~30 minutes of wall time for a single asset transcription. */
 const WHISPERX_MAX_POLLS = 120;
+/** Suspend between fal loudnorm/waveform polls. */
+const FAL_POLL_SLEEP = "5s";
+/** ~10 minutes of wall time for one A-roll's fal jobs. */
+const FAL_MAX_POLLS = 120;
 
 export async function createProjectWorkflow(projectId: string) {
   "use workflow";
@@ -69,6 +82,24 @@ export async function createProjectWorkflow(projectId: string) {
       }
     }
 
+    for (const asset of assets) {
+      const jobs = await startMeasureStep(asset);
+      let saved = false;
+      for (let i = 0; i < FAL_MAX_POLLS; i++) {
+        const poll = await pollMeasureStep(jobs);
+        if (poll.done) {
+          await finishMeasureStep(jobs);
+          saved = true;
+          break;
+        }
+        await sleep(FAL_POLL_SLEEP);
+      }
+      if (!saved) {
+        throw new FatalError(
+          `fal measure timed out for ${asset.originalFilename ?? asset.id}`,
+        );
+      }
+    }
     await finalizeStep(projectId);
   } catch (error) {
     const message =
@@ -122,6 +153,44 @@ async function markTranscriptFailedStep(
 ): Promise<void> {
   "use step";
   await markAssetTranscriptFailed(assetId, reason);
+}
+
+async function startMeasureStep(asset: CreateAssetRef): Promise<MeasureJobSet> {
+  "use step";
+  try {
+    return await startMeasureAssetJobs(asset);
+  } catch (error) {
+    if (error instanceof FalMeasureError && error.fatal) {
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
+}
+
+async function pollMeasureStep(
+  jobs: MeasureJobSet,
+): Promise<{ done: boolean }> {
+  "use step";
+  try {
+    return await pollMeasureAssetJobs(jobs);
+  } catch (error) {
+    if (error instanceof FalMeasureError && error.fatal) {
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
+}
+
+async function finishMeasureStep(jobs: MeasureJobSet): Promise<void> {
+  "use step";
+  try {
+    await finishMeasureAssetJobs(jobs);
+  } catch (error) {
+    if (error instanceof FalMeasureError && error.fatal) {
+      throw new FatalError(error.message);
+    }
+    throw error;
+  }
 }
 
 async function finalizeStep(projectId: string): Promise<void> {

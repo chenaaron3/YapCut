@@ -80,7 +80,7 @@ export const AI_SFX_PACK: readonly AiSfxRoleEntry[] = [
       soft: "Understated title or quiet tip card.",
       medium: "Classic list / tip card or title enter.",
       hard: "Bold title or high-energy indicator appear.",
-      none: "Rare — usually accompany the enter unless the overlay is already very busy.",
+      none: "Almost never — place on every enter.",
     },
   },
   {
@@ -91,7 +91,7 @@ export const AI_SFX_PACK: readonly AiSfxRoleEntry[] = [
       soft: "Quiet confirm when the list is already dense.",
       medium: "Default value land.",
       hard: "Punchy or playful list item confirm.",
-      none: "Skip if the list is rapid-fire and ticks would stack into noise.",
+      none: "Almost never — use soft instead of skipping when dense.",
     },
   },
   {
@@ -99,10 +99,10 @@ export const AI_SFX_PACK: readonly AiSfxRoleEntry[] = [
     label: "Quote sparkle",
     description: "Bright short highlight on a quote peak word.",
     intensities: {
-      soft: "Gentle keyword pop.",
+      soft: "Gentle keyword pop; fine for lighter peaks.",
       medium: "Clear quote peak highlight.",
       hard: "Memorable / high-stakes word.",
-      none: "Default when unsure — only ping a true payoff word.",
+      none: "Only if the peak word is weak filler with no payoff.",
     },
   },
   {
@@ -113,7 +113,7 @@ export const AI_SFX_PACK: readonly AiSfxRoleEntry[] = [
       soft: "Subtle punch-in; calm delivery.",
       medium: "Default punch-in energy.",
       hard: "Strong claim / hook punch-in.",
-      none: "Skip calm or filler punch-ins that don't need camera energy.",
+      none: "Only for tiny accidental punch-ins; prefer soft when calm.",
     },
   },
 ] as const;
@@ -157,7 +157,7 @@ export function pickAiSfxAssetId(
 export function formatAiSfxPackForPrompt(): string {
   const lines: string[] = [
     "AI SFX pack — role is fixed per candidate; pick soft|medium|hard|none.",
-    "soft/medium/hard choose how present the hit should feel (maps to volume); none skips.",
+    "Default to placing (soft/medium/hard). soft/medium/hard map to volume; none skips.",
   ];
   for (const entry of AI_SFX_PACK) {
     lines.push(`## ${entry.role} — ${entry.label}`);

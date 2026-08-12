@@ -1,4 +1,7 @@
+import { SFX_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import type { EditSeed } from "~/domain/edits";
+
+export { SFX_VOLUME_DEFAULT };
 
 /** DataTransfer MIME for drag-from-Assets → transcript place. */
 export const SFX_DRAG_MIME = "application/x-sfx-asset";
@@ -10,11 +13,7 @@ export type SfxDragPayload = {
   label: string;
 };
 
-/**
- * Default linear gain for placed SFX (no loudness pack).
- * Roughly “punctuate under voice” without LUFS metadata.
- */
-export const DEFAULT_SFX_VOLUME = 0.65;
+export const DEFAULT_SFX_VOLUME = SFX_VOLUME_DEFAULT;
 
 /**
  * Display label for an SFX asset path.

@@ -10,6 +10,7 @@ import type { TranscriptWord } from "~/domain/transcript";
 import { runAiAssist } from "~/server/ai/run-ai-assist";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
+import { measureAsset } from "~/server/media/measure-asset";
 import { headObject, presignGetObject } from "~/server/media/s3";
 import {
   getWhisperXPrediction,
@@ -246,6 +247,37 @@ export async function markAssetTranscriptFailed(
       status: "failed",
       raw: { error: reason },
     });
+  }
+}
+
+export async function measureCreateAsset(asset: {
+  id: string;
+  s3Key: string;
+  originalFilename: string | null;
+  lufs?: number | null;
+  waveformPeaks?: number[] | null;
+}): Promise<void> {
+  await measureAsset(asset, { waveform: true });
+  console.log(
+    `[create] measured audio asset=${asset.id} ${asset.originalFilename ?? ""}`,
+  );
+}
+
+/** Measure A-roll LUFS + waveform. Failure fails create. */
+export async function measureCreateAssets(projectId: string): Promise<void> {
+  const rows = await db
+    .select({
+      id: assets.id,
+      s3Key: assets.s3Key,
+      lufs: assets.lufs,
+      waveformPeaks: assets.waveformPeaks,
+      originalFilename: assets.originalFilename,
+    })
+    .from(assets)
+    .where(eq(assets.projectId, projectId));
+
+  for (const row of rows) {
+    await measureCreateAsset(row);
   }
 }
 

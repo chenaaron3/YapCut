@@ -17,11 +17,15 @@ Sparse JSON document on the Project row: topology (`arolls`), flat `edits`, and 
 _Avoid_: config blob (prefer ProjectConfig), row-per-edit, parallel kind arrays (`bRolls` / `vfx` / …)
 
 **Project field**:
-Project-level config data that is not an Edit and has no EditId. Today: `captions` (`TemplateStyle`), `emphasisStyle`, `listicleStyle`, `defaultBRollSfxAssetId` (global audio Asset id or null — place-time sibling `sfx` edit when dropping b-roll). Later: music. Title string is a Project column, not a Project field.
+Project-level config data that is not an Edit and has no EditId. Today: `captions` (`TemplateStyle`), `emphasisStyle`, `listicleStyle`, `defaultBRollSfxAssetId` (global audio Asset id or null — place-time sibling `sfx` edit when dropping b-roll), `music` (`MusicBed` or null — one looping bed for the output). Title string is a Project column, not a Project field.
 _Avoid_: treating captions/music as Edits; nesting entrance SFX on `BrollEdit`; treating on-screen title overlay as the Project.title column
 
+**Music bed** (`MusicBed`):
+Project field: one looping audio Asset for the whole output. `MusicBed` is a `MediaRef` (`assetId`, `volume`, `mediaOffsetSec`) — same media fields as `sfx` / `broll`, but not an Edit (no EditId, no timeline range; loops the whole output). Null when unset. Pick / inspect from the Music tab (no timeline track). Playback applies library LUFS gain × mix, plus edge fades — no ducking under voice/SFX.
+_Avoid_: music as an Edit; a music timeline track; audio ducking; treating project-uploaded music as SFX
+
 **Asset**:
-Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set ⇒ project-scoped; `projectId` null ⇒ **global** library (SFX pack). Create-flow uploads are project-scoped A-roll videos only.
+Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set ⇒ project-scoped; `projectId` null ⇒ **global** library (SFX pack under `global/sfx/`, music under `global/music/`). Create-flow uploads are project-scoped A-roll videos only. Create and music upload **require** measured `lufs` / `truePeakDb` (fal `ffmpeg-api/loudnorm` over a signed CloudFront URL). A-roll video also stores a peak `waveform` (`ffmpeg-api/waveform`) for the timeline VoiceBand. `npm run seed:global` is idempotent: upserts the global SFX/music libraries.
 _Avoid_: is_visual / is_audio booleans, public URLs as source of truth
 
 **Transcript**:
@@ -187,8 +191,9 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 **Create workflow** (Vercel Workflows):
 1. Presigned upload → Project + Assets (`processing`)
 2. WhisperX per A-roll video (language autodetect, diarization off) → Transcript rows
-3. Keep builder (long gaps) → `arolls`
-4. AI assist (create + editor **AI** button), on **timeline projected** transcript:
+3. Measure A-roll LUFS + true peak + waveform via fal ffmpeg-api (enqueue, then poll with workflow `sleep()`; create fails if measure fails)
+4. Keep builder (long gaps) → `arolls`
+5. AI assist (create + editor **AI** button), on **timeline projected** transcript:
    1. title if empty → `Project.title` + seed `vfx/text`
    2. punch-in zooms
    3. listicles
@@ -197,7 +202,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
    7. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
    Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
-5. Seed default `captions` TemplateStyle → `ready` (create only)
+6. Seed default `captions` TemplateStyle → `ready` (create only)
 
 
 **Export workflow**:
@@ -209,8 +214,9 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 ## Relationships
 
 - Project has many Assets; Asset has 0..1 Transcript
-- Global Assets have `projectId = null` (seeded SFX); edits reference any Asset by id
+- Global Assets have `projectId = null` (seeded SFX under `global/sfx/`, music under `global/music/`); edits and `music` reference any Asset by id
 - ProjectConfig.arolls reference project video Assets
+- `music` is a Project field (one looping bed or null); project-scoped audio uploads are music, not SFX
 - Edits use timeline time; arolls use local time; Remotion maps timeline → output
 - On-screen title is a `vfx`/`text` Edit (seeded, deletable); `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
@@ -234,13 +240,13 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 | vfx/listicle | Edit | yes | Edit cell | Listicle overlay (shared `listicleStyle`) |
 | vfx/shake | Edit | yes | Edit cell | ScreenShake (wraps A-roll/zoom/b-roll; captions/text outside) |
 | captions | Project field | no | optional track | Text overlay (words from projection) |
+| music | Project field | no | — | Audio layer (looping bed, edge fades, no ducking) |
 | arolls | topology | — | Keep/gap cells | A-roll Media |
 | emphasis | Transcript word flag + Project `emphasisStyle` (+ quote override) | (caption styling) | — | caption word style |
 
 ## Deprioritized / out of scope
 
 - Location VFX, cutout greenscreen
-- Music (Project field later)
 - Listicle/emphasis process flags
 - Teams/sharing; user upload to global library
 - Per-project dimensions/fps

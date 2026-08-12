@@ -15,6 +15,7 @@ const MIN_RANGE_SEC = 0.05;
 export function BRollInspector({ edit }: { edit: BrollEdit }) {
   const assets = useEditor((s) => s.assets);
   const patchEdit = useEditor((s) => s.patchEdit);
+  const patchMediaRef = useEditor((s) => s.patchMediaRef);
 
   const asset = assets.find((a) => a.id === edit.assetId);
   const isVideo = asset?.kind === "video";
@@ -44,9 +45,11 @@ export function BRollInspector({ edit }: { edit: BrollEdit }) {
             step={0.01}
             display={`${mediaOffset.toFixed(2)}s`}
             onLiveChange={(v) =>
-              patchEdit(edit.id, { mediaOffsetSec: v }, true)
+              patchMediaRef(edit.id, { mediaOffsetSec: v }, true)
             }
-            onCommit={(v) => patchEdit(edit.id, { mediaOffsetSec: v }, true)}
+            onCommit={(v) =>
+              patchMediaRef(edit.id, { mediaOffsetSec: v }, true)
+            }
           />
           <SliderField
             label="Volume"
@@ -55,8 +58,8 @@ export function BRollInspector({ edit }: { edit: BrollEdit }) {
             max={1}
             step={0.01}
             display={`${Math.round(volume * 100)}%`}
-            onLiveChange={(v) => patchEdit(edit.id, { volume: v }, true)}
-            onCommit={(v) => patchEdit(edit.id, { volume: v }, true)}
+            onLiveChange={(v) => patchMediaRef(edit.id, { volume: v }, true)}
+            onCommit={(v) => patchMediaRef(edit.id, { volume: v }, true)}
           />
         </>
       ) : null}

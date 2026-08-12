@@ -5,6 +5,7 @@ import { BRollOverlay } from "~/remotion/components/BRollOverlay";
 import { Captions } from "~/remotion/components/Captions";
 import { EnsureLocalFonts } from "~/remotion/components/EnsureLocalFonts";
 import { ListicleOverlay } from "~/remotion/components/ListicleOverlay";
+import { MusicOverlay } from "~/remotion/components/MusicOverlay";
 import { ScreenShake } from "~/remotion/components/ScreenShake";
 import { SfxAudio } from "~/remotion/components/SfxAudio";
 import { TextOverlay } from "~/remotion/components/TextOverlay";
@@ -30,6 +31,7 @@ function ArollSeries({ sections }: { sections: ProjectProps["sections"] }) {
               src={section.src}
               trimBefore={section.trimBefore}
               trimAfter={section.trimAfter}
+              volume={section.volume}
               objectFit="cover"
               style={{ width: "100%", height: "100%" }}
             />
@@ -51,6 +53,7 @@ export function TalkingHead({
   shakes,
   brolls,
   sfx,
+  music,
 }: TalkingHeadProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
@@ -69,6 +72,7 @@ export function TalkingHead({
       <ListicleOverlay overlays={listicleOverlays} />
       <Captions groups={captionGroups} />
       <SfxAudio sfx={sfx} />
+      <MusicOverlay music={music} />
     </AbsoluteFill>
   );
 }

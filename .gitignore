@@ -55,8 +55,9 @@ yarn-error.log*
 !/infra/jest.config.js
 /.swc
 
-# Local SFX pack (seeded to S3; not committed)
+# Local SFX / music packs (seeded to S3; not committed)
 /public/sfx/
+/public/music/
 
 # Schedule CLI secrets + browser profile
 /secrets/

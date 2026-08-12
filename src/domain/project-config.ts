@@ -5,6 +5,7 @@ import {
   optionalEmphasisStyleSchema,
   type EmphasisStyle,
 } from "~/domain/emphasis-style";
+import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import type { LocalTime, TimelineTime } from "~/domain/time";
 
 export type { EmphasisStyle };
@@ -107,8 +108,8 @@ export type Transform = {
 };
 
 /**
- * Edit-side ref to a project/global Asset (src/size live on the Asset row).
- * Counterpart to prototype VisualAsset, without inlined media bytes.
+ * Ref to a project/global Asset (src/size live on the Asset row).
+ * Used by `broll` / `sfx` edits and the `music` Project field.
  */
 export type MediaRef = {
   assetId: string;
@@ -117,6 +118,9 @@ export type MediaRef = {
   /** Linear gain 0–1. */
   volume: number;
 };
+
+/** Looping bed for the whole output. Same media fields as an audio edit; not an Edit. */
+export type MusicBed = MediaRef;
 
 /**
  * B-roll edit = timeline range + transform + media ref.
@@ -162,6 +166,11 @@ export type ProjectConfig = {
    * `null` = no entrance SFX on place.
    */
   defaultBRollSfxAssetId: string | null;
+  /**
+   * Looping music bed for the whole output, or null when unset.
+   * Not an Edit — pick from the Music tab.
+   */
+  music: MusicBed | null;
 };
 
 export const DEFAULT_CAPTION_TEMPLATE_ID = "ugc";
@@ -179,6 +188,7 @@ export const emptyProjectConfig = (): ProjectConfig => ({
   listicleStyle: { templateId: DEFAULT_LISTICLE_TEMPLATE_ID },
   emphasisStyle: {},
   defaultBRollSfxAssetId: null,
+  music: null,
 });
 
 const templateStyleSchema = z.object({
@@ -291,6 +301,14 @@ export const projectConfigSchema = z.object({
   }),
   emphasisStyle: emphasisStyleSchema,
   defaultBRollSfxAssetId: z.string().min(1).nullable().default(null),
+  music: z
+    .object({
+      assetId: z.string().min(1),
+      volume: z.number().default(MUSIC_VOLUME_DEFAULT),
+      mediaOffsetSec: z.number().default(0),
+    })
+    .nullable()
+    .default(null),
 });
 
 export function parseProjectConfig(value: unknown): ProjectConfig {

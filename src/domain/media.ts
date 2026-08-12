@@ -12,6 +12,8 @@ export function clampVolume(volume: number): number {
   return Math.min(1, Math.max(0, volume));
 }
 
+export type MediaRefPatch = Partial<Pick<MediaRef, "volume" | "mediaOffsetSec">>;
+
 export function mediaRefOf(ref: MediaRef): MediaRef {
   return {
     assetId: ref.assetId,
@@ -52,8 +54,37 @@ export function clampTimelineRangeToMedia(
   return { start: range.start, end };
 }
 
+export function clampMediaOffset(
+  mediaOffsetSec: number,
+  srcDurationSec: number | null,
+): number {
+  if (srcDurationSec == null || !(srcDurationSec > 0)) {
+    return Math.max(0, mediaOffsetSec);
+  }
+  const maxOffset = Math.max(0, srcDurationSec - MIN_RANGE_SEC);
+  return Math.min(Math.max(0, mediaOffsetSec), maxOffset);
+}
+
 export function withVolume<T extends MediaRef>(item: T, volume: number): T {
   return { ...item, volume: clampVolume(volume) };
+}
+
+export function withMediaRefPatch<T extends MediaRef>(
+  item: T,
+  patch: MediaRefPatch,
+  srcDurationSec: number | null,
+): T {
+  let next = item;
+  if (typeof patch.volume === "number") {
+    next = withVolume(next, patch.volume);
+  }
+  if (typeof patch.mediaOffsetSec === "number") {
+    next = {
+      ...next,
+      mediaOffsetSec: clampMediaOffset(patch.mediaOffsetSec, srcDurationSec),
+    };
+  }
+  return next;
 }
 
 /**
@@ -63,9 +94,10 @@ export function withVolume<T extends MediaRef>(item: T, volume: number): T {
 export function withMediaOffset<
   T extends MediaRef & { start: number; end: number },
 >(item: T, mediaOffsetSec: number, srcDurationSec: number | null): T {
-  if (srcDurationSec == null || !(srcDurationSec > 0)) return item;
-  const maxOffset = Math.max(0, srcDurationSec - MIN_RANGE_SEC);
-  const offset = Math.min(Math.max(0, mediaOffsetSec), maxOffset);
+  const offset = clampMediaOffset(mediaOffsetSec, srcDurationSec);
+  if (srcDurationSec == null || !(srcDurationSec > 0)) {
+    return { ...item, mediaOffsetSec: offset };
+  }
   const maxPlay = Math.max(MIN_RANGE_SEC, srcDurationSec - offset);
   const play = item.end - item.start;
   const end = play > maxPlay ? item.start + maxPlay : item.end;

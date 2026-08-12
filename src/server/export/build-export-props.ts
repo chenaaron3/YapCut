@@ -36,6 +36,8 @@ export async function buildExportProps(
           durationSec: true,
           width: true,
           height: true,
+          lufs: true,
+          truePeakDb: true,
         },
         with: {
           transcript: {
@@ -55,16 +57,16 @@ export async function buildExportProps(
     : parseProjectConfig(project.config);
 
   const projectAssetIds = new Set(project.assets.map((a) => a.id));
-  const missingIds = [
-    ...new Set(
-      config.edits
-        .filter((e) => e.kind === "sfx" || e.kind === "broll")
-        .map((e) => e.assetId)
-        .filter((id) => !projectAssetIds.has(id)),
-    ),
-  ];
+  const missingIds = new Set<string>();
+  for (const edit of config.edits) {
+    if (edit.kind !== "sfx" && edit.kind !== "broll") continue;
+    if (!projectAssetIds.has(edit.assetId)) missingIds.add(edit.assetId);
+  }
+  if (config.music && !projectAssetIds.has(config.music.assetId)) {
+    missingIds.add(config.music.assetId);
+  }
   const globals =
-    missingIds.length === 0
+    missingIds.size === 0
       ? []
       : (
           await db
@@ -75,10 +77,15 @@ export async function buildExportProps(
               durationSec: assets.durationSec,
               width: assets.width,
               height: assets.height,
+              lufs: assets.lufs,
+              truePeakDb: assets.truePeakDb,
             })
             .from(assets)
             .where(
-              and(isNull(assets.projectId), inArray(assets.id, missingIds)),
+              and(
+                isNull(assets.projectId),
+                inArray(assets.id, [...missingIds]),
+              ),
             )
         ).map((a) => ({ ...a, transcript: null }));
 
@@ -87,6 +94,10 @@ export async function buildExportProps(
   const assetDurationSec = new Map<string, number>();
   const assetSize = new Map<string, { width: number; height: number }>();
   const assetKind = new Map<string, "video" | "image" | "audio">();
+  const assetLoudness = new Map<
+    string,
+    { lufs: number | null; truePeakDb: number | null }
+  >();
 
   for (const asset of [...project.assets, ...globals]) {
     mediaUrls.set(
@@ -94,6 +105,10 @@ export async function buildExportProps(
       signedCloudFrontUrl(asset.s3Key, { expiresInSec: EXPORT_MEDIA_TTL_SEC }),
     );
     assetKind.set(asset.id, asset.kind);
+    assetLoudness.set(asset.id, {
+      lufs: asset.lufs,
+      truePeakDb: asset.truePeakDb,
+    });
     if (asset.durationSec != null) {
       assetDurationSec.set(asset.id, asset.durationSec);
     }
@@ -114,5 +129,6 @@ export async function buildExportProps(
     assetDurationSec,
     assetSize,
     assetKind,
+    assetLoudness,
   });
 }

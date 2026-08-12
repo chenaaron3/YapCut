@@ -58,18 +58,7 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
           assetIds: uploads.map((u) => u.assetId),
         });
 
-        addAssets(
-          created.map((a) => ({
-            id: a.id,
-            kind: a.kind,
-            playbackUrl: a.playbackUrl,
-            durationSec: a.durationSec,
-            width: a.width,
-            height: a.height,
-            originalFilename: a.originalFilename,
-            sortOrder: a.sortOrder,
-          })),
-        );
+        addAssets(created);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Upload failed");
       } finally {

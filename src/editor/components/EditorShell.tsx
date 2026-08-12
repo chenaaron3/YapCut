@@ -127,7 +127,7 @@ export function EditorShell({ projectId }: Props) {
         query.state.data?.status === "exporting" ? 2000 : false,
     },
   );
-  const globalSfxQuery = api.project.listGlobalSfx.useQuery(undefined, {
+  const globalAssetsQuery = api.project.listGlobalAssets.useQuery(undefined, {
     staleTime: 60_000,
   });
 
@@ -161,45 +161,16 @@ export function EditorShell({ projectId }: Props) {
       current.projectId === data.id &&
       current.configUpdatedAt === configUpdatedAt
     ) {
-      // Still merge global SFX if they arrived after initial hydrate.
-      const globalSfx = globalSfxQuery.data;
-      if (globalSfx?.length) {
-        useEditor.getState().addAssets(
-          globalSfx.map((a) => ({
-            id: a.id,
-            kind: a.kind,
-            playbackUrl: a.playbackUrl,
-            durationSec: a.durationSec,
-            width: a.width,
-            height: a.height,
-            originalFilename: a.originalFilename,
-            sortOrder: a.sortOrder,
-          })),
-        );
+      // Still merge global libraries if they arrived after initial hydrate.
+      const extras = globalAssetsQuery.data;
+      if (extras?.length) {
+        useEditor.getState().addAssets(extras);
       }
       return;
     }
 
-    const projectAssets = data.assets.map((a) => ({
-      id: a.id,
-      kind: a.kind,
-      playbackUrl: a.playbackUrl,
-      durationSec: a.durationSec,
-      width: a.width,
-      height: a.height,
-      originalFilename: a.originalFilename,
-      sortOrder: a.sortOrder,
-    }));
-    const globalAssets = (globalSfxQuery.data ?? []).map((a) => ({
-      id: a.id,
-      kind: a.kind,
-      playbackUrl: a.playbackUrl,
-      durationSec: a.durationSec,
-      width: a.width,
-      height: a.height,
-      originalFilename: a.originalFilename,
-      sortOrder: a.sortOrder,
-    }));
+    const projectAssets = data.assets;
+    const globalAssets = globalAssetsQuery.data ?? [];
     const byId = new Map(
       [...projectAssets, ...globalAssets].map((a) => [a.id, a]),
     );
@@ -219,7 +190,7 @@ export function EditorShell({ projectId }: Props) {
           : [],
       ),
     });
-  }, [projectQuery.data, globalSfxQuery.data, hydrateFromServer]);
+  }, [projectQuery.data, globalAssetsQuery.data, hydrateFromServer]);
 
   useEffect(() => {
     const label = title || "Editor";

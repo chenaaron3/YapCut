@@ -58,6 +58,28 @@ export function probeVideoFile(file: File): Promise<ProbedMedia> {
   });
 }
 
+export function probeAudioFile(file: File): Promise<{ durationSec: number }> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const audio = document.createElement("audio");
+    audio.preload = "metadata";
+    audio.onloadedmetadata = () => {
+      const durationSec = audio.duration;
+      revokeLater(url);
+      if (!Number.isFinite(durationSec) || durationSec <= 0) {
+        reject(new Error(`Could not read duration for ${file.name}`));
+        return;
+      }
+      resolve({ durationSec });
+    };
+    audio.onerror = () => {
+      revokeLater(url);
+      reject(new Error(`Failed to load audio ${file.name}`));
+    };
+    audio.src = url;
+  });
+}
+
 export async function probeMediaFile(file: File): Promise<ProbedMedia> {
   if (file.type.startsWith("image/")) return probeImageFile(file);
   if (file.type.startsWith("video/")) return probeVideoFile(file);

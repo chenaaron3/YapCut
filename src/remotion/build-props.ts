@@ -1,3 +1,4 @@
+import { arollPlaybackGain, mixPlaybackVolume } from "~/domain/audio/mix-levels";
 import { buildArollLayout, timelineRangeToOutput } from "~/domain/arolls";
 import {
   pickEmphasisStyle,
@@ -53,6 +54,7 @@ import type {
   CaptionGroupProp,
   CaptionWordProp,
   ListicleOverlayProp,
+  MusicClipProp,
   ProjectProps,
   SfxClipProp,
   ShakeClipProp,
@@ -73,6 +75,11 @@ export type BuildProjectPropsInput = {
   assetSize: ReadonlyMap<string, { width: number; height: number }>;
   /** assetId → media kind (image|video|audio). */
   assetKind: ReadonlyMap<string, "video" | "image" | "audio">;
+  /** assetId → measured loudness (missing → gain 1). */
+  assetLoudness?: ReadonlyMap<
+    string,
+    { lufs: number | null; truePeakDb: number | null }
+  >;
   fps?: number;
 };
 
@@ -80,21 +87,35 @@ function secToFrame(sec: number, fps: number): number {
   return Math.max(0, Math.round(sec * fps));
 }
 
+function loudnessOf(
+  assetLoudness:
+    | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
+    | undefined,
+  assetId: string,
+): { lufs: number | null; truePeakDb: number | null } {
+  return assetLoudness?.get(assetId) ?? { lufs: null, truePeakDb: null };
+}
+
 function buildSections(
   arolls: readonly ArollKeep[],
   mediaUrls: ReadonlyMap<string, string>,
+  assetLoudness:
+    | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
+    | undefined,
   fps: number,
 ): ArollSection[] {
   return arolls.map((keep) => {
     const trimBefore = secToFrame(keep.start, fps);
     const trimAfter = secToFrame(keep.end, fps);
     const durationInFrames = Math.max(1, trimAfter - trimBefore);
+    const loud = loudnessOf(assetLoudness, keep.assetId);
     return {
       assetId: keep.assetId,
       src: mediaUrls.get(keep.assetId) ?? "",
       trimBefore,
       trimAfter,
       durationInFrames,
+      volume: arollPlaybackGain(loud.lufs, loud.truePeakDb),
     };
   });
 }
@@ -441,6 +462,9 @@ function buildSfx(
   cells: ReturnType<typeof buildArollLayout>,
   mediaUrls: ReadonlyMap<string, string>,
   assetKind: ReadonlyMap<string, "video" | "image" | "audio">,
+  assetLoudness:
+    | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
+    | undefined,
   fps: number,
 ): SfxClipProp[] {
   const out: SfxClipProp[] = [];
@@ -451,6 +475,7 @@ function buildSfx(
     if (assetKind.get(e.assetId) !== "audio") continue;
     const range = timelineRangeToOutput(cells, e);
     if (!range) continue;
+    const loud = loudnessOf(assetLoudness, e.assetId);
     out.push({
       id: e.id,
       startFrame: secToFrame(range.start, fps),
@@ -460,10 +485,30 @@ function buildSfx(
       ),
       src,
       mediaOffsetSec: e.mediaOffsetSec,
-      volume: e.volume,
+      volume: mixPlaybackVolume(e.volume, loud.lufs, loud.truePeakDb),
     });
   }
   return out;
+}
+
+function buildMusic(
+  music: ProjectConfig["music"],
+  mediaUrls: ReadonlyMap<string, string>,
+  assetKind: ReadonlyMap<string, "video" | "image" | "audio">,
+  assetLoudness:
+    | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
+    | undefined,
+): MusicClipProp | null {
+  if (!music) return null;
+  const src = mediaUrls.get(music.assetId);
+  if (!src) return null;
+  if (assetKind.get(music.assetId) !== "audio") return null;
+  const loud = loudnessOf(assetLoudness, music.assetId);
+  return {
+    src,
+    volume: mixPlaybackVolume(music.volume, loud.lufs, loud.truePeakDb),
+    mediaOffsetSec: music.mediaOffsetSec,
+  };
 }
 
 export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
@@ -471,6 +516,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
   const sections = buildSections(
     input.config.arolls,
     input.mediaUrls,
+    input.assetLoudness,
     fps,
   ).filter((s) => s.src.length > 0);
 
@@ -508,7 +554,14 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
       layout,
       input.mediaUrls,
       input.assetKind,
+      input.assetLoudness,
       fps,
+    ),
+    music: buildMusic(
+      input.config.music,
+      input.mediaUrls,
+      input.assetKind,
+      input.assetLoudness,
     ),
   };
 }

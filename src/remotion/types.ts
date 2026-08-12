@@ -9,6 +9,8 @@ export type ArollSection = {
   trimBefore: number;
   trimAfter: number;
   durationInFrames: number;
+  /** Peak-limited gain to voice target LUFS. */
+  volume: number;
 };
 
 export type CaptionWordProp = {
@@ -92,6 +94,13 @@ export type SfxClipProp = {
   volume: number;
 };
 
+export type MusicClipProp = {
+  src: string;
+  /** Mix × library-normalize gain (may be >1). */
+  volume: number;
+  mediaOffsetSec: number;
+};
+
 /** Baked camera-shake clip (intensity = fraction of composition size). */
 export type ShakeClipProp = {
   id: number;
@@ -115,4 +124,5 @@ export type ProjectProps = {
   shakes: ShakeClipProp[];
   brolls: BrollClipProp[];
   sfx: SfxClipProp[];
+  music?: MusicClipProp | null;
 };

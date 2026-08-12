@@ -9,7 +9,7 @@ import { clampRangeEdge } from "~/editor/lib/range";
 import { useIsSelected } from "~/editor/lib/use-is-selected";
 import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
-import { useEditor, useGlobalWords } from "~/editor/store";
+import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
 import type { ArollLayoutCell } from "~/domain/arolls";
@@ -24,7 +24,6 @@ export function VideoTrack({ layout, width }: Props) {
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const seekTimeline = useEditor((s) => s.seekTimeline);
   const patchArollRange = useEditor((s) => s.patchArollRange);
-  const words = useGlobalWords();
   const select = useSelection((s) => s.select);
   const snap = useTimelineSnap();
   const { startDrag } = useTrackDrag();
@@ -62,7 +61,12 @@ export function VideoTrack({ layout, width }: Props) {
                 seekTimeline(cell.timeline.start);
               }}
             >
-              <VoiceBand {...cell.timeline} words={words} />
+              <VoiceBand
+                {...cell.timeline}
+                localStart={cell.local.start}
+                localEnd={cell.local.end}
+                assetId={cell.local.assetId}
+              />
               {arollIndex != null ? (
                 <>
                   <Handle

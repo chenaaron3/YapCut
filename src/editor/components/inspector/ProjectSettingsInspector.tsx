@@ -10,7 +10,7 @@ export function ProjectSettingsInspector() {
   );
 
   const sfxAssets = assets
-    .filter((a) => a.kind === "audio")
+    .filter((a) => a.audioLibrary === "sfx")
     .slice()
     .sort((a, b) =>
       formatSfxLabel(a.originalFilename, a.id).localeCompare(

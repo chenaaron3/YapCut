@@ -20,6 +20,11 @@ import {
   nextAssetSortOrder,
 } from "~/server/media/asset-upload";
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";
+import { measureAsset } from "~/server/media/measure-asset";
+import {
+  isGlobalMusicKey,
+  isGlobalSfxKey,
+} from "~/server/media/keys";
 
 import { TRPCError } from "@trpc/server";
 
@@ -55,6 +60,40 @@ function isEmptyConfig(value: unknown): boolean {
   return Object.keys(value).length === 0;
 }
 
+function audioLibraryOf(
+  s3Key: string,
+  kind: "video" | "image" | "audio",
+): "sfx" | "music" | null {
+  if (kind !== "audio") return null;
+  if (isGlobalSfxKey(s3Key)) return "sfx";
+  if (isGlobalMusicKey(s3Key)) return "music";
+  return "music";
+}
+
+/** Sign playback; never send s3Key. `audioLibrary` is derived from the key. */
+function toClientAsset<
+  T extends {
+    kind: "video" | "image" | "audio";
+    s3Key: string;
+    waveformPeaks?: number[] | null;
+    waveformPeaksPerSec?: number | null;
+  },
+>(row: T) {
+  const { s3Key, waveformPeaks, waveformPeaksPerSec, ...rest } = row;
+  const waveform =
+    waveformPeaksPerSec != null &&
+    Array.isArray(waveformPeaks) &&
+    waveformPeaks.length > 0
+      ? { peaksPerSec: waveformPeaksPerSec, peaks: waveformPeaks }
+      : null;
+  return {
+    ...rest,
+    playbackUrl: signedCloudFrontUrl(s3Key, { expiresInSec: 60 * 60 * 6 }),
+    audioLibrary: audioLibraryOf(s3Key, row.kind),
+    waveform,
+  };
+}
+
 export const projectRouter = createTRPCRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db
@@ -64,30 +103,26 @@ export const projectRouter = createTRPCRouter({
       .orderBy(desc(projects.updatedAt));
   }),
 
-  /** Global SFX library (`projectId` null, `kind` audio). */
-  listGlobalSfx: protectedProcedure.query(async ({ ctx }) => {
+  /** Global SFX + music libraries (`projectId` null). */
+  listGlobalAssets: protectedProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db
       .select({
         id: assets.id,
         kind: assets.kind,
         s3Key: assets.s3Key,
-        contentType: assets.contentType,
         durationSec: assets.durationSec,
         width: assets.width,
         height: assets.height,
         originalFilename: assets.originalFilename,
         sortOrder: assets.sortOrder,
+        lufs: assets.lufs,
+        truePeakDb: assets.truePeakDb,
       })
       .from(assets)
       .where(and(isNull(assets.projectId), eq(assets.kind, "audio")))
       .orderBy(asc(assets.originalFilename));
 
-    return rows.map(({ s3Key, ...asset }) => ({
-      ...asset,
-      playbackUrl: signedCloudFrontUrl(s3Key, {
-        expiresInSec: 60 * 60 * 6,
-      }),
-    }));
+    return rows.map(toClientAsset);
   }),
 
   byId: protectedProcedure
@@ -118,12 +153,15 @@ export const projectRouter = createTRPCRouter({
               id: true,
               kind: true,
               s3Key: true,
-              contentType: true,
               durationSec: true,
               width: true,
               height: true,
               originalFilename: true,
               sortOrder: true,
+              lufs: true,
+              truePeakDb: true,
+              waveformPeaksPerSec: true,
+              waveformPeaks: true,
             },
             with: {
               transcript: {
@@ -163,12 +201,7 @@ export const projectRouter = createTRPCRouter({
         config: isEmptyConfig(project.config)
           ? emptyProjectConfig()
           : parseProjectConfig(project.config),
-        assets: project.assets.map(({ s3Key, ...asset }) => ({
-          ...asset,
-          playbackUrl: signedCloudFrontUrl(s3Key, {
-            expiresInSec: 60 * 60 * 6,
-          }),
-        })),
+        assets: project.assets.map(toClientAsset),
       };
     }),
 
@@ -526,8 +559,8 @@ export const projectRouter = createTRPCRouter({
               filename: z.string().min(1).max(512),
               contentType: z.string().min(1).max(255),
               size: z.number().int().nonnegative(),
-              width: z.number().int().positive(),
-              height: z.number().int().positive(),
+              width: z.number().int().positive().optional(),
+              height: z.number().int().positive().optional(),
               durationSec: z.number().positive().optional(),
             }),
           )
@@ -560,26 +593,37 @@ export const projectRouter = createTRPCRouter({
       const files = input.files.map((file) => {
         const isVideo = file.contentType.startsWith("video/");
         const isImage = file.contentType.startsWith("image/");
-        if (!isVideo && !isImage) {
+        const isAudio = file.contentType.startsWith("audio/");
+        if (!isVideo && !isImage && !isAudio) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Expected image/* or video/*, got ${file.contentType}`,
+            message: `Expected image/*, video/*, or audio/*, got ${file.contentType}`,
           });
         }
-        if (isVideo && file.durationSec == null) {
+        if ((isVideo || isAudio) && file.durationSec == null) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: `Video ${file.filename} requires durationSec`,
+            message: `${isAudio ? "Audio" : "Video"} ${file.filename} requires durationSec`,
+          });
+        }
+        if ((isVideo || isImage) && (file.width == null || file.height == null)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `${file.filename} requires width and height`,
           });
         }
         return {
           filename: file.filename,
           contentType: file.contentType,
-          kind: isVideo ? ("video" as const) : ("image" as const),
+          kind: isVideo
+            ? ("video" as const)
+            : isAudio
+              ? ("audio" as const)
+              : ("image" as const),
           sortOrder: nextSort++,
-          width: file.width,
-          height: file.height,
-          durationSec: isVideo ? file.durationSec! : null,
+          width: file.width ?? null,
+          height: file.height ?? null,
+          durationSec: isVideo || isAudio ? file.durationSec! : null,
         };
       });
 
@@ -632,6 +676,8 @@ export const projectRouter = createTRPCRouter({
           height: assets.height,
           originalFilename: assets.originalFilename,
           sortOrder: assets.sortOrder,
+          lufs: assets.lufs,
+          truePeakDb: assets.truePeakDb,
         })
         .from(assets)
         .where(
@@ -660,13 +706,45 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
+      for (const row of matched) {
+        if (row.kind !== "audio") continue;
+        try {
+          await measureAsset(row);
+        } catch (error) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Could not measure loudness for ${row.originalFilename ?? row.id}: ${
+              error instanceof Error ? error.message : "unknown error"
+            }`,
+          });
+        }
+      }
+
+      const measured = await ctx.db
+        .select({
+          id: assets.id,
+          kind: assets.kind,
+          s3Key: assets.s3Key,
+          durationSec: assets.durationSec,
+          width: assets.width,
+          height: assets.height,
+          originalFilename: assets.originalFilename,
+          sortOrder: assets.sortOrder,
+          lufs: assets.lufs,
+          truePeakDb: assets.truePeakDb,
+          waveformPeaksPerSec: assets.waveformPeaksPerSec,
+          waveformPeaks: assets.waveformPeaks,
+        })
+        .from(assets)
+        .where(
+          and(
+            eq(assets.projectId, input.projectId),
+            inArray(assets.id, input.assetIds),
+          ),
+        );
+
       return {
-        assets: matched.map(({ s3Key, ...asset }) => ({
-          ...asset,
-          playbackUrl: signedCloudFrontUrl(s3Key, {
-            expiresInSec: 60 * 60 * 6,
-          }),
-        })),
+        assets: measured.map(toClientAsset),
       };
     }),
 });

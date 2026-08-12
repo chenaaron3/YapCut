@@ -24,10 +24,12 @@ export const env = createEnv({
     CLOUDFRONT_DOMAIN: z.string().min(1),
     CLOUDFRONT_KEY_PAIR_ID: z.string().min(1),
     CLOUDFRONT_PRIVATE_KEY: z.string().min(1),
-    /** Optional; used by seed:global-sfx to invalidate CDN after SFX overwrites. */
+    /** Optional; used by seed:global to invalidate CDN after SFX overwrites. */
     CLOUDFRONT_DISTRIBUTION_ID: z.string().min(1).optional(),
     OPENAI_API_KEY: z.string().min(1),
     REPLICATE_API_TOKEN: z.string().min(1),
+    /** fal.ai key for ffmpeg-api loudness + waveform (create / music upload). */
+    FAL_KEY: z.string().min(1),
     /** When "true", start create via Vercel Workflow SDK; else in-process. */
     USE_VERCEL_WORKFLOW: z
       .enum(["true", "false"])
@@ -70,6 +72,7 @@ export const env = createEnv({
     CLOUDFRONT_DISTRIBUTION_ID: process.env.CLOUDFRONT_DISTRIBUTION_ID,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN,
+    FAL_KEY: process.env.FAL_KEY,
     USE_VERCEL_WORKFLOW: process.env.USE_VERCEL_WORKFLOW,
     REMOTION_FUNCTION_NAME: process.env.REMOTION_FUNCTION_NAME,
     REMOTION_SERVE_URL: process.env.REMOTION_SERVE_URL,

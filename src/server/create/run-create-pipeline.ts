@@ -3,6 +3,7 @@ import {
   loadCreateAssets,
   markAssetTranscriptFailed,
   markCreateFailed,
+  measureCreateAssets,
   saveAssetTranscript,
   startAssetWhisperX,
 } from "~/server/create/create-pipeline";
@@ -63,5 +64,6 @@ async function runCreatePipelineInner(projectId: string): Promise<void> {
     }
   }
 
+  await measureCreateAssets(projectId);
   await finalizeCreateProject(projectId);
 }

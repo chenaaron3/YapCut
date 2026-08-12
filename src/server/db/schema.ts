@@ -308,6 +308,13 @@ export const assets = createTable(
     width: d.integer(),
     height: d.integer(),
     originalFilename: d.varchar({ length: 512 }),
+    /** Integrated LUFS (EBU R128). Null until measured. */
+    lufs: d.doublePrecision(),
+    /** True peak dBTP. Null until measured. */
+    truePeakDb: d.doublePrecision(),
+    /** Peak envelope for A-roll timeline (local asset time). */
+    waveformPeaksPerSec: d.doublePrecision(),
+    waveformPeaks: d.jsonb().$type<number[]>(),
     sortOrder: d.integer().notNull().default(0),
     createdAt: d
       .timestamp({ withTimezone: true })

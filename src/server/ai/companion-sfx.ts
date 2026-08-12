@@ -227,8 +227,9 @@ async function callOpenAI(
         role: "system",
         content: [
           "You assign companion SFX to visual edit candidates for a talking-head short.",
-          "Each candidate already has a fixed role — only choose soft, medium, hard, or none using that role's guidance in the pack.",
-          "Return one assignment per candidate you decide on; omitted candidates are treated as none.",
+          "Each candidate already has a fixed role — choose soft, medium, hard, or none using that role's guidance in the pack.",
+          "Bias toward placing SFX so the short feels punctuated; prefer soft over none when unsure.",
+          "Return exactly one assignment for every candidate.",
         ].join(" "),
       },
       {

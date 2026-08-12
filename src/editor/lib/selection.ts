@@ -14,7 +14,7 @@ export type Selection = {
 };
 
 /** Project-field inspector panels (not entity selections). */
-export type ProjectPanel = "captions" | "settings";
+export type ProjectPanel = "captions" | "settings" | "music";
 
 /** Editor slices needed for A-roll asset selection fallbacks. */
 export type IsSelectedEditor = {

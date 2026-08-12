@@ -21,7 +21,12 @@ import {
   removeEdit,
   type RangeEdge,
 } from "~/domain/edits";
-import { clampTimelineRangeToMedia } from "~/domain/media";
+import {
+  clampTimelineRangeToMedia,
+  withMediaRefPatch,
+  type MediaRefPatch,
+} from "~/domain/media";
+import { musicFromAsset } from "~/domain/music";
 import { PROJECT_FPS } from "~/domain/project-config";
 import {
   projectTimelineWords,
@@ -38,15 +43,22 @@ import {
   COMPOSITION_WIDTH,
 } from "~/remotion/constants";
 
+import type { SerializedWaveform } from "~/domain/audio/waveform";
 import type { ArollLayoutCell } from "~/domain/arolls";
 import type { EditPatch, EditSeed } from "~/domain/edits";
 import type { EmphasisStyle } from "~/domain/emphasis-style";
-import type { ProjectConfig, TemplateStyle } from "~/domain/project-config";
+import type {
+  EditId,
+  ProjectConfig,
+  TemplateStyle,
+} from "~/domain/project-config";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 import type { ProjectProps } from "~/remotion/types";
 
 /** Mutable transcript-word fields (local asset words). */
 export type WordPatch = Partial<Pick<TranscriptWord, "emphasized" | "text">>;
+
+export type AudioLibrary = "sfx" | "music";
 
 export type EditorAsset = {
   id: string;
@@ -57,6 +69,10 @@ export type EditorAsset = {
   height: number | null;
   originalFilename: string | null;
   sortOrder: number;
+  audioLibrary: AudioLibrary | null;
+  lufs: number | null;
+  truePeakDb: number | null;
+  waveform: SerializedWaveform | null;
 };
 
 type Snapshot = {
@@ -129,6 +145,7 @@ type EditorActions = {
   setDefaultBRollSfxAssetId: (assetId: string | null) => void;
   /** Merge newly uploaded assets into the editor library. */
   addAssets: (assets: EditorAsset[]) => void;
+  setMusic: (assetId: string) => void;
   /**
    * Move an A-roll asset run from `fromIndex` → `toIndex` (stitch order).
    * Edits starting in a run move with it. `Asset.sortOrder` syncs on config save.
@@ -162,6 +179,12 @@ type EditorActions = {
   patchEmphasisStyle: (next: EmphasisStyle, live?: boolean) => void;
   /** Patch fields on an existing edit (discriminant fixed). */
   patchEdit: (id: number, patch: EditPatch, live?: boolean) => void;
+  /** Volume / media offset for the music bed or an sfx/b-roll edit. */
+  patchMediaRef: (
+    target: "music" | EditId,
+    patch: MediaRefPatch,
+    live?: boolean,
+  ) => void;
   /** Patch a projected word (writes through to the asset transcript). */
   patchWord: (globalIndex: number, patch: WordPatch, live?: boolean) => void;
   /** Rename Project.title column only (does not sync text VFX). */
@@ -169,6 +192,7 @@ type EditorActions = {
 
   // —— Delete ——
   deleteSelection: () => boolean;
+  clearMusic: () => void;
   /** Cut the word (or word selection if it includes this word). */
   cutWord: (globalIndex: number) => void;
 
@@ -249,6 +273,14 @@ function kindMap(
   return new Map(assets.map((a) => [a.id, a.kind]));
 }
 
+function loudnessMap(
+  assets: EditorAsset[],
+): Map<string, { lufs: number | null; truePeakDb: number | null }> {
+  return new Map(
+    assets.map((a) => [a.id, { lufs: a.lufs, truePeakDb: a.truePeakDb }]),
+  );
+}
+
 function recomputeProps(state: {
   config: ProjectConfig;
   assets: EditorAsset[];
@@ -264,6 +296,7 @@ function recomputeProps(state: {
     assetDurationSec: durationMap(state.assets),
     assetSize: sizeMap(state.assets),
     assetKind: kindMap(state.assets),
+    assetLoudness: loudnessMap(state.assets),
     fps: state.fps,
   });
 }
@@ -595,9 +628,22 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
 
     deleteSelection: () => {
       const { config, transcriptsByAssetId, assets } = get();
-      const { selection, clearSelection, setSelection } =
+      const { selection, projectPanel, clearSelection, setSelection } =
         useSelection.getState();
-      if (!config || !selection) return false;
+      if (!config) return false;
+
+      if (projectPanel === "music" && config.music) {
+        commit({
+          config: produce(config, (draft) => {
+            draft.music = null;
+          }),
+          transcriptsByAssetId,
+        });
+        clearSelection();
+        return true;
+      }
+
+      if (!selection) return false;
 
       const durations = durationMap(assets);
 
@@ -670,6 +716,16 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       }
 
       return false;
+    },
+
+    clearMusic: () => {
+      const { config, transcriptsByAssetId } = get();
+      if (!config || !config.music) return;
+      const next = produce(config, (draft) => {
+        draft.music = null;
+      });
+      commit({ config: next, transcriptsByAssetId });
+      useSelection.getState().clearSelection();
     },
 
     patchWord: (globalIndex, patch, live = false) => {
@@ -760,6 +816,16 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
           title: get().title,
         }),
       });
+    },
+
+    setMusic: (assetId) => {
+      const { config, transcriptsByAssetId } = get();
+      if (!config) return;
+      const next = produce(config, (draft) => {
+        draft.music = musicFromAsset(assetId);
+      });
+      commit({ config: next, transcriptsByAssetId });
+      useSelection.getState().openMusicPanel();
     },
 
     reorderArollAssets: (fromIndex, toIndex, live = false) => {
@@ -924,6 +990,22 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         },
         { live },
       );
+    },
+
+    patchMediaRef: (target, patch, live = false) => {
+      if (target !== "music") {
+        get().patchEdit(target, patch, live);
+        return;
+      }
+      const { config, transcriptsByAssetId, assets } = get();
+      if (!config?.music) return;
+      const srcDur =
+        assets.find((a) => a.id === config.music!.assetId)?.durationSec ??
+        null;
+      const next = produce(config, (draft) => {
+        draft.music = withMediaRefPatch(draft.music!, patch, srcDur);
+      });
+      commit({ config: next, transcriptsByAssetId }, { live });
     },
 
     setProjectTitle: (title) => {

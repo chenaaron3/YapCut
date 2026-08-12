@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { mixPlaybackVolume } from "~/domain/audio/mix-levels";
 import {
   DEFAULT_SFX_VOLUME,
   formatSfxLabel,
@@ -118,7 +119,11 @@ function SfxRow({
         className="bg-sfx/25 text-sfx hover:bg-sfx/40 flex h-7 w-7 shrink-0 items-center justify-center rounded"
         onClick={(e) => {
           e.stopPropagation();
-          onPreview(asset.id, asset.playbackUrl, DEFAULT_SFX_VOLUME);
+          onPreview(
+            asset.id,
+            asset.playbackUrl,
+            mixPlaybackVolume(DEFAULT_SFX_VOLUME, asset.lufs, asset.truePeakDb),
+          );
         }}
         title={playingKey === asset.id ? "Stop" : "Preview"}
       >
@@ -149,7 +154,7 @@ export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
     return (
       <p className="text-muted-foreground p-2.5 text-xs">
         No global SFX seeded. Run{" "}
-        <code className="text-[10px]">npm run seed:global-sfx</code>.
+        <code className="text-[10px]">npm run seed:global</code>.
       </p>
     );
   }

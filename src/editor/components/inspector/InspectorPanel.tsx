@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { BRollInspector } from "~/editor/components/inspector/BRollInspector";
 import { CaptionsInspector } from "~/editor/components/inspector/CaptionsInspector";
 import { ListicleVfxInspector } from "~/editor/components/inspector/ListicleVfxInspector";
+import { MusicInspector } from "~/editor/components/inspector/MusicInspector";
 import { ProjectSettingsInspector } from "~/editor/components/inspector/ProjectSettingsInspector";
 import { QuoteVfxInspector } from "~/editor/components/inspector/QuoteVfxInspector";
 import { SfxInspector } from "~/editor/components/inspector/SfxInspector";
@@ -36,6 +37,11 @@ export function InspectorPanel() {
   } else if (projectPanel === "captions") {
     title = "Captions";
     body = <CaptionsInspector />;
+  } else if (projectPanel === "music") {
+    if (config?.music) {
+      title = "Music";
+      body = <MusicInspector clip={config.music} />;
+    }
   } else if (selection?.kind === "edit" && config) {
     const id = primaryId(selection);
     const edit =

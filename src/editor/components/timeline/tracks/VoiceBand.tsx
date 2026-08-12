@@ -1,11 +1,14 @@
 import { useMemo } from "react";
 
+import { peakMax, sampleWaveformGrid } from "~/domain/audio/waveform";
 import type { TimelineTime } from "~/domain/time";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
 import { useEditor } from "~/editor/store";
 
 type Props = TimelineTime & {
-  words: GlobalTranscriptWord[];
+  /** Local asset time for this keep cell. */
+  localStart: number;
+  localEnd: number;
+  assetId: string;
 };
 
 const CENTER = 50;
@@ -14,44 +17,31 @@ const MIN_HALF = 3;
 const CENTER_GAP = 1.2;
 const BAR_PX = 2.2;
 
-type Bar = { x: number; amp: number };
-
-/** Envelope from word timing (no audio peaks yet). */
-function buildWordEnvelopeGrid(
-  start: number,
-  end: number,
-  words: GlobalTranscriptWord[],
-  secondsPerBar: number,
-): Bar[] {
-  const duration = end - start;
-  if (duration <= 0 || secondsPerBar <= 0) return [];
-
-  const active = words.filter((w) => w.start < end && w.end > start);
-  const out: Bar[] = [];
-  const first = Math.floor(start / secondsPerBar);
-  const last = Math.ceil(end / secondsPerBar) - 1;
-
-  for (let i = first; i <= last; i++) {
-    const t0 = i * secondsPerBar;
-    const tCenter = t0 + secondsPerBar / 2;
-    if (tCenter < start || tCenter > end) continue;
-    const speaking = active.some((w) => tCenter >= w.start && tCenter < w.end);
-    out.push({
-      x: (tCenter - start) / duration,
-      amp: speaking ? 0.7 : 0.04,
-    });
-  }
-
-  return out;
-}
-
-export function VoiceBand({ start, end, words }: Props) {
+export function VoiceBand({
+  start,
+  end,
+  localStart,
+  localEnd,
+  assetId,
+}: Props) {
   const pxPerSec = useEditor((s) => s.pxPerSec);
+  const waveform = useEditor(
+    (s) => s.assets.find((a) => a.id === assetId)?.waveform ?? null,
+  );
 
   const bars = useMemo(() => {
     if (pxPerSec <= 0 || end <= start) return [];
-    return buildWordEnvelopeGrid(start, end, words, BAR_PX / pxPerSec);
-  }, [start, end, words, pxPerSec]);
+    if (!waveform || waveform.peaks.length === 0) return [];
+    const maxAmp = peakMax(waveform.peaks);
+    if (maxAmp <= 0) return [];
+    return sampleWaveformGrid(
+      waveform,
+      localStart,
+      localEnd,
+      BAR_PX / pxPerSec,
+      maxAmp,
+    );
+  }, [start, end, localStart, localEnd, pxPerSec, waveform]);
 
   if (bars.length < 2) return null;
 

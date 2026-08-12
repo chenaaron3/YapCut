@@ -3,12 +3,13 @@ import { useMemo, useState } from "react";
 import { arollAssetOrder } from "~/domain/arolls";
 import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
 import { BrollLibrary } from "~/editor/components/assets/BrollLibrary";
+import { MusicLibrary } from "~/editor/components/assets/MusicLibrary";
 import { SfxLibrary } from "~/editor/components/assets/SfxLibrary";
 import { VfxLibrary } from "~/editor/components/assets/VfxLibrary";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-type Tab = "aroll" | "broll" | "vfx" | "sfx";
+type Tab = "aroll" | "broll" | "vfx" | "sfx" | "music";
 
 export function AssetsPanel() {
   const assets = useEditor((s) => s.assets);
@@ -39,7 +40,12 @@ export function AssetsPanel() {
   );
 
   const sfxAssets = useMemo(
-    () => assets.filter((a) => a.kind === "audio"),
+    () => assets.filter((a) => a.audioLibrary === "sfx"),
+    [assets],
+  );
+
+  const musicAssets = useMemo(
+    () => assets.filter((a) => a.audioLibrary === "music"),
     [assets],
   );
 
@@ -52,6 +58,7 @@ export function AssetsPanel() {
             ["broll", "B-roll"],
             ["vfx", "VFX"],
             ["sfx", "SFX"],
+            ["music", "Music"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -77,6 +84,8 @@ export function AssetsPanel() {
           <BrollLibrary assets={brollAssets} />
         ) : tab === "vfx" ? (
           <VfxLibrary />
+        ) : tab === "music" ? (
+          <MusicLibrary assets={musicAssets} />
         ) : (
           <SfxLibrary assets={sfxAssets} />
         )}

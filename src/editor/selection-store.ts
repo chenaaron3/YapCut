@@ -19,7 +19,7 @@ export type { ProjectPanel, Selection, SelectionId, SelectionKind };
 
 type SelectionState = {
   selection: Selection | null;
-  /** Project-field inspector (captions, later music). Mutually exclusive with selection. */
+  /** Project-field inspector (captions, music). Mutually exclusive with selection. */
   projectPanel: ProjectPanel | null;
 };
 
@@ -36,6 +36,8 @@ type SelectionActions = {
   ) => void;
   /** Open the Captions project-field inspector. */
   openCaptionsPanel: () => void;
+  /** Open the Music project-field inspector. */
+  openMusicPanel: () => void;
   /** Open the Project settings inspector. */
   openSettingsPanel: () => void;
   selectWordRange: (start: number, end: number) => void;
@@ -93,6 +95,10 @@ export const useSelection = create<SelectionState & SelectionActions>(
 
     openCaptionsPanel: () => {
       set({ selection: null, projectPanel: "captions" });
+    },
+
+    openMusicPanel: () => {
+      set({ selection: null, projectPanel: "music" });
     },
 
     openSettingsPanel: () => {
