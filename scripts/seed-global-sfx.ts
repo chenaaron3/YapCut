@@ -5,8 +5,8 @@
  * Prunes obsolete global audio not in the keep set.
  *
  * Layout:
- *   public/sfx/<role>/<intensity>/*   — AI companion pools
- *   public/sfx/custom/memes/*         — manual library only
+ *   public/sfx/<role>/*               — AI companion pools (flat per role)
+ *   public/sfx/custom/<folder>/*      — manual library only (memes, riser, …)
  *
  * Usage:
  *   npm run seed:global-sfx
@@ -23,7 +23,6 @@ import { promisify } from "node:util";
 import { eq, isNull } from "drizzle-orm";
 
 import {
-  AI_SFX_INTENSITIES,
   AI_SFX_ROLES,
   expectedAiSfxPoolDirs,
   parseAiSfxPoolPath,
@@ -40,7 +39,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_SFX_DIR = path.resolve(ROOT, "public/sfx");
 
 const AUDIO_EXT = new Set([".wav", ".mp3"]);
-const MEME_PREFIX = "custom/memes/";
+const CUSTOM_PREFIX = "custom/";
 
 function contentTypeFor(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
@@ -127,7 +126,7 @@ function parseArgs(argv: string[]): { sfxDir: string; force: boolean } {
 }
 
 function isKeepRelativePath(relativePath: string): boolean {
-  if (relativePath.startsWith(MEME_PREFIX)) return true;
+  if (relativePath.startsWith(CUSTOM_PREFIX)) return true;
   return parseAiSfxPoolPath(relativePath) != null;
 }
 
@@ -143,17 +142,18 @@ async function main() {
   }
   console.log(`[seed-global-sfx] found ${files.length} files`);
 
-  // Validate every AI role/intensity pool has ≥1 file.
+  // Validate every AI role pool has ≥1 file.
   const poolCounts = new Map<string, number>();
   for (const dir of expectedAiSfxPoolDirs()) {
     poolCounts.set(dir, 0);
   }
-  let memeCount = 0;
+  const customCounts = new Map<string, number>();
 
   for (const filePath of files) {
     const relativePath = path.relative(sfxDir, filePath).split(path.sep).join("/");
-    if (relativePath.startsWith(MEME_PREFIX)) {
-      memeCount += 1;
+    if (relativePath.startsWith(CUSTOM_PREFIX)) {
+      const folder = relativePath.split("/")[1] ?? "custom";
+      customCounts.set(folder, (customCounts.get(folder) ?? 0) + 1);
       continue;
     }
     const parsed = parseAiSfxPoolPath(relativePath);
@@ -163,8 +163,7 @@ async function main() {
       );
       continue;
     }
-    const key = `${parsed.role}/${parsed.intensity}`;
-    poolCounts.set(key, (poolCounts.get(key) ?? 0) + 1);
+    poolCounts.set(parsed.role, (poolCounts.get(parsed.role) ?? 0) + 1);
   }
 
   const emptyPools = [...poolCounts.entries()].filter(([, n]) => n === 0);
@@ -177,12 +176,11 @@ async function main() {
   }
 
   for (const role of AI_SFX_ROLES) {
-    for (const intensity of AI_SFX_INTENSITIES) {
-      const key = `${role}/${intensity}`;
-      console.log(`  pool  ${key}: ${poolCounts.get(key) ?? 0}`);
-    }
+    console.log(`  pool  ${role}: ${poolCounts.get(role) ?? 0}`);
   }
-  console.log(`  pool  custom/memes: ${memeCount}`);
+  for (const [folder, n] of [...customCounts.entries()].sort()) {
+    console.log(`  pool  custom/${folder}: ${n}`);
+  }
 
   const keepRelative = new Set<string>();
   for (const filePath of files) {

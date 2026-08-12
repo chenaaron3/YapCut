@@ -66,12 +66,12 @@ Short high-impact key-phrase span for a quote VFX (~3–10 words), not a full se
 _Avoid_: quote-as-paragraph, quote overlapping listicle, packing ordinary connective speech, back-to-back quotes
 
 **Companion SFX**:
-An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, listicle indicator/value, title card). Optional per candidate (`none` allowed). Not used to plug pacing gaps. AI does not place hook-riser (`build`) companions.
+An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, listicle indicator/value, title card). Optional per candidate (`none` allowed). Not used to plug pacing gaps. AI does not place riser companions.
 _Avoid_: nesting SFX on zoom/vfx; free-placement SFX as gap filler; SFX on sparse outer emphasis; SFX on slow zooms
 
 **AI SFX pack**:
-Curated role × intensity (`soft`/`medium`/`hard`) for create AI only. Roles: `reveal` (title + listicle indicator), `tick` (listicle value), `ping` (quote peak), `motion` (punch-in); pack also has `build` (hook riser) but AI does not candidate it. LLM picks `role.intensity` or `none`; place-time hash picks one Asset from `public/sfx/<role>/<intensity>/`. Intensity sets volume. `custom/memes/` is manual library only.
-_Avoid_: letting the LLM choose from the entire global library; `texture` roles (typing/flash); meme in AI pool; hardcoding asset UUIDs in the pack
+Curated role pools for create AI only. Roles: `reveal` (title + listicle indicator), `tick` (listicle value), `ping` (quote peak), `motion` (punch-in). LLM picks intensity (`soft`/`medium`/`hard`) or `none` for a fixed candidate role; place-time hash picks one Asset from `public/sfx/<role>/`. Intensity sets volume only. `custom/memes/` and `custom/riser/` are manual library only (SFX tab).
+_Avoid_: letting the LLM choose from the entire global library; `texture` roles (typing/flash); meme/riser in AI pool; hardcoding asset UUIDs in the pack; nesting separate sound pools under intensity folders
 
 **Beat**:
 A visible or audible onset that resets pacing: punch-in start, quote start, listicle indicator start and value middle (when staggered), emphasized word start, seeded title `vfx/text` start. Target: about one beat every ~3s of keep/output time (~2s in the **hook**).
@@ -195,7 +195,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    4. quotes (key phrases ~3–10 words; first starts at word 0 / hook end by LLM; ≥5 words between; no overlap with listicle; may overlap text/zoom)
    5. emphasis — two LLM passes unioned: sparse over whole script, then denser inside quote ranges
    6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
-   7. companion SFX (role.intensity from AI SFX pack; hash-pick asset from pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no hook-riser/`build` candidates)
+   7. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
    Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
 5. Seed default `captions` TemplateStyle → `ready` (create only)
 
@@ -216,7 +216,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
 - Emphasis look is a Project field (`emphasisStyle`); quote may sparse-merge the same `EmphasisStyle` shape on top; AI never writes emphasis style
 - Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
-- Companion SFX are sibling `sfx` edits; AI chooses optional `role.intensity` from the AI SFX pack only; concrete Asset is hash-picked from the seeded pool
+- Companion SFX are sibling `sfx` edits; AI chooses optional intensity (`soft`/`medium`/`hard`) for a fixed candidate role from the AI SFX pack only; concrete Asset is hash-picked from the seeded role pool; intensity sets volume
 - A **Project** has at most one **ScheduleEntry** (v1 strict 1:1); publish media is always the Project’s **current** title, export video key, and **Cover** key (nothing frozen onto the entry except the slot)
 - A **ScheduleEntry** has many **PlatformPublish** rows — at most one current row per platform (no attempt history in v1)
 - **Publisher** consumes opaque refs to that export video + Cover (not local filesystem paths)
@@ -274,6 +274,6 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - Poster/thumbnail for projects grid (may reuse **Cover**)
 - ~~whether schedule **Publisher**s require a separate cover Asset vs frame-from-export~~ → **Cover** is a first-class styled Project output (prototype title-on-first-frame look), required for Publisher
 - ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle/shake → SFX → Zoom; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary)
-- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority reveal/tick → quote ping → punch-in motion (pack still has `build` but AI does not candidate it)
+- ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority reveal/tick → quote ping → punch-in motion (risers are manual library only)
 - ~~Aggressive quote cadence hard quota vs soft~~ → **key-phrase only** (~3–10 words; first quote from word 0; ≥5 words between — spaced subsets)
 

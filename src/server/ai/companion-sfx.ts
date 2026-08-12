@@ -2,13 +2,15 @@ import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
 import {
+  AI_SFX_INTENSITIES,
   COMPANION_SFX_MIN_GAP_SEC,
   COMPANION_SFX_ROLE_PRIORITY,
   formatAiSfxPackForPrompt,
-  getAiSfxVariant,
+  isAiSfxVolumeIntensity,
   resolveAiSfxAssetId,
   volumeForIntensity,
   type AiSfxRole,
+  type AiSfxVolumeIntensity,
 } from "~/domain/ai-sfx-pack";
 import { isListicleEdit } from "~/domain/listicle";
 import { buildNumberedTranscript } from "~/domain/projection";
@@ -29,18 +31,16 @@ export type CompanionCandidate = {
 
 export type CompanionSfxAssetDuration = (assetId: string) => number | null;
 
-/** variantId → global asset ids in that pool. */
+/** role → global asset ids in that pool. */
 export type CompanionSfxPools = ReadonlyMap<string, readonly string[]>;
 
 const CompanionChoiceSchema = z.object({
   assignments: z.array(
     z.object({
       candidateId: z.string().describe("Id from the candidate list"),
-      variantId: z
-        .string()
-        .describe(
-          'Pack variant id for the candidate role (e.g. motion.soft), or "none"',
-        ),
+      intensity: z
+        .enum(AI_SFX_INTENSITIES)
+        .describe("Intensity for the candidate role, or none to skip SFX"),
       reason: z.string().describe("One short sentence"),
     }),
   ),
@@ -121,7 +121,7 @@ type RankedHit = {
   candidateId: string;
   role: AiSfxRole;
   startSec: number;
-  variantId: string;
+  intensity: AiSfxVolumeIntensity;
   priority: number;
 };
 
@@ -166,18 +166,16 @@ export function detectionToSfxEdits(
   const ranked: RankedHit[] = [];
 
   for (const row of detection.assignments) {
-    const variantId = row.variantId.trim();
-    if (!variantId || variantId.toLowerCase() === "none") continue;
+    const raw = row.intensity.trim().toLowerCase();
+    if (!isAiSfxVolumeIntensity(raw)) continue;
     const candidate = byId.get(row.candidateId);
     if (!candidate) continue;
-    const variant = getAiSfxVariant(variantId);
-    if (!variant || variant.role !== candidate.role) continue;
 
     ranked.push({
       candidateId: candidate.id,
       role: candidate.role,
       startSec: candidate.startSec,
-      variantId: variant.id,
+      intensity: raw,
       priority: COMPANION_SFX_ROLE_PRIORITY[candidate.role],
     });
   }
@@ -187,13 +185,7 @@ export function detectionToSfxEdits(
   const out: SfxEdit[] = [];
 
   for (const hit of kept) {
-    const variant = getAiSfxVariant(hit.variantId);
-    if (!variant) continue;
-    const assetId = resolveAiSfxAssetId(
-      hit.variantId,
-      hit.candidateId,
-      pools,
-    );
+    const assetId = resolveAiSfxAssetId(hit.role, hit.candidateId, pools);
     if (!assetId) continue;
     const dur = durationSecFor(assetId) ?? 0.35;
     const end = hit.startSec + Math.max(0.05, dur);
@@ -204,7 +196,7 @@ export function detectionToSfxEdits(
       end,
       assetId,
       mediaOffsetSec: 0,
-      volume: volumeForIntensity(variant.intensity),
+      volume: volumeForIntensity(hit.intensity),
     });
     nextId += 1;
   }
@@ -234,11 +226,8 @@ async function callOpenAI(
       {
         role: "system",
         content: [
-          "You assign companion SFX variants to visual edit candidates for a talking-head short.",
-          "Each candidate has a fixed role — only pick a variant id from that role (role.soft|medium|hard), or none.",
-          "Not every candidate needs SFX. Prefer silence over spam. Skip slow/filler moments.",
-          "Match intensity to the moment using the pack descriptions.",
-          "reveal is overlay enter; tick confirms list values; ping is quote sparkle; motion is punch-in whoosh.",
+          "You assign companion SFX to visual edit candidates for a talking-head short.",
+          "Each candidate already has a fixed role — only choose soft, medium, hard, or none using that role's guidance in the pack.",
           "Return one assignment per candidate you decide on; omitted candidates are treated as none.",
         ].join(" "),
       },

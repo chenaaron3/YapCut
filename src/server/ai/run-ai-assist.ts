@@ -83,9 +83,9 @@ async function loadAiSfxPools(): Promise<{
     if (!row.originalFilename) continue;
     const parsed = parseAiSfxPoolPath(row.originalFilename);
     if (!parsed) continue;
-    const list = poolMap.get(parsed.variantId) ?? [];
+    const list = poolMap.get(parsed.role) ?? [];
     list.push(row.id);
-    poolMap.set(parsed.variantId, list);
+    poolMap.set(parsed.role, list);
     durationByAssetId.set(row.id, row.durationSec);
   }
 

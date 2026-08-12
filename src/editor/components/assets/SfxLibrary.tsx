@@ -12,18 +12,33 @@ import { cn } from "~/lib/utils";
 import type { SfxDragPayload } from "~/domain/sfx";
 import type { EditorAsset } from "~/editor/store";
 
-const FOLDER_ORDER = ["meme", "beep-bop", "realistic", "general"] as const;
+const FOLDER_ORDER = [
+  "meme",
+  "riser",
+  "reveal",
+  "tick",
+  "ping",
+  "motion",
+] as const;
 
 const FOLDER_LABELS: Record<string, string> = {
   meme: "Meme",
-  "beep-bop": "Beep Bop",
-  realistic: "Realistic",
-  general: "General",
+  riser: "Riser",
+  reveal: "Reveal",
+  tick: "Tick",
+  ping: "Ping",
+  motion: "Motion",
 };
 
+/** Group key for SFX tab sections from seeded relative path. */
 function folderOf(filename: string | null): string | null {
   if (!filename) return null;
   const parts = filename.split("/");
+  if (parts[0] === "custom" && parts.length >= 3) {
+    const sub = parts[1]!;
+    if (sub === "memes") return "meme";
+    return sub;
+  }
   return parts.length >= 2 ? (parts[0] ?? null) : null;
 }
 
