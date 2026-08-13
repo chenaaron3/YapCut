@@ -3,6 +3,7 @@ import { Player } from "@remotion/player";
 
 import type { PlayerRef } from "@remotion/player";
 
+import { PlayerControls } from "~/editor/components/player/PlayerControls";
 import { TransformOverlay } from "~/editor/components/player/TransformOverlay";
 import {
   ensurePlayerAudible,
@@ -18,15 +19,6 @@ import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
-
-function FrameCounter({ durationInFrames }: { durationInFrames: number }) {
-  const frame = useEditor((s) => s.frame);
-  return (
-    <div className="shrink-0 border-t border-border px-2 py-1 text-center text-xs text-muted-foreground">
-      f{frame} / {durationInFrames}
-    </div>
-  );
-}
 
 export function PlayerPanel() {
   const props = useEditor((s) => s.props);
@@ -49,8 +41,17 @@ export function PlayerPanel() {
   }, []);
 
   useLayoutEffect(() => {
+    // Props/duration changes invalidate in-flight seeks.
+    seekTargetRef.current = null;
+
     const player = ref.current;
     if (!player) return;
+
+    const syncFromPlayer = () => {
+      const current = player.getCurrentFrame();
+      seekFrame(current);
+      if (player.isPlaying()) syncActiveWord();
+    };
 
     const onUpdate = () => {
       if (isTimelineScrubbing()) return;
@@ -60,18 +61,30 @@ export function PlayerPanel() {
         if (Math.abs(current - target) <= 1) {
           seekTargetRef.current = null;
           if (takePlayAfterSeek()) player.play();
+          syncFromPlayer();
+          return;
         }
-        return;
+        // Paused seek still in flight — wait. If playback resumed (or the
+        // seek was abandoned), follow the player or store freezes forever.
+        if (!player.isPlaying()) return;
+        seekTargetRef.current = null;
+        takePlayAfterSeek();
       }
-      seekFrame(current);
-      if (player.isPlaying()) {
-        syncActiveWord();
-      }
+      syncFromPlayer();
+    };
+
+    const onPlay = () => {
+      // Space/click-to-play must not stay blocked on a stale seek target.
+      seekTargetRef.current = null;
+      takePlayAfterSeek();
+      syncFromPlayer();
     };
 
     player.addEventListener("frameupdate", onUpdate);
+    player.addEventListener("play", onPlay);
     return () => {
       player.removeEventListener("frameupdate", onUpdate);
+      player.removeEventListener("play", onPlay);
     };
   }, [seekFrame, syncActiveWord, inputProps]);
 
@@ -137,7 +150,7 @@ export function PlayerPanel() {
           <TransformOverlay onDraggingChange={setOverlayDragging} />
         </div>
       </div>
-      <FrameCounter durationInFrames={durationInFrames} />
+      <PlayerControls durationInFrames={durationInFrames} />
     </div>
   );
 }

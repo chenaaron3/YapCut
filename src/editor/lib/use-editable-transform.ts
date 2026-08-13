@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 import { isBrollActiveAt } from "~/domain/broll";
 import { isTextBaseEdit } from "~/domain/project-config";
 import { transformOf, type Transform } from "~/domain/transform";
@@ -11,10 +13,15 @@ import {
 } from "~/remotion/helpers/constants";
 import {
   getOverlayMeasure,
+  getOverlayMeasuresRevision,
   OVERLAY_MEASURE_FALLBACK,
   subscribeOverlayMeasures,
 } from "~/remotion/helpers/overlay-measure";
-import { useSyncExternalStore } from "react";
+
+import type { Edit, ProjectConfig } from "~/domain/project-config";
+
+/** Paint stack under the player: zoom (a-roll) → b-roll → text overlays. */
+export type EditableLayer = "zoom" | "broll" | "overlay";
 
 export type EditableTransform = {
   editId: number;
@@ -22,35 +29,29 @@ export type EditableTransform = {
   width: number;
   height: number;
   label: string;
+  layer: EditableLayer;
 };
 
-/**
- * Selected b-roll, overlay, or zoom that is currently visible under the playhead.
- * Drives the shared player TransformOverlay.
- */
-export function useEditableTransform(): EditableTransform | null {
-  const id = useSelection((s) => {
-    if (s.selection?.kind !== "edit") return null;
-    return primaryId(s.selection);
-  });
-  const edit = useEditor((s) => {
-    if (id == null || !s.config) return null;
-    return s.config.edits.find((e) => e.id === id) ?? null;
-  });
-  const asset = useEditor((s) => {
-    if (!edit || edit.kind !== "broll") return null;
-    return s.assets.find((a) => a.id === edit.assetId) ?? null;
-  });
-  // Skip playhead subscriptions while no editable transform is selected.
-  const timelineSec = useEditor((s) => (id == null ? -1 : s.timelineSec));
-  const overlaySize = useSyncExternalStore(
-    subscribeOverlayMeasures,
-    () => (id == null ? null : getOverlayMeasure(id)),
-    () => null,
-  );
+type AssetSize = {
+  id: string;
+  kind: string;
+  width: number | null;
+  height: number | null;
+  originalFilename?: string | null;
+};
 
-  if (!edit) return null;
+const LAYER_ORDER: Record<EditableLayer, number> = {
+  zoom: 0,
+  broll: 1,
+  overlay: 2,
+};
 
+function editableForEdit(
+  edit: Edit,
+  timelineSec: number,
+  assets: readonly AssetSize[],
+  overlaySize: { width: number; height: number } | null,
+): EditableTransform | null {
   if (edit.kind === "zoom") {
     if (!isZoomActiveAt(edit, timelineSec)) return null;
     return {
@@ -59,6 +60,7 @@ export function useEditableTransform(): EditableTransform | null {
       width: COMPOSITION_WIDTH,
       height: COMPOSITION_HEIGHT,
       label: "Zoom",
+      layer: "zoom",
     };
   }
 
@@ -73,11 +75,13 @@ export function useEditableTransform(): EditableTransform | null {
       label:
         edit.heading.trim() ||
         (edit.type === "listicle" ? "Listicle" : "Title"),
+      layer: "overlay",
     };
   }
 
   if (edit.kind !== "broll") return null;
   if (!isBrollActiveAt(edit, timelineSec)) return null;
+  const asset = assets.find((a) => a.id === edit.assetId);
   if (!asset) return null;
   if (asset.kind !== "image" && asset.kind !== "video") return null;
   if (asset.width == null || asset.height == null) return null;
@@ -89,5 +93,65 @@ export function useEditableTransform(): EditableTransform | null {
     width: asset.width,
     height: asset.height,
     label: asset.originalFilename ?? asset.id.slice(0, 8),
+    layer: "broll",
   };
+}
+
+/**
+ * Transformable edits visible at `timelineSec`, bottom → top (matches Remotion
+ * stack: zoom → b-roll → text). Later same-layer edits paint above earlier.
+ */
+export function listEditableTransforms(
+  config: ProjectConfig | null,
+  assets: readonly AssetSize[],
+  timelineSec: number,
+  overlaySizeFor: (editId: number) => { width: number; height: number } | null,
+): EditableTransform[] {
+  if (!config) return [];
+  const out: EditableTransform[] = [];
+  for (const edit of config.edits) {
+    const item = editableForEdit(
+      edit,
+      timelineSec,
+      assets,
+      overlaySizeFor(edit.id),
+    );
+    if (item) out.push(item);
+  }
+  out.sort((a, b) => {
+    const layer = LAYER_ORDER[a.layer] - LAYER_ORDER[b.layer];
+    if (layer !== 0) return layer;
+    return a.editId - b.editId;
+  });
+  return out;
+}
+
+/**
+ * All transformable edits currently visible under the playhead.
+ * Drives player hit-testing + TransformOverlay chrome.
+ */
+export function useEditableTransforms(): EditableTransform[] {
+  const config = useEditor((s) => s.config);
+  const assets = useEditor((s) => s.assets);
+  const timelineSec = useEditor((s) => s.timelineSec);
+  useSyncExternalStore(
+    subscribeOverlayMeasures,
+    getOverlayMeasuresRevision,
+    () => 0,
+  );
+
+  return listEditableTransforms(config, assets, timelineSec, getOverlayMeasure);
+}
+
+/**
+ * Selected b-roll, overlay, or zoom that is currently visible under the playhead.
+ */
+export function useEditableTransform(): EditableTransform | null {
+  const id = useSelection((s) => {
+    if (s.selection?.kind !== "edit") return null;
+    return primaryId(s.selection);
+  });
+  const all = useEditableTransforms();
+  if (id == null) return null;
+  return all.find((e) => e.editId === id) ?? null;
 }

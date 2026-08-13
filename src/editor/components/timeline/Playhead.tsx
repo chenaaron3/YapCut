@@ -1,9 +1,7 @@
 import { useEffect, useRef } from "react";
 
-import { outputToTimelineSec } from "~/domain/arolls";
 import { LABEL_OFFSET } from "~/editor/components/timeline/constants";
 import { formatTimeHover } from "~/editor/lib/timeline-time";
-import { getPlayer } from "~/editor/lib/player-bridge";
 import { useEditor } from "~/editor/store";
 
 type Props = {
@@ -21,26 +19,18 @@ export function Playhead({
   onScrubStart,
 }: Props) {
   const activeRef = useRef<HTMLDivElement>(null);
-  const scrubbingRef = useRef(scrubbing);
-  scrubbingRef.current = scrubbing;
 
+  // Single clock: always store `timelineSec` (PlayerPanel keeps it in sync
+  // while playing). Reading the Remotion frame here diverged on pause/play
+  // when store↔player sync stalled.
   useEffect(() => {
     let raf = 0;
 
     const tick = () => {
       const el = activeRef.current;
       if (el) {
-        const player = getPlayer();
-        const { timelineSec, fps, pxPerSec: scale, getLayout } =
-          useEditor.getState();
-        let sec = timelineSec;
-
-        if (player?.isPlaying() && !scrubbingRef.current) {
-          const outputSec = player.getCurrentFrame() / fps;
-          sec = outputToTimelineSec(getLayout(), outputSec);
-        }
-
-        const x = LABEL_OFFSET + sec * scale;
+        const { timelineSec, pxPerSec: scale } = useEditor.getState();
+        const x = LABEL_OFFSET + timelineSec * scale;
         el.style.transform = `translate3d(${x}px, 0, 0)`;
       }
 

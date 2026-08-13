@@ -429,10 +429,19 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       fps: state.fps,
       title: state.title,
     });
+    // Same resnap as commit — layout can move under the playhead on undo/redo.
+    const layout = layoutFor(snap.config, state.assets);
+    const timelineSec = snapTimelineSec(
+      layout,
+      clampTimelineSec(layout, state.timelineSec),
+    );
+    const outputSec = timelineToOutputSec(layout, timelineSec);
     set({
       config: snap.config,
       transcriptsByAssetId: snap.transcriptsByAssetId,
       props,
+      timelineSec,
+      frame: Math.round(outputSec * state.fps),
       configDirty,
       transcriptsDirty,
     });
@@ -585,8 +594,9 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const layout = layoutFor(config, assets);
       const outputSec = Math.max(0, frame / fps);
       const nextFrame = Math.round(outputSec * fps);
-      if (nextFrame === get().frame) return;
       const timelineSec = outputToTimelineSec(layout, outputSec);
+      // Re-write timelineSec even when frame is unchanged — recovers gap/desync.
+      if (nextFrame === get().frame && timelineSec === get().timelineSec) return;
       set({ frame: nextFrame, timelineSec });
     },
 

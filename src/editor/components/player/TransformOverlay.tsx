@@ -1,14 +1,31 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import {
   clampTransformScale,
-  containSize,
   snapTransformOffset,
   snapTransformScale,
   transformOf,
 } from "~/domain/transform";
+import { HitTarget } from "~/editor/components/player/HitTarget";
+import { SelectedChrome } from "~/editor/components/player/SelectedChrome";
+import { SnapGuides } from "~/editor/components/player/SnapGuides";
+import {
+  boxStyle,
+  clientToComp,
+  editIdsFromPoint,
+} from "~/editor/components/player/transform-overlay";
 import { runGesture } from "~/editor/lib/gesture";
-import { useEditableTransform } from "~/editor/lib/use-editable-transform";
+import { primaryId } from "~/editor/lib/selection";
+import {
+  useEditableTransforms,
+  type EditableTransform,
+} from "~/editor/lib/use-editable-transform";
+import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import {
   COMPOSITION_HEIGHT,
@@ -27,28 +44,21 @@ type DragVisual = {
   guides: SnapGuide[];
 };
 
-function clientToComp(
-  clientX: number,
-  clientY: number,
-  rect: DOMRect,
-): { x: number; y: number } {
-  return {
-    x: ((clientX - rect.left) / rect.width) * COMPOSITION_WIDTH,
-    y: ((clientY - rect.top) / rect.height) * COMPOSITION_HEIGHT,
-  };
-}
-
 /**
- * HTML overlay on the Remotion player for drag move / scale / rotate.
- * Live `patchEdit` so inspector + preview update; timeline / transcript
- * ignore cosmetics via topology selectors.
+ * HTML overlay on the Remotion player for select + drag move / scale / rotate.
+ * Click selects without seeking; empty preview keeps click-to-play.
  */
 export function TransformOverlay({
   onDraggingChange,
 }: {
   onDraggingChange?: (dragging: boolean) => void;
 }) {
-  const editable = useEditableTransform();
+  const editables = useEditableTransforms();
+  const selectedId = useSelection((s) => {
+    if (s.selection?.kind !== "edit") return null;
+    return primaryId(s.selection);
+  });
+  const setSelection = useSelection((s) => s.setSelection);
   const patchEdit = useEditor((s) => s.patchEdit);
   const rootRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragMode | null>(null);
@@ -57,17 +67,18 @@ export function TransformOverlay({
   const boxRef = useRef<{ w: number; h: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [visual, setVisual] = useState<DragVisual | null>(null);
+  const [hoveredId, setHoveredId] = useState<number | null>(null);
 
-  const base = editable
-    ? containSize(
-        editable.width,
-        editable.height,
-        COMPOSITION_WIDTH,
-        COMPOSITION_HEIGHT,
-      )
+  const selected =
+    selectedId == null
+      ? null
+      : (editables.find((e) => e.editId === selectedId) ?? null);
+
+  const selectedBox = selected
+    ? boxStyle(selected, visual?.transform ?? selected.transform)
     : null;
-  boxRef.current = base;
-  editIdRef.current = editable?.editId ?? null;
+  boxRef.current = selectedBox?.base ?? null;
+  editIdRef.current = selected?.editId ?? null;
 
   useEffect(() => {
     onDraggingChange?.(dragging);
@@ -167,16 +178,11 @@ export function TransformOverlay({
     };
   }, [dragging, patchEdit]);
 
-  if (!editable || !base) return null;
-
-  const t = visual?.transform ?? editable.transform;
-  const guides = visual?.guides ?? [];
-  const boxW = (base.w / COMPOSITION_WIDTH) * 100;
-  const boxH = (base.h / COMPOSITION_HEIGHT) * 100;
-  const left = 50 + t.offsetX * 100;
-  const top = 50 + t.offsetY * 100;
-
-  const startDrag = (e: React.PointerEvent, mode: DragMode["kind"]) => {
+  const startDrag = (
+    e: ReactPointerEvent,
+    mode: DragMode["kind"],
+    editable: EditableTransform,
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     const root = rootRef.current;
@@ -208,69 +214,70 @@ export function TransformOverlay({
     setDragging(true);
   };
 
-  const handleClass =
-    "absolute h-2.5 w-2.5 rounded-sm border border-white bg-primary shadow";
+  const onHitPointerDown = (
+    e: ReactPointerEvent,
+    editable: EditableTransform,
+  ) => {
+    if (e.button !== 0) return;
+    const hits = editIdsFromPoint(e.clientX, e.clientY);
+    const keepSelected =
+      selectedId != null && hits.includes(selectedId) ? selectedId : null;
+    const targetId = keepSelected ?? hits[0] ?? editable.editId;
+
+    if (targetId !== selectedId) {
+      e.preventDefault();
+      e.stopPropagation();
+      // setSelection — not select() — so we never seek to edit start.
+      setSelection({ kind: "edit", ids: [targetId] });
+      return;
+    }
+
+    const target =
+      editables.find((item) => item.editId === targetId) ?? editable;
+    startDrag(e, "move", target);
+  };
+
+  if (editables.length === 0) return null;
+
+  const guides = visual?.guides ?? [];
 
   return (
     <div
       ref={rootRef}
       className="pointer-events-none absolute inset-0 z-50 overflow-visible"
     >
-      {guides.map((g) =>
-        g.orientation === "x" ? (
-          <div
-            key={`x-${g.pos}`}
-            className="bg-primary/80 absolute top-0 bottom-0 w-px"
-            style={{ left: `${(g.pos / COMPOSITION_WIDTH) * 100}%` }}
-          />
-        ) : (
-          <div
-            key={`y-${g.pos}`}
-            className="bg-primary/80 absolute right-0 left-0 h-px"
-            style={{ top: `${(g.pos / COMPOSITION_HEIGHT) * 100}%` }}
-          />
-        ),
-      )}
+      <SnapGuides guides={guides} />
 
-      <div
-        className="border-primary/90 pointer-events-auto absolute cursor-move border shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
-        style={{
-          width: `${boxW}%`,
-          height: `${boxH}%`,
-          left: `${left}%`,
-          top: `${top}%`,
-          transform: `translate(-50%, -50%) rotate(${t.rotation}deg) scale(${t.scale})`,
-          transformOrigin: "center center",
-        }}
-        onPointerDown={(e) => startDrag(e, "move")}
-      >
-        <div className="absolute top-0 left-1/2 flex h-7 -translate-x-1/2 -translate-y-full flex-col items-center">
-          <button
-            type="button"
-            aria-label="Rotate"
-            className="bg-primary pointer-events-auto mb-1 h-2.5 w-2.5 rounded-full border border-white"
-            onPointerDown={(e) => startDrag(e, "rotate")}
+      {editables.map((editable) => {
+        const isSelected = editable.editId === selectedId;
+        const t =
+          isSelected && visual?.transform
+            ? visual.transform
+            : editable.transform;
+        const box = boxStyle(editable, t);
+        if (!isSelected) {
+          return (
+            <HitTarget
+              key={editable.editId}
+              editable={editable}
+              box={box}
+              showOutline={hoveredId === editable.editId}
+              onPointerDown={onHitPointerDown}
+              onHoverChange={setHoveredId}
+            />
+          );
+        }
+        return (
+          <SelectedChrome
+            key={editable.editId}
+            editable={editable}
+            box={box}
+            onHitPointerDown={onHitPointerDown}
+            startDrag={startDrag}
+            onHoverChange={setHoveredId}
           />
-          <div className="bg-primary/80 h-full w-px" />
-        </div>
-
-        {(
-          [
-            ["-left-1 -top-1", "cursor-nwse-resize"],
-            ["-right-1 -top-1", "cursor-nesw-resize"],
-            ["-left-1 -bottom-1", "cursor-nesw-resize"],
-            ["-right-1 -bottom-1", "cursor-nwse-resize"],
-          ] as const
-        ).map(([pos, cursor]) => (
-          <button
-            key={pos}
-            type="button"
-            aria-label="Scale"
-            className={`${handleClass} pointer-events-auto ${pos} ${cursor}`}
-            onPointerDown={(e) => startDrag(e, "scale")}
-          />
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }

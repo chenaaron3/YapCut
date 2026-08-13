@@ -2,9 +2,16 @@ type OverlaySize = { width: number; height: number };
 
 const sizes = new Map<number, OverlaySize>();
 const listeners = new Set<() => void>();
+let revision = 0;
 
 function notify(): void {
+  revision += 1;
   for (const listener of listeners) listener();
+}
+
+/** Bumps when any overlay AABB measure changes (player transform hits). */
+export function getOverlayMeasuresRevision(): number {
+  return revision;
 }
 
 export function setOverlayMeasure(
