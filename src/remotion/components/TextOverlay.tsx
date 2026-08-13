@@ -1,20 +1,26 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  AbsoluteFill,
+  Sequence,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 
-import { buildStaticGroup } from "~/remotion/components/captions/static-group";
 import {
   STACK_GAP_PX,
   StackedCaptionPair,
 } from "~/remotion/components/captions/StackedCaptionPair";
+import { buildStaticGroup } from "~/remotion/components/captions/static-group";
 import { StaticGroupView } from "~/remotion/components/captions/StaticGroupView";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
-import type { TextOverlayProp } from "~/remotion/helpers/types";
 import { useReportOverlayMeasure } from "~/remotion/hooks/use-report-overlay-measure";
 
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
+import type { TextOverlayProp } from "~/remotion/helpers/types";
+import type { ReactNode } from "react";
 
 type PhaseTiming = { start: number; duration: number };
 
@@ -60,6 +66,8 @@ function OverlayLine({
   frame,
   fps,
   visible,
+  /** In a stacked pair, start uses marginBottom so +y moves toward the end line. */
+  stackRole = "alone",
 }: {
   text: string;
   style: CaptionGroupStyle;
@@ -67,6 +75,7 @@ function OverlayLine({
   frame: number;
   fps: number;
   visible: boolean;
+  stackRole?: "start" | "end" | "alone";
 }) {
   const lineRef = useRef<HTMLDivElement>(null);
   const [lineHeight, setLineHeight] = useState(0);
@@ -88,23 +97,21 @@ function OverlayLine({
   if (!text.trim()) return null;
 
   const paintFrame = Math.max(0, Math.min(frame, durationFrames - 1));
-  // Layout margin (not transform): closes stack gap, updates AABB, enables overlap.
+  // Layout margin (not transform): updates AABB; ±1 = ±own height.
+  // Positive y opens space toward the other stacked line (start: below, end: above).
   const yShift = style.y * lineHeight;
+  const yMargin =
+    stackRole === "start" ? { marginBottom: yShift } : { marginTop: yShift };
 
   return (
     <div
       ref={lineRef}
       style={{
         visibility: visible ? "visible" : "hidden",
-        marginTop: yShift,
+        ...yMargin,
       }}
     >
-      <StaticGroupView
-        group={group}
-        frame={paintFrame}
-        fps={fps}
-        embedded
-      />
+      <StaticGroupView group={group} frame={paintFrame} fps={fps} embedded />
     </div>
   );
 }
@@ -192,6 +199,7 @@ export function TextOverlayView({
       frame={frame - timings.heading.start}
       fps={fps}
       visible={showHeading}
+      stackRole={stackedLayout ? "start" : "alone"}
     />
   ) : null;
 
@@ -203,6 +211,7 @@ export function TextOverlayView({
       frame={frame - timings.subheading.start}
       fps={fps}
       visible={showSub}
+      stackRole={stackedLayout ? "end" : "alone"}
     />
   ) : null;
 

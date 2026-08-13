@@ -20,8 +20,8 @@ import {
  * Merged sticker silhouette via inline line boxes + goo filter.
  * Children must be inline-level (e.g. inline-block word spans).
  *
- * Pad + fill share an `inline-block` so padding is both painted and laid out
- * (`inline` vertical padding is paint-only and gets clipped by overflow).
+ * Fill is `display: inline` + `box-decoration-break: clone` so each wrapped
+ * line gets its own padded fragment. `inline-block` would paint one box.
  */
 export const ContourBoard: React.FC<{
   fill: string;
@@ -37,11 +37,10 @@ export const ContourBoard: React.FC<{
 
   const flowStyle: CSSProperties = {
     ...textStyle,
-    display: "inline-block",
+    display: "inline",
     padding: pad,
     borderRadius: radius,
     lineHeight: CONTOUR_LINE_HEIGHT,
-    maxWidth: "100%",
     boxDecorationBreak: "clone",
     WebkitBoxDecorationBreak: "clone",
     boxSizing: "border-box",
@@ -67,8 +66,6 @@ export const ContourBoard: React.FC<{
         width: "fit-content",
         maxWidth: "100%",
         textAlign,
-        overflow: "hidden",
-        borderRadius: radius,
       }}
     >
       <svg
@@ -126,7 +123,9 @@ export const ContourBoard: React.FC<{
         style={{
           position: "absolute",
           left: 0,
+          right: 0,
           top: 0,
+          width: "100%",
           textAlign,
         }}
       >

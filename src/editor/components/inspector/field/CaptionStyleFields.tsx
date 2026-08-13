@@ -41,7 +41,7 @@ export function CaptionStyleFields({
   showCaptionsAtATime?: boolean;
   /** StaticGroupView curve. */
   showArc?: boolean;
-  /** Captions/quotes: safe-area −1…1. Overlay lines: own-height translate. */
+  /** Captions/quotes: safe-area −1…1. Overlay lines: own-height gap (stacked). */
   yMode?: "safe-area" | "line";
   title?: string;
 }) {
@@ -134,7 +134,7 @@ export function CaptionStyleFields({
       </div>
 
       <SliderField
-        label={yMode === "line" ? "Y (line)" : "Y (safe area)"}
+        label={yMode === "line" ? "Y (gap)" : "Y (safe area)"}
         value={resolvedY}
         min={-1}
         max={1}

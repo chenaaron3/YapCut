@@ -19,5 +19,14 @@ export const SAFE_AREA = {
   right: "18%",
 } as const;
 
+/** Horizontal content width inside {@link SAFE_AREA} (for overlay wrap, cover fit). */
+export function safeAreaContentWidth(
+  compositionWidth = COMPOSITION_WIDTH,
+): number {
+  const left = Number.parseFloat(SAFE_AREA.left) / 100;
+  const right = Number.parseFloat(SAFE_AREA.right) / 100;
+  return compositionWidth * (1 - left - right);
+}
+
 export const CAPTION_LAST_WORD_PAD_SEC = 0.3;
 export const CAPTION_GROUP_GAP_SEC = 0.05;

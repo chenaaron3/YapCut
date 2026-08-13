@@ -28,7 +28,7 @@ export function isOverlayTemplateId(
 
 export { DEFAULT_LISTICLE_TEMPLATE_ID, DEFAULT_TEXT_TEMPLATE_ID };
 
-/** Overlay line y is own-height translate; 0 = no shift. */
+/** Overlay line y: ±1 = ±own height. Stacked: +y opens space toward the other line. */
 const OVERLAY_TEXT_BASE = {
   y: 0,
   captionsAtATime: 1,
@@ -87,7 +87,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       animation: "typewriter",
       textTransform: "none",
       background: { kind: "none" },
-      y: 0.2,
+      y: -0.2,
       arc: 90,
       wordStyle: {
         fill: "#FFFFFF",
@@ -117,7 +117,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       fontSize: 52,
       animation: "fade",
       textTransform: "uppercase",
-      background: { kind: "box", color: "#E53935" },
+      background: { kind: "wrap", color: "#E53935" },
       wordStyle: { fill: "#FFFFFF", opacity: 1 },
     },
     {
@@ -141,7 +141,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       fontSize: 52,
       animation: "fade",
       textTransform: "uppercase",
-      background: { kind: "box", color: "#111111" },
+      background: { kind: "wrap", color: "#111111" },
       wordStyle: { fill: "#FFFFFF", opacity: 1 },
     },
     {
