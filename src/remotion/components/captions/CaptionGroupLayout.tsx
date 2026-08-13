@@ -1,21 +1,21 @@
-import React, {
-  Children,
-  isValidElement,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import React, { Children, isValidElement } from "react";
 
 import {
-  DEFAULT_CAPTION_STYLE,
   captionSafeAreaT,
-  type BackgroundKind,
-  type CaptionGroupStyle,
+  DEFAULT_CAPTION_STYLE,
 } from "~/remotion/captions/style";
-import type { CaptionGroupProp } from "~/remotion/helpers/types";
+import { useReportCaptionMeasure } from "~/remotion/hooks/use-report-caption-measure";
 
-import { CaptionBackground } from "./CaptionBackground";
 import { ArcLayoutContext, layoutCaptionArc } from "./arc-layout";
 import { captionGroupCss } from "./caption-style-css";
+import { CaptionBackground } from "./CaptionBackground";
+
+import type {
+  BackgroundKind,
+  CaptionGroupStyle,
+} from "~/remotion/captions/style";
+import type { CaptionGroupProp } from "~/remotion/helpers/types";
+import type { CSSProperties, ReactNode } from "react";
 
 function rowJustify(
   textAlign: "left" | "center" | "right",
@@ -167,6 +167,8 @@ export type CaptionGroupLayoutProps = {
    * Skips absolute Y placement.
    */
   embedded?: boolean;
+  /** Report ink-box AABB for the player caption overlay. */
+  measure?: boolean;
   children: ReactNode;
 };
 
@@ -179,9 +181,12 @@ export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
   group,
   shellStyle,
   embedded = false,
+  measure = false,
   children,
 }) => {
   const style = group.style ?? DEFAULT_CAPTION_STYLE;
+  const layoutKey = `${group.words.map((w) => w.text).join(" ")}\0${style.y}\0${style.fontSize}\0${style.background.kind}`;
+  const shellRef = useReportCaptionMeasure(measure, layoutKey);
   const textStyle: CSSProperties = {
     ...captionGroupCss(style),
     color: style.wordStyle.fill,
@@ -206,7 +211,10 @@ export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
     : { ...packFlow(children, style, textStyle), background: style.background };
 
   return (
-    <div style={groupShellStyle(style, embedded, shellStyle)}>
+    <div
+      ref={measure ? shellRef : undefined}
+      style={groupShellStyle(style, embedded, shellStyle)}
+    >
       <CaptionBackground
         background={packed.background}
         textAlign={style.textAlign}

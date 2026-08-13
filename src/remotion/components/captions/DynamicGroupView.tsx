@@ -1,10 +1,11 @@
 import React from "react";
 
 import { DEFAULT_CAPTION_STYLE } from "~/remotion/captions/style";
-import type { CaptionGroupProp } from "~/remotion/helpers/types";
 
 import { CaptionGroupLayout } from "./CaptionGroupLayout";
 import { CaptionWordSpan } from "./CaptionWordSpan";
+
+import type { CaptionGroupProp } from "~/remotion/helpers/types";
 
 /**
  * Per-word enter/exit + past/active/future styles (captions / quotes).
@@ -14,11 +15,13 @@ export const DynamicGroupView: React.FC<{
   group: CaptionGroupProp;
   frame: number;
   fps: number;
-}> = ({ group, frame, fps }) => {
+  /** Player overlay measure — omit in inspector previews. */
+  measure?: boolean;
+}> = ({ group, frame, fps, measure = false }) => {
   const style = group.style ?? DEFAULT_CAPTION_STYLE;
 
   return (
-    <CaptionGroupLayout group={group}>
+    <CaptionGroupLayout group={group} measure={measure}>
       {group.words.map((word, index) => (
         <CaptionWordSpan
           key={`${word.startFrame}-${word.text}-${index}`}

@@ -1,8 +1,7 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Player } from "@remotion/player";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import type { PlayerRef } from "@remotion/player";
-
+import { CaptionOverlay } from "~/editor/components/player/CaptionOverlay";
 import { PlayerControls } from "~/editor/components/player/PlayerControls";
 import { TransformOverlay } from "~/editor/components/player/TransformOverlay";
 import {
@@ -13,12 +12,15 @@ import {
   takePlayAfterSeek,
 } from "~/editor/lib/player-bridge";
 import { isTimelineScrubbing, useEditor } from "~/editor/store";
-import { TalkingHead, type TalkingHeadProps } from "~/remotion/TalkingHead";
 import {
   COMPOSITION_FPS,
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
+import { TalkingHead } from "~/remotion/TalkingHead";
+
+import type { PlayerRef } from "@remotion/player";
+import type { TalkingHeadProps } from "~/remotion/TalkingHead";
 
 export function PlayerPanel() {
   const props = useEditor((s) => s.props);
@@ -127,7 +129,7 @@ export function PlayerPanel() {
 
   if (!inputProps) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0b0c10] text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-full items-center justify-center bg-[#0b0c10] text-sm">
         No preview
       </div>
     );
@@ -162,6 +164,7 @@ export function PlayerPanel() {
             spaceKeyToPlayOrPause={false}
           />
           <TransformOverlay onDraggingChange={setOverlayDragging} />
+          <CaptionOverlay onDraggingChange={setOverlayDragging} />
         </div>
       </div>
       <PlayerControls

@@ -1,6 +1,6 @@
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
-
 import { TRANSFORM_HANDLE_CLASS } from "~/editor/components/player/transform-overlay";
+
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 
 export function TransformHandles({
   scale,
@@ -9,7 +9,7 @@ export function TransformHandles({
 }: {
   /** Parent box scale — handles apply `1/scale` so screen size stays constant. */
   scale: number;
-  onRotate: (e: ReactPointerEvent) => void;
+  onRotate?: (e: ReactPointerEvent) => void;
   onScale: (e: ReactPointerEvent) => void;
 }) {
   const inv = 1 / Math.max(scale, 0.01);
@@ -21,18 +21,20 @@ export function TransformHandles({
 
   return (
     <>
-      <div
-        className="absolute top-0 left-1/2 flex h-7 flex-col items-center"
-        style={stemCounter}
-      >
-        <button
-          type="button"
-          aria-label="Rotate"
-          className="bg-primary pointer-events-auto mb-1 h-2.5 w-2.5 rounded-full border border-white"
-          onPointerDown={onRotate}
-        />
-        <div className="bg-primary/80 h-full w-px" />
-      </div>
+      {onRotate ? (
+        <div
+          className="absolute top-0 left-1/2 flex h-7 flex-col items-center"
+          style={stemCounter}
+        >
+          <button
+            type="button"
+            aria-label="Rotate"
+            className="bg-primary pointer-events-auto mb-1 h-2.5 w-2.5 rounded-full border border-white"
+            onPointerDown={onRotate}
+          />
+          <div className="bg-primary/80 h-full w-px" />
+        </div>
+      ) : null}
 
       {(
         [
