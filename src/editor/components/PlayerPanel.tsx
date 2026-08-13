@@ -24,6 +24,7 @@ export function PlayerPanel() {
   const props = useEditor((s) => s.props);
   const seekFrame = useEditor((s) => s.seekFrame);
   const syncActiveWord = useEditor((s) => s.syncActiveWord);
+  const shellRef = useRef<HTMLDivElement>(null);
   const ref = useRef<PlayerRef | null>(null);
   const seekTargetRef = useRef<number | null>(null);
   const [overlayDragging, setOverlayDragging] = useState(false);
@@ -38,6 +39,16 @@ export function PlayerPanel() {
   /** Clear Remotion sticky-mute before clickToPlay runs in the same gesture. */
   const onPlayGesture = useCallback(() => {
     ensurePlayerAudible(ref.current);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen();
+      return;
+    }
+    void shell.requestFullscreen();
   }, []);
 
   useLayoutEffect(() => {
@@ -125,7 +136,10 @@ export function PlayerPanel() {
   const durationInFrames = Math.max(1, inputProps.durationInFrames);
 
   return (
-    <div className="relative z-20 flex h-full min-h-0 flex-col bg-[#0b0c10]">
+    <div
+      ref={shellRef}
+      className="relative z-20 flex h-full min-h-0 flex-col bg-[#0b0c10]"
+    >
       <div className="relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-visible bg-black">
         <div
           className="relative h-full max-h-full w-auto max-w-full overflow-visible"
@@ -150,7 +164,10 @@ export function PlayerPanel() {
           <TransformOverlay onDraggingChange={setOverlayDragging} />
         </div>
       </div>
-      <PlayerControls durationInFrames={durationInFrames} />
+      <PlayerControls
+        durationInFrames={durationInFrames}
+        onToggleFullscreen={toggleFullscreen}
+      />
     </div>
   );
 }

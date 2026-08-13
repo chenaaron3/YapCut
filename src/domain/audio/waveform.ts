@@ -31,6 +31,9 @@ export type WaveformBar = {
   amp: number;
 };
 
+/** Peaks in memory (Float32Array) or persisted form (number[]). */
+type PeakSamples = ArrayLike<number> & Iterable<number>;
+
 /**
  * Sample peak bars on an absolute time grid.
  * Bar times are locked to `secondsPerBar` buckets so resizing a visible
@@ -38,7 +41,7 @@ export type WaveformBar = {
  * Density should change only when zoom (`secondsPerBar`) changes.
  */
 export function sampleWaveformGrid(
-  waveform: { peaks: ArrayLike<number>; peaksPerSec: number },
+  waveform: { peaks: PeakSamples; peaksPerSec: number },
   startSec: number,
   endSec: number,
   secondsPerBar: number,
@@ -76,7 +79,7 @@ export function sampleWaveformGrid(
   return out;
 }
 
-export function peakMax(peaks: Iterable<number>): number {
+export function peakMax(peaks: PeakSamples): number {
   let max = 0;
   for (const peak of peaks) {
     if (peak > max) max = peak;
