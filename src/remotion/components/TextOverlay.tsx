@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from "remotion";
 
 import { buildStaticGroup } from "~/remotion/components/captions/static-group";
@@ -68,20 +68,35 @@ function OverlayLine({
   fps: number;
   visible: boolean;
 }) {
+  const lineRef = useRef<HTMLDivElement>(null);
+  const [lineHeight, setLineHeight] = useState(0);
   const group = useMemo(
     () => buildStaticGroup(text, style, fps, durationFrames),
     [text, style, fps, durationFrames],
   );
 
+  useLayoutEffect(() => {
+    const node = lineRef.current;
+    if (!node) return;
+    const update = () => setLineHeight(node.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, [text, style.fontSize, style.background, style.y]);
+
   if (!text.trim()) return null;
 
   const paintFrame = Math.max(0, Math.min(frame, durationFrames - 1));
+  // Layout margin (not transform): closes stack gap, updates AABB, enables overlap.
+  const yShift = style.y * lineHeight;
 
   return (
     <div
+      ref={lineRef}
       style={{
         visibility: visible ? "visible" : "hidden",
-        transform: `translateY(${style.y * 100}%)`,
+        marginTop: yShift,
       }}
     >
       <StaticGroupView
@@ -121,8 +136,13 @@ function OverlayPair({
         alignItems: "center",
       }}
     >
-      <div style={{ gridArea: "1 / 1" }}>{heading}</div>
-      <div style={{ gridArea: "1 / 1" }}>{subheading}</div>
+      {/* Subheading first so heading paints on top in the shared cell. */}
+      <div style={{ gridArea: "1 / 1", position: "relative", zIndex: 0 }}>
+        {subheading}
+      </div>
+      <div style={{ gridArea: "1 / 1", position: "relative", zIndex: 1 }}>
+        {heading}
+      </div>
     </div>
   );
 }
@@ -150,7 +170,7 @@ export function TextOverlayView({
   const boxRef = useReportOverlayMeasure(
     overlay.id,
     measure,
-    `${headingText}\0${subText}\0${stackedLayout}`,
+    `${headingText}\0${subText}\0${stackedLayout}\0${overlay.headingStyle.y}\0${overlay.subheadingStyle.y}`,
   );
   const timings = overlayPhaseTimings(
     overlay.startFrame,
@@ -197,7 +217,6 @@ export function TextOverlayView({
       }}
     >
       <div
-        ref={boxRef}
         style={{
           position: "relative",
           display: "flex",
@@ -207,11 +226,22 @@ export function TextOverlayView({
           transformOrigin: "center center",
         }}
       >
-        <OverlayPair
-          stacked={stackedLayout}
-          heading={headingLayer}
-          subheading={subLayer}
-        />
+        {/* Measure the untransformed pad box (padding/margins included). */}
+        <div
+          ref={boxRef}
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <OverlayPair
+            stacked={stackedLayout}
+            heading={headingLayer}
+            subheading={subLayer}
+          />
+        </div>
       </div>
     </AbsoluteFill>
   );

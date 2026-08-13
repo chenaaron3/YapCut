@@ -60,7 +60,8 @@ export type EditBase = TimelineTime & {
 
 /**
  * Mixin for edits that can suppress spoken captions under their timeline range.
- * Title and listicle opt in via `TextBase.hideCaptions` (seeded true).
+ * Title and listicle opt in via `TextBase.hideCaptions`
+ * (title seeded false; listicle seeded true).
  */
 export type CanHideCaptions = {
   /** When true, hide spoken captions under [start, end]. */

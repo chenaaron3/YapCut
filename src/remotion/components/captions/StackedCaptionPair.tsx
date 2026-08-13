@@ -1,8 +1,12 @@
-import type { ReactNode } from "react";
+import { Children, type ReactNode } from "react";
 
-export const STACK_GAP_PX = 8;
+export const STACK_GAP_PX = 0;
 
-/** Hugging column of overlay lines (heading + subheading). */
+/**
+ * Hugging column of overlay lines (heading + subheading).
+ * Earlier children paint above later ones so the heading stays in front when
+ * line `y` pulls them into overlap.
+ */
 export function StackedCaptionPair({
   gap = STACK_GAP_PX,
   children,
@@ -10,6 +14,7 @@ export function StackedCaptionPair({
   gap?: number;
   children: ReactNode;
 }) {
+  const items = Children.toArray(children);
   return (
     <div
       style={{
@@ -19,7 +24,17 @@ export function StackedCaptionPair({
         gap,
       }}
     >
-      {children}
+      {items.map((child, i) => (
+        <div
+          key={i}
+          style={{
+            position: "relative",
+            zIndex: items.length - i,
+          }}
+        >
+          {child}
+        </div>
+      ))}
     </div>
   );
 }

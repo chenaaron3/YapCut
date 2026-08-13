@@ -67,11 +67,14 @@ function groupShellStyle(
 ): CSSProperties {
   const justify = rowJustify(style.textAlign);
   if (embedded) {
+    // fit-content: stacked overlay lines size to the widest child. width 100%
+    // collapses to the narrowest sibling and the rest overflows the AABB.
     return {
       position: "relative",
       display: "flex",
       justifyContent: justify,
-      width: "100%",
+      width: "fit-content",
+      maxWidth: "100%",
       ...shellStyle,
     };
   }
@@ -116,7 +119,7 @@ function packFlow(
       return [<br key={`br-${i}`} />, ...words];
     });
     return {
-      innerStyle: { ...textStyle, width: "100%", maxWidth: "100%" },
+      innerStyle: { ...textStyle, width: "fit-content", maxWidth: "100%" },
       body,
     };
   }

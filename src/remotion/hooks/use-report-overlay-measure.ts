@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef, type RefObject } from "react";
 import { setOverlayMeasure } from "~/remotion/helpers/overlay-measure";
 
 /**
- * Observe the painted overlay AABB and publish it for the player
+ * Observe the painted overlay border-box and publish it for the player
  * TransformOverlay (via {@link getOverlayMeasure}).
  */
 export function useReportOverlayMeasure(
@@ -22,14 +22,13 @@ export function useReportOverlayMeasure(
       return;
     }
     const report = () => {
-      if (node.offsetWidth < 2 || node.offsetHeight < 2) {
+      const width = node.offsetWidth;
+      const height = node.offsetHeight;
+      if (width < 2 || height < 2) {
         setOverlayMeasure(editId, null);
         return;
       }
-      setOverlayMeasure(editId, {
-        width: node.offsetWidth,
-        height: node.offsetHeight,
-      });
+      setOverlayMeasure(editId, { width, height });
     };
     report();
     const ro = new ResizeObserver(report);

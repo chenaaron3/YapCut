@@ -5,6 +5,7 @@ import { zoomSeed } from "~/domain/zoom";
 import { EditMarkerCluster } from "~/editor/components/transcript/EditMarkerCluster";
 import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
 import { WordContextMenu } from "~/editor/components/transcript/WordContextMenu";
+import { WordGap } from "~/editor/components/transcript/WordGap";
 import { chromeByKey } from "~/editor/lib/edit-chrome";
 import {
   assetDropKindFromTypes,
@@ -76,28 +77,34 @@ export const WordCell = memo(function WordCell({
     setEditing(false);
   };
 
+  const handleSelected = primarySelected && primary != null;
+
   if (editing) {
     return (
-      <input
-        className="bg-panel-2 outline-accent m-0 mx-px inline rounded-sm px-0.5 py-px font-[inherit] leading-[inherit] text-[#e8eaef] text-[inherit] outline outline-2"
-        value={draft}
-        autoFocus
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commitText}
-        onMouseDown={(e) => e.stopPropagation()}
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            commitText();
-          }
-          if (e.key === "Escape") {
-            e.preventDefault();
-            setEditing(false);
-          }
-        }}
-        size={Math.max(2, draft.length + 1)}
-      />
+      <>
+        <WordGap />
+        <input
+          className="bg-panel-2 outline-accent m-0 inline rounded-sm py-px font-[inherit] leading-[inherit] text-[#e8eaef] text-[inherit] outline outline-2"
+          value={draft}
+          autoFocus
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commitText}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commitText();
+            }
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setEditing(false);
+            }
+          }}
+          size={Math.max(2, draft.length + 1)}
+        />
+        <WordGap />
+      </>
     );
   }
 
@@ -110,23 +117,19 @@ export const WordCell = memo(function WordCell({
         onDragStart={(editId) => onResizeEdge?.("start", editId)}
       />
 
+      <WordGap>
+        <RangeHandle
+          edge="start"
+          span={primary}
+          selected={handleSelected}
+          onResizeEdge={onResizeEdge}
+        />
+      </WordGap>
+
       <span
         className="relative inline-block"
         data-word-index={word.globalIndex}
       >
-        <RangeHandle
-          edge="start"
-          span={primary}
-          selected={primarySelected && primary != null}
-          onResizeEdge={onResizeEdge}
-        />
-        <RangeHandle
-          edge="middle"
-          span={primary}
-          selected={primarySelected && primary != null}
-          onResizeEdge={onResizeEdge}
-        />
-
         <WordContextMenu
           emphasized={!!word.emphasized}
           onEmphasis={() =>
@@ -140,7 +143,7 @@ export const WordCell = memo(function WordCell({
             role="button"
             tabIndex={0}
             className={cn(
-              "relative mx-px cursor-pointer rounded px-0.5 transition-colors select-none",
+              "relative cursor-pointer rounded transition-colors select-none",
               word.inGap && "line-through opacity-40",
               word.emphasized && "font-semibold text-amber-300",
               selected && "bg-primary/35",
@@ -151,9 +154,19 @@ export const WordCell = memo(function WordCell({
               dropActive === "sfx" && "bg-sfx/30 ring-sfx ring-1",
               dropActive === "vfx" && "bg-vfx/30 ring-vfx ring-1",
             )}
-            onMouseDown={(e) => onWordDragStart?.(e)}
+            onMouseDown={(e) => {
+              // Drag-select applies a word range on mousedown — skip when an
+              // edit covering this word is selected so the edit stays selected.
+              if (primarySelected) return;
+              onWordDragStart?.(e);
+            }}
             onClick={(e) => {
               e.stopPropagation();
+              // Keep edit selection when clicking inside its range.
+              if (primarySelected) {
+                if (!(e.metaKey || e.ctrlKey)) seekTimeline(word.start);
+                return;
+              }
               select("word", word.globalIndex, e.metaKey || e.ctrlKey);
               if (!(e.metaKey || e.ctrlKey)) seekTimeline(word.start);
             }}
@@ -188,6 +201,10 @@ export const WordCell = memo(function WordCell({
               // Space is global play/pause — only Enter activates the word.
               if (e.key === "Enter") {
                 e.preventDefault();
+                if (primarySelected) {
+                  seekTimeline(word.start);
+                  return;
+                }
                 select("word", word.globalIndex);
                 seekTimeline(word.start);
               }
@@ -196,14 +213,22 @@ export const WordCell = memo(function WordCell({
             {word.text}
           </span>
         </WordContextMenu>
+      </span>
 
+      <WordGap>
+        <RangeHandle
+          edge="middle"
+          span={primary}
+          selected={handleSelected}
+          onResizeEdge={onResizeEdge}
+        />
         <RangeHandle
           edge="end"
           span={primary}
-          selected={primarySelected && primary != null}
+          selected={handleSelected}
           onResizeEdge={onResizeEdge}
         />
-      </span>
+      </WordGap>
     </>
   );
 });

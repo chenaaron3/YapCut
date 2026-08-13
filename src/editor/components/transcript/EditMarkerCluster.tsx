@@ -120,7 +120,7 @@ export function EditMarkerCluster({
 
   if (!canExpand) {
     return (
-      <span className="mr-0.5 inline-flex align-middle">
+      <span className="inline-flex align-middle">
         <MarkerSelected editId={primary.editId}>
           {(selected) => (
             <EditMarker
@@ -137,7 +137,7 @@ export function EditMarkerCluster({
 
   if (expanded) {
     return (
-      <span className="mr-0.5 inline-flex items-center gap-0.5 align-middle">
+      <span className="inline-flex items-center gap-0.5 align-middle">
         {ordered.map((span) => {
           const isPrimary = span.editId === primary.editId;
           return (
@@ -146,6 +146,11 @@ export function EditMarkerCluster({
                 <EditMarker
                   span={span}
                   selected={selected}
+                  className={cn(
+                    "hover:ring-1 hover:ring-white/80 hover:ring-offset-1 hover:ring-offset-background",
+                    selected &&
+                      "ring-1 ring-white/80 ring-offset-1 ring-offset-background",
+                  )}
                   onSelect={(editId, toggleSelect) => {
                     onSelect(editId, toggleSelect);
                     if (isPrimary) toggleCluster(wordIndex);
@@ -161,7 +166,7 @@ export function EditMarkerCluster({
   }
 
   return (
-    <span className="mr-0.5 inline-flex items-center gap-0.5 align-middle">
+    <span className="inline-flex items-center gap-0.5 align-middle">
       <MarkerSelected editId={primary.editId}>
         {(selected) => (
           <EditMarker

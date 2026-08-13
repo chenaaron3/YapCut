@@ -10,12 +10,9 @@ import type { TemplateStyle, TextBaseEdit } from "~/domain/project-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export const OVERLAY_TEMPLATE_IDS = [
-  "simple-white",
-  "simple-black",
-  "white-board",
   "arc-ribbon",
-  "black-board",
   "red-teal",
+  "black-white",
 ] as const;
 
 export type OverlayTemplateId = (typeof OVERLAY_TEMPLATE_IDS)[number];
@@ -79,33 +76,6 @@ function overlayTemplate(
 }
 
 export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
-  "simple-white": overlayTemplate("simple-white", "Simple White", true, {
-    ...OVERLAY_TEXT_BASE,
-    fontFamily: "proxima-nova",
-    fontSize: 75,
-    animation: "fade",
-    textTransform: "capitalize",
-    background: { kind: "none" },
-    wordStyle: { fill: "#FFFFFF", opacity: 1 },
-  }),
-  "simple-black": overlayTemplate("simple-black", "Simple Black", true, {
-    ...OVERLAY_TEXT_BASE,
-    fontFamily: "proxima-nova",
-    fontSize: 75,
-    animation: "fade",
-    textTransform: "none",
-    background: { kind: "none" },
-    wordStyle: { fill: "#111111", opacity: 1 },
-  }),
-  "white-board": overlayTemplate("white-board", "White Board", true, {
-    ...OVERLAY_TEXT_BASE,
-    fontFamily: "proxima-nova",
-    fontSize: 75,
-    animation: "fade",
-    textTransform: "none",
-    background: { kind: "wrap", color: "#FFFFFF" },
-    wordStyle: { fill: "#111111", opacity: 1 },
-  }),
   "arc-ribbon": overlayTemplate(
     "arc-ribbon",
     "Arc + Ribbon",
@@ -137,29 +107,6 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       wordStyle: { fill: "#111111", opacity: 1 },
     },
   ),
-  "black-board": overlayTemplate(
-    "black-board",
-    "Black + Board",
-    false,
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "montserrat",
-      fontSize: 56,
-      animation: "fade",
-      textTransform: "none",
-      background: { kind: "none" },
-      wordStyle: { fill: "#111111", opacity: 1 },
-    },
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "montserrat",
-      fontSize: 62,
-      animation: "fade",
-      textTransform: "none",
-      background: { kind: "wrap", color: "#FFFFFF" },
-      wordStyle: { fill: "#111111", opacity: 1 },
-    },
-  ),
   "red-teal": overlayTemplate(
     "red-teal",
     "Red + Teal",
@@ -180,6 +127,31 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       animation: "fade",
       textTransform: "uppercase",
       background: { kind: "wrap", color: "#5ED4DC" },
+      y: -0.15,
+      wordStyle: { fill: "#111111", opacity: 1 },
+    },
+  ),
+  "black-white": overlayTemplate(
+    "black-white",
+    "Black + White",
+    true,
+    {
+      ...OVERLAY_TEXT_BASE,
+      fontFamily: "montserrat",
+      fontSize: 52,
+      animation: "fade",
+      textTransform: "uppercase",
+      background: { kind: "box", color: "#111111" },
+      wordStyle: { fill: "#FFFFFF", opacity: 1 },
+    },
+    {
+      ...OVERLAY_TEXT_BASE,
+      fontFamily: "montserrat",
+      fontSize: 56,
+      animation: "fade",
+      textTransform: "uppercase",
+      background: { kind: "wrap", color: "#FFFFFF" },
+      y: -0.15,
       wordStyle: { fill: "#111111", opacity: 1 },
     },
   ),

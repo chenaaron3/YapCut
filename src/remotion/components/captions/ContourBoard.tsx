@@ -9,6 +9,7 @@ import React, {
 } from "react";
 
 import {
+  CONTOUR_GOO_STD_DEV,
   CONTOUR_LINE_HEIGHT,
   CONTOUR_PAD_X_EM,
   CONTOUR_PAD_Y_EM,
@@ -18,6 +19,9 @@ import {
 /**
  * Merged sticker silhouette via inline line boxes + goo filter.
  * Children must be inline-level (e.g. inline-block word spans).
+ *
+ * Pad + fill share an `inline-block` so padding is both painted and laid out
+ * (`inline` vertical padding is paint-only and gets clipped by overflow).
  */
 export const ContourBoard: React.FC<{
   fill: string;
@@ -28,12 +32,14 @@ export const ContourBoard: React.FC<{
   const rawId = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const filterId = `contour-goo-${rawId}`;
   const items = Children.toArray(children);
+  const pad = `${CONTOUR_PAD_Y_EM}em ${CONTOUR_PAD_X_EM}em`;
+  const radius = `${CONTOUR_RADIUS_EM}em`;
 
   const flowStyle: CSSProperties = {
     ...textStyle,
-    display: "inline",
-    padding: `${CONTOUR_PAD_Y_EM}em ${CONTOUR_PAD_X_EM}em`,
-    borderRadius: `${CONTOUR_RADIUS_EM}em`,
+    display: "inline-block",
+    padding: pad,
+    borderRadius: radius,
     lineHeight: CONTOUR_LINE_HEIGHT,
     maxWidth: "100%",
     boxDecorationBreak: "clone",
@@ -55,11 +61,14 @@ export const ContourBoard: React.FC<{
 
   return (
     <div
+      data-contour-board=""
       style={{
         position: "relative",
-        width: "100%",
+        width: "fit-content",
         maxWidth: "100%",
         textAlign,
+        overflow: "hidden",
+        borderRadius: radius,
       }}
     >
       <svg
@@ -79,7 +88,7 @@ export const ContourBoard: React.FC<{
           >
             <feGaussianBlur
               in="SourceGraphic"
-              stdDeviation="8"
+              stdDeviation={CONTOUR_GOO_STD_DEV}
               result="blur"
             />
             <feColorMatrix
@@ -95,7 +104,8 @@ export const ContourBoard: React.FC<{
       <div
         aria-hidden
         style={{
-          width: "100%",
+          width: "fit-content",
+          maxWidth: "100%",
           textAlign,
           filter: `url(#${filterId})`,
         }}
@@ -116,9 +126,7 @@ export const ContourBoard: React.FC<{
         style={{
           position: "absolute",
           left: 0,
-          right: 0,
           top: 0,
-          width: "100%",
           textAlign,
         }}
       >

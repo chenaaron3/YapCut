@@ -37,12 +37,17 @@ export function clientToComp(
 }
 
 export function boxStyle(editable: EditableTransform, t: Transform): BoxStyle {
-  const base = containSize(
-    editable.width,
-    editable.height,
-    COMPOSITION_WIDTH,
-    COMPOSITION_HEIGHT,
-  );
+  // Overlay width/height are already painted composition px (AABB measure).
+  // containSize would scale them *up* to touch a frame edge — not flush.
+  const base =
+    editable.layer === "overlay"
+      ? { w: editable.width, h: editable.height }
+      : containSize(
+          editable.width,
+          editable.height,
+          COMPOSITION_WIDTH,
+          COMPOSITION_HEIGHT,
+        );
   return {
     widthPct: (base.w / COMPOSITION_WIDTH) * 100,
     heightPct: (base.h / COMPOSITION_HEIGHT) * 100,

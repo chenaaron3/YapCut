@@ -44,7 +44,7 @@ export function textSeed(): Extract<
     heading: "",
     subheading: "",
     middle: null,
-    hideCaptions: true,
+    hideCaptions: false,
     ...OVERLAY_TRANSFORM_DEFAULTS,
     style: { templateId: DEFAULT_TEXT_TEMPLATE_ID },
   };

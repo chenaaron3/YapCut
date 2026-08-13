@@ -50,6 +50,18 @@
   background-color: var(--color-panel-2);
 }
 
+/*
+ * Transcript word gaps: each WordCell has a leading + trailing fixed slot.
+ * Adjacent empty slots would double the separation — collapse to one.
+ * A handle in either slot keeps that slot and drops the empty neighbor.
+ */
+[data-word-gap]:empty:has(+ [data-word-gap]) {
+  display: none;
+}
+[data-word-gap]:not(:empty) + [data-word-gap]:empty {
+  display: none;
+}
+
 @keyframes rise {
   from {
     opacity: 0;

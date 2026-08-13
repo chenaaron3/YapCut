@@ -95,6 +95,7 @@ export function backgroundChromeStyle(
       borderRadius: 24,
       padding: "28px 32px",
       boxShadow: "0 6px 0 rgba(0, 0, 0, 0.35)",
+      boxSizing: "border-box",
     };
   }
 

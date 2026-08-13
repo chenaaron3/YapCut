@@ -16,7 +16,7 @@ type Props = {
   onResizeEdge?: (edge: ResizeEdge, editId: number) => void;
 };
 
-/** Edge resize grip on a selected edit range. */
+/** Edge resize grip on a selected edit range — fills the parent {@link WordGap}. */
 export function RangeHandle({ edge, span, selected, onResizeEdge }: Props) {
   if (!span || !selected) return null;
   if (edge === "start" && !isStartHandleRole(span.role)) return null;
@@ -34,18 +34,19 @@ export function RangeHandle({ edge, span, selected, onResizeEdge }: Props) {
     <button
       type="button"
       aria-label={label}
-      className={cn(
-        "absolute top-1/2 z-10 h-3 w-1.5 -translate-y-1/2 cursor-ew-resize rounded-sm bg-white",
-        edge === "start" && "-left-1",
-        edge === "end" && "-right-1",
-        // Split sits on the word end (same as an end handle), not mid-glyph.
-        edge === "middle" && "-right-1 bg-amber-200",
-      )}
+      className="absolute top-1/2 left-0 z-10 flex h-[1.15em] w-full -translate-y-1/2 cursor-ew-resize items-stretch px-px"
       onMouseDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
         onResizeEdge?.(edge, span.editId);
       }}
-    />
+    >
+      <span
+        className={cn(
+          "w-full rounded-sm bg-white",
+          edge === "middle" && "bg-amber-200",
+        )}
+      />
+    </button>
   );
 }
