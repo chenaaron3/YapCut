@@ -27,7 +27,7 @@ export function EnsureLocalFonts() {
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all(
+    void Promise.all(
       LOCAL_FACES.map((spec) => {
         const face = new FontFace(
           spec.family,
