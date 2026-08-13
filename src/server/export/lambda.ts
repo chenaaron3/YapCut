@@ -9,8 +9,8 @@ import { env } from "~/env";
 import {
   COMPOSITION_ID,
   COVER_COMPOSITION_ID,
-} from "~/remotion/constants";
-import type { ProjectProps } from "~/remotion/types";
+} from "~/remotion/helpers/constants";
+import type { ProjectProps } from "~/remotion/helpers/types";
 import { ensureRemotionAwsEnv } from "~/server/export/ensure-remotion-aws-env";
 
 function remotionRegion(): AwsRegion {

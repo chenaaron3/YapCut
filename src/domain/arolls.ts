@@ -4,6 +4,7 @@ import {
   type ArollKeep,
   type Edit,
   type ProjectConfig,
+  isTextBaseEdit,
 } from "~/domain/project-config";
 import type { LocalTime, OutputTime, TimelineTime } from "~/domain/time";
 
@@ -631,8 +632,8 @@ export function reorderArollAssets(
     const end = Math.min(edit.end + delta, newRun.end);
     if (end <= start + EPS) continue;
 
-    if (edit.kind === "vfx" && edit.type === "listicle") {
-      let middle = edit.middle;
+    if (isTextBaseEdit(edit)) {
+      let middle = edit.middle ?? null;
       if (middle != null) {
         middle = Math.min(Math.max(middle + delta, start), end);
       }

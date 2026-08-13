@@ -1,8 +1,8 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 
 import { DynamicGroupView } from "~/remotion/components/captions/DynamicGroupView";
-import { SAFE_AREA } from "~/remotion/constants";
-import type { CaptionGroupProp } from "~/remotion/types";
+import { SAFE_AREA } from "~/remotion/helpers/constants";
+import type { CaptionGroupProp } from "~/remotion/helpers/types";
 
 /** Player/export captions — full DynamicGroupView stack. */
 export function Captions({ groups }: { groups: CaptionGroupProp[] }) {

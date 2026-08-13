@@ -7,7 +7,7 @@ import {
 
 import type { CaptionAnimation } from "~/remotion/captions/style";
 
-import type { CaptionWordProp } from "~/remotion/types";
+import type { CaptionWordProp } from "~/remotion/helpers/types";
 
 export const CURSOR_BLINK_FRAMES = 16;
 export const SLIDE_OFFSET_PX = 28;

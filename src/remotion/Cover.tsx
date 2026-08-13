@@ -7,8 +7,8 @@ import {
 } from "remotion";
 import { Video } from "@remotion/media";
 
-import { SAFE_AREA } from "~/remotion/constants";
-import type { ProjectProps } from "~/remotion/types";
+import { SAFE_AREA } from "~/remotion/helpers/constants";
+import type { ProjectProps } from "~/remotion/helpers/types";
 
 const FONT_FAMILY = '"Montserrat", "Arial Black", Impact, sans-serif';
 const MAX_FONT_SIZE = 110;

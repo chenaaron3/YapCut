@@ -9,6 +9,17 @@ export const TRANSFORM_DEFAULTS: Transform = {
   rotation: 0,
 };
 
+/**
+ * Default block pose for title/listicle overlays — upper title band,
+ * not frame center. Positive offsetY is down.
+ */
+export const OVERLAY_TRANSFORM_DEFAULTS: Transform = {
+  scale: 1,
+  offsetX: 0,
+  offsetY: -0.327,
+  rotation: 0,
+};
+
 export const TRANSFORM_SCALE_MIN = 0.2;
 export const TRANSFORM_SCALE_MAX = 3;
 

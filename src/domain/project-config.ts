@@ -1,20 +1,52 @@
-import { z } from 'zod';
+import { z } from "zod";
 
+import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import {
   emphasisStyleSchema,
   optionalEmphasisStyleSchema,
   type EmphasisStyle,
 } from "~/domain/emphasis-style";
-import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import type { LocalTime, TimelineTime } from "~/domain/time";
 
 export type { EmphasisStyle };
 
-/** Catalog base + sparse user overrides. */
+/** Catalog base + sparse user overrides. Overlay adds a subheading bag. */
 export type TemplateStyle = {
   templateId: string;
+  /** Captions/quotes: the look. Overlay: heading tab. */
   overrides?: Record<string, unknown>;
+  /** Overlay subheading tab. Captions/quotes ignore. */
+  subheadingOverrides?: Record<string, unknown>;
 };
+
+/** Copy bags so fan-out does not share object identity. */
+export function cloneTemplateStyle(style: TemplateStyle): TemplateStyle {
+  return {
+    templateId: style.templateId,
+    ...(style.overrides ? { overrides: { ...style.overrides } } : {}),
+    ...(style.subheadingOverrides
+      ? { subheadingOverrides: { ...style.subheadingOverrides } }
+      : {}),
+  };
+}
+
+/**
+ * Merge a partial patch onto a TemplateStyle.
+ * `"overrides" in patch` / `"subheadingOverrides" in patch` can clear a bag.
+ */
+export function applyTemplateStylePatch(
+  current: TemplateStyle,
+  patch: Partial<TemplateStyle>,
+): TemplateStyle {
+  return cloneTemplateStyle({
+    templateId: patch.templateId ?? current.templateId,
+    overrides: "overrides" in patch ? patch.overrides : current.overrides,
+    subheadingOverrides:
+      "subheadingOverrides" in patch
+        ? patch.subheadingOverrides
+        : current.subheadingOverrides,
+  });
+}
 
 /** One keep segment on an A-roll asset (local seconds). */
 export type ArollKeep = LocalTime;
@@ -28,7 +60,7 @@ export type EditBase = TimelineTime & {
 
 /**
  * Mixin for edits that can suppress spoken captions under their timeline range.
- * Opt in per edit type (listicle today; others can intersect later).
+ * Title and listicle opt in via `TextBase.hideCaptions` (seeded true).
  */
 export type CanHideCaptions = {
   /** When true, hide spoken captions under [start, end]. */
@@ -56,14 +88,25 @@ export type ZoomEdit = EditBase &
     ease?: boolean;
   };
 
-export type VfxTextEdit = EditBase & {
-  kind: "vfx";
-  type: "text";
-  text: string;
-  /** Second line under the title; omit/empty = heading only. */
-  subheading?: string;
-  style?: TemplateStyle;
-};
+/**
+ * Shared copy + block pose for title and listicle overlays.
+ * `subheading` empty = heading only. `middle` null = no split (stacked
+ * templates); serial templates always stagger (virtual midpoint if unset).
+ * `style` is the overlay look — title owns it; listicle mirrors Project.listicleStyle.
+ */
+export type TextBase = Transform &
+  CanHideCaptions & {
+    heading: string;
+    subheading: string;
+    middle: number | null;
+    style: TemplateStyle;
+  };
+
+export type VfxTextEdit = EditBase &
+  TextBase & {
+    kind: "vfx";
+    type: "text";
+  };
 
 export type VfxQuoteEdit = EditBase & {
   kind: "vfx";
@@ -76,19 +119,11 @@ export type VfxQuoteEdit = EditBase & {
   emphasisStyle?: EmphasisStyle;
 };
 
-/**
- * Indicator + value text VFX.
- * `middle` set → staggered reveal (value joins at middle).
- * `middle` null → simultaneous (stacked) or value-only (not stacked).
- */
+/** Listicle overlay — `style` mirrors Project.listicleStyle (fan-out on patch). */
 export type VfxListicleEdit = EditBase &
-  CanHideCaptions & {
+  TextBase & {
     kind: "vfx";
     type: "listicle";
-    /** Timeline sec where value appears; null = not staggered. */
-    middle: number | null;
-    indicatorText: string;
-    valueText: string;
   };
 
 /**
@@ -148,13 +183,40 @@ export type VfxEdit =
 
 export type Edit = BrollEdit | SfxEdit | ZoomEdit | VfxEdit;
 
+/** Edit members that include the `TextBase` mixin. */
+export type TextBaseEdit = Extract<Edit, TextBase>;
+
+export function isTextBaseEdit(edit: Edit): edit is TextBaseEdit {
+  return textBaseSchema.safeParse(edit).success;
+}
+
+const MIN_OVERLAY_PHASE_SEC = 0.05;
+
+/** Clamp overlay `middle` so both phases keep a minimum duration. */
+export function clampOverlayMiddle(
+  start: number,
+  middle: number,
+  end: number,
+  minLen = MIN_OVERLAY_PHASE_SEC,
+): number {
+  const lo = start + minLen;
+  const hi = end - minLen;
+  if (hi <= lo) return (start + end) / 2;
+  return Math.min(hi, Math.max(lo, middle));
+}
+
+/** Midpoint used when a serial overlay has no persisted `middle`. */
+export function overlayMidpointSec(start: number, end: number): number {
+  return clampOverlayMiddle(start, (start + end) / 2, end);
+}
+
 export type ProjectConfig = {
   arolls: ArollKeep[];
   edits: Edit[];
   captions: TemplateStyle;
   /**
    * Shared listicle look (all listicle edits use this).
-   * Preset id only — no per-edit overrides.
+   * Same overlay catalog as titles; `overrides` = heading, `subheadingOverrides` = subheading.
    */
   listicleStyle: TemplateStyle;
   /**
@@ -176,12 +238,12 @@ export type ProjectConfig = {
 };
 
 export const DEFAULT_CAPTION_TEMPLATE_ID = "ugc";
-export const DEFAULT_TEXT_VFX_DURATION_SEC = 5;
+/** Titles seed this overlay look (see remotion/templates/overlay). */
+export const DEFAULT_TEXT_TEMPLATE_ID = "red-teal" as const;
+/** Listicles seed this overlay look (see remotion/templates/overlay). */
+export const DEFAULT_LISTICLE_TEMPLATE_ID = "red-teal" as const;
 /** Output fps used for min-keep filtering (matches Remotion composition). */
 export const PROJECT_FPS = 30;
-
-/** Default listicle preset id (see remotion/templates/listicle). */
-export const DEFAULT_LISTICLE_TEMPLATE_ID = "black-board";
 
 export const emptyProjectConfig = (): ProjectConfig => ({
   arolls: [],
@@ -196,6 +258,7 @@ export const emptyProjectConfig = (): ProjectConfig => ({
 const templateStyleSchema = z.object({
   templateId: z.string().min(1),
   overrides: z.record(z.unknown()).optional(),
+  subheadingOverrides: z.record(z.unknown()).optional(),
 });
 
 const arollKeepSchema = z.object({
@@ -208,6 +271,13 @@ const editBaseSchema = z.object({
   id: z.number().int().nonnegative(),
   start: z.number(),
   end: z.number(),
+});
+
+const transformSchema = z.object({
+  scale: z.number(),
+  offsetX: z.number(),
+  offsetY: z.number(),
+  rotation: z.number(),
 });
 
 const zoomEditSchema = editBaseSchema
@@ -224,12 +294,17 @@ const zoomEditSchema = editBaseSchema
     ease: z.boolean().optional(),
   });
 
-const vfxTextEditSchema = editBaseSchema.extend({
+const textBaseSchema = transformSchema.extend({
+  heading: z.string(),
+  subheading: z.string(),
+  middle: z.number().nullable(),
+  hideCaptions: z.boolean(),
+  style: templateStyleSchema,
+});
+
+const vfxTextEditSchema = editBaseSchema.merge(textBaseSchema).extend({
   kind: z.literal("vfx"),
   type: z.literal("text"),
-  text: z.string(),
-  subheading: z.string().optional(),
-  style: templateStyleSchema.optional(),
 });
 
 const vfxQuoteEditSchema = editBaseSchema.extend({
@@ -239,30 +314,15 @@ const vfxQuoteEditSchema = editBaseSchema.extend({
   emphasisStyle: optionalEmphasisStyleSchema,
 });
 
-const vfxListicleEditSchema = editBaseSchema.extend({
+const vfxListicleEditSchema = editBaseSchema.merge(textBaseSchema).extend({
   kind: z.literal("vfx"),
   type: z.literal("listicle"),
-  middle: z
-    .number()
-    .nullable()
-    .optional()
-    .transform((v) => v ?? null),
-  indicatorText: z.string(),
-  valueText: z.string(),
-  hideCaptions: z.boolean().default(true),
 });
 
 const vfxShakeEditSchema = editBaseSchema.extend({
   kind: z.literal("vfx"),
   type: z.literal("shake"),
   intensity: z.number().optional(),
-});
-
-const transformSchema = z.object({
-  scale: z.number(),
-  offsetX: z.number(),
-  offsetY: z.number(),
-  rotation: z.number(),
 });
 
 const mediaRefSchema = z.object({
@@ -299,9 +359,7 @@ export const projectConfigSchema = z.object({
     ]),
   ),
   captions: templateStyleSchema,
-  listicleStyle: templateStyleSchema.default({
-    templateId: DEFAULT_LISTICLE_TEMPLATE_ID,
-  }),
+  listicleStyle: templateStyleSchema,
   emphasisStyle: emphasisStyleSchema,
   defaultBRollSfxAssetId: z.string().min(1).nullable().default(null),
   music: z
@@ -329,28 +387,4 @@ export function nextEditId(edits: readonly Pick<EditBase, "id">[]): EditId {
 /** Compacted output duration (sum of keep lengths — Remotion / export). */
 export function outputDurationFromArolls(arolls: readonly ArollKeep[]): number {
   return arolls.reduce((sum, keep) => sum + Math.max(0, keep.end - keep.start), 0);
-}
-
-export const DEFAULT_TEXT_TEMPLATE_ID = "white-board";
-
-export function seedTitleTextVfx(options: {
-  edits: Edit[];
-  title: string;
-  /** Timeline start of the first keep (not 0 when a leading gap exists). */
-  startSec: number;
-  /** Expanded timeline duration (gaps count). */
-  timelineDurationSec: number;
-}): VfxTextEdit {
-  const start = Math.max(0, options.startSec);
-  const remaining = Math.max(0, options.timelineDurationSec - start);
-  const duration = Math.min(DEFAULT_TEXT_VFX_DURATION_SEC, remaining);
-  return {
-    id: nextEditId(options.edits),
-    kind: "vfx",
-    type: "text",
-    start,
-    end: start + (duration > 0 ? duration : DEFAULT_TEXT_VFX_DURATION_SEC),
-    text: options.title,
-    style: { templateId: DEFAULT_TEXT_TEMPLATE_ID },
-  };
 }

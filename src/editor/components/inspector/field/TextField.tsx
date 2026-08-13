@@ -1,7 +1,9 @@
+import { useRef } from "react";
+
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
-import { useEditor } from "~/editor/store";
+import { runGesture } from "~/editor/lib/gesture";
 
 export function TextField({
   label,
@@ -16,6 +18,15 @@ export function TextField({
   onLiveChange: (v: string) => void;
   multiline?: boolean;
 }) {
+  const endRef = useRef<(() => void) | null>(null);
+  const onFocus = () => {
+    endRef.current ??= runGesture();
+  };
+  const onBlur = () => {
+    endRef.current?.();
+    endRef.current = null;
+  };
+
   return (
     <div className="flex flex-col gap-1">
       <Label
@@ -28,7 +39,8 @@ export function TextField({
         <Textarea
           id={id}
           value={value}
-          onFocus={() => useEditor.getState().beginGesture()}
+          onFocus={onFocus}
+          onBlur={onBlur}
           onChange={(e) => onLiveChange(e.target.value)}
           className="min-h-8 resize-none py-1"
         />
@@ -37,7 +49,8 @@ export function TextField({
           id={id}
           type="text"
           value={value}
-          onFocus={() => useEditor.getState().beginGesture()}
+          onFocus={onFocus}
+          onBlur={onBlur}
           onChange={(e) => onLiveChange(e.target.value)}
         />
       )}

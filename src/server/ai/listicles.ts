@@ -1,61 +1,63 @@
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-import { clampListicleMiddle } from "~/domain/listicle";
+import {
+  clampOverlayMiddle,
+  nextEditId,
+  type TemplateStyle,
+  type VfxListicleEdit,
+} from "~/domain/project-config";
 import {
   buildNumberedTranscript,
   wordIndexToTimelineSec,
 } from "~/domain/projection";
-import {
-  nextEditId,
-  type VfxListicleEdit,
-} from "~/domain/project-config";
+import { OVERLAY_TRANSFORM_DEFAULTS } from "~/domain/transform";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
 const MAX_ITEMS = 5;
-const MAX_INDICATOR_WORDS = 3;
-const MAX_VALUE_WORDS = 5;
-/** When there is no spoken indicator, show indicator text briefly at value start. */
-const FALLBACK_INDICATOR_SEC = 0.5;
+const MAX_HEADING_WORDS = 3;
+const MAX_SUBHEADING_WORDS = 5;
+/** When there is no spoken heading range, show heading briefly at subheading start. */
+const FALLBACK_HEADING_SEC = 0.5;
 
 export const ListicleDetectionSchema = z.object({
   items: z
     .array(
       z.object({
-        indicatorText: z
+        heading: z
           .string()
           .describe(
-            `Short on-screen indicator with a noun + number, e.g. "Tip #1", "No. 1", "Hack #1", "First" (max ${MAX_INDICATOR_WORDS} words)`,
+            `Short on-screen heading with a noun + number, e.g. "Tip #1", "No. 1", "Hack #1", "First" (max ${MAX_HEADING_WORDS} words)`,
           ),
-        indicatorStartWordIndex: z
+        headingStartWordIndex: z
           .number()
           .int()
           .nonnegative()
           .nullable()
           .describe(
-            "First word of the spoken indicator phrase, if a clear spoken indicator exists; null when there is no good indicator",
+            "First word of the spoken heading phrase, if a clear spoken heading exists; null when there is no good heading",
           ),
-        valueText: z
+        subheading: z
           .string()
           .describe(
-            `Short list item title in title case, e.g. "Mute Notifications", "Batch Your Emails", "Walk After Lunch" (max ${MAX_VALUE_WORDS} words; keep a/of/the lowercase unless first/last)`,
+            `Short list item title in title case, e.g. "Mute Notifications", "Batch Your Emails", "Walk After Lunch" (max ${MAX_SUBHEADING_WORDS} words; keep a/of/the lowercase unless first/last)`,
           ),
-        valueStartWordIndex: z
+        subheadingStartWordIndex: z
           .number()
           .int()
           .nonnegative()
-          .describe("First spoken word of the list item value"),
-        valueEndWordIndex: z
+          .describe("First spoken word of the list item subheading"),
+        subheadingEndWordIndex: z
           .number()
           .int()
           .nonnegative()
-          .describe("Last spoken word of the list item value (inclusive)"),
+          .describe("Last spoken word of the list item subheading (inclusive)"),
       }),
     )
     .max(MAX_ITEMS)
     .describe(
-      "Ordered listicle items (1+); empty if no clear value items",
+      "Ordered listicle items (1+); empty if no clear subheading items",
     ),
 });
 
@@ -74,57 +76,54 @@ export function detectionToListicleEdits(
   detection: ListicleDetection,
   words: readonly GlobalTranscriptWord[],
   existingEdits: readonly { id: number }[],
+  listicleStyle: TemplateStyle,
 ): VfxListicleEdit[] {
   let nextId = nextEditId(existingEdits);
   const out: VfxListicleEdit[] = [];
 
   for (const item of detection.items.slice(0, MAX_ITEMS)) {
-    const indicatorText = clampWords(
-      item.indicatorText,
-      MAX_INDICATOR_WORDS,
-    );
-    const valueText = clampWords(item.valueText, MAX_VALUE_WORDS);
-    if (!indicatorText || !valueText) continue;
-    if (item.valueEndWordIndex < item.valueStartWordIndex) continue;
+    const heading = clampWords(item.heading, MAX_HEADING_WORDS);
+    const subheading = clampWords(item.subheading, MAX_SUBHEADING_WORDS);
+    if (!heading || !subheading) continue;
+    if (item.subheadingEndWordIndex < item.subheadingStartWordIndex) continue;
 
-    const valueStart = wordIndexToTimelineSec(
-      item.valueStartWordIndex,
+    const subStart = wordIndexToTimelineSec(
+      item.subheadingStartWordIndex,
       words,
       "start",
     );
-    const valueEnd = wordIndexToTimelineSec(
-      item.valueEndWordIndex,
+    const subEnd = wordIndexToTimelineSec(
+      item.subheadingEndWordIndex,
       words,
       "end",
     );
-    if (valueStart == null || valueEnd == null) continue;
-    if (valueEnd <= valueStart) continue;
+    if (subStart == null || subEnd == null) continue;
+    if (subEnd <= subStart) continue;
 
-    const firstValueWord = words[item.valueStartWordIndex];
-    const firstWordEnd = firstValueWord?.end ?? valueStart + FALLBACK_INDICATOR_SEC;
+    const firstSubWord = words[item.subheadingStartWordIndex];
+    const firstWordEnd = firstSubWord?.end ?? subStart + FALLBACK_HEADING_SEC;
 
     let start: number;
     let middleRaw: number;
-    const end = valueEnd;
+    const end = subEnd;
 
-    if (item.indicatorStartWordIndex != null) {
-      const indicatorStart = wordIndexToTimelineSec(
-        item.indicatorStartWordIndex,
+    if (item.headingStartWordIndex != null) {
+      const headingStart = wordIndexToTimelineSec(
+        item.headingStartWordIndex,
         words,
         "start",
       );
-      if (indicatorStart == null || valueStart < indicatorStart) continue;
-      start = indicatorStart;
-      // Split at end of last indicator word (end-handle semantics).
-      const lastIndicator = words[item.valueStartWordIndex - 1];
-      middleRaw = lastIndicator?.end ?? valueStart;
+      if (headingStart == null || subStart < headingStart) continue;
+      start = headingStart;
+      const lastHeadingWord = words[item.subheadingStartWordIndex - 1];
+      middleRaw = lastHeadingWord?.end ?? subStart;
     } else {
-      start = valueStart;
-      middleRaw = Math.min(valueStart + FALLBACK_INDICATOR_SEC, firstWordEnd);
+      start = subStart;
+      middleRaw = Math.min(subStart + FALLBACK_HEADING_SEC, firstWordEnd);
     }
 
     if (end <= start) continue;
-    const middle = clampListicleMiddle(start, middleRaw, end);
+    const middle = clampOverlayMiddle(start, middleRaw, end);
     out.push({
       id: nextId,
       kind: "vfx",
@@ -132,9 +131,11 @@ export function detectionToListicleEdits(
       start,
       middle,
       end,
-      indicatorText,
-      valueText,
+      heading,
+      subheading,
       hideCaptions: true,
+      style: listicleStyle,
+      ...OVERLAY_TRANSFORM_DEFAULTS,
     });
     nextId += 1;
   }
@@ -154,17 +155,17 @@ async function callOpenAI(
       {
         role: "system",
         content: [
-          "You extract listicle-style indicator + value pairs from a talking-head transcript.",
-          "Each item needs a short on-screen value; a spoken indicator is preferred but optional.",
-          "Indicators denote a number + noun (or ordinal), e.g. tip one, number three, hack #2, first / second.",
-          'Base sentence to riff on: speaker says "tip one is mute your notifications" → indicatorText "Tip #1" (words covering "tip one"), valueText "Mute Your Notifications" (words covering "mute your notifications").',
+          "You extract listicle-style heading + subheading pairs from a talking-head transcript.",
+          "Each item needs a short on-screen subheading; a spoken heading is preferred but optional.",
+          "Headings denote a number + noun (or ordinal), e.g. tip one, number three, hack #2, first / second.",
+          'Base sentence to riff on: speaker says "tip one is mute your notifications" → heading "Tip #1" (words covering "tip one"), subheading "Mute Your Notifications" (words covering "mute your notifications").',
           "Same pattern for tip two / hack three / number four, etc.",
           "For each item return:",
-          `- indicatorText: polished on-screen indicator (Tip #1, No. 1, Hack #1, First) — max ${MAX_INDICATOR_WORDS} words; never trailing particles like is/the/are.`,
-          "- indicatorStartWordIndex: first spoken indicator word when a clear indicator exists; null when there is no good spoken indicator.",
-          `- valueText: short value in title case (small words a/of/the lowercase unless first/last) — max ${MAX_VALUE_WORDS} words.`,
-          "- valueStartWordIndex / valueEndWordIndex: spoken value range; when an indicator exists, prefer the value starting immediately after it (back-to-back).",
-          "Return 1+ items when any clear values exist; otherwise items: [].",
+          `- heading: polished on-screen heading (Tip #1, No. 1, Hack #1, First) — max ${MAX_HEADING_WORDS} words; never trailing particles like is/the/are.`,
+          "- headingStartWordIndex: first spoken heading word when a clear heading exists; null when there is no good spoken heading.",
+          `- subheading: short value in title case (small words a/of/the lowercase unless first/last) — max ${MAX_SUBHEADING_WORDS} words.`,
+          "- subheadingStartWordIndex / subheadingEndWordIndex: spoken subheading range; when a heading exists, prefer the subheading starting immediately after it (back-to-back).",
+          "Return 1+ items when any clear subheadings exist; otherwise items: [].",
           `At most ${MAX_ITEMS} items.`,
         ].join(" "),
       },
@@ -194,8 +195,14 @@ async function callOpenAI(
 export async function generateListicleEdits(
   words: readonly GlobalTranscriptWord[],
   existingEdits: readonly { id: number }[],
+  listicleStyle: TemplateStyle,
 ): Promise<VfxListicleEdit[]> {
   if (words.length === 0) return [];
   const detection = await callOpenAI(words);
-  return detectionToListicleEdits(detection, words, existingEdits);
+  return detectionToListicleEdits(
+    detection,
+    words,
+    existingEdits,
+    listicleStyle,
+  );
 }

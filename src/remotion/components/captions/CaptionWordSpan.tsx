@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 
 import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
-import type { CaptionWordProp } from "~/remotion/types";
+import type { CaptionWordProp } from "~/remotion/helpers/types";
 
 import {
   lastVisibleWordIndex,
@@ -66,10 +66,22 @@ export const CaptionWordSpan: React.FC<{
   });
 
   const arcLayout = useContext(ArcLayoutContext);
-
-  if (!visual.mount) return null;
-
   const whitespace = /^\s+$/.test(word.text);
+
+  if (!visual.mount) {
+    return (
+      <span
+        style={{
+          visibility: "hidden",
+          display: "inline-block",
+          whiteSpace: whitespace ? "pre" : undefined,
+        }}
+      >
+        {word.text}
+      </span>
+    );
+  }
+
   const typewriter = groupStyle.animation === "typewriter";
   const glyphs = Array.from(
     transformCaptionWord(word.text, groupStyle.textTransform),
@@ -99,14 +111,11 @@ export const CaptionWordSpan: React.FC<{
     return (
       <>
         {glyphs.map((ch, i) => {
-          if (
-            typewriter &&
-            !typewriterLetterVisible(word, i, glyphs.length, frame)
-          ) {
-            return null;
-          }
           const pose = arcLayout.glyphs[start + i];
           if (!pose) return null;
+          const letterVisible =
+            !typewriter ||
+            typewriterLetterVisible(word, i, glyphs.length, frame);
           return (
             <span
               key={i}
@@ -114,6 +123,7 @@ export const CaptionWordSpan: React.FC<{
                 position: "absolute",
                 left: pose.x,
                 top: pose.y,
+                visibility: letterVisible ? "visible" : "hidden",
                 transform: `translate(-50%, -100%) rotate(${pose.rotate}deg)`,
                 transformOrigin: "center bottom",
                 whiteSpace: "pre",
@@ -154,12 +164,23 @@ export const CaptionWordSpan: React.FC<{
   }
 
   const content = letterReveal
-    ? Array.from(word.text).map((ch, i) => {
-        if (!typewriterLetterVisible(word, i, word.text.length, frame)) {
-          return null;
-        }
-        return <React.Fragment key={i}>{ch}</React.Fragment>;
-      })
+    ? Array.from(word.text).map((ch, i) => (
+        <span
+          key={i}
+          style={{
+            visibility: typewriterLetterVisible(
+              word,
+              i,
+              word.text.length,
+              frame,
+            )
+              ? "visible"
+              : "hidden",
+          }}
+        >
+          {ch}
+        </span>
+      ))
     : word.text;
 
   const showCursor =

@@ -4,15 +4,14 @@ import { AbsoluteFill, Series, useVideoConfig } from "remotion";
 import { BRollOverlay } from "~/remotion/components/BRollOverlay";
 import { Captions } from "~/remotion/components/Captions";
 import { EnsureLocalFonts } from "~/remotion/components/EnsureLocalFonts";
-import { ListicleOverlay } from "~/remotion/components/ListicleOverlay";
 import { MusicOverlay } from "~/remotion/components/MusicOverlay";
 import { ScreenShake } from "~/remotion/components/ScreenShake";
 import { SfxAudio } from "~/remotion/components/SfxAudio";
 import { TextOverlay } from "~/remotion/components/TextOverlay";
 import { Zoom } from "~/remotion/components/Zoom";
-import { PREMOUNT_SEC } from "~/remotion/constants";
+import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
 
-import type { ProjectProps } from "~/remotion/types";
+import type { ProjectProps } from "~/remotion/helpers/types";
 
 function ArollSeries({ sections }: { sections: ProjectProps["sections"] }) {
   const { fps } = useVideoConfig();
@@ -49,7 +48,6 @@ export function TalkingHead({
   captionGroups,
   zooms,
   textOverlays,
-  listicleOverlays,
   shakes,
   brolls,
   sfx,
@@ -69,7 +67,6 @@ export function TalkingHead({
         <BRollOverlay brolls={brolls} />
       </ScreenShake>
       <TextOverlay overlays={textOverlays} />
-      <ListicleOverlay overlays={listicleOverlays} />
       <Captions groups={captionGroups} />
       <SfxAudio sfx={sfx} />
       <MusicOverlay music={music} />

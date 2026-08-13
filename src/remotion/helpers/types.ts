@@ -1,5 +1,4 @@
 import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
-import type { TemplateStyle } from "~/domain/project-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export type ArollSection = {
@@ -48,25 +47,17 @@ export type TextOverlayProp = {
   id: number;
   startFrame: number;
   endFrame: number;
-  text: string;
-  /** Empty = heading only. */
-  subheading: string;
-  style?: TemplateStyle;
-};
-
-/** Baked listicle overlay (timing via middleFrame; layout via stacked). */
-export type ListicleOverlayProp = {
-  id: number;
-  startFrame: number;
-  /** Null = not staggered. */
+  /** Null = both lines from start (stacked) or heading-only. */
   middleFrame: number | null;
-  endFrame: number;
-  indicatorText: string;
-  valueText: string;
-  indicatorStyle: CaptionGroupStyle;
-  valueStyle: CaptionGroupStyle;
-  /** Template: stack indicator above value when both visible. */
+  heading: string;
+  subheading: string;
+  headingStyle: CaptionGroupStyle;
+  subheadingStyle: CaptionGroupStyle;
   stacked: boolean;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
 };
 
 export type BrollClipProp = {
@@ -122,7 +113,6 @@ export type ProjectProps = {
   captionGroups: CaptionGroupProp[];
   zooms: ZoomProp[];
   textOverlays: TextOverlayProp[];
-  listicleOverlays: ListicleOverlayProp[];
   shakes: ShakeClipProp[];
   brolls: BrollClipProp[];
   sfx: SfxClipProp[];

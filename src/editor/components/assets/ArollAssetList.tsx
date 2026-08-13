@@ -20,6 +20,7 @@ import {
   ArollRowContent,
   SortableArollRow,
 } from "~/editor/components/assets/ArollRow";
+import { runGesture } from "~/editor/lib/gesture";
 import { useEditor } from "~/editor/store";
 
 import type {
@@ -31,11 +32,10 @@ import type { EditorAsset } from "~/editor/store";
 
 export function ArollAssetList({ assets }: { assets: EditorAsset[] }) {
   const reorderArollAssets = useEditor((s) => s.reorderArollAssets);
-  const beginGesture = useEditor((s) => s.beginGesture);
   const undo = useEditor((s) => s.undo);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const gestureStartedRef = useRef(false);
+  const endGestureRef = useRef<(() => void) | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -52,7 +52,7 @@ export function ArollAssetList({ assets }: { assets: EditorAsset[] }) {
   const onDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
     setPlayingId(null);
-    gestureStartedRef.current = false;
+    endGestureRef.current = null;
   };
 
   const onDragOver = (event: DragOverEvent) => {
@@ -61,24 +61,25 @@ export function ArollAssetList({ assets }: { assets: EditorAsset[] }) {
     const fromIndex = assets.findIndex((a) => a.id === active.id);
     const toIndex = assets.findIndex((a) => a.id === over.id);
     if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
-    if (!gestureStartedRef.current) {
-      beginGesture();
-      gestureStartedRef.current = true;
+    if (!endGestureRef.current) {
+      endGestureRef.current = runGesture();
     }
     reorderArollAssets(fromIndex, toIndex, true);
   };
 
   const onDragEnd = (_event: DragEndEvent) => {
     setActiveId(null);
-    gestureStartedRef.current = false;
+    endGestureRef.current?.();
+    endGestureRef.current = null;
   };
 
   const onDragCancel = () => {
     setActiveId(null);
-    if (gestureStartedRef.current) {
+    if (endGestureRef.current) {
+      // Undo restores pre-drag snapshot and clears gesture depth.
       undo();
+      endGestureRef.current = null;
     }
-    gestureStartedRef.current = false;
   };
 
   if (assets.length === 0) {

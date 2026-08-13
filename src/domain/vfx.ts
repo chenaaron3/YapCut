@@ -1,7 +1,18 @@
 import type { EditSeed } from "~/domain/edits";
-import { DEFAULT_TEXT_TEMPLATE_ID } from "~/domain/project-config";
+import {
+  DEFAULT_TEXT_TEMPLATE_ID,
+  isTextBaseEdit,
+  nextEditId,
+  overlayMidpointSec,
+  type Edit,
+  type VfxTextEdit,
+} from "~/domain/project-config";
+import { OVERLAY_TRANSFORM_DEFAULTS } from "~/domain/transform";
 import { quoteSeed } from "~/domain/quote";
 import { shakeSeed } from "~/domain/shake";
+
+/** Default timeline span for a seeded title text VFX. */
+export const DEFAULT_TEXT_VFX_DURATION_SEC = 5;
 
 /** DataTransfer MIME for drag-from-Assets → transcript place. */
 export const VFX_DRAG_MIME = "application/x-vfx-preset";
@@ -30,8 +41,33 @@ export function textSeed(): Extract<
   return {
     kind: "vfx",
     type: "text",
-    text: "",
+    heading: "",
+    subheading: "",
+    middle: null,
+    hideCaptions: true,
+    ...OVERLAY_TRANSFORM_DEFAULTS,
     style: { templateId: DEFAULT_TEXT_TEMPLATE_ID },
+  };
+}
+
+/** Create-flow title card: full `vfx/text` Edit from Project.title. */
+export function seedTitleTextVfx(options: {
+  edits: Edit[];
+  title: string;
+  /** Timeline start of the first keep (not 0 when a leading gap exists). */
+  startSec: number;
+  /** Expanded timeline duration (gaps count). */
+  timelineDurationSec: number;
+}): VfxTextEdit {
+  const start = Math.max(0, options.startSec);
+  const remaining = Math.max(0, options.timelineDurationSec - start);
+  const duration = Math.min(DEFAULT_TEXT_VFX_DURATION_SEC, remaining);
+  return {
+    id: nextEditId(options.edits),
+    ...textSeed(),
+    start,
+    end: start + (duration > 0 ? duration : DEFAULT_TEXT_VFX_DURATION_SEC),
+    heading: options.title,
   };
 }
 
@@ -42,4 +78,16 @@ export function vfxSeedFromPreset(
   if (type === "quote") return quoteSeed();
   if (type === "shake") return shakeSeed();
   return textSeed();
+}
+
+/**
+ * Timeline sec of the stagger split, or null if this edit has none.
+ * Serial + subheading with unset `middle` uses a virtual midpoint.
+ */
+export function editMiddleSec(edit: Edit, stacked: boolean): number | null {
+  if (!isTextBaseEdit(edit)) return null;
+  if (!edit.subheading.trim()) return null;
+  if (typeof edit.middle === "number") return edit.middle;
+  if (!stacked) return overlayMidpointSec(edit.start, edit.end);
+  return null;
 }

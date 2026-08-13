@@ -92,14 +92,14 @@ export function buildCompanionCandidates(
         id: `listicle-ind-${edit.id}`,
         role: "reveal",
         startSec: edit.start,
-        label: `listicle #${edit.id} indicator "${edit.indicatorText}"`,
+        label: `listicle #${edit.id} heading "${edit.heading}"`,
       });
       const valueAt = edit.middle ?? edit.start;
       out.push({
         id: `listicle-val-${edit.id}`,
         role: "tick",
         startSec: valueAt,
-        label: `listicle #${edit.id} value "${edit.valueText}"`,
+        label: `listicle #${edit.id} subheading "${edit.subheading}"`,
       });
       continue;
     }
@@ -109,7 +109,7 @@ export function buildCompanionCandidates(
         id: `title-reveal-${edit.id}`,
         role: "reveal",
         startSec: edit.start,
-        label: `title card #${edit.id} "${edit.text}"`,
+        label: `title card #${edit.id} "${edit.heading}"`,
       });
     }
   }

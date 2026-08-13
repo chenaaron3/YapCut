@@ -17,10 +17,7 @@ export function ZoomInspector({ edit }: { edit: ZoomEdit }) {
       <button
         type="button"
         className="flex items-center justify-between gap-2 text-left"
-        onClick={() => {
-          useEditor.getState().beginGesture();
-          patchEdit(edit.id, { ease: !ease }, false);
-        }}
+        onClick={() => patchEdit(edit.id, { ease: !ease }, false)}
       >
         <Label className="text-muted-foreground text-[10px] tracking-wider uppercase">
           Ease

@@ -1,15 +1,16 @@
-import { isListicleEdit } from "~/domain/listicle";
+import { isTextBaseEdit } from "~/domain/project-config";
+import { editMiddleSec } from "~/domain/vfx";
+import { chromeForEdit, chromeRank } from "~/editor/lib/edit-chrome";
+import { isSelected } from "~/editor/lib/selection";
+import { overlayStackedForEdit } from "~/remotion/templates/overlay";
+
 import type { Edit, EditId } from "~/domain/project-config";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
-import {
-  chromeForEdit,
-  chromeRank,
-  type EditChromeKey,
-} from "~/editor/lib/edit-chrome";
-import { isSelected, type Selection } from "~/editor/lib/selection";
+import type { EditChromeKey } from "~/editor/lib/edit-chrome";
+import type { Selection } from "~/editor/lib/selection";
 
 /**
- * `split` = listicle indicator→value boundary (middle handle).
+ * `split` = listicle / title-subheading boundary (middle handle).
  * `split-start` / `split-end` = split coincides with start/end word.
  */
 export type RangeRole =
@@ -78,9 +79,7 @@ export function buildWordAnnotations(
     if (!chrome) continue;
 
     // Words whose timeline range overlaps this edit.
-    const covered = words.filter((w) =>
-      wordOverlaps(w, edit.start, edit.end),
-    );
+    const covered = words.filter((w) => wordOverlaps(w, edit.start, edit.end));
 
     // No overlap (e.g. title before speech) — pin a point marker on the nearest word.
     if (covered.length === 0) {
@@ -100,20 +99,15 @@ export function buildWordAnnotations(
     const last = covered[covered.length - 1]!.globalIndex;
 
     let splitIndex: number | null = null;
-    if (
-      isListicleEdit(edit) &&
-      edit.middle != null &&
-      covered.length > 1
-    ) {
+    const stacked = isTextBaseEdit(edit) ? overlayStackedForEdit(edit) : true;
+    const middle = editMiddleSec(edit, stacked);
+    if (middle != null && covered.length > 1) {
       // Middle is an end-of-word boundary: pin the handle on the last
-      // covered word that ends at/before the split (indicator side).
+      // covered word that ends at/before the split (heading side).
       const splitWord =
-        [...covered]
-          .filter((w) => w.end <= edit.middle! + 0.001)
-          .at(-1) ??
+        [...covered].filter((w) => w.end <= middle + 0.001).at(-1) ??
         covered.find(
-          (w) =>
-            w.start < edit.middle! + 0.001 && w.end > edit.middle! - 0.001,
+          (w) => w.start < middle + 0.001 && w.end > middle - 0.001,
         ) ??
         covered[0]!;
       splitIndex = splitWord.globalIndex;
@@ -165,9 +159,7 @@ export function isEndHandleRole(role: RangeRole): boolean {
 }
 
 export function isSplitHandleRole(role: RangeRole): boolean {
-  return (
-    role === "split" || role === "split-start" || role === "split-end"
-  );
+  return role === "split" || role === "split-start" || role === "split-end";
 }
 
 /**
@@ -192,9 +184,7 @@ export function resolvePrimarySpan(
 ): WordEditSpan | null {
   if (spans.length === 0) return null;
 
-  const selected = spans.filter((s) =>
-    isSelected(selection, "edit", s.editId),
-  );
+  const selected = spans.filter((s) => isSelected(selection, "edit", s.editId));
   const pool = selected.length > 0 ? selected : spans;
 
   let best = pool[0]!;

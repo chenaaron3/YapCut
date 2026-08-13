@@ -227,7 +227,10 @@ export type WordStyleDelta = Partial<WordStyle>;
 export type CaptionGroupStyle = {
   fontFamily: CaptionFontId;
   fontSize: number;
-  /** Vertical position 0–1 within the safe area (0 = top, 1 = bottom). */
+  /**
+   * Captions/quotes: −1…1 in the safe area (0 = middle, 1 = bottom, −1 = top).
+   * Overlay heading/subheading: translate of that line's own height (±1 = ±100%).
+   */
   y: number;
   animation: CaptionAnimation;
   textTransform: CaptionTextTransform;
@@ -280,8 +283,8 @@ export const DEFAULT_CAPTION_STYLE: CaptionGroupStyle = {
   futureWordStyle: { opacity: 0 },
 };
 
-/** Shared Y for aesthetic Quote templates — near the text VFX band. */
-export const QUOTE_CAPTION_Y = 0.08;
+/** Shared Y for aesthetic Quote templates — near the top of the safe area. */
+export const QUOTE_CAPTION_Y = -0.84;
 
 /** Bottom of safe area — default / caption templates. */
 export const TRENDING_CAPTION_Y = 1;
@@ -301,7 +304,12 @@ export function resolveCaptionFont(id: CaptionFontId): CaptionFontFace {
 
 export function clampCaptionY(y: number): number {
   if (!Number.isFinite(y)) return DEFAULT_CAPTION_STYLE.y;
-  return Math.min(1, Math.max(0, y));
+  return Math.min(1, Math.max(-1, y));
+}
+
+/** Safe-area t for captions/quotes: y −1…1 → 0…1 (0 = top of safe area). */
+export function captionSafeAreaT(y: number): number {
+  return 0.5 + 0.5 * clampCaptionY(y);
 }
 
 export function clampCaptionsAtATime(n: number): number {

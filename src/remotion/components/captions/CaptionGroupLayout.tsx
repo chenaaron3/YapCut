@@ -7,10 +7,11 @@ import React, {
 
 import {
   DEFAULT_CAPTION_STYLE,
+  captionSafeAreaT,
   type BackgroundKind,
   type CaptionGroupStyle,
 } from "~/remotion/captions/style";
-import type { CaptionGroupProp } from "~/remotion/types";
+import type { CaptionGroupProp } from "~/remotion/helpers/types";
 
 import { CaptionBackground } from "./CaptionBackground";
 import { ArcLayoutContext, layoutCaptionArc } from "./arc-layout";
@@ -34,13 +35,7 @@ function wordRowGap(style: CaptionGroupStyle): string {
 }
 
 /** Marker: splits static overlay words onto the next line. */
-export function CaptionLineBreak({
-  hidden = false,
-}: {
-  hidden?: boolean;
-  silhouette?: boolean;
-}) {
-  if (hidden) return null;
+export function CaptionLineBreak() {
   return <span data-caption-line-break="" />;
 }
 
@@ -82,7 +77,7 @@ function groupShellStyle(
   }
   return {
     position: "absolute",
-    top: `${style.y * 100}%`,
+    top: `${captionSafeAreaT(style.y) * 100}%`,
     left: 0,
     right: 0,
     display: "flex",

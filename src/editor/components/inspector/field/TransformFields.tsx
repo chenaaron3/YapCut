@@ -8,16 +8,17 @@ import { Button } from "~/components/ui/button";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import { NumberField } from "~/editor/components/inspector/field/NumberField";
 import { SliderField } from "~/editor/components/inspector/field/SliderField";
-import { useEditor } from "~/editor/store";
 
 export function TransformFields({
   transform,
   onPatch,
   defaultOpen = false,
+  defaults = TRANSFORM_DEFAULTS,
 }: {
   transform: Transform;
   onPatch: (partial: Partial<Transform>, live: boolean) => void;
   defaultOpen?: boolean;
+  defaults?: Transform;
 }) {
   return (
     <InspectorCollapsible title="Transform" defaultOpen={defaultOpen}>
@@ -62,10 +63,7 @@ export function TransformFields({
         variant="outline"
         size="sm"
         className="mt-1 w-full"
-        onClick={() => {
-          useEditor.getState().beginGesture();
-          onPatch({ ...TRANSFORM_DEFAULTS }, false);
-        }}
+        onClick={() => onPatch({ ...defaults }, false)}
       >
         Reset transform
       </Button>

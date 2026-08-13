@@ -1,7 +1,6 @@
-import {
-  QUOTE_CAPTION_Y,
-  type CaptionGroupStyle,
-} from "~/remotion/captions/style";
+import { QUOTE_CAPTION_Y } from "~/remotion/captions/style";
+
+import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export const QUOTE_TEMPLATE_IDS = [
   "bold-white",
@@ -46,7 +45,7 @@ const QUOTE_HANDWRITTEN_WORD = {
 const BOLD_WHITE_BASE: CaptionGroupStyle = {
   fontFamily: "montserrat",
   fontSize: 125,
-  y: 0.5,
+  y: 0,
   animation: "fade",
   textTransform: "uppercase",
   captionsAtATime: 1,

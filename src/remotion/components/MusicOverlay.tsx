@@ -2,7 +2,7 @@ import { useVideoConfig } from "remotion";
 import { Audio } from "@remotion/media";
 
 import { musicFadeAtFrame } from "~/domain/music";
-import type { MusicClipProp } from "~/remotion/types";
+import type { MusicClipProp } from "~/remotion/helpers/types";
 
 export function MusicOverlay({
   music,

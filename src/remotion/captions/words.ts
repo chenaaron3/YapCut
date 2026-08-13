@@ -1,8 +1,8 @@
 import {
   CAPTION_GROUP_GAP_SEC,
   CAPTION_LAST_WORD_PAD_SEC,
-} from "~/remotion/constants";
-import type { CaptionWordProp } from "~/remotion/types";
+} from "~/remotion/helpers/constants";
+import type { CaptionWordProp } from "~/remotion/helpers/types";
 
 const FILLER_WORDS = [
   "um",

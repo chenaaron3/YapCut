@@ -12,7 +12,8 @@ import {
   chromeForEdit,
   EDIT_CHROME,
 } from "~/editor/lib/edit-chrome";
-import { useEditor } from "~/editor/store";
+import { editsTopologyEqual } from "~/editor/lib/edit-topology";
+import { useEditorEqual } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
@@ -46,8 +47,8 @@ export function TranscriptChromeVisibilityToggles() {
   const visible = useTranscriptUi((s) => s.visible);
   const toggleVisible = useTranscriptUi((s) => s.toggleVisible);
   const setGroupsVisible = useTranscriptUi((s) => s.setGroupsVisible);
-  const edits = useEditor((s) => s.config?.edits ?? []);
-  const counts = countEditsByGroup(edits);
+  const edits = useEditorEqual((s) => s.config?.edits, editsTopologyEqual);
+  const counts = countEditsByGroup(edits ?? []);
 
   const shown = EDIT_CHROME.filter((spec) => (counts[spec.key] ?? 0) > 0);
   if (shown.length === 0) return null;

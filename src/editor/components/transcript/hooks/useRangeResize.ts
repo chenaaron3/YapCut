@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { buildArollLayout } from "~/domain/arolls";
-import { clampListicleMiddle, isListicleEdit } from "~/domain/listicle";
+import { clampOverlayMiddle, isTextBaseEdit } from "~/domain/project-config";
+import { editMiddleSec } from "~/domain/vfx";
 import type { ResizeEdge } from "~/editor/components/transcript/RangeHandle";
+import { editsTopologyEqual } from "~/editor/lib/edit-topology";
+import { runGesture } from "~/editor/lib/gesture";
 import { snapTranscriptCaptionEdge } from "~/editor/lib/snap";
 import { wordIndexFromPoint } from "~/editor/lib/use-word-drag-select";
 import { useSelection } from "~/editor/selection-store";
-import { useEditor, useGlobalWords } from "~/editor/store";
+import { useEditor, useEditorEqual, useGlobalWords } from "~/editor/store";
+import { overlayStackedForEdit } from "~/remotion/templates/overlay";
 
 type ResizeState = {
   edge: ResizeEdge;
   editId: number;
+  endGesture: () => void;
 };
 
 /**
@@ -18,11 +23,11 @@ type ResizeState = {
  * hold Shift for continuous time within the word under the cursor.
  */
 export function useRangeResize() {
-  const config = useEditor((s) => s.config);
+  const arolls = useEditor((s) => s.config?.arolls);
+  const edits = useEditorEqual((s) => s.config?.edits, editsTopologyEqual);
   const assets = useEditor((s) => s.assets);
   const words = useGlobalWords();
   const clearSelection = useSelection((s) => s.clearSelection);
-  const beginGesture = useEditor((s) => s.beginGesture);
   const patchEditRange = useEditor((s) => s.patchEditRange);
   const patchEdit = useEditor((s) => s.patchEdit);
 
@@ -31,12 +36,12 @@ export function useRangeResize() {
   const justResizedRef = useRef(false);
 
   const keepRanges = useMemo(() => {
-    if (!config) return [];
+    if (!arolls) return [];
     const durations = new Map(assets.map((a) => [a.id, a.durationSec ?? 0]));
-    return buildArollLayout(config.arolls, durations)
+    return buildArollLayout(arolls, durations)
       .filter((c) => c.kind === "keep")
       .map((c) => c.timeline);
-  }, [config, assets]);
+  }, [arolls, assets]);
 
   const indexedWords = useMemo(
     () => words.map((w) => ({ ...w, index: w.globalIndex })),
@@ -88,9 +93,11 @@ export function useRangeResize() {
       }
 
       if (resize.edge === "middle") {
-        if (!isListicleEdit(edit) || edit.middle == null) return;
-        const middle = clampListicleMiddle(edit.start, value, edit.end);
-        if (Math.abs(middle - edit.middle) < 0.0005) return;
+        if (!isTextBaseEdit(edit)) return;
+        const current = editMiddleSec(edit, overlayStackedForEdit(edit));
+        if (current == null) return;
+        const middle = clampOverlayMiddle(edit.start, value, edit.end);
+        if (Math.abs(middle - current) < 0.0005) return;
         patchEdit(edit.id, { middle }, true);
         return;
       }
@@ -99,13 +106,17 @@ export function useRangeResize() {
     };
 
     const onUp = () => {
-      if (resizeRef.current) justResizedRef.current = true;
+      const resize = resizeRef.current;
+      if (!resize) return;
+      justResizedRef.current = true;
+      resize.endGesture();
       resizeRef.current = null;
     };
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (!resizeRef.current) return;
+      resizeRef.current.endGesture();
       resizeRef.current = null;
       justResizedRef.current = false;
       clearSelection();
@@ -128,12 +139,9 @@ export function useRangeResize() {
   ]);
 
   const beginResize = (edge: ResizeEdge, editId: number) => {
-    if (!config) return;
-    const edit = config.edits.find((e) => e.id === editId);
-    if (!edit) return;
+    if (!edits?.some((e) => e.id === editId)) return;
     useSelection.getState().select("edit", editId);
-    beginGesture();
-    resizeRef.current = { edge, editId };
+    resizeRef.current = { edge, editId, endGesture: runGesture() };
   };
 
   const consumeJustResized = () => {

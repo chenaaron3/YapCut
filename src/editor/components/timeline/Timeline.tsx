@@ -13,7 +13,8 @@ import { VfxTrack } from '~/editor/components/timeline/tracks/VfxTrack';
 import { VideoTrack } from '~/editor/components/timeline/tracks/VideoTrack';
 import { ZoomTrack } from '~/editor/components/timeline/tracks/ZoomTrack';
 import { getPlayer } from '~/editor/lib/player-bridge';
-import { isTimelineScrubbing, setTimelineScrubbing, useEditor } from '~/editor/store';
+import { editsTopologyEqual } from '~/editor/lib/edit-topology';
+import { isTimelineScrubbing, setTimelineScrubbing, useEditor, useEditorEqual } from '~/editor/store';
 
 import type {
   BrollEdit,
@@ -34,7 +35,8 @@ function scrollPlayheadIntoView(el: HTMLDivElement, playheadX: number): void {
 }
 
 export function Timeline() {
-  const config = useEditor((s) => s.config);
+  const arolls = useEditor((s) => s.config?.arolls);
+  const edits = useEditorEqual((s) => s.config?.edits, editsTopologyEqual);
   const assets = useEditor((s) => s.assets);
   const seekTimeline = useEditor((s) => s.seekTimeline);
 
@@ -46,19 +48,19 @@ export function Timeline() {
   const skipClickRef = useRef(false);
 
   const zooms =
-    config?.edits.filter((e): e is ZoomEdit => e.kind === "zoom") ?? [];
+    edits?.filter((e): e is ZoomEdit => e.kind === "zoom") ?? [];
   const vfx =
-    config?.edits.filter((e): e is VfxEdit => e.kind === "vfx") ?? [];
+    edits?.filter((e): e is VfxEdit => e.kind === "vfx") ?? [];
   const brolls =
-    config?.edits.filter((e): e is BrollEdit => e.kind === "broll") ?? [];
+    edits?.filter((e): e is BrollEdit => e.kind === "broll") ?? [];
   const sfx =
-    config?.edits.filter((e): e is SfxEdit => e.kind === "sfx") ?? [];
+    edits?.filter((e): e is SfxEdit => e.kind === "sfx") ?? [];
 
   const layout = useMemo(() => {
-    if (!config) return [];
+    if (!arolls) return [];
     const durations = new Map(assets.map((a) => [a.id, a.durationSec ?? 0]));
-    return buildArollLayout(config.arolls, durations);
-  }, [config, assets]);
+    return buildArollLayout(arolls, durations);
+  }, [arolls, assets]);
 
   const timelineDuration = useMemo(
     () => layoutTimelineDuration(layout),

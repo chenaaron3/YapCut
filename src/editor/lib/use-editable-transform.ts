@@ -1,4 +1,5 @@
 import { isBrollActiveAt } from "~/domain/broll";
+import { isTextBaseEdit } from "~/domain/project-config";
 import { transformOf, type Transform } from "~/domain/transform";
 import { isZoomActiveAt } from "~/domain/zoom";
 import { primaryId } from "~/editor/lib/selection";
@@ -7,7 +8,13 @@ import { useEditor } from "~/editor/store";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
-} from "~/remotion/constants";
+} from "~/remotion/helpers/constants";
+import {
+  getOverlayMeasure,
+  OVERLAY_MEASURE_FALLBACK,
+  subscribeOverlayMeasures,
+} from "~/remotion/helpers/overlay-measure";
+import { useSyncExternalStore } from "react";
 
 export type EditableTransform = {
   editId: number;
@@ -18,7 +25,7 @@ export type EditableTransform = {
 };
 
 /**
- * Selected b-roll or zoom that is currently visible under the playhead.
+ * Selected b-roll, overlay, or zoom that is currently visible under the playhead.
  * Drives the shared player TransformOverlay.
  */
 export function useEditableTransform(): EditableTransform | null {
@@ -36,6 +43,11 @@ export function useEditableTransform(): EditableTransform | null {
   });
   // Skip playhead subscriptions while no editable transform is selected.
   const timelineSec = useEditor((s) => (id == null ? -1 : s.timelineSec));
+  const overlaySize = useSyncExternalStore(
+    subscribeOverlayMeasures,
+    () => (id == null ? null : getOverlayMeasure(id)),
+    () => null,
+  );
 
   if (!edit) return null;
 
@@ -47,6 +59,20 @@ export function useEditableTransform(): EditableTransform | null {
       width: COMPOSITION_WIDTH,
       height: COMPOSITION_HEIGHT,
       label: "Zoom",
+    };
+  }
+
+  if (isTextBaseEdit(edit)) {
+    if (timelineSec < edit.start || timelineSec >= edit.end) return null;
+    const size = overlaySize ?? OVERLAY_MEASURE_FALLBACK;
+    return {
+      editId: edit.id,
+      transform: transformOf(edit),
+      width: size.width,
+      height: size.height,
+      label:
+        edit.heading.trim() ||
+        (edit.type === "listicle" ? "Listicle" : "Title"),
     };
   }
 

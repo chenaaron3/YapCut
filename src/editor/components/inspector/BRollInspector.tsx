@@ -68,14 +68,13 @@ export function BRollInspector({ edit }: { edit: BrollEdit }) {
         <button
           type="button"
           className="flex items-center justify-between gap-2 text-left"
-          onClick={() => {
-            useEditor.getState().beginGesture();
+          onClick={() =>
             patchEdit(
               edit.id,
               { kenBurns: kenBurnsOn ? null : DEFAULT_KEN_BURNS },
               false,
-            );
-          }}
+            )
+          }
         >
           <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Ken Burns

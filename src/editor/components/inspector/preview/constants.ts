@@ -9,19 +9,25 @@ export const GAP_FRAMES = 8;
 export const PREVIEW_SAFE_TOP = 0.12;
 export const PREVIEW_SAFE_BOTTOM = 0.22;
 
-export type ListiclePreviewPair = {
-  indicator: CaptionGroupStyle;
-  value: CaptionGroupStyle;
+export type OverlayPreviewPair = {
+  heading: CaptionGroupStyle;
+  subheading: CaptionGroupStyle;
   stacked: boolean;
-  indicatorText?: string;
-  valueText?: string;
-  /** Default true — listicle stagger. False for title + subheading. */
-  staggered?: boolean;
+  headingText: string;
+  subheadingText: string;
+  staggered: boolean;
 };
 
 export function captionFocusY(styleY: number): number {
-  return (
-    PREVIEW_SAFE_TOP +
-    styleY * (1 - PREVIEW_SAFE_TOP - PREVIEW_SAFE_BOTTOM)
-  );
+  const safeH = 1 - PREVIEW_SAFE_TOP - PREVIEW_SAFE_BOTTOM;
+  return PREVIEW_SAFE_TOP + (0.5 + 0.5 * styleY) * safeH;
 }
+
+export function overlayFocusY(offsetY: number): number {
+  return 0.5 + offsetY;
+}
+
+export const OVERLAY_PREVIEW_MIDDLE = 28;
+export const OVERLAY_PREVIEW_END = 70;
+export const OVERLAY_PREVIEW_CYCLE = OVERLAY_PREVIEW_END + 12;
+export const OVERLAY_PREVIEW_IDLE_FRAME = OVERLAY_PREVIEW_END - 1;

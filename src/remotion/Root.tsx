@@ -9,9 +9,9 @@ import {
   COMPOSITION_ID,
   COMPOSITION_WIDTH,
   COVER_COMPOSITION_ID,
-} from "~/remotion/constants";
+} from "~/remotion/helpers/constants";
 import { TalkingHead, type TalkingHeadProps } from "~/remotion/TalkingHead";
-import type { ProjectProps } from "~/remotion/types";
+import type { ProjectProps } from "~/remotion/helpers/types";
 
 const defaultProps: ProjectProps = {
   title: "Untitled",
@@ -23,7 +23,6 @@ const defaultProps: ProjectProps = {
   captionGroups: [],
   zooms: [],
   textOverlays: [],
-  listicleOverlays: [],
   shakes: [],
   brolls: [],
   sfx: [],

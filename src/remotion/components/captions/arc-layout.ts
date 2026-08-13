@@ -6,7 +6,7 @@ import {
   type CaptionGroupStyle,
   type CaptionTextTransform,
 } from "~/remotion/captions/style";
-import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/types";
+import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/helpers/types";
 
 import { isLineBreakToken } from "./caption-animation";
 
@@ -110,9 +110,9 @@ export function layoutCaptionArc(
   const alpha = sweepRad / 2;
   const sagitta = radius * (1 - Math.cos(alpha));
   const fontSize = style.fontSize;
-  const padX = fontSize * 0.55;
-  const padTop = fontSize * 1.05;
-  const padBot = fontSize * 0.45;
+  const padX = fontSize * 0.7;
+  const padTop = fontSize * 1.25;
+  const padBot = fontSize * 0.35;
   const width = 2 * radius * Math.sin(alpha) + padX * 2;
   const height = sagitta + padTop + padBot;
   const smile = arc >= 0;

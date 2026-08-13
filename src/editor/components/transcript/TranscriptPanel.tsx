@@ -11,14 +11,15 @@ import {
   buildWordAnnotations,
   EMPTY_WORD_ANNOTATION,
 } from "~/editor/lib/word-annotations";
+import { editsTopologyEqual } from "~/editor/lib/edit-topology";
 import { useSelection } from "~/editor/selection-store";
-import { useEditor, useGlobalWords } from "~/editor/store";
+import { useEditorEqual, useGlobalWords } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
 import type { ReactNode } from "react";
 
 export function TranscriptPanel() {
-  const config = useEditor((s) => s.config);
+  const edits = useEditorEqual((s) => s.config?.edits, editsTopologyEqual);
   const words = useGlobalWords();
   const projectPanel = useSelection((s) => s.projectPanel);
   const clearSelection = useSelection((s) => s.clearSelection);
@@ -28,8 +29,8 @@ export function TranscriptPanel() {
   const { beginResize, consumeJustResized } = useRangeResize();
 
   const annotations = useMemo(
-    () => buildWordAnnotations(words, config?.edits ?? []),
-    [words, config?.edits],
+    () => buildWordAnnotations(words, edits ?? []),
+    [words, edits],
   );
 
   const nodes: ReactNode[] = [];

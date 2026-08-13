@@ -6,20 +6,26 @@ import {
   snapTransformOffset,
   snapTransformScale,
   transformOf,
-  type SnapGuide,
-  type Transform,
 } from "~/domain/transform";
+import { runGesture } from "~/editor/lib/gesture";
 import { useEditableTransform } from "~/editor/lib/use-editable-transform";
 import { useEditor } from "~/editor/store";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
-} from "~/remotion/constants";
+} from "~/remotion/helpers/constants";
+
+import type { SnapGuide, Transform } from "~/domain/transform";
 
 type DragMode =
   | { kind: "move"; startX: number; startY: number; origin: Transform }
   | { kind: "scale"; startDist: number; origin: Transform }
   | { kind: "rotate"; startAngle: number; origin: Transform };
+
+type DragVisual = {
+  transform: Transform;
+  guides: SnapGuide[];
+};
 
 function clientToComp(
   clientX: number,
@@ -34,7 +40,8 @@ function clientToComp(
 
 /**
  * HTML overlay on the Remotion player for drag move / scale / rotate.
- * Works for selected b-roll or zoom under the playhead.
+ * Live `patchEdit` so inspector + preview update; timeline / transcript
+ * ignore cosmetics via topology selectors.
  */
 export function TransformOverlay({
   onDraggingChange,
@@ -43,15 +50,14 @@ export function TransformOverlay({
 }) {
   const editable = useEditableTransform();
   const patchEdit = useEditor((s) => s.patchEdit);
-  const beginGesture = useEditor((s) => s.beginGesture);
   const rootRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragMode | null>(null);
-  const editRef = useRef(editable);
+  const endGestureRef = useRef<(() => void) | null>(null);
+  const editIdRef = useRef<number | null>(null);
   const boxRef = useRef<{ w: number; h: number } | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [guides, setGuides] = useState<SnapGuide[]>([]);
+  const [visual, setVisual] = useState<DragVisual | null>(null);
 
-  editRef.current = editable;
   const base = editable
     ? containSize(
         editable.width,
@@ -61,23 +67,21 @@ export function TransformOverlay({
       )
     : null;
   boxRef.current = base;
+  editIdRef.current = editable?.editId ?? null;
 
   useEffect(() => {
     onDraggingChange?.(dragging);
   }, [dragging, onDraggingChange]);
 
   useEffect(() => {
-    if (!dragging) {
-      setGuides([]);
-      return;
-    }
+    if (!dragging) return;
 
     const onMove = (e: PointerEvent) => {
       const drag = dragRef.current;
       const root = rootRef.current;
-      const current = editRef.current;
       const box = boxRef.current;
-      if (!drag || !root || !current || !box) return;
+      const id = editIdRef.current;
+      if (!drag || !root || !box || id == null) return;
       const rect = root.getBoundingClientRect();
       const { x, y } = clientToComp(e.clientX, e.clientY, rect);
       const cx =
@@ -88,20 +92,23 @@ export function TransformOverlay({
       if (drag.kind === "move") {
         const dx = (x - drag.startX) / COMPOSITION_WIDTH;
         const dy = (y - drag.startY) / COMPOSITION_HEIGHT;
-        const rawX = drag.origin.offsetX + dx;
-        const rawY = drag.origin.offsetY + dy;
         const snapped = snapTransformOffset({
-          offsetX: rawX,
-          offsetY: rawY,
+          offsetX: drag.origin.offsetX + dx,
+          offsetY: drag.origin.offsetY + dy,
           boxW: box.w,
           boxH: box.h,
           scale: drag.origin.scale,
           compW: COMPOSITION_WIDTH,
           compH: COMPOSITION_HEIGHT,
         });
-        setGuides(snapped.guides);
+        const next: Transform = {
+          ...drag.origin,
+          offsetX: snapped.offsetX,
+          offsetY: snapped.offsetY,
+        };
+        setVisual({ transform: next, guides: snapped.guides });
         patchEdit(
-          current.editId,
+          id,
           { offsetX: snapped.offsetX, offsetY: snapped.offsetY },
           true,
         );
@@ -123,8 +130,9 @@ export function TransformOverlay({
             compH: COMPOSITION_HEIGHT,
           }),
         );
-        setGuides([]);
-        patchEdit(current.editId, { scale }, true);
+        const next: Transform = { ...drag.origin, scale };
+        setVisual({ transform: next, guides: [] });
+        patchEdit(id, { scale }, true);
         return;
       }
 
@@ -136,14 +144,17 @@ export function TransformOverlay({
       const rotSnap = 45;
       const nearest = Math.round(rotation / rotSnap) * rotSnap;
       if (Math.abs(rotation - nearest) <= 8) rotation = nearest;
-      setGuides([]);
-      patchEdit(current.editId, { rotation }, true);
+      const next: Transform = { ...drag.origin, rotation };
+      setVisual({ transform: next, guides: [] });
+      patchEdit(id, { rotation }, true);
     };
 
     const onUp = () => {
       dragRef.current = null;
+      setVisual(null);
       setDragging(false);
-      setGuides([]);
+      endGestureRef.current?.();
+      endGestureRef.current = null;
     };
 
     window.addEventListener("pointermove", onMove);
@@ -158,7 +169,8 @@ export function TransformOverlay({
 
   if (!editable || !base) return null;
 
-  const t = editable.transform;
+  const t = visual?.transform ?? editable.transform;
+  const guides = visual?.guides ?? [];
   const boxW = (base.w / COMPOSITION_WIDTH) * 100;
   const boxH = (base.h / COMPOSITION_HEIGHT) * 100;
   const left = 50 + t.offsetX * 100;
@@ -174,7 +186,9 @@ export function TransformOverlay({
     const origin = transformOf(editable.transform);
     const cx = COMPOSITION_WIDTH / 2 + origin.offsetX * COMPOSITION_WIDTH;
     const cy = COMPOSITION_HEIGHT / 2 + origin.offsetY * COMPOSITION_HEIGHT;
-    beginGesture();
+    endGestureRef.current?.();
+    endGestureRef.current = runGesture();
+    setVisual({ transform: origin, guides: [] });
 
     if (mode === "move") {
       dragRef.current = { kind: "move", startX: x, startY: y, origin };
@@ -206,20 +220,20 @@ export function TransformOverlay({
         g.orientation === "x" ? (
           <div
             key={`x-${g.pos}`}
-            className="absolute top-0 bottom-0 w-px bg-primary/80"
+            className="bg-primary/80 absolute top-0 bottom-0 w-px"
             style={{ left: `${(g.pos / COMPOSITION_WIDTH) * 100}%` }}
           />
         ) : (
           <div
             key={`y-${g.pos}`}
-            className="absolute left-0 right-0 h-px bg-primary/80"
+            className="bg-primary/80 absolute right-0 left-0 h-px"
             style={{ top: `${(g.pos / COMPOSITION_HEIGHT) * 100}%` }}
           />
         ),
       )}
 
       <div
-        className="pointer-events-auto absolute cursor-move border border-primary/90 shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+        className="border-primary/90 pointer-events-auto absolute cursor-move border shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
         style={{
           width: `${boxW}%`,
           height: `${boxH}%`,
@@ -230,16 +244,14 @@ export function TransformOverlay({
         }}
         onPointerDown={(e) => startDrag(e, "move")}
       >
-        <div
-          className="absolute top-0 left-1/2 flex h-7 -translate-x-1/2 -translate-y-full flex-col items-center"
-        >
+        <div className="absolute top-0 left-1/2 flex h-7 -translate-x-1/2 -translate-y-full flex-col items-center">
           <button
             type="button"
             aria-label="Rotate"
-            className="pointer-events-auto mb-1 h-2.5 w-2.5 rounded-full border border-white bg-primary"
+            className="bg-primary pointer-events-auto mb-1 h-2.5 w-2.5 rounded-full border border-white"
             onPointerDown={(e) => startDrag(e, "rotate")}
           />
-          <div className="h-full w-px bg-primary/80" />
+          <div className="bg-primary/80 h-full w-px" />
         </div>
 
         {(

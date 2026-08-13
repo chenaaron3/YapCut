@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
 
-import type { ShakeClipProp } from "~/remotion/types";
+import type { ShakeClipProp } from "~/remotion/helpers/types";
 
 /**
  * Deterministic “noise” in [-1, 1] from frame + salt (stable across renders).

@@ -1,4 +1,5 @@
-import { clampListicleMiddle, isListicleEdit } from "~/domain/listicle";
+import { clampOverlayMiddle, isTextBaseEdit } from "~/domain/project-config";
+import { editMiddleSec } from "~/domain/vfx";
 import {
   Handle,
   TrackLabel,
@@ -11,40 +12,33 @@ import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
+import { overlayStackedForEdit } from "~/remotion/templates/overlay";
 import {
   DEFAULT_QUOTE_TEMPLATE_ID,
   isQuoteTemplateId,
   resolveQuoteTemplate,
 } from "~/remotion/templates/quote";
 import { resolveTemplateId } from "~/remotion/templates/style";
-import { isTextTemplateId, TEXT_TEMPLATES } from "~/remotion/templates/text";
 
-import type { VfxEdit } from "~/domain/project-config";
+import type { TextBaseEdit, VfxEdit } from "~/domain/project-config";
 
 type Props = {
   edits: VfxEdit[];
   width: number;
 };
 
+function overlayLabel(edit: TextBaseEdit): string {
+  const heading = edit.heading.trim();
+  const subheading = edit.subheading.trim();
+  if (heading && subheading) return `${heading} · ${subheading}`;
+  return (
+    heading || subheading || (edit.type === "listicle" ? "Listicle" : "Title")
+  );
+}
+
 function vfxCellLabel(edit: VfxEdit): string {
-  if (edit.type === "text") {
-    const tid = isTextTemplateId(edit.style?.templateId)
-      ? edit.style.templateId
-      : null;
-    const templateLabel = tid ? TEXT_TEMPLATES[tid]?.label : null;
-    const text = edit.text.trim();
-    const sub = edit.subheading?.trim() ?? "";
-    if (text && sub) return `${text} · ${sub}`;
-    if (text) return text;
-    if (sub) return sub;
-    return templateLabel ?? "Title";
-  }
-  if (edit.type === "listicle") {
-    const value = edit.valueText.trim();
-    const indicator = edit.indicatorText.trim();
-    if (value && indicator) return `${indicator} · ${value}`;
-    return value || indicator || "Listicle";
-  }
+  if (edit.type === "text" || edit.type === "listicle")
+    return overlayLabel(edit);
   if (edit.type === "shake") return "Shake";
   return resolveQuoteTemplate(
     resolveTemplateId(edit.style, isQuoteTemplateId, DEFAULT_QUOTE_TEMPLATE_ID),
@@ -66,9 +60,12 @@ export function VfxTrack({ edits, width }: Props) {
     <TrackLabel label="VFX" width={width}>
       {edits.map((edit) => {
         const { left, width: w } = rangeStyle(edit.start, edit.end, pxPerSec);
+        const splitMiddle = isTextBaseEdit(edit)
+          ? editMiddleSec(edit, overlayStackedForEdit(edit))
+          : null;
         const middleLeft =
-          isListicleEdit(edit) && edit.middle != null && edit.end > edit.start
-            ? (edit.middle - edit.start) * pxPerSec
+          splitMiddle != null && edit.end > edit.start
+            ? (splitMiddle - edit.start) * pxPerSec
             : null;
         return (
           <button
@@ -78,8 +75,7 @@ export function VfxTrack({ edits, width }: Props) {
             title={`${vfxCellLabel(edit)}  ${edit.start.toFixed(2)}–${edit.end.toFixed(2)}s`}
             className={cn(
               "bg-vfx absolute top-1 bottom-1 flex items-center overflow-hidden rounded px-1.5 text-[10px] text-[#1a1508] select-none",
-              isSel("edit", edit.id) &&
-                "z-[2] outline outline-2 outline-white",
+              isSel("edit", edit.id) && "z-[2] outline outline-2 outline-white",
             )}
             style={{ left, width: w }}
             onClick={(e) => {
@@ -92,13 +88,11 @@ export function VfxTrack({ edits, width }: Props) {
               onMouseDown={(e) => onEdgeMouseDown(e, edit, "start")}
             />
             <span className="truncate">{vfxCellLabel(edit)}</span>
-            {middleLeft != null &&
-            isListicleEdit(edit) &&
-            edit.middle != null ? (
+            {middleLeft != null && splitMiddle != null ? (
               <span
                 role="slider"
-                aria-label="Move listicle split"
-                aria-valuenow={edit.middle}
+                aria-label="Move split"
+                aria-valuenow={splitMiddle}
                 aria-valuemin={edit.start}
                 aria-valuemax={edit.end}
                 aria-orientation="horizontal"
@@ -106,14 +100,14 @@ export function VfxTrack({ edits, width }: Props) {
                 style={{ left: middleLeft }}
                 onMouseDown={(e) => {
                   select("edit", edit.id);
-                  const origin = edit.middle!;
+                  const origin = splitMiddle;
                   const id = edit.id;
                   const start = edit.start;
                   const end = edit.end;
                   startDrag(e, (dxSec, shiftKey) => {
                     const raw = origin + dxSec;
                     const snapped = snap(raw, shiftKey, "end");
-                    const middle = clampListicleMiddle(start, snapped, end);
+                    const middle = clampOverlayMiddle(start, snapped, end);
                     patchEdit(id, { middle }, true);
                   });
                 }}

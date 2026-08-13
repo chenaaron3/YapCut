@@ -8,10 +8,12 @@ import {
 } from "~/domain/arolls";
 import { projectTimelineWords } from "~/domain/projection";
 import {
-  seedTitleTextVfx,
+  DEFAULT_LISTICLE_TEMPLATE_ID,
   type ArollKeep,
   type Edit,
+  type TemplateStyle,
 } from "~/domain/project-config";
+import { seedTitleTextVfx } from "~/domain/vfx";
 import { snapWordBoundsToKeepEdges } from "~/domain/snap";
 import type { TranscriptWord } from "~/domain/transcript";
 import {
@@ -37,6 +39,8 @@ export type AiAssistInput = {
   generateTitleIfEmpty: boolean;
   /** Edits to keep before AI (typically b-roll only). */
   baseEdits?: readonly Edit[];
+  /** SoT listicle look — copied onto each seeded listicle. */
+  listicleStyle?: TemplateStyle;
 };
 
 export type AiAssistResult = {
@@ -152,7 +156,11 @@ export async function runAiAssist(
   }
 
   try {
-    const listicles = await generateListicleEdits(timelineWords, edits);
+    const listicles = await generateListicleEdits(
+      timelineWords,
+      edits,
+      input.listicleStyle ?? { templateId: DEFAULT_LISTICLE_TEMPLATE_ID },
+    );
     edits = [...edits, ...listicles];
     console.log(`[ai-assist] listicles=${listicles.length}`);
   } catch (error) {

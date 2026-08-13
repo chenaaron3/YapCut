@@ -35,14 +35,22 @@ export function mergeTemplateStyleOverrides<T extends string>(
   patch: CaptionStyleOverrides,
   isId: (value: unknown) => value is T,
   defaultId: T,
+  bag: "overrides" | "subheadingOverrides" = "overrides",
 ): TemplateStyle {
   const templateId = resolveTemplateId(style, isId, defaultId);
-  const overrides = normalizeCaptionOverrides({
-    ...style?.overrides,
-    ...patch,
-  });
+  const heading = normalizeCaptionOverrides(
+    bag === "overrides" ? { ...style?.overrides, ...patch } : style?.overrides,
+  );
+  const subheading = normalizeCaptionOverrides(
+    bag === "subheadingOverrides"
+      ? { ...style?.subheadingOverrides, ...patch }
+      : style?.subheadingOverrides,
+  );
   return {
     templateId,
-    ...(Object.keys(overrides).length > 0 ? { overrides } : {}),
+    ...(Object.keys(heading).length > 0 ? { overrides: heading } : {}),
+    ...(Object.keys(subheading).length > 0
+      ? { subheadingOverrides: subheading }
+      : {}),
   };
 }

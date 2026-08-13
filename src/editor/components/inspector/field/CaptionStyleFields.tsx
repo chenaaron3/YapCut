@@ -1,14 +1,13 @@
 import { Minus, Plus } from "lucide-react";
+import { useRef } from "react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-  InspectorCollapsible,
-  NumberField,
-  SliderField,
-} from "~/editor/components/inspector/field";
-import { useEditor } from "~/editor/store";
+import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
+import { NumberField } from "~/editor/components/inspector/field/NumberField";
+import { SliderField } from "~/editor/components/inspector/field/SliderField";
+import { runGesture } from "~/editor/lib/gesture";
 import {
   CAPTION_ARC_MAX,
   CAPTION_ARC_MIN,
@@ -27,6 +26,8 @@ export function CaptionStyleFields({
   defaultOpen = false,
   showCaptionsAtATime = true,
   showArc = false,
+  yMode = "safe-area",
+  title = "Style",
 }: {
   overrides: CaptionStyleOverrides;
   resolvedFill: string;
@@ -36,16 +37,27 @@ export function CaptionStyleFields({
   resolvedArc?: number;
   onPatch: (partial: CaptionStyleOverrides, live?: boolean) => void;
   defaultOpen?: boolean;
-  /** Caption/quote grouping; text VFX always show the full phrase. */
+  /** Caption/quote grouping; overlays always show the full phrase. */
   showCaptionsAtATime?: boolean;
-  /** StaticGroupView curve (text VFX). */
+  /** StaticGroupView curve. */
   showArc?: boolean;
+  /** Captions/quotes: safe-area −1…1. Overlay lines: own-height translate. */
+  yMode?: "safe-area" | "line";
+  title?: string;
 }) {
   const words = resolvedCaptionsAtATime ?? 1;
   const fill = overrides.fill ?? resolvedFill;
+  const fillGestureRef = useRef<(() => void) | null>(null);
+  const beginFillGesture = () => {
+    fillGestureRef.current ??= runGesture();
+  };
+  const endFillGesture = () => {
+    fillGestureRef.current?.();
+    fillGestureRef.current = null;
+  };
 
   return (
-    <InspectorCollapsible title="Style" defaultOpen={defaultOpen}>
+    <InspectorCollapsible title={title} defaultOpen={defaultOpen}>
       <div
         className={
           showCaptionsAtATime
@@ -74,10 +86,7 @@ export function CaptionStyleFields({
                 className="h-8 w-8 shrink-0 rounded-none px-0"
                 disabled={words <= 1}
                 aria-label="Fewer words per caption"
-                onClick={() => {
-                  useEditor.getState().beginGesture();
-                  onPatch({ captionsAtATime: words - 1 });
-                }}
+                onClick={() => onPatch({ captionsAtATime: words - 1 })}
               >
                 <Minus className="size-3.5" />
               </Button>
@@ -91,10 +100,7 @@ export function CaptionStyleFields({
                 className="h-8 w-8 shrink-0 rounded-none px-0"
                 disabled={words >= 8}
                 aria-label="More words per caption"
-                onClick={() => {
-                  useEditor.getState().beginGesture();
-                  onPatch({ captionsAtATime: words + 1 });
-                }}
+                onClick={() => onPatch({ captionsAtATime: words + 1 })}
               >
                 <Plus className="size-3.5" />
               </Button>
@@ -112,23 +118,25 @@ export function CaptionStyleFields({
             type="color"
             className="h-8 w-10 cursor-pointer p-1"
             value={fill}
-            onFocus={() => useEditor.getState().beginGesture()}
+            onFocus={beginFillGesture}
+            onBlur={endFillGesture}
             onChange={(e) => onPatch({ fill: e.target.value }, true)}
           />
           <Input
             type="text"
             className="h-8 flex-1"
             value={fill}
-            onFocus={() => useEditor.getState().beginGesture()}
+            onFocus={beginFillGesture}
+            onBlur={endFillGesture}
             onChange={(e) => onPatch({ fill: e.target.value }, true)}
           />
         </div>
       </div>
 
       <SliderField
-        label="Y (safe area)"
+        label={yMode === "line" ? "Y (line)" : "Y (safe area)"}
         value={resolvedY}
-        min={0}
+        min={-1}
         max={1}
         step={0.01}
         display={resolvedY.toFixed(2)}

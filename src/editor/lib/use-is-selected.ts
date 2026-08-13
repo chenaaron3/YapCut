@@ -22,18 +22,18 @@ export function useIsSelected(
     if (kinds && !kinds.includes(next.kind)) return null;
     return next;
   });
-  const config = useEditor((s) => s.config);
-  const assets = useEditor((s) => s.assets);
-  const getGlobalWords = useEditor((s) => s.getGlobalWords);
-  const getLayout = useEditor((s) => s.getLayout);
-
-  return (kind, id) =>
-    isSelected(selection, kind, id, {
-      config,
-      assets,
-      getGlobalWords,
-      getLayout,
+  // Don't subscribe to config — cosmetic edit patches would re-render every
+  // track cell. Fallbacks read fresh state when the checker runs (after a
+  // topology-driven parent re-render, or selection change).
+  return (kind, id) => {
+    const editor = useEditor.getState();
+    return isSelected(selection, kind, id, {
+      config: editor.config,
+      assets: editor.assets,
+      getGlobalWords: editor.getGlobalWords,
+      getLayout: editor.getLayout,
     });
+  };
 }
 
 /** True when this exact entity is selected — stable for unrelated selection changes. */

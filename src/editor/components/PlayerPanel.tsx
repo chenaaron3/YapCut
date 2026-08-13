@@ -17,7 +17,7 @@ import {
   COMPOSITION_FPS,
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
-} from "~/remotion/constants";
+} from "~/remotion/helpers/constants";
 
 function FrameCounter({ durationInFrames }: { durationInFrames: number }) {
   const frame = useEditor((s) => s.frame);

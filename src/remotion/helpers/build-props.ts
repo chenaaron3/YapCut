@@ -1,18 +1,20 @@
-import { arollPlaybackGain, mixPlaybackVolume, sfxPlaybackVolume } from "~/domain/audio/mix-levels";
 import { buildArollLayout, timelineRangeToOutput } from "~/domain/arolls";
 import {
-  pickEmphasisStyle,
-  type EmphasisStyle,
-  type ResolvedEmphasisStyle,
-} from "~/domain/emphasis-style";
+  arollPlaybackGain,
+  mixPlaybackVolume,
+  sfxPlaybackVolume,
+} from "~/domain/audio/mix-levels";
+import { pickEmphasisStyle } from "~/domain/emphasis-style";
 import {
   editHidesCaptions,
+  isTextBaseEdit,
   outputDurationFromArolls,
   PROJECT_FPS,
 } from "~/domain/project-config";
 import { projectOutputWords } from "~/domain/projection";
 import { resolveShakeIntensity } from "~/domain/shake";
 import { resolveTransform } from "~/domain/transform";
+import { editMiddleSec } from "~/domain/vfx";
 import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/zoom";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
@@ -26,17 +28,13 @@ import {
   COMPOSITION_FPS,
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
-} from "~/remotion/constants";
+} from "~/remotion/helpers/constants";
 import {
   DEFAULT_CAPTION_TEMPLATE_ID,
   isCaptionTemplateId,
   resolveCaptionTemplateStyle,
 } from "~/remotion/templates/caption";
-import {
-  DEFAULT_LISTICLE_TEMPLATE_ID,
-  isListicleTemplateId,
-  resolveListicleTextStyles,
-} from "~/remotion/templates/listicle";
+import { resolveOverlayForEdit } from "~/remotion/templates/overlay";
 import {
   DEFAULT_QUOTE_TEMPLATE_ID,
   isQuoteTemplateId,
@@ -44,6 +42,10 @@ import {
 } from "~/remotion/templates/quote";
 import { resolveTemplateStyle } from "~/remotion/templates/style";
 
+import type {
+  EmphasisStyle,
+  ResolvedEmphasisStyle,
+} from "~/domain/emphasis-style";
 import type { ArollKeep, ProjectConfig } from "~/domain/project-config";
 import type { OutputTime } from "~/domain/time";
 import type { TranscriptWord } from "~/domain/transcript";
@@ -53,14 +55,13 @@ import type {
   BrollClipProp,
   CaptionGroupProp,
   CaptionWordProp,
-  ListicleOverlayProp,
   MusicClipProp,
   ProjectProps,
   SfxClipProp,
   ShakeClipProp,
   TextOverlayProp,
   ZoomProp,
-} from "~/remotion/types";
+} from "~/remotion/helpers/types";
 
 export type BuildProjectPropsInput = {
   config: ProjectConfig;
@@ -85,6 +86,23 @@ export type BuildProjectPropsInput = {
 
 function secToFrame(sec: number, fps: number): number {
   return Math.max(0, Math.round(sec * fps));
+}
+
+function outputMiddleFrame(
+  editStart: number,
+  editEnd: number,
+  middle: number | null | undefined,
+  rangeStart: number,
+  rangeEnd: number,
+  startFrame: number,
+  endFrame: number,
+  fps: number,
+): number | null {
+  if (middle == null) return null;
+  const span = Math.max(0.001, editEnd - editStart);
+  const t = Math.min(1, Math.max(0, (middle - editStart) / span));
+  const middleSec = rangeStart + t * (rangeEnd - rangeStart);
+  return Math.min(endFrame, Math.max(startFrame, secToFrame(middleSec, fps)));
 }
 
 function loudnessOf(
@@ -322,72 +340,42 @@ function buildZooms(
 }
 
 function buildTextOverlays(
-  edits: ProjectConfig["edits"],
+  config: ProjectConfig,
   cells: ReturnType<typeof buildArollLayout>,
   fps: number,
 ): TextOverlayProp[] {
   const out: TextOverlayProp[] = [];
-  for (const e of edits) {
-    if (e.kind !== "vfx" || e.type !== "text") continue;
-    const range = timelineRangeToOutput(cells, e);
-    if (!range) continue;
-    out.push({
-      id: e.id,
-      startFrame: secToFrame(range.start, fps),
-      endFrame: Math.max(
-        secToFrame(range.start, fps) + 1,
-        secToFrame(range.end, fps),
-      ),
-      text: e.text,
-      subheading: e.subheading ?? "",
-      style: e.style,
-    });
-  }
-  return out;
-}
-
-function buildListicleOverlays(
-  config: ProjectConfig,
-  cells: ReturnType<typeof buildArollLayout>,
-  fps: number,
-): ListicleOverlayProp[] {
-  const templateId = isListicleTemplateId(config.listicleStyle.templateId)
-    ? config.listicleStyle.templateId
-    : DEFAULT_LISTICLE_TEMPLATE_ID;
-  const styles = resolveListicleTextStyles(
-    templateId,
-    config.listicleStyle.overrides,
-  );
-  const out: ListicleOverlayProp[] = [];
-
   for (const e of config.edits) {
-    if (e.kind !== "vfx" || e.type !== "listicle") continue;
+    if (!isTextBaseEdit(e)) continue;
     const range = timelineRangeToOutput(cells, e);
     if (!range) continue;
-
     const startFrame = secToFrame(range.start, fps);
     const endFrame = Math.max(startFrame + 1, secToFrame(range.end, fps));
-    let middleFrame: number | null = null;
-    if (e.middle != null) {
-      const span = Math.max(0.001, e.end - e.start);
-      const t = Math.min(1, Math.max(0, (e.middle - e.start) / span));
-      const middleSec = range.start + t * (range.end - range.start);
-      middleFrame = Math.min(
-        endFrame,
-        Math.max(startFrame, secToFrame(middleSec, fps)),
-      );
-    }
-
+    const look = resolveOverlayForEdit(e);
+    const t = resolveTransform(e);
     out.push({
       id: e.id,
       startFrame,
-      middleFrame,
       endFrame,
-      indicatorText: e.indicatorText,
-      valueText: e.valueText,
-      indicatorStyle: styles.indicator,
-      valueStyle: styles.value,
-      stacked: styles.stacked,
+      middleFrame: outputMiddleFrame(
+        e.start,
+        e.end,
+        editMiddleSec(e, look.stacked),
+        range.start,
+        range.end,
+        startFrame,
+        endFrame,
+        fps,
+      ),
+      heading: e.heading,
+      subheading: e.subheading,
+      headingStyle: look.heading,
+      subheadingStyle: look.subheading,
+      stacked: look.stacked,
+      scale: t.scale,
+      offsetX: t.offsetX,
+      offsetY: t.offsetY,
+      rotation: t.rotation,
     });
   }
   return out;
@@ -539,8 +527,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
       fps,
     ),
     zooms: buildZooms(input.config.edits, layout, fps),
-    textOverlays: buildTextOverlays(input.config.edits, layout, fps),
-    listicleOverlays: buildListicleOverlays(input.config, layout, fps),
+    textOverlays: buildTextOverlays(input.config, layout, fps),
     shakes: buildShakes(input.config.edits, layout, fps),
     brolls: buildBrolls(
       input.config.edits,

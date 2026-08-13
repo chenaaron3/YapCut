@@ -41,10 +41,9 @@ export function ShakeVfxInspector({ edit }: { edit: VfxShakeEdit }) {
                   ? "bg-primary/20 text-primary"
                   : "bg-panel-2 text-muted-foreground hover:text-foreground",
               )}
-              onClick={() => {
-                useEditor.getState().beginGesture();
-                patchEdit(edit.id, { intensity: preset.intensity }, false);
-              }}
+              onClick={() =>
+                patchEdit(edit.id, { intensity: preset.intensity }, false)
+              }
             >
               {preset.label}
             </button>

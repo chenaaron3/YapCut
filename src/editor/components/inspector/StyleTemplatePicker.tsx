@@ -1,11 +1,8 @@
 import { useState } from "react";
 
-import {
-  CaptionTemplatePreview,
-  type ListiclePreviewPair,
-} from "~/editor/components/inspector/CaptionTemplatePreview";
+import type { OverlayPreviewPair } from "~/editor/components/inspector/preview/constants";
+import { CaptionTemplatePreview } from "~/editor/components/inspector/preview/CaptionTemplatePreview";
 import { requestPlayAfterSeek } from "~/editor/lib/player-bridge";
-import { useEditor } from "~/editor/store";
 import {
   resolveCaptionFont,
   type CaptionGroupStyle,
@@ -16,24 +13,24 @@ export type StyleTemplateChip = {
   id: string;
   label: string;
   style: CaptionGroupStyle;
-  /** Optional dual-layer preview (listicle, or title + subheading). */
-  previewPair?: ListiclePreviewPair;
+  /** Optional dual-layer preview (title / listicle overlay). */
+  previewPair?: OverlayPreviewPair;
 };
 
 function resolvePreviewPair(
   chip: StyleTemplateChip | null | undefined,
-): ListiclePreviewPair | null {
+): OverlayPreviewPair | null {
   return chip?.previewPair ?? null;
 }
 
-/** Shared template preview + chip picker for Captions, Quote, and Title inspectors. */
+/** Shared template preview + chip picker for captions, quotes, and overlays. */
 export function StyleTemplatePicker({
   templates,
   value,
   onChange,
   /** When set, used as the idle preview (e.g. live project style). */
   fallbackStyle,
-  /** Idle dual-layer preview (listicle). */
+  /** Idle dual-layer preview (title / listicle). */
   fallbackPair,
   previewVariant = "dynamic",
 }: {
@@ -41,7 +38,7 @@ export function StyleTemplatePicker({
   value: string | null;
   onChange: (id: string) => void;
   fallbackStyle?: CaptionGroupStyle;
-  fallbackPair?: ListiclePreviewPair | null;
+  fallbackPair?: OverlayPreviewPair | null;
   previewVariant?: "dynamic" | "static";
 }) {
   const [hovered, setHovered] = useState<StyleTemplateChip | null>(null);
@@ -100,7 +97,6 @@ export function StyleTemplatePicker({
               type="button"
               onClick={() => {
                 if (template.id === value) return;
-                useEditor.getState().beginGesture();
                 setHovered(null);
                 requestPlayAfterSeek();
                 onChange(template.id);

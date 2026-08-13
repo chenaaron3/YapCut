@@ -1,8 +1,8 @@
 import { Sequence, useVideoConfig } from "remotion";
 import { Audio } from "@remotion/media";
 
-import { PREMOUNT_SEC } from "~/remotion/constants";
-import type { SfxClipProp } from "~/remotion/types";
+import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
+import type { SfxClipProp } from "~/remotion/helpers/types";
 
 function SfxClip({ clip }: { clip: SfxClipProp }) {
   const { fps } = useVideoConfig();

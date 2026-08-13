@@ -1,23 +1,16 @@
-import {
-  BROLL_DRAG_MIME,
-  brollSeed,
-  type BrollDragPayload,
-} from "~/domain/broll";
-import type { EditSeed } from "~/domain/edits";
+import { BROLL_DRAG_MIME, brollSeed } from "~/domain/broll";
 import { listicleSeedFromWords } from "~/domain/listicle";
-import {
-  SFX_DRAG_MIME,
-  sfxSeed,
-  type SfxDragPayload,
-} from "~/domain/sfx";
-import {
-  VFX_DRAG_MIME,
-  vfxSeedFromPreset,
-  type VfxDragPayload,
-} from "~/domain/vfx";
+import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project-config";
+import { SFX_DRAG_MIME, sfxSeed } from "~/domain/sfx";
+import { VFX_DRAG_MIME, vfxSeedFromPreset } from "~/domain/vfx";
 import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
+
+import type { BrollDragPayload } from "~/domain/broll";
+import type { EditSeed } from "~/domain/edits";
+import type { SfxDragPayload } from "~/domain/sfx";
+import type { VfxDragPayload } from "~/domain/vfx";
 
 export type AssetDropKind = "broll" | "sfx" | "vfx";
 
@@ -88,7 +81,16 @@ export function placeEditFromAssetDrop(
       word,
       words,
     );
-    placeEditOnWord(globalIndex, listicleSeedFromWords(words, range));
+    placeEditOnWord(
+      globalIndex,
+      listicleSeedFromWords(
+        words,
+        range,
+        useEditor.getState().config?.listicleStyle ?? {
+          templateId: DEFAULT_LISTICLE_TEMPLATE_ID,
+        },
+      ),
+    );
     return true;
   }
   if (

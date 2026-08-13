@@ -17,8 +17,8 @@ Sparse JSON document on the Project row: topology (`arolls`), flat `edits`, and 
 _Avoid_: config blob (prefer ProjectConfig), row-per-edit, parallel kind arrays (`bRolls` / `vfx` / …)
 
 **Project field**:
-Project-level config data that is not an Edit and has no EditId. Today: `captions` (`TemplateStyle`), `emphasisStyle`, `listicleStyle`, `defaultBRollSfxAssetId` (global audio Asset id or null — place-time sibling `sfx` edit when dropping b-roll), `music` (`MusicBed` or null — one looping bed for the output). Title string is a Project column, not a Project field.
-_Avoid_: treating captions/music as Edits; nesting entrance SFX on `BrollEdit`; treating on-screen title overlay as the Project.title column
+Project-level config data that is not an Edit and has no EditId. Today: `captions` (`TemplateStyle`), `emphasisStyle`, `listicleStyle` (SoT for listicle look — denormalized onto each listicle Edit’s `style`), `defaultBRollSfxAssetId` (global audio Asset id or null — place-time sibling `sfx` edit when dropping b-roll), `music` (`MusicBed` or null — one looping bed for the output). Title string is a Project column, not a Project field.
+_Avoid_: treating captions/music as Edits; nesting entrance SFX on `BrollEdit`; treating on-screen title overlay as the Project.title column; reading `listicleStyle` at paint time instead of the edit’s mirrored `style`
 
 **Music bed** (`MusicBed`):
 Project field: one looping audio Asset for the whole output. `MusicBed` is a `MediaRef` (`assetId`, `volume`, `mediaOffsetSec`) — same media fields as `sfx` / `broll`, but not an Edit (no EditId, no timeline range; loops the whole output). Null when unset. Pick / inspect from the Music tab (no timeline track). Playback applies library LUFS gain × mix, plus edge fades — no ducking under voice/SFX.
@@ -51,9 +51,11 @@ Monotonic integer identifying an Edit. Assigned at place as `max(ids)+1`; never 
 _Avoid_: uuid, array index, string ids
 
 **Edit kinds (v1)**:
+
 ```
 broll | sfx | zoom | vfx
 ```
+
 - **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
 - **vfx** — `type: "quote" | "text" | "listicle" | "shake"` (location/cutout out of scope)
 
@@ -70,15 +72,15 @@ Short high-impact key-phrase span for a quote VFX (~3–10 words), not a full se
 _Avoid_: quote-as-paragraph, quote overlapping listicle, packing ordinary connective speech, back-to-back quotes
 
 **Companion SFX**:
-An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, listicle indicator/value, title card). Optional per candidate (`none` allowed). Not used to plug pacing gaps. AI does not place riser companions.
+An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, listicle heading/subheading, title card). Optional per candidate (`none` allowed). Not used to plug pacing gaps. AI does not place riser companions.
 _Avoid_: nesting SFX on zoom/vfx; free-placement SFX as gap filler; SFX on sparse outer emphasis; SFX on slow zooms
 
 **AI SFX pack**:
-Curated role pools for create AI only. Roles: `reveal` (title + listicle indicator), `tick` (listicle value), `ping` (quote peak), `motion` (punch-in). LLM picks intensity (`soft`/`medium`/`hard`) or `none` for a fixed candidate role; place-time hash picks one Asset from `public/sfx/<role>/`. Intensity sets volume only. `custom/memes/` and `custom/riser/` are manual library only (SFX tab).
+Curated role pools for create AI only. Roles: `reveal` (title + listicle heading), `tick` (listicle subheading), `ping` (quote peak), `motion` (punch-in). LLM picks intensity (`soft`/`medium`/`hard`) or `none` for a fixed candidate role; place-time hash picks one Asset from `public/sfx/<role>/`. Intensity sets volume only. `custom/memes/` and `custom/riser/` are manual library only (SFX tab).
 _Avoid_: letting the LLM choose from the entire global library; `texture` roles (typing/flash); meme/riser in AI pool; hardcoding asset UUIDs in the pack; nesting separate sound pools under intensity folders
 
 **Beat**:
-A visible or audible onset that resets pacing: punch-in start, quote start, listicle indicator start and value middle (when staggered), emphasized word start, seeded title `vfx/text` start. Target: about one beat every ~3s of keep/output time (~2s in the **hook**).
+A visible or audible onset that resets pacing: punch-in start, quote start, listicle heading start and subheading middle (when staggered), emphasized word start, seeded title `vfx/text` start. Target: about one beat every ~3s of keep/output time (~2s in the **hook**).
 _Avoid_: counting only edits (emphasis counts); using SFX to satisfy the floor; measuring across deleted gap cells
 
 **Hook**:
@@ -90,8 +92,12 @@ Create AI pass after visual set pieces + emphasis: code lists bare sentences (�
 _Avoid_: early zoom step owning slow fillers; gap-index / partial-phrase slow zooms; reconcile inventing standalone SFX
 
 **TemplateStyle**:
-`{ templateId, overrides? }` — catalog base + sparse user overrides. Used by Project fields `captions` / `listicleStyle` and by `vfx` quote/text. Resolve at props time; do not persist fully resolved style.
-_Avoid_: parallel `captionTemplateId` + `captionStyle` fields, dumping resolved style into config
+`{ templateId, overrides?, subheadingOverrides? }` — catalog base + sparse user overrides. `overrides` is the look for captions/quotes, and the heading bag for title/listicle overlays. `subheadingOverrides` is the overlay subheading bag (captions/quotes ignore it). Used by Project fields `captions` / `listicleStyle` and by `vfx` quote / TextBase (`style`). Resolve at props time; do not persist fully resolved style.
+_Avoid_: parallel `captionTemplateId` + `captionStyle` fields, dumping resolved style into config, `headingOverrides` (reuse `overrides`)
+
+**TextBase**:
+Shared mixin on title (`vfx/text`) and listicle (`vfx/listicle`): `Transform` (block pose) + `heading` / `subheading` (empty subheading = heading only) + `middle` (null = no split) + `hideCaptions` (seed true for both) + `style` (`TemplateStyle`). Title owns its look per-edit. Listicle look is Project field `listicleStyle` as source of truth — denormalized onto each listicle’s `style` at place/AI seed and fanned out on every global patch. One overlay catalog (`stacked` lives on the template, not the edit). Serial templates always stagger (virtual midpoint if `middle` is unset; persist on handle drag or picking a serial template). Stacked + stagger off = both lines from t=start.
+_Avoid_: overlay `style.y` as block position; reading Project.`listicleStyle` at paint/resolve time (use the edit’s `style`)
 
 **No-op default / Place seed**:
 Same spirit as prototype: omit means identity at props time; place may write on-seeds (e.g. entrance SFX) once.
@@ -141,6 +147,13 @@ _Avoid_: persisting output times on Edits
 **Projection**:
 Derive timeline words from `arolls` + per-asset transcripts + asset durations (for gap layout). Do not persist a separate projected transcript. Map timeline → output at the Remotion edge.
 
+**Caption / quote Y**:
+`CaptionGroupStyle.y` for captions and quotes is −1…1 in the **safe area**. `0` = middle, `1` = bottom, `−1` = top. Positive is down.
+
+**Overlay place**:
+Title/listicle **block** pose is `Transform` on `TextBase` (same as b-roll: composition-center origin, positive `offsetY` = down). Seed `offsetY` in the upper title band, not frame center. Each line’s `style.y` is a translate of **that line’s own height** (`±1` = ±100% of that element) — close an arc hollow by moving heading down and subheading up.
+_Avoid_: overlay `overrides.y` as block position
+
 ### MVC
 
 **Model**:
@@ -148,7 +161,7 @@ Pure ProjectConfig (and transcript emphasis) transforms. No Zustand, no Remotion
 _Avoid_: store logic in Model, View writing config
 
 **Controller**:
-Zustand actions: call Model, commit, live gestures, undo (full-config snapshots), selection side effects. Debounced autosave to Postgres. Prefer `immer` (`produce`) for nested Snapshot updates (config / transcripts) instead of hand-rolled spreads; Model helpers already follow this.
+Zustand actions: call Model, commit, live gestures (`beginGesture`/`endGesture`; live commits skip tRPC until end), undo (full-config snapshots), selection side effects. Debounced autosave to Postgres. Prefer `immer` (`produce`) for nested Snapshot updates (config / transcripts) instead of hand-rolled spreads; Model helpers already follow this.
 
 **View**:
 React editor + Remotion player/export. Composes View primitives. Kind modules choose primitives; they do not reimplement range chrome.
@@ -175,12 +188,12 @@ Fully resolved render DTO (defaults materialized). Built from ProjectConfig + as
 
 Single mega-status on Project:
 
-| Status | Meaning |
-|--------|---------|
-| `processing` | Create workflow running |
-| `ready` | Editable; may have prior `exportS3Key` |
-| `exporting` | Lambda render in flight |
-| `failed` | Create failed (editor not openable) |
+| Status       | Meaning                                |
+| ------------ | -------------------------------------- |
+| `processing` | Create workflow running                |
+| `ready`      | Editable; may have prior `exportS3Key` |
+| `exporting`  | Lambda render in flight                |
+| `failed`     | Create failed (editor not openable)    |
 
 Transitions: `processing → ready | failed`; `ready → exporting`; `exporting → ready` (set `exportS3Key` on success, set `failureReason` on export failure and return to `ready`). Create failure uses `failed` + `failureReason`.
 
@@ -189,6 +202,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 ## Pipelines
 
 **Create workflow** (Vercel Workflows):
+
 1. Presigned upload → Project + Assets (`processing`)
 2. WhisperX per A-roll video (language autodetect, diarization off) → Transcript rows
 3. Measure A-roll LUFS + true peak + waveform via fal ffmpeg-api (enqueue, then poll with workflow `sleep()`; create fails if measure fails)
@@ -201,9 +215,8 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    5. emphasis — two LLM passes unioned: sparse over whole script, then denser inside quote ranges
    6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
    7. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
-   Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
+      Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
 6. Seed default `captions` TemplateStyle → `ready` (create only)
-
 
 **Export workflow**:
 Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920 @ 30fps. On success writes video export key and **Cover** key on the Project.
@@ -218,10 +231,11 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - ProjectConfig.arolls reference project video Assets
 - `music` is a Project field (one looping bed or null); project-scoped audio uploads are music, not SFX
 - Edits use timeline time; arolls use local time; Remotion maps timeline → output
-- On-screen title is a `vfx`/`text` Edit (seeded, deletable) with optional `subheading`; `Project.title` is metadata only and is not kept in sync after seed
+- On-screen title is a `vfx`/`text` Edit (seeded, deletable) sharing `TextBase` with listicle (heading/subheading/`middle`/hideCaptions/`Transform`/`style`); `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
 - Emphasis look is a Project field (`emphasisStyle`); quote may sparse-merge the same `EmphasisStyle` shape on top; AI never writes emphasis style
 - Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
+- Title and listicle share one overlay catalog and one paint path; both carry `TextBase.style`; listicle’s copy mirrors Project `listicleStyle` (fan-out on patch)
 - Companion SFX are sibling `sfx` edits; AI chooses optional intensity (`soft`/`medium`/`hard`) for a fixed candidate role from the AI SFX pack only; concrete Asset is hash-picked from the seeded role pool; intensity sets volume
 - A **Project** has at most one **ScheduleEntry** (v1 strict 1:1); publish media is always the Project’s **current** title, export video key, and **Cover** key (nothing frozen onto the entry except the slot)
 - A **ScheduleEntry** has many **PlatformPublish** rows — at most one current row per platform (no attempt history in v1)
@@ -230,19 +244,19 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 
 ## Composition matrix (v1)
 
-| Concern | Model | Transcript chrome | Timeline | Player |
-|---------|--------|-------------------|----------|--------|
-| b-roll | Edit | yes | Edit cell | Media (+ Audio if entrance sfx) |
-| sfx | Edit | yes | Edit cell | Audio layer |
-| zoom | Edit | yes | Edit cell | Zoom |
-| vfx/quote | Edit | yes | Edit cell | Caption style override (+ text as applicable) |
-| vfx/text | Edit | yes | Edit cell | Text overlay (optional subheading) |
-| vfx/listicle | Edit | yes | Edit cell | Listicle overlay (shared `listicleStyle`) |
-| vfx/shake | Edit | yes | Edit cell | ScreenShake (wraps A-roll/zoom/b-roll; captions/text outside) |
-| captions | Project field | no | optional track | Text overlay (words from projection) |
-| music | Project field | no | — | Audio layer (looping bed, edge fades, no ducking) |
-| arolls | topology | — | Keep/gap cells | A-roll Media |
-| emphasis | Transcript word flag + Project `emphasisStyle` (+ quote override) | (caption styling) | — | caption word style |
+| Concern      | Model                                                             | Transcript chrome | Timeline       | Player                                                        |
+| ------------ | ----------------------------------------------------------------- | ----------------- | -------------- | ------------------------------------------------------------- |
+| b-roll       | Edit                                                              | yes               | Edit cell      | Media (+ Audio if entrance sfx)                               |
+| sfx          | Edit                                                              | yes               | Edit cell      | Audio layer                                                   |
+| zoom         | Edit                                                              | yes               | Edit cell      | Zoom                                                          |
+| vfx/quote    | Edit                                                              | yes               | Edit cell      | Caption style override (+ text as applicable)                 |
+| vfx/text     | Edit                                                              | yes               | Edit cell      | Overlay (`TextBase`, per-edit `style`)                        |
+| vfx/listicle | Edit                                                              | yes               | Edit cell      | Overlay (`TextBase`, `style` mirrored from `listicleStyle`)   |
+| vfx/shake    | Edit                                                              | yes               | Edit cell      | ScreenShake (wraps A-roll/zoom/b-roll; captions/text outside) |
+| captions     | Project field                                                     | no                | optional track | Text overlay (words from projection)                          |
+| music        | Project field                                                     | no                | —              | Audio layer (looping bed, edge fades, no ducking)             |
+| arolls       | topology                                                          | —                 | Keep/gap cells | A-roll Media                                                  |
+| emphasis     | Transcript word flag + Project `emphasisStyle` (+ quote override) | (caption styling) | —              | caption word style                                            |
 
 ## Deprioritized / out of scope
 
@@ -282,4 +296,3 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle/shake → SFX → Zoom; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary)
 - ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority reveal/tick → quote ping → punch-in motion (risers are manual library only)
 - ~~Aggressive quote cadence hard quota vs soft~~ → **key-phrase only** (~3–10 words; first quote from word 0; ≥5 words between — spaced subsets)
-

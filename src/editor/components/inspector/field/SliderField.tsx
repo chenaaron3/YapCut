@@ -1,6 +1,6 @@
 import { Label } from "~/components/ui/label";
 import { Slider } from "~/components/ui/slider";
-import { useEditor } from "~/editor/store";
+import { beginPointerGesture } from "~/editor/lib/gesture";
 
 export function SliderField({
   label,
@@ -31,7 +31,9 @@ export function SliderField({
         min={min}
         max={max}
         step={step}
-        onPointerDown={() => useEditor.getState().beginGesture()}
+        onPointerDown={() => {
+          beginPointerGesture();
+        }}
         onValueChange={(v) => {
           const next = Array.isArray(v) ? Number(v[0]) : Number(v);
           if (Number.isFinite(next)) onLiveChange(next);

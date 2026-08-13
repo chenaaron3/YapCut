@@ -8,7 +8,7 @@ import {
 } from "remotion";
 
 import { TRANSFORM_DEFAULTS } from "~/domain/transform";
-import type { ZoomProp } from "~/remotion/types";
+import type { ZoomProp } from "~/remotion/helpers/types";
 
 const EASE = Easing.inOut(Easing.ease);
 

@@ -1,5 +1,5 @@
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
-import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/types";
+import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/helpers/types";
 
 import {
   LINE_BREAK_TOKEN,

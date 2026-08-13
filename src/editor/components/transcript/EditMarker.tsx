@@ -32,14 +32,15 @@ export function EditMarker({
   const chrome = chromeByKey(span.chromeKey);
   const { Icon } = chrome;
   const assets = useEditor((s) => s.assets);
-  const edit = useEditor((s) =>
-    s.config?.edits.find((e) => e.id === span.editId),
-  );
+  const brollAssetId = useEditor((s) => {
+    const edit = s.config?.edits.find((e) => e.id === span.editId);
+    return edit?.kind === "broll" ? edit.assetId : null;
+  });
   const movedRef = useRef(false);
 
   const brollAsset =
-    span.chromeKey === "broll" && edit?.kind === "broll"
-      ? (assets.find((a) => a.id === edit.assetId) ?? null)
+    span.chromeKey === "broll" && brollAssetId != null
+      ? (assets.find((a) => a.id === brollAssetId) ?? null)
       : null;
 
   const label = markerLabel(span);

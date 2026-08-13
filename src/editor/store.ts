@@ -1,5 +1,6 @@
 import { produce } from "immer";
 import { create } from "zustand";
+import { useStoreWithEqualityFn } from "zustand/traditional";
 
 import {
   applyArollCellAction,
@@ -36,24 +37,27 @@ import { primaryId } from "~/editor/lib/selection";
 import { snapWordActionRangeToKeeps } from "~/editor/lib/snap";
 import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
-import { buildProjectProps } from "~/remotion/build-props";
+import { buildProjectProps } from "~/remotion/helpers/build-props";
 import {
   COMPOSITION_FPS,
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
-} from "~/remotion/constants";
+} from "~/remotion/helpers/constants";
 
 import type { SerializedWaveform } from "~/domain/audio/waveform";
 import type { ArollLayoutCell } from "~/domain/arolls";
 import type { EditPatch, EditSeed } from "~/domain/edits";
-import type { EmphasisStyle } from "~/domain/emphasis-style";
-import type {
-  EditId,
-  ProjectConfig,
-  TemplateStyle,
+import { isListicleEdit } from "~/domain/listicle";
+import {
+  applyTemplateStylePatch,
+  cloneTemplateStyle,
+  type EditId,
+  type ProjectConfig,
+  type TemplateStyle,
 } from "~/domain/project-config";
+import type { EmphasisStyle } from "~/domain/emphasis-style";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
-import type { ProjectProps } from "~/remotion/types";
+import type { ProjectProps } from "~/remotion/helpers/types";
 
 /** Mutable transcript-word fields (local asset words). */
 export type WordPatch = Partial<Pick<TranscriptWord, "emphasized" | "text">>;
@@ -129,8 +133,14 @@ type EditorActions = {
   syncActiveWord: () => void;
   setPxPerSec: (v: number) => void;
 
-  // —— History ——
+  // —— History / gesture ——
+  /**
+   * Open a multi-update gesture: push history once. Live commits while open
+   * stay local; call `endGesture` to flush autosave.
+   */
   beginGesture: () => void;
+  /** Close the open gesture and schedule a single autosave if dirty. */
+  endGesture: () => void;
   undo: () => void;
   redo: () => void;
 
@@ -149,7 +159,7 @@ type EditorActions = {
   /**
    * Move an A-roll asset run from `fromIndex` → `toIndex` (stitch order).
    * Edits starting in a run move with it. `Asset.sortOrder` syncs on config save.
-   * Pass `live: true` during drag (pair with `beginGesture`).
+   * Pass `live: true` during drag (pair with `beginGesture` / `endGesture`).
    */
   reorderArollAssets: (
     fromIndex: number,
@@ -173,7 +183,7 @@ type EditorActions = {
   ) => void;
   /** Patch Project field `captions` TemplateStyle. */
   patchCaptions: (patch: Partial<TemplateStyle>, live?: boolean) => void;
-  /** Patch Project field `listicleStyle` (shared by all listicle edits). */
+  /** Patch Project field `listicleStyle` and fan out onto every listicle edit. */
   patchListicleStyle: (patch: Partial<TemplateStyle>, live?: boolean) => void;
   /** Replace Project field `emphasisStyle`. */
   patchEmphasisStyle: (next: EmphasisStyle, live?: boolean) => void;
@@ -207,6 +217,8 @@ let history: Snapshot[] = [];
 let future: Snapshot[] = [];
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 let scrubbing = false;
+/** True between beginGesture / endGesture — live commits skip autosave. */
+let gestureActive = false;
 /** Last successfully persisted refs — dirty flags compare against these. */
 let lastSavedConfig: ProjectConfig | null = null;
 let lastSavedTranscripts: Record<string, TranscriptWord[]> | null = null;
@@ -370,8 +382,10 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
   };
 
   const commit = (next: Snapshot, options?: { live?: boolean }) => {
+    const live = options?.live === true;
     const prev = snapshot();
-    if (!options?.live && prev) pushHistory(prev);
+    // Gesture already snapshot history at beginGesture.
+    if (!live && !gestureActive && prev) pushHistory(prev);
 
     const state = get();
     const configDirty = next.config !== lastSavedConfig;
@@ -400,7 +414,8 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       transcriptsDirty,
       error: null,
     });
-    if (configDirty || transcriptsDirty) scheduleSave();
+    // Live updates stay local; endGesture (or a non-live commit) flushes.
+    if (!live && (configDirty || transcriptsDirty)) scheduleSave();
   };
 
   const restore = (snap: Snapshot) => {
@@ -461,6 +476,11 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     hydrateFromServer: (data) => {
       history = [];
       future = [];
+      gestureActive = false;
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+      }
       const transcriptsByAssetId: Record<string, TranscriptWord[]> = {};
       for (const t of data.transcripts) {
         transcriptsByAssetId[t.assetId] = t.words;
@@ -606,11 +626,21 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     setPxPerSec: (pxPerSec) => set({ pxPerSec }),
 
     beginGesture: () => {
+      if (gestureActive) return;
+      gestureActive = true;
       const snap = snapshot();
       if (snap) pushHistory(snap);
     },
 
+    endGesture: () => {
+      if (!gestureActive) return;
+      gestureActive = false;
+      const { configDirty, transcriptsDirty } = get();
+      if (configDirty || transcriptsDirty) scheduleSave();
+    },
+
     undo: () => {
+      gestureActive = false;
       const current = snapshot();
       const prev = history.pop();
       if (!current || !prev) return;
@@ -619,6 +649,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     },
 
     redo: () => {
+      gestureActive = false;
       const current = snapshot();
       const next = future.pop();
       if (!current || !next) return;
@@ -956,14 +987,16 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { config, transcriptsByAssetId } = get();
       if (!config) return;
       const next = produce(config, (draft) => {
-        const templateId = patch.templateId ?? draft.listicleStyle.templateId;
-        const overrides = patch.overrides ?? draft.listicleStyle.overrides;
-        draft.listicleStyle = {
-          templateId,
-          ...(overrides && Object.keys(overrides).length > 0
-            ? { overrides }
-            : {}),
-        };
+        draft.listicleStyle = applyTemplateStylePatch(
+          draft.listicleStyle,
+          patch,
+        );
+        // Denormalize onto every listicle so resolve paths only need the edit.
+        for (const edit of draft.edits) {
+          if (isListicleEdit(edit)) {
+            edit.style = cloneTemplateStyle(draft.listicleStyle);
+          }
+        }
       });
       commit({ config: next, transcriptsByAssetId }, { live });
     },
@@ -1033,11 +1066,22 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
 });
 
 export function useGlobalWords(): GlobalTranscriptWord[] {
-  const config = useEditor((s) => s.config);
+  // Word projection depends on arolls + transcripts, not edits. Selecting
+  // `arolls` (immer-shared) skips re-renders on cosmetic edit patches.
+  const arolls = useEditor((s) => s.config?.arolls);
   const transcriptsByAssetId = useEditor((s) => s.transcriptsByAssetId);
   const assets = useEditor((s) => s.assets);
-  if (!config) return [];
+  const config = useEditor.getState().config;
+  if (!config || arolls == null) return [];
   return globalWordsFor(config, transcriptsByAssetId, assets);
+}
+
+/** Like `useEditor`, with a custom equality fn (zustand v5). */
+export function useEditorEqual<T>(
+  selector: (state: EditorState & EditorActions) => T,
+  equalityFn: (a: T, b: T) => boolean,
+): T {
+  return useStoreWithEqualityFn(useEditor, selector, equalityFn);
 }
 
 export const EDITOR_COMPOSITION = {

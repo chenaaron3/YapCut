@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import type { RangeEdge } from "~/domain/edits";
+import { runGesture } from "~/editor/lib/gesture";
 import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
@@ -68,8 +69,6 @@ function suppressNextClick() {
 
 /** Edge-drag helper for timeline range handles (does not move playhead). */
 export function useTrackDrag() {
-  const beginGesture = useEditor((s) => s.beginGesture);
-
   const startDrag = useCallback(
     (
       e: ReactMouseEvent,
@@ -78,7 +77,7 @@ export function useTrackDrag() {
       if (e.button !== 0) return;
       e.preventDefault();
       e.stopPropagation();
-      beginGesture();
+      const endGesture = runGesture();
       const startX = e.clientX;
       const pxPerSec = useEditor.getState().pxPerSec;
       let moved = false;
@@ -91,12 +90,13 @@ export function useTrackDrag() {
       const onUp = () => {
         window.removeEventListener("mousemove", onPointerMove);
         window.removeEventListener("mouseup", onUp);
+        endGesture();
         if (moved) suppressNextClick();
       };
       window.addEventListener("mousemove", onPointerMove);
       window.addEventListener("mouseup", onUp);
     },
-    [beginGesture],
+    [],
   );
 
   return { startDrag };

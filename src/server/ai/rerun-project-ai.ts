@@ -1,10 +1,11 @@
 import { and, eq } from "drizzle-orm";
 
 import { parseProjectConfig } from "~/domain/project-config";
-import type { TranscriptWord } from "~/domain/transcript";
 import { runAiAssist } from "~/server/ai/run-ai-assist";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
+
+import type { TranscriptWord } from "~/domain/transcript";
 
 /**
  * Re-run create AI assist on an editable project.
@@ -53,9 +54,7 @@ export async function rerunProjectAiAssist(options: {
   }
 
   const wordsByAssetId = new Map<string, TranscriptWord[]>();
-  const assetIds = [
-    ...new Set(config.arolls.map((k) => k.assetId)),
-  ];
+  const assetIds = [...new Set(config.arolls.map((k) => k.assetId))];
   for (const assetId of assetIds) {
     const [transcript] = await db
       .select()
@@ -80,6 +79,7 @@ export async function rerunProjectAiAssist(options: {
     title: project.title?.trim() ?? "",
     generateTitleIfEmpty: true,
     baseEdits,
+    listicleStyle: config.listicleStyle,
   });
 
   for (const [assetId, words] of assist.wordsByAssetId) {

@@ -1,7 +1,7 @@
 import React from "react";
 
 import { DEFAULT_CAPTION_STYLE } from "~/remotion/captions/style";
-import type { CaptionGroupProp } from "~/remotion/types";
+import type { CaptionGroupProp } from "~/remotion/helpers/types";
 
 import { CaptionGroupLayout } from "./CaptionGroupLayout";
 import { CaptionWordSpan } from "./CaptionWordSpan";

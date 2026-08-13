@@ -1,7 +1,7 @@
 import React, { type CSSProperties } from "react";
 
 import { DEFAULT_CAPTION_STYLE } from "~/remotion/captions/style";
-import type { CaptionGroupProp } from "~/remotion/types";
+import type { CaptionGroupProp } from "~/remotion/helpers/types";
 
 import { resolveEnterExitMotion } from "./caption-animation";
 import {
@@ -54,10 +54,7 @@ export const StaticGroupView: React.FC<{
     >
       {group.words.map((word, index) =>
         isLineBreakToken(word.text) ? (
-          <CaptionLineBreak
-            key={`${word.startFrame}-br-${index}`}
-            hidden={animation === "typewriter" && frame < word.startFrame}
-          />
+          <CaptionLineBreak key={`${word.startFrame}-br-${index}`} />
         ) : (
           <CaptionWordSpan
             key={`${word.startFrame}-${word.text}-${index}`}

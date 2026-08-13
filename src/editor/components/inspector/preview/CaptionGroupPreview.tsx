@@ -10,8 +10,8 @@ import { groupCaptionWords } from "~/remotion/captions/words";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import { DynamicGroupView } from "~/remotion/components/captions/DynamicGroupView";
 import { StaticGroupView } from "~/remotion/components/captions/StaticGroupView";
-import { SAFE_AREA } from "~/remotion/constants";
-import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/types";
+import { SAFE_AREA } from "~/remotion/helpers/constants";
+import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/helpers/types";
 
 /** Fixed sample phrases — CSS textTransform handles case. */
 const PREVIEW_PHRASES = [

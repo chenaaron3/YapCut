@@ -1,27 +1,22 @@
 import type { ReactNode } from "react";
 
-export const STACK_GAP_PX = 10;
+export const STACK_GAP_PX = 8;
 
-/** Centered column of caption layers (title + subheading, stacked listicle). */
+/** Hugging column of overlay lines (heading + subheading). */
 export function StackedCaptionPair({
-  y,
+  gap = STACK_GAP_PX,
   children,
 }: {
-  y: number;
+  gap?: number;
   children: ReactNode;
 }) {
   return (
     <div
       style={{
-        position: "absolute",
-        top: `${y * 100}%`,
-        left: 0,
-        right: 0,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: STACK_GAP_PX,
-        transform: "translateY(-50%)",
+        gap,
       }}
     >
       {children}

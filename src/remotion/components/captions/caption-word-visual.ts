@@ -8,7 +8,7 @@ import {
   type CaptionGroupStyle,
   type WordStyle,
 } from "~/remotion/captions/style";
-import type { CaptionWordProp } from "~/remotion/types";
+import type { CaptionWordProp } from "~/remotion/helpers/types";
 
 import {
   wordBackgroundFadeT,
@@ -182,7 +182,8 @@ export function resolveCaptionWordVisual(input: {
     wordBackground.fade,
   );
 
-  // Text VFX (StaticGroupView): parent owns group motion; typewriter may stagger letters.
+  // Overlay (StaticGroupView): parent owns group motion; keep words in
+  // layout (`visibility: hidden` in the span) so typewriter does not reflow.
   if (!animateWord) {
     if (typewriter && frame < word.startFrame) {
       return {

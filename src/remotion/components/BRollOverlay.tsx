@@ -11,8 +11,8 @@ import {
 import { Video } from "@remotion/media";
 
 import { containSize } from "~/domain/transform";
-import { PREMOUNT_SEC } from "~/remotion/constants";
-import type { BrollClipProp } from "~/remotion/types";
+import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
+import type { BrollClipProp } from "~/remotion/helpers/types";
 
 const FADE_SEC = 0.12;
 const KEN_BURNS_EASING = Easing.inOut((t) => Easing.ease(t));

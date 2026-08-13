@@ -5,8 +5,8 @@ import {
   parseProjectConfig,
 } from "~/domain/project-config";
 import type { TranscriptWord } from "~/domain/transcript";
-import { buildProjectProps } from "~/remotion/build-props";
-import type { ProjectProps } from "~/remotion/types";
+import { buildProjectProps } from "~/remotion/helpers/build-props";
+import type { ProjectProps } from "~/remotion/helpers/types";
 import { db } from "~/server/db";
 import { assets, projects } from "~/server/db/schema";
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";

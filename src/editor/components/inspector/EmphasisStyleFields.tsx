@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -11,7 +13,7 @@ import {
   InspectorCollapsible,
   NumberField,
 } from "~/editor/components/inspector/field";
-import { useEditor } from "~/editor/store";
+import { runGesture } from "~/editor/lib/gesture";
 import {
   CAPTION_FONT_IDS,
   type CaptionFontId,
@@ -61,6 +63,14 @@ export function EmphasisStyleFields({
   const scale = value.scale ?? DEFAULT_EMPHASIS_SCALE;
   const fill = value.fill ?? DEFAULT_EMPHASIS_FILL;
   const fontSelectValue = value.fontFamily ?? "inherit";
+  const fillGestureRef = useRef<(() => void) | null>(null);
+  const beginFillGesture = () => {
+    fillGestureRef.current ??= runGesture();
+  };
+  const endFillGesture = () => {
+    fillGestureRef.current?.();
+    fillGestureRef.current = null;
+  };
 
   return (
     <InspectorCollapsible title={title} defaultOpen={false}>
@@ -68,10 +78,7 @@ export function EmphasisStyleFields({
         <button
           type="button"
           className="text-muted-foreground hover:text-foreground text-left text-[11px] underline-offset-2 hover:underline"
-          onClick={() => {
-            useEditor.getState().beginGesture();
-            onClear();
-          }}
+          onClick={() => onClear()}
         >
           Reset
         </button>
@@ -95,7 +102,8 @@ export function EmphasisStyleFields({
             type="color"
             className="h-8 w-10 cursor-pointer p-1"
             value={hexOrDefault(fill)}
-            onFocus={() => useEditor.getState().beginGesture()}
+            onFocus={beginFillGesture}
+            onBlur={endFillGesture}
             onChange={(e) => onPatch({ fill: e.target.value }, true)}
           />
           <Input
@@ -103,7 +111,8 @@ export function EmphasisStyleFields({
             className="h-8 flex-1"
             placeholder={DEFAULT_EMPHASIS_FILL}
             value={fill}
-            onFocus={() => useEditor.getState().beginGesture()}
+            onFocus={beginFillGesture}
+            onBlur={endFillGesture}
             onChange={(e) => onPatch({ fill: e.target.value }, true)}
           />
         </div>
@@ -116,7 +125,6 @@ export function EmphasisStyleFields({
         <select
           className="border-border bg-panel-2 text-foreground h-8 w-full rounded-md border px-2 text-xs"
           value={fontSelectValue}
-          onFocus={() => useEditor.getState().beginGesture()}
           onChange={(e) => {
             const v = e.target.value;
             if (v === "inherit") {
