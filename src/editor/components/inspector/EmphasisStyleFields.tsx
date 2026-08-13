@@ -37,6 +37,7 @@ const FONT_LABELS: Record<CaptionFontId, string> = {
   "great-vibes": "Great Vibes",
   "black-ops-one": "Black Ops One",
   "bootzy-tm": "Bootzy TM",
+  "scholar-it": "Scholar Italic",
 };
 
 function hexOrDefault(fill: string): string {

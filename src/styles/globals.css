@@ -28,6 +28,18 @@
     url("/fonts/BootzyTM.ttf") format("truetype");
 }
 
+@font-face {
+  font-family: "Scholar Italic";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    local("Scholar Italic"),
+    local("Scholar-Italic"),
+    url("/fonts/ScholarItalic.woff") format("woff"),
+    url("/fonts/ScholarItalic.ttf") format("truetype");
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* Editor theme tokens */

@@ -17,6 +17,7 @@ export const CAPTION_FONT_IDS = [
   "great-vibes",
   "black-ops-one",
   "bootzy-tm",
+  "scholar-it",
 ] as const;
 export type CaptionFontId = (typeof CAPTION_FONT_IDS)[number];
 
@@ -119,6 +120,11 @@ export const CAPTION_FONTS: Record<CaptionFontId, CaptionFontFace> = {
   "bootzy-tm": {
     id: "bootzy-tm",
     family: '"Bootzy TM", "BootzyTM", Impact, "Arial Black", sans-serif',
+    weight: 400,
+  },
+  "scholar-it": {
+    id: "scholar-it",
+    family: '"Scholar Italic", "Scholar-Italic", Georgia, "Times New Roman", serif',
     weight: 400,
   },
 };

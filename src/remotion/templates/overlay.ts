@@ -82,7 +82,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
     true,
     {
       ...OVERLAY_TEXT_BASE,
-      fontFamily: "great-vibes",
+      fontFamily: "scholar-it",
       fontSize: 92,
       animation: "typewriter",
       textTransform: "none",
