@@ -28,13 +28,10 @@ export class LocalScheduleUploadService extends ScheduleUploadService {
         import("~/schedule/local"),
       ]);
 
-    console.log(
-      `[schedule] local upload starting for ${job.projectId} (force)`,
-    );
+    console.log(`[schedule] local upload starting for ${job.projectId}`);
     await executeScheduleRun({
       userId: job.userId,
       projectId: job.projectId,
-      force: true,
       createPublishers: createLocalPublishers,
     });
   }

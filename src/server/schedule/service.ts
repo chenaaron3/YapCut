@@ -154,15 +154,11 @@ export async function scheduleProject(options: {
   return { entryId: entry.id, scheduledAt: entry.scheduledAt };
 }
 
-/** Incomplete platform rows for CLI (due filter applied by caller). */
-/** Due ScheduleEntries that still have pending/failed PlatformPublish rows. */
+/** ScheduleEntries that still have pending/failed PlatformPublish rows. */
 export async function listIncompletePublishes(options: {
   userId: string;
   projectId?: string;
-  force?: boolean;
-  now?: Date;
 }) {
-  const now = options.now ?? new Date();
   const entries = await db.query.scheduleEntries.findMany({
     where: and(
       eq(scheduleEntries.userId, options.userId),
@@ -185,12 +181,10 @@ export async function listIncompletePublishes(options: {
     },
   });
 
-  return entries.filter(
-    (e) =>
-      (options.force || e.scheduledAt <= now) &&
-      e.platformPublishes.some(
-        (p) => p.status === "pending" || p.status === "failed",
-      ),
+  return entries.filter((e) =>
+    e.platformPublishes.some(
+      (p) => p.status === "pending" || p.status === "failed",
+    ),
   );
 }
 

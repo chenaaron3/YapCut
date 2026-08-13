@@ -16,7 +16,6 @@ export type CreatePublishers = (
 export type ExecuteScheduleRunOptions = {
   userId: string;
   projectId?: string;
-  force?: boolean;
   platformsOverride?: PlatformId[];
   createPublishers: CreatePublishers;
 };
@@ -60,23 +59,17 @@ async function runPublisher(
 export async function executeScheduleRun(
   options: ExecuteScheduleRunOptions,
 ): Promise<void> {
-  const { userId, projectId, force = false, platformsOverride, createPublishers } =
-    options;
+  const { userId, projectId, platformsOverride, createPublishers } = options;
   const settings = await getOrCreateScheduleSettings(userId);
   const timezone = settings.timezone;
 
   const incomplete = await listIncompletePublishes({
     userId,
     projectId,
-    force,
   });
 
   if (incomplete.length === 0) {
-    console.log(
-      force
-        ? "[schedule] no incomplete uploads"
-        : "[schedule] no due incomplete uploads (use --force to include future slots)",
-    );
+    console.log("[schedule] no incomplete uploads");
     return;
   }
 

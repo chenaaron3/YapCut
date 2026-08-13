@@ -12,7 +12,6 @@ function parseArgs(argv: string[]) {
   let userEmail: string | undefined =
     process.env.SCHEDULE_USER_EMAIL ?? undefined;
   let projectId: string | undefined;
-  let force = false;
   let platformsOverride: PlatformId[] | undefined;
 
   const rest = [...argv];
@@ -29,11 +28,6 @@ function parseArgs(argv: string[]) {
   const project = take("--project");
   if (project) projectId = project;
 
-  if (rest.includes("--force")) {
-    force = true;
-    rest.splice(rest.indexOf("--force"), 1);
-  }
-
   const platformsFlagIdx = rest.indexOf("--platforms");
   if (platformsFlagIdx >= 0) {
     const values: string[] = [];
@@ -49,7 +43,7 @@ function parseArgs(argv: string[]) {
   if (rest.length > 0) {
     throw new Error(
       `Unknown args: ${rest.join(" ")}\n` +
-        "Usage: npm run schedule -- [--user email] [--project id] [--force] [--platforms youtube instagram tiktok]",
+        "Usage: npm run schedule -- [--user email] [--project id] [--platforms youtube instagram tiktok]",
     );
   }
 
@@ -59,7 +53,7 @@ function parseArgs(argv: string[]) {
     );
   }
 
-  return { userEmail, projectId, force, platformsOverride };
+  return { userEmail, projectId, platformsOverride };
 }
 
 async function resolveUserId(email: string): Promise<string> {
@@ -75,20 +69,21 @@ async function resolveUserId(email: string): Promise<string> {
 }
 
 export async function runSchedule(argv: string[]): Promise<void> {
-  const { userEmail, projectId, force, platformsOverride } = parseArgs(argv);
+  const { userEmail, projectId, platformsOverride } = parseArgs(argv);
   const userId = await resolveUserId(userEmail);
   await executeScheduleRun({
     userId,
     projectId,
-    force,
     platformsOverride,
     createPublishers: createLocalPublishers,
   });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]!).href) {
-  runSchedule(process.argv.slice(2)).catch((error) => {
-    console.error(error instanceof Error ? error.message : error);
-    process.exit(1);
-  });
+  runSchedule(process.argv.slice(2))
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : error);
+      process.exit(1);
+    });
 }
