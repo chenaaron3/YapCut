@@ -13,7 +13,6 @@ export function TextVfxInspector({ edit }: { edit: VfxTextEdit }) {
       defaultTemplateId={DEFAULT_TEXT_TEMPLATE_ID}
       headingLabel="Title"
       subheadingLabel="Subheading"
-      sampleHeading="Starter Kit"
       onStyleChange={(style, live) => patchEdit(edit.id, { style }, live)}
     />
   );

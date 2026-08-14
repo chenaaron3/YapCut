@@ -5,7 +5,10 @@ import {
   TYPEWRITER_CHAR_DELAY_SEC,
 } from "~/remotion/captions/style";
 
-import type { CaptionAnimation } from "~/remotion/captions/style";
+import type {
+  CaptionGroupAnimation,
+  CaptionWordReveal,
+} from "~/remotion/captions/style";
 
 import type { CaptionWordProp } from "~/remotion/helpers/types";
 
@@ -23,6 +26,8 @@ export type CaptionMotion = {
   opacity: number;
   scale: number;
   translateY: number;
+  /** Degrees. Omit / 0 = none. */
+  rotate: number;
   /** Typewriter: false until the glyph should exist in layout. */
   mount: boolean;
 };
@@ -43,7 +48,7 @@ export function shouldSkipMotion(
  * Exit mirrors enter near the end of `endFrame`.
  */
 export function resolveEnterExitMotion(input: {
-  animation: CaptionAnimation;
+  animation: CaptionGroupAnimation;
   frame: number;
   startFrame: number;
   endFrame: number;
@@ -55,14 +60,14 @@ export function resolveEnterExitMotion(input: {
   const skip = shouldSkipMotion(duration, enterFrames);
 
   if (frame < startFrame) {
-    return { opacity: 0, scale: 1, translateY: 0, mount: false };
+    return { opacity: 0, scale: 1, translateY: 0, rotate: 0, mount: false };
   }
   if (frame >= endFrame) {
-    return { opacity: 0, scale: 1, translateY: 0, mount: false };
+    return { opacity: 0, scale: 1, translateY: 0, rotate: 0, mount: false };
   }
 
-  if (animation === "none" || animation === "typewriter" || skip) {
-    return { opacity: 1, scale: 1, translateY: 0, mount: true };
+  if (animation === "none" || animation === "wipe" || skip) {
+    return { opacity: 1, scale: 1, translateY: 0, rotate: 0, mount: true };
   }
 
   const local = frame - startFrame;
@@ -92,7 +97,7 @@ export function resolveEnterExitMotion(input: {
 
   switch (animation) {
     case "fade":
-      return { opacity: t, scale: 1, translateY: 0, mount: true };
+      return { opacity: t, scale: 1, translateY: 0, rotate: 0, mount: true };
     case "scale": {
       const enterScale =
         local < enterFrames
@@ -117,6 +122,7 @@ export function resolveEnterExitMotion(input: {
         opacity: local >= exitStart ? 1 - exitT : 1,
         scale: enterScale * exitScale,
         translateY: 0,
+        rotate: 0,
         mount: true,
       };
     }
@@ -139,11 +145,82 @@ export function resolveEnterExitMotion(input: {
         opacity: t,
         scale: 1,
         translateY: enterY + exitY,
+        rotate: 0,
+        mount: true,
+      };
+    }
+    case "bounce": {
+      const enterScale =
+        local < enterFrames
+          ? interpolate(
+              local,
+              [0, enterFrames * 0.5, enterFrames],
+              [0.45, 1.22, 1],
+              {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              },
+            )
+          : 1;
+      const enterY =
+        local < enterFrames
+          ? interpolate(
+              local,
+              [0, enterFrames * 0.45, enterFrames],
+              [18, -7, 0],
+              {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              },
+            )
+          : 0;
+      const exitScale =
+        local >= exitStart
+          ? interpolate(local, [exitStart, duration], [1, 0.8], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            })
+          : 1;
+      const exitY =
+        local >= exitStart
+          ? interpolate(local, [exitStart, duration], [0, 10], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            })
+          : 0;
+      return {
+        opacity: local >= exitStart ? 1 - exitT : 1,
+        scale: enterScale * exitScale,
+        translateY: enterY + exitY,
+        rotate: 0,
+        mount: true,
+      };
+    }
+    case "spin": {
+      const enterRot =
+        local < enterFrames
+          ? interpolate(local, [0, enterFrames], [-90, 0], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            })
+          : 0;
+      const exitRot =
+        local >= exitStart
+          ? interpolate(local, [exitStart, duration], [0, 45], {
+              extrapolateLeft: "clamp",
+              extrapolateRight: "clamp",
+            })
+          : 0;
+      return {
+        opacity: t,
+        scale: 1,
+        translateY: 0,
+        rotate: enterRot + exitRot,
         mount: true,
       };
     }
     default:
-      return { opacity: 1, scale: 1, translateY: 0, mount: true };
+      return { opacity: 1, scale: 1, translateY: 0, rotate: 0, mount: true };
   }
 }
 
@@ -252,13 +329,13 @@ export function typewriterCursorBlink(frame: number): boolean {
 }
 
 export function typewriterCursorOn(
-  animation: CaptionAnimation,
+  reveal: CaptionWordReveal,
   lastVisibleIndex: number,
   frame: number,
   groupEndFrame: number,
 ): boolean {
   return (
-    animation === "typewriter" &&
+    reveal === "typewriter" &&
     lastVisibleIndex >= 0 &&
     frame < groupEndFrame &&
     typewriterCursorBlink(frame)

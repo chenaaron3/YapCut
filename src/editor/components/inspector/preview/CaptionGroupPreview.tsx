@@ -1,19 +1,11 @@
-import { AbsoluteFill } from "remotion";
-
-import {
-  GAP_FRAMES,
-  HOLD_FRAMES,
-  PREVIEW_FPS,
-  WORD_STAGGER_FRAMES,
-} from "~/editor/components/inspector/preview/constants";
+import { GAP_FRAMES, HOLD_FRAMES, PREVIEW_FPS, WORD_STAGGER_FRAMES } from "~/editor/components/inspector/preview/constants";
 import { groupCaptionWords } from "~/remotion/captions/words";
+import { CaptionWorldFrame } from "~/remotion/components/captions/CaptionWorldFrame";
+import { CompositeGroupLayout } from "~/remotion/components/captions/CompositeGroupLayout";
+import { DEFAULT_CAPTION_STYLE } from "~/remotion/captions/style";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
-import { DynamicGroupView } from "~/remotion/components/captions/DynamicGroupView";
-import { StaticGroupView } from "~/remotion/components/captions/StaticGroupView";
-import { SAFE_AREA } from "~/remotion/helpers/constants";
 import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/helpers/types";
 
-/** Fixed sample phrases — CSS textTransform handles case. */
 const PREVIEW_PHRASES = [
   ["This", "is", "a", "caption"],
   ["Watch", "what", "happens", "next"],
@@ -24,10 +16,6 @@ function groupDuration(wordCount: number): number {
   return Math.max(1, (wordCount - 1) * WORD_STAGGER_FRAMES + HOLD_FRAMES);
 }
 
-/**
- * Sample phrases batched with the same {@link groupCaptionWords} rules as
- * production, so `captionsAtATime` controls how many words appear per group.
- */
 export function buildCaptionPreviewGroups(
   style: CaptionGroupStyle,
 ): CaptionGroupProp[] {
@@ -78,15 +66,13 @@ export function captionPreviewCycle(groups: CaptionGroupProp[]): {
   };
 }
 
-/** Active caption/quote/text group for the current preview frame. */
+/** Same Composite + world path as export captions/quotes. */
 export function CaptionGroupPreview({
   groups,
   frame,
-  variant,
 }: {
   groups: CaptionGroupProp[];
   frame: number;
-  variant: "dynamic" | "static";
 }) {
   const active = groups.find(
     (group) => frame >= group.startFrame && frame < group.endFrame,
@@ -94,26 +80,22 @@ export function CaptionGroupPreview({
 
   if (!active) return null;
 
-  const view =
-    variant === "static" ? (
-      <StaticGroupView group={active} frame={frame} fps={PREVIEW_FPS} />
-    ) : (
-      <DynamicGroupView group={active} frame={frame} fps={PREVIEW_FPS} />
-    );
+  const style = active.style ?? DEFAULT_CAPTION_STYLE;
 
   return (
-    <AbsoluteFill
-      style={{
-        pointerEvents: "none",
-        top: SAFE_AREA.top,
-        bottom: SAFE_AREA.bottom,
-        left: SAFE_AREA.left,
-        right: SAFE_AREA.right,
-        width: "auto",
-        height: "auto",
-      }}
-    >
-      {view}
-    </AbsoluteFill>
+    <CaptionWorldFrame y={style.y} layoutKey={frame}>
+      <CompositeGroupLayout
+        layout="stack"
+        fps={PREVIEW_FPS}
+        items={[
+          {
+            group: active,
+            localY: 0,
+            cycleWordStates: true,
+            frame,
+          },
+        ]}
+      />
+    </CaptionWorldFrame>
   );
 }

@@ -1,8 +1,9 @@
 import { useState } from "react";
 
-import type { OverlayPreviewPair } from "~/editor/components/inspector/preview/constants";
 import { CaptionTemplatePreview } from "~/editor/components/inspector/preview/CaptionTemplatePreview";
-import { requestPlayAfterSeek } from "~/editor/lib/player-bridge";
+import { primaryId } from "~/editor/lib/selection";
+import { useSelection } from "~/editor/selection-store";
+import { useEditor } from "~/editor/store";
 import {
   resolveCaptionFont,
   type CaptionGroupStyle,
@@ -13,15 +14,7 @@ export type StyleTemplateChip = {
   id: string;
   label: string;
   style: CaptionGroupStyle;
-  /** Optional dual-layer preview (title / listicle overlay). */
-  previewPair?: OverlayPreviewPair;
 };
-
-function resolvePreviewPair(
-  chip: StyleTemplateChip | null | undefined,
-): OverlayPreviewPair | null {
-  return chip?.previewPair ?? null;
-}
 
 /** Shared template preview + chip picker for captions, quotes, and overlays. */
 export function StyleTemplatePicker({
@@ -30,16 +23,11 @@ export function StyleTemplatePicker({
   onChange,
   /** When set, used as the idle preview (e.g. live project style). */
   fallbackStyle,
-  /** Idle dual-layer preview (title / listicle). */
-  fallbackPair,
-  previewVariant = "dynamic",
 }: {
   templates: StyleTemplateChip[];
   value: string | null;
   onChange: (id: string) => void;
   fallbackStyle?: CaptionGroupStyle;
-  fallbackPair?: OverlayPreviewPair | null;
-  previewVariant?: "dynamic" | "static";
 }) {
   const [hovered, setHovered] = useState<StyleTemplateChip | null>(null);
   const selected = templates.find((t) => t.id === value) ?? null;
@@ -48,9 +36,6 @@ export function StyleTemplatePicker({
   const previewStyle = previewingOther
     ? hovered.style
     : (fallbackStyle ?? selected?.style ?? null);
-  const previewPair = previewingOther
-    ? resolvePreviewPair(hovered)
-    : (fallbackPair ?? resolvePreviewPair(selected));
   const previewLabel = previewingOther ? hovered.label : (selected?.label ?? null);
 
   return (
@@ -65,8 +50,6 @@ export function StyleTemplatePicker({
             <CaptionTemplatePreview
               style={previewStyle}
               playing={previewingOther}
-              variant={previewVariant}
-              pair={previewPair}
               restartKey={
                 previewingOther
                   ? hovered.id
@@ -98,8 +81,16 @@ export function StyleTemplatePicker({
               onClick={() => {
                 if (template.id === value) return;
                 setHovered(null);
-                requestPlayAfterSeek();
                 onChange(template.id);
+                const selection = useSelection.getState().selection;
+                if (selection?.kind !== "edit") return;
+                const id = primaryId(selection);
+                const editor = useEditor.getState();
+                const edit =
+                  id != null
+                    ? editor.config?.edits.find((item) => item.id === id)
+                    : undefined;
+                if (edit) editor.seekTimeline(edit.start);
               }}
               onMouseEnter={() => setHovered(template)}
               onMouseLeave={() => setHovered(null)}

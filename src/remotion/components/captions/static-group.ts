@@ -32,8 +32,8 @@ export function tokenizeStaticText(text: string): string[] {
 }
 
 /**
- * Build a caption group for {@link StaticGroupView}.
- * - typewriter → word chunks with global char stagger (letters reveal in span)
+ * Build a caption group for static overlay text.
+ * - wordReveal typewriter → word chunks with global char stagger (letters reveal in span)
  * - otherwise → spaced words, all visible from frame 0 (group enter animates wrapper)
  */
 export function buildStaticGroup(
@@ -45,7 +45,7 @@ export function buildStaticGroup(
   const endFrame = Math.max(1, durationFrames);
   const tokens = tokenizeStaticText(text);
   const words: CaptionWordProp[] =
-    style.animation === "typewriter"
+    style.wordReveal === "typewriter"
       ? typewriterWordTimings(tokens, fps, endFrame)
       : tokens.map((word) => ({
           text: word,

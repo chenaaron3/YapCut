@@ -1,17 +1,13 @@
 import React, { Children, isValidElement } from "react";
 
-import {
-  captionSafeAreaT,
-  DEFAULT_CAPTION_STYLE,
-} from "~/remotion/captions/style";
-import { useReportCaptionMeasure } from "~/remotion/hooks/use-report-caption-measure";
-
-import { ArcLayoutContext, layoutCaptionArc } from "./arc-layout";
+import { DEFAULT_CAPTION_STYLE } from "~/remotion/captions/style";
+import { ArcLayoutContext, layoutCaptionArc, type ArcLayout } from "./arc-layout";
 import { captionGroupCss } from "./caption-style-css";
 import { CaptionBackground } from "./CaptionBackground";
 
 import type {
   BackgroundKind,
+  BackgroundStyle,
   CaptionGroupStyle,
 } from "~/remotion/captions/style";
 import type { CaptionGroupProp } from "~/remotion/helpers/types";
@@ -26,7 +22,7 @@ function rowJustify(
 }
 
 function hugsContent(kind: BackgroundKind): boolean {
-  return kind === "box" || kind === "ribbon";
+  return kind === "box" || kind === "ribbon" || kind === "underline";
 }
 
 function wordRowGap(style: CaptionGroupStyle): string {
@@ -62,31 +58,43 @@ function spacedWords(line: ReactNode[]): ReactNode[] {
 
 function groupShellStyle(
   style: CaptionGroupStyle,
-  embedded: boolean,
-  shellStyle: CSSProperties | undefined,
 ): CSSProperties {
   const justify = rowJustify(style.textAlign);
-  if (embedded) {
-    // fit-content: stacked overlay lines size to the widest child. width 100%
-    // collapses to the narrowest sibling and the rest overflows the AABB.
-    return {
-      position: "relative",
-      display: "flex",
-      justifyContent: justify,
-      width: "fit-content",
-      maxWidth: "100%",
-      ...shellStyle,
-    };
-  }
   return {
-    position: "absolute",
-    top: `${captionSafeAreaT(style.y) * 100}%`,
-    left: 0,
-    right: 0,
+    position: "relative",
     display: "flex",
     justifyContent: justify,
-    transform: "translateY(-50%)",
-    ...shellStyle,
+    width: "fit-content",
+    maxWidth: "100%",
+  };
+}
+
+type PackedGroup = {
+  innerStyle: CSSProperties;
+  body: ReactNode;
+  background: BackgroundStyle;
+};
+
+/** Glyph box: poses on context. Wrap chrome cannot follow the circle. */
+function packArc(
+  children: ReactNode,
+  style: CaptionGroupStyle,
+  textStyle: CSSProperties,
+  arc: ArcLayout,
+): PackedGroup {
+  return {
+    innerStyle: {
+      ...textStyle,
+      textTransform: "none",
+      position: "relative",
+      display: "inline-block",
+      width: arc.width,
+      height: arc.height,
+      maxWidth: "100%",
+    },
+    body: children,
+    background:
+      style.background.kind === "wrap" ? { kind: "none" } : style.background,
   };
 }
 
@@ -98,7 +106,7 @@ function packFlow(
   children: ReactNode,
   style: CaptionGroupStyle,
   textStyle: CSSProperties,
-): { innerStyle: CSSProperties; body: ReactNode } {
+): PackedGroup {
   const wrap = style.background.kind === "wrap";
   const gap = wordRowGap(style);
   const rowStyle: CSSProperties = {
@@ -121,6 +129,7 @@ function packFlow(
     return {
       innerStyle: { ...textStyle, width: "fit-content", maxWidth: "100%" },
       body,
+      background: style.background,
     };
   }
 
@@ -155,66 +164,36 @@ function packFlow(
       maxWidth: "100%",
     },
     body,
+    background: style.background,
   };
 }
 
 export type CaptionGroupLayoutProps = {
   group: CaptionGroupProp;
-  /** Outer transform/opacity (e.g. group enter/exit). */
-  shellStyle?: CSSProperties;
-  /**
-   * Flow layout for stacked parents (listicle indicator above value).
-   * Skips absolute Y placement.
-   */
-  embedded?: boolean;
-  /** Report ink-box AABB for the player caption overlay. */
-  measure?: boolean;
   children: ReactNode;
 };
 
 /**
- * Shared caption shell: safe-area Y, background, word row.
- * Motion policy and word paint live in the calling view (as children).
- * Inner packing is flow (flex/wrap) or arc (glyph poses on {@link CaptionWordSpan}).
+ * Background + packing for one group. Does not place in the world.
+ * `packFlow` — inline (wrap/ContourBoard) or flex rows.
+ * `packArc` — sized box + ArcLayoutContext; wrap chrome is dropped.
  */
 export const CaptionGroupLayout: React.FC<CaptionGroupLayoutProps> = ({
   group,
-  shellStyle,
-  embedded = false,
-  measure = false,
   children,
 }) => {
   const style = group.style ?? DEFAULT_CAPTION_STYLE;
-  const layoutKey = `${group.words.map((w) => w.text).join(" ")}\0${style.y}\0${style.fontSize}\0${style.background.kind}`;
-  const shellRef = useReportCaptionMeasure(measure, layoutKey);
   const textStyle: CSSProperties = {
     ...captionGroupCss(style),
     color: style.wordStyle.fill,
   };
   const arc = layoutCaptionArc(group, style);
   const packed = arc
-    ? {
-        innerStyle: {
-          ...textStyle,
-          textTransform: "none" as const,
-          position: "relative" as const,
-          width: arc.width,
-          height: arc.height,
-          maxWidth: "100%",
-        },
-        body: children,
-        background:
-          style.background.kind === "wrap"
-            ? { kind: "none" as const }
-            : style.background,
-      }
-    : { ...packFlow(children, style, textStyle), background: style.background };
+    ? packArc(children, style, textStyle, arc)
+    : packFlow(children, style, textStyle);
 
   return (
-    <div
-      ref={measure ? shellRef : undefined}
-      style={groupShellStyle(style, embedded, shellStyle)}
-    >
+    <div style={groupShellStyle(style)}>
       <CaptionBackground
         background={packed.background}
         textAlign={style.textAlign}

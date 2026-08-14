@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import {
   AbsoluteFill,
   Sequence,
@@ -6,21 +6,16 @@ import {
   useVideoConfig,
 } from "remotion";
 
-import {
-  STACK_GAP_PX,
-  StackedCaptionPair,
-} from "~/remotion/components/captions/StackedCaptionPair";
+import { CompositeGroupLayout } from "~/remotion/components/captions/CompositeGroupLayout";
 import { buildStaticGroup } from "~/remotion/components/captions/static-group";
-import { StaticGroupView } from "~/remotion/components/captions/StaticGroupView";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
 import { useReportOverlayMeasure } from "~/remotion/hooks/use-report-overlay-measure";
 
-import type { CaptionGroupStyle } from "~/remotion/captions/style";
+import type { CompositeItem } from "~/remotion/components/captions/CompositeGroupLayout";
 import type { TextOverlayProp } from "~/remotion/helpers/types";
-import type { ReactNode } from "react";
 
 type PhaseTiming = { start: number; duration: number };
 
@@ -59,104 +54,34 @@ function phaseActive(
   );
 }
 
-function OverlayLine({
-  text,
-  style,
-  durationFrames,
-  frame,
-  fps,
-  visible,
-  /** In a stacked pair, start uses marginBottom so +y moves toward the end line. */
-  stackRole = "alone",
-}: {
-  text: string;
-  style: CaptionGroupStyle;
-  durationFrames: number;
-  frame: number;
-  fps: number;
-  visible: boolean;
-  stackRole?: "start" | "end" | "alone";
-}) {
-  const lineRef = useRef<HTMLDivElement>(null);
-  const [lineHeight, setLineHeight] = useState(0);
-  const group = useMemo(
-    () => buildStaticGroup(text, style, fps, durationFrames),
-    [text, style, fps, durationFrames],
+function overlayItem(
+  text: string,
+  style: TextOverlayProp["headingStyle"],
+  timing: PhaseTiming,
+  frame: number,
+  fps: number,
+  visible: boolean,
+  localY: number,
+): CompositeItem | null {
+  if (!text.trim() || timing.duration <= 0) return null;
+  const durationFrames = Math.max(1, timing.duration);
+  const paintFrame = Math.max(
+    0,
+    Math.min(frame - timing.start, durationFrames - 1),
   );
-
-  useLayoutEffect(() => {
-    const node = lineRef.current;
-    if (!node) return;
-    const update = () => setLineHeight(node.offsetHeight);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(node);
-    return () => ro.disconnect();
-  }, [text, style.fontSize, style.background, style.y]);
-
-  if (!text.trim()) return null;
-
-  const paintFrame = Math.max(0, Math.min(frame, durationFrames - 1));
-  // Layout margin (not transform): updates AABB; ±1 = ±own height.
-  // Positive y opens space toward the other stacked line (start: below, end: above).
-  const yShift = style.y * lineHeight;
-  const yMargin =
-    stackRole === "start" ? { marginBottom: yShift } : { marginTop: yShift };
-
-  return (
-    <div
-      ref={lineRef}
-      style={{
-        visibility: visible ? "visible" : "hidden",
-        ...yMargin,
-      }}
-    >
-      <StaticGroupView group={group} frame={paintFrame} fps={fps} embedded />
-    </div>
-  );
-}
-
-function OverlayPair({
-  stacked,
-  heading,
-  subheading,
-}: {
-  stacked: boolean;
-  heading: ReactNode;
-  subheading: ReactNode;
-}) {
-  if (!heading) return <>{subheading}</>;
-  if (!subheading) return <>{heading}</>;
-  if (stacked) {
-    return (
-      <StackedCaptionPair gap={STACK_GAP_PX}>
-        {heading}
-        {subheading}
-      </StackedCaptionPair>
-    );
-  }
-  return (
-    <div
-      style={{
-        display: "grid",
-        justifyItems: "center",
-        alignItems: "center",
-      }}
-    >
-      {/* Subheading first so heading paints on top in the shared cell. */}
-      <div style={{ gridArea: "1 / 1", position: "relative", zIndex: 0 }}>
-        {subheading}
-      </div>
-      <div style={{ gridArea: "1 / 1", position: "relative", zIndex: 1 }}>
-        {heading}
-      </div>
-    </div>
-  );
+  return {
+    group: buildStaticGroup(text, style, fps, durationFrames),
+    localY,
+    cycleWordStates: false,
+    visible,
+    frame: paintFrame,
+  };
 }
 
 /**
- * Remotion-free overlay paint — shared by {@link TextOverlay} and the
- * inspector template preview.
+ * Overlay paint shared by export and the inspector preview.
+ * World = center + offset/rotate/scale. Lines go through Composite
+ * (`stack` or `series`); first line `localY` is always 0.
  */
 export function TextOverlayView({
   overlay,
@@ -165,10 +90,8 @@ export function TextOverlayView({
   measure = false,
 }: {
   overlay: TextOverlayProp;
-  /** Absolute composition frame. */
   frame: number;
   fps: number;
-  /** Report painted AABB for the player transform box. */
   measure?: boolean;
 }) {
   const headingText = overlay.heading.trim();
@@ -189,31 +112,44 @@ export function TextOverlayView({
   const showHeading = phaseActive(frame, timings.heading, headingText);
   const showSub = phaseActive(frame, timings.subheading, subText);
 
+  const items = useMemo(() => {
+    const out: CompositeItem[] = [];
+    const heading = overlayItem(
+      headingText,
+      overlay.headingStyle,
+      timings.heading,
+      frame,
+      fps,
+      showHeading,
+      0,
+    );
+    if (heading) out.push(heading);
+    const sub = overlayItem(
+      subText,
+      overlay.subheadingStyle,
+      timings.subheading,
+      frame,
+      fps,
+      showSub,
+      stackedLayout ? overlay.subheadingStyle.y : 0,
+    );
+    if (sub) out.push(sub);
+    return out;
+  }, [
+    headingText,
+    subText,
+    overlay.headingStyle,
+    overlay.subheadingStyle,
+    timings.heading,
+    timings.subheading,
+    frame,
+    fps,
+    showHeading,
+    showSub,
+    stackedLayout,
+  ]);
+
   if (!headingText && !subText) return null;
-
-  const headingLayer = headingText ? (
-    <OverlayLine
-      text={headingText}
-      style={overlay.headingStyle}
-      durationFrames={Math.max(1, timings.heading.duration)}
-      frame={frame - timings.heading.start}
-      fps={fps}
-      visible={showHeading}
-      stackRole={stackedLayout ? "start" : "alone"}
-    />
-  ) : null;
-
-  const subLayer = subText ? (
-    <OverlayLine
-      text={subText}
-      style={overlay.subheadingStyle}
-      durationFrames={Math.max(1, timings.subheading.duration)}
-      frame={frame - timings.subheading.start}
-      fps={fps}
-      visible={showSub}
-      stackRole={stackedLayout ? "end" : "alone"}
-    />
-  ) : null;
 
   const { offsetX, offsetY, rotation, scale } = overlay;
 
@@ -235,7 +171,6 @@ export function TextOverlayView({
           transformOrigin: "center center",
         }}
       >
-        {/* Measure the untransformed pad box (padding/margins included). */}
         <div
           ref={boxRef}
           style={{
@@ -245,10 +180,10 @@ export function TextOverlayView({
             alignItems: "center",
           }}
         >
-          <OverlayPair
-            stacked={stackedLayout}
-            heading={headingLayer}
-            subheading={subLayer}
+          <CompositeGroupLayout
+            layout={stackedLayout ? "stack" : "series"}
+            items={items}
+            fps={fps}
           />
         </div>
       </div>

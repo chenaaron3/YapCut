@@ -6,8 +6,23 @@ import {
   resolveCaptionFont,
   type CaptionGroupStyle,
   type CaptionFontId,
+  type CaptionTextTransform,
   type WordStyle,
 } from "~/remotion/captions/style";
+
+/** JS equivalent of CSS `text-transform` — used when layout forces `none` (arc). */
+export function transformCaptionWord(
+  text: string,
+  transform: CaptionTextTransform,
+): string {
+  if (transform === "uppercase") return text.toUpperCase();
+  if (transform === "lowercase") return text.toLowerCase();
+  if (transform === "capitalize") {
+    const lower = text.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  }
+  return text;
+}
 
 /** Group-level typography (color/stroke/shadow come from WordStyle). */
 export function captionGroupCss(style: CaptionGroupStyle): CSSProperties {

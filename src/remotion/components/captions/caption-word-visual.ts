@@ -119,10 +119,12 @@ function resolveWordBackground(
 }
 
 /**
- * Paint words for caption/text views.
- * Captions keep every word mounted for the full group so layout never shifts;
- * future words are hidden via `futureWordStyle.opacity` when needed.
- * Typewriter letter reveal / cursor live in {@link CaptionWordSpan}.
+ * Fill/stroke/shadow CSS for a word. Typewriter letter reveal is `wordReveal`
+ * in CaptionWordSpan.
+ *
+ * Overlay (`cycleWordStates` false): group owns enter; words stay mounted
+ * so typewriter does not reflow. Captions: every word stays mounted for the
+ * group; past/active/future paint comes from style deltas.
  */
 export function resolveCaptionWordVisual(input: {
   word: CaptionWordProp;
@@ -133,8 +135,6 @@ export function resolveCaptionWordVisual(input: {
   groupEndFrame: number;
   groupStyle: CaptionGroupStyle;
   emphasisStyle?: ResolvedEmphasisStyle | null;
-  /** When true, apply groupStyle.animation enter/exit on this word. */
-  animateWord: boolean;
   /** When true, cycle past/active/future (if deltas exist). */
   cycleWordStates: boolean;
 }): CaptionWordVisual {
@@ -147,7 +147,6 @@ export function resolveCaptionWordVisual(input: {
     groupEndFrame,
     groupStyle,
     emphasisStyle,
-    animateWord,
     cycleWordStates,
   } = input;
 
@@ -168,7 +167,7 @@ export function resolveCaptionWordVisual(input: {
   );
   const bg = paint.background;
   const scrap = bg?.kind === "scrap";
-  const typewriter = groupStyle.animation === "typewriter";
+  const typewriter = groupStyle.wordReveal === "typewriter";
   const wordBackground = resolveWordBackground(
     groupStyle,
     word,
@@ -182,9 +181,9 @@ export function resolveCaptionWordVisual(input: {
     wordBackground.fade,
   );
 
-  // Overlay (StaticGroupView): parent owns group motion; keep words in
-  // layout (`visibility: hidden` in the span) so typewriter does not reflow.
-  if (!animateWord) {
+  // Overlay: group owns enter. Typewriter unmounts words that have not
+  // started; once started they stay in layout while letters reveal.
+  if (!cycleWordStates) {
     if (typewriter && frame < word.startFrame) {
       return {
         mount: false,

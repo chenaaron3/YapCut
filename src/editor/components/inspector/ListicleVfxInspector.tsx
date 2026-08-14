@@ -14,7 +14,6 @@ export function ListicleVfxInspector({ edit }: { edit: VfxListicleEdit }) {
       defaultTemplateId={DEFAULT_LISTICLE_TEMPLATE_ID}
       headingLabel="Heading"
       subheadingLabel="Subheading"
-      sampleHeading="01"
       onStyleChange={(style, live) => patchListicleStyle(style, live)}
     />
   );

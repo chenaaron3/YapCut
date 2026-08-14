@@ -4,11 +4,13 @@ import {
   clampCaptionY,
   clampCaptionsAtATime,
   isBackgroundKind,
-  isCaptionAnimation,
   isCaptionFontId,
   isCaptionFontStyle,
+  isCaptionGroupAnimation,
   isCaptionTextAlign,
   isCaptionTextTransform,
+  isCaptionWordAnimation,
+  isCaptionWordReveal,
   type BackgroundStyle,
   type CaptionGroupStyle,
   type CaptionStyleOverrides,
@@ -150,9 +152,15 @@ export function normalizeCaptionStyle(
     : fallback.fontFamily;
   const fontSize = Number(src.fontSize);
   const y = Number(src.y);
-  const animation = isCaptionAnimation(src.animation)
-    ? src.animation
-    : fallback.animation;
+  const groupAnimation = isCaptionGroupAnimation(src.groupAnimation)
+    ? src.groupAnimation
+    : fallback.groupAnimation;
+  const wordAnimation = isCaptionWordAnimation(src.wordAnimation)
+    ? src.wordAnimation
+    : fallback.wordAnimation;
+  const wordReveal = isCaptionWordReveal(src.wordReveal)
+    ? src.wordReveal
+    : fallback.wordReveal;
   const textTransform = isCaptionTextTransform(src.textTransform)
     ? src.textTransform
     : fallback.textTransform;
@@ -191,7 +199,9 @@ export function normalizeCaptionStyle(
         ? fontSize
         : fallback.fontSize,
     y: clampCaptionY(Number.isFinite(y) ? y : fallback.y),
-    animation,
+    groupAnimation,
+    wordAnimation,
+    wordReveal,
     textTransform,
     captionsAtATime: clampCaptionsAtATime(
       Number.isFinite(captionsAtATime)

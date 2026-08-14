@@ -1,18 +1,20 @@
-import { createContext } from "react";
+/** Glyph poses for `style.arc`. Layout only — CaptionWordSpan paints them. */
+import { createContext, type CSSProperties } from "react";
 
 import {
   captionArc,
   resolveCaptionFont,
   type CaptionGroupStyle,
-  type CaptionTextTransform,
 } from "~/remotion/captions/style";
 import type { CaptionGroupProp, CaptionWordProp } from "~/remotion/helpers/types";
 
 import { isLineBreakToken } from "./caption-animation";
+import { transformCaptionWord } from "./caption-style-css";
 
 export type ArcGlyphPose = {
   x: number;
   y: number;
+  /** Tangent in degrees. */
   rotate: number;
 };
 
@@ -24,17 +26,15 @@ export type ArcLayout = {
 
 export const ArcLayoutContext = createContext<ArcLayout | null>(null);
 
-export function transformCaptionWord(
-  text: string,
-  transform: CaptionTextTransform,
-): string {
-  if (transform === "uppercase") return text.toUpperCase();
-  if (transform === "lowercase") return text.toLowerCase();
-  if (transform === "capitalize") {
-    const lower = text.toLowerCase();
-    return lower.charAt(0).toUpperCase() + lower.slice(1);
-  }
-  return text;
+/** Bottom-center of the glyph sits on the circle at `(x, y)`. */
+export function arcGlyphBoxStyle(pose: ArcGlyphPose): CSSProperties {
+  return {
+    position: "absolute",
+    left: pose.x,
+    top: pose.y,
+    transform: `translate(-50%, -100%) rotate(${pose.rotate}deg)`,
+    transformOrigin: "center bottom",
+  };
 }
 
 /** Flatten group words to glyphs (inter-word spaces included; line breaks → space). */
@@ -60,6 +60,7 @@ export function flattenGroupGlyphs(
   return out;
 }
 
+/** Index of this word's first glyph in the flattened pose array. */
 export function wordGlyphOffset(
   words: readonly CaptionWordProp[],
   wordIndex: number,
@@ -88,8 +89,9 @@ function measureText(text: string, style: CaptionGroupStyle): number {
 }
 
 /**
- * CapCut-style curve: |arc| 100 = semicircle. Glyph centers sit on the
- * circle; rotate is the tangent (degrees).
+ * CapCut-style glyph curve. |arc| 100 = semicircle.
+ * Positive = rainbow (up in the middle); negative = frown.
+ * Glyph centers sit on the circle; `rotate` is the tangent in degrees.
  */
 export function layoutCaptionArc(
   group: CaptionGroupProp,
@@ -99,37 +101,37 @@ export function layoutCaptionArc(
   const glyphs = flattenGroupGlyphs(group.words, style);
   if (arc === 0 || glyphs.length === 0) return null;
 
-  const prefixes: number[] = [0];
+  const cumWidth: number[] = [0];
   for (let i = 1; i <= glyphs.length; i++) {
-    prefixes.push(measureText(glyphs.slice(0, i).join(""), style));
+    cumWidth.push(measureText(glyphs.slice(0, i).join(""), style));
   }
-  const total = prefixes[glyphs.length]!;
-  const t = Math.abs(arc) / 100;
-  const sweepRad = Math.max(0.12, t * Math.PI);
+  const total = cumWidth[glyphs.length]!;
+  const bend = Math.abs(arc) / 100;
+  const sweepRad = Math.max(0.12, bend * Math.PI);
   const radius = total / sweepRad;
-  const alpha = sweepRad / 2;
-  const sagitta = radius * (1 - Math.cos(alpha));
+  const halfSweep = sweepRad / 2;
+  const sagitta = radius * (1 - Math.cos(halfSweep));
   const fontSize = style.fontSize;
   const padX = fontSize * 0.7;
   const padTop = fontSize * 1.25;
   const padBot = fontSize * 0.35;
-  const width = 2 * radius * Math.sin(alpha) + padX * 2;
+  const width = 2 * radius * Math.sin(halfSweep) + padX * 2;
   const height = sagitta + padTop + padBot;
-  const smile = arc >= 0;
+  const rainbow = arc >= 0;
   const cx = width / 2;
-  const cy = smile
+  const cy = rainbow
     ? padTop + radius
-    : padTop + sagitta - radius * Math.cos(alpha);
+    : padTop + sagitta - radius * Math.cos(halfSweep);
 
   const poses: ArcGlyphPose[] = glyphs.map((_, i) => {
-    const center = (prefixes[i]! + prefixes[i + 1]!) / 2;
+    const center = (cumWidth[i]! + cumWidth[i + 1]!) / 2;
     const theta = (center - total / 2) / radius;
     return {
       x: cx + radius * Math.sin(theta),
-      y: smile
+      y: rainbow
         ? cy - radius * Math.cos(theta)
         : cy + radius * Math.cos(theta),
-      rotate: ((smile ? theta : -theta) * 180) / Math.PI,
+      rotate: ((rainbow ? theta : -theta) * 180) / Math.PI,
     };
   });
 

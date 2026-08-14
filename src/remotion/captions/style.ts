@@ -129,20 +129,55 @@ export const CAPTION_FONTS: Record<CaptionFontId, CaptionFontFace> = {
   },
 };
 
-/** Enter/exit motion applied to words (caption/quote) or the whole group (text). */
-export const CAPTION_ANIMATIONS = [
+/** Group wrappers: fade/scale/slide/bounce/spin → EnterExit; wipe → Wipe. */
+export const CAPTION_GROUP_ANIMATIONS = [
   "none",
   "fade",
   "scale",
   "slide",
-  "typewriter",
+  "wipe",
+  "bounce",
+  "spin",
 ] as const;
-export type CaptionAnimation = (typeof CAPTION_ANIMATIONS)[number];
+export type CaptionGroupAnimation = (typeof CAPTION_GROUP_ANIMATIONS)[number];
 
-export function isCaptionAnimation(value: unknown): value is CaptionAnimation {
+export function isCaptionGroupAnimation(
+  value: unknown,
+): value is CaptionGroupAnimation {
   return (
     typeof value === "string" &&
-    (CAPTION_ANIMATIONS as readonly string[]).includes(value)
+    (CAPTION_GROUP_ANIMATIONS as readonly string[]).includes(value)
+  );
+}
+
+/** Word wrappers (subset of group). Arc posing forces these to none. */
+export const CAPTION_WORD_ANIMATIONS = [
+  "none",
+  "fade",
+  "wipe",
+  "scale",
+  "slide",
+  "bounce",
+] as const;
+export type CaptionWordAnimation = (typeof CAPTION_WORD_ANIMATIONS)[number];
+
+export function isCaptionWordAnimation(
+  value: unknown,
+): value is CaptionWordAnimation {
+  return (
+    typeof value === "string" &&
+    (CAPTION_WORD_ANIMATIONS as readonly string[]).includes(value)
+  );
+}
+
+/** Glyph reveal inside CaptionWordSpan. Not an AnimationMount entry. */
+export const CAPTION_WORD_REVEALS = ["none", "typewriter"] as const;
+export type CaptionWordReveal = (typeof CAPTION_WORD_REVEALS)[number];
+
+export function isCaptionWordReveal(value: unknown): value is CaptionWordReveal {
+  return (
+    typeof value === "string" &&
+    (CAPTION_WORD_REVEALS as readonly string[]).includes(value)
   );
 }
 
@@ -170,6 +205,7 @@ export const BACKGROUND_KINDS = [
   "rounded",
   "scrap",
   "ribbon",
+  "underline",
 ] as const;
 export type BackgroundKind = (typeof BACKGROUND_KINDS)[number];
 
@@ -227,18 +263,21 @@ export type WordStyleDelta = Partial<WordStyle>;
 
 /**
  * Shared caption look for episode defaults, Quote templates, and text VFX.
- * Animation target (per-word vs whole group) is chosen by the parent view
- * ({@link DynamicGroupView} vs {@link StaticGroupView}), not this type.
+ * `groupAnimation` / `wordAnimation` go through AnimationMount.
+ * `wordReveal` paints in CaptionWordSpan. Arc is glyph layout, not motion.
  */
 export type CaptionGroupStyle = {
   fontFamily: CaptionFontId;
   fontSize: number;
   /**
-   * Captions/quotes: −1…1 in the safe area (0 = middle, 1 = bottom, −1 = top).
-   * Overlay heading/subheading: translate of that line's own height (±1 = ±100%).
+   * Captions/quotes: −1…1 in the safe area (world placement).
+   * Overlay lines after the first: localY as a fraction of the previous
+   * group's AABB height (0 = flush, negative = into the hollow).
    */
   y: number;
-  animation: CaptionAnimation;
+  groupAnimation: CaptionGroupAnimation;
+  wordAnimation: CaptionWordAnimation;
+  wordReveal: CaptionWordReveal;
   textTransform: CaptionTextTransform;
   captionsAtATime: number;
   background: BackgroundStyle;
@@ -250,8 +289,8 @@ export type CaptionGroupStyle = {
   activeWordStyle?: WordStyleDelta;
   futureWordStyle?: WordStyleDelta;
   /**
-   * StaticGroupView curve (CapCut-style). 0/omit = flat.
-   * Positive = rainbow (up in the middle); negative = frown. −100…100.
+   * Glyph curve on the text only. 0/omit = flat.
+   * |arc| 100 = semicircle. Positive = rainbow; negative = frown.
    */
   arc?: number;
 };
@@ -263,7 +302,7 @@ export type CaptionStyleOverrides = {
   captionsAtATime?: number;
   /** Patches `wordStyle.fill`. */
   fill?: string;
-  /** Patches `arc` (StaticGroupView). */
+  /** Patches `arc`. */
   arc?: number;
 };
 
@@ -272,7 +311,9 @@ export const DEFAULT_CAPTION_STYLE: CaptionGroupStyle = {
   fontFamily: "inter",
   fontSize: 40,
   y: 1,
-  animation: "none",
+  groupAnimation: "none",
+  wordAnimation: "none",
+  wordReveal: "none",
   textTransform: "lowercase",
   captionsAtATime: 5,
   background: { kind: "none" },
@@ -331,9 +372,16 @@ export function clampCaptionArc(n: number): number {
   return Math.min(CAPTION_ARC_MAX, Math.max(CAPTION_ARC_MIN, Math.round(n)));
 }
 
-/** Resolved curve amount; 0 means flat (flex row). */
+/** Resolved glyph-curve amount; 0 means flat. */
 export function captionArc(style: CaptionGroupStyle): number {
   return clampCaptionArc(style.arc ?? 0);
+}
+
+/** Word wrappers. Glyph posing cannot sit inside EnterExit/Wipe. */
+export function captionWordAnimation(
+  style: CaptionGroupStyle,
+): CaptionWordAnimation {
+  return captionArc(style) !== 0 ? "none" : style.wordAnimation;
 }
 
 export function mergeWordStyle(

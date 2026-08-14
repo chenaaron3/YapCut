@@ -26,6 +26,7 @@ export function CaptionStyleFields({
   defaultOpen = false,
   showCaptionsAtATime = true,
   showArc = false,
+  showY = true,
   yMode = "safe-area",
   title = "Style",
 }: {
@@ -39,9 +40,10 @@ export function CaptionStyleFields({
   defaultOpen?: boolean;
   /** Caption/quote grouping; overlays always show the full phrase. */
   showCaptionsAtATime?: boolean;
-  /** StaticGroupView curve. */
+  /** Caption curve. */
   showArc?: boolean;
-  /** Captions/quotes: safe-area −1…1. Overlay lines: own-height gap (stacked). */
+  showY?: boolean;
+  /** Captions/quotes: safe-area −1…1. Overlay lines after the first: previous-group height fraction. */
   yMode?: "safe-area" | "line";
   title?: string;
 }) {
@@ -133,16 +135,18 @@ export function CaptionStyleFields({
         </div>
       </div>
 
-      <SliderField
-        label={yMode === "line" ? "Y (gap)" : "Y (safe area)"}
-        value={resolvedY}
-        min={-1}
-        max={1}
-        step={0.01}
-        display={resolvedY.toFixed(2)}
-        onLiveChange={(y) => onPatch({ y }, true)}
-        onCommit={(y) => onPatch({ y }, true)}
-      />
+      {showY ? (
+        <SliderField
+          label={yMode === "line" ? "Y (gap)" : "Y (safe area)"}
+          value={resolvedY}
+          min={-1}
+          max={1}
+          step={0.01}
+          display={resolvedY.toFixed(2)}
+          onLiveChange={(y) => onPatch({ y }, true)}
+          onCommit={(y) => onPatch({ y }, true)}
+        />
+      ) : null}
       {showArc ? (
         <SliderField
           label="Arc"

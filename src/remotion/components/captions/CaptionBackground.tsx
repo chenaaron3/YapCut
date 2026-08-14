@@ -1,6 +1,6 @@
 import React, { type CSSProperties, type ReactNode } from "react";
 
-import type { BackgroundStyle } from "~/remotion/captions/style";
+import type { BackgroundKind, BackgroundStyle } from "~/remotion/captions/style";
 
 import { ContourBoard } from "./ContourBoard";
 
@@ -69,21 +69,15 @@ export function applyColorOpacity(color: string, alpha: number): string {
   return c;
 }
 
-/** CSS chrome for box / rounded / scrap / ribbon. */
-export function backgroundChromeStyle(
-  background: BackgroundStyle | null | undefined,
-  index = 0,
-): CSSProperties {
-  if (!background || background.kind === "none" || background.kind === "wrap") {
-    return {};
-  }
+type ChromeKind = Exclude<BackgroundKind, "none" | "wrap">;
 
-  const color = background.color?.trim();
-
-  if (background.kind === "box") {
+const GROUP_CHROME: Record<
+  ChromeKind,
+  (color: string | undefined, index: number) => CSSProperties
+> = {
+  box: (color) => {
     const fill = color !== undefined && color !== "" ? color : "rgba(0, 0, 0, 0.82)";
-    const board = Boolean(color);
-    if (!board) {
+    if (!color) {
       return {
         backgroundColor: fill,
         padding: "0.35em 0.55em",
@@ -97,36 +91,58 @@ export function backgroundChromeStyle(
       boxShadow: "0 6px 0 rgba(0, 0, 0, 0.35)",
       boxSizing: "border-box",
     };
-  }
+  },
+  rounded: (color) => ({
+    backgroundColor:
+      color !== undefined && color !== "" ? color : "rgba(0, 0, 0, 0.78)",
+    padding: "0.12em 0.4em",
+    borderRadius: 999,
+  }),
+  scrap: (color, index) => ({
+    backgroundColor: color !== undefined && color !== "" ? color : "#FFFFFF",
+    padding: "0.12em 0.28em",
+    clipPath: scrapClipPath(index),
+    boxDecorationBreak: "clone",
+    WebkitBoxDecorationBreak: "clone",
+  }),
+  ribbon: (color) => ({
+    backgroundColor: color !== undefined && color !== "" ? color : "#FFFFFF",
+    padding: "0.42em 0.78em 0.38em",
+    clipPath: ribbonClipPath(),
+  }),
+  underline: (color) => ({
+    borderBottom: `0.14em solid ${
+      color !== undefined && color !== "" ? color : "#FFE600"
+    }`,
+    padding: "0 0.04em 0.08em",
+  }),
+};
 
-  if (background.kind === "rounded") {
-    return {
-      backgroundColor:
-        color !== undefined && color !== "" ? color : "rgba(0, 0, 0, 0.78)",
-      padding: "0.12em 0.4em",
-      borderRadius: 999,
-    };
-  }
+const WORD_CHROME: Record<
+  ChromeKind,
+  (fill: string, index: number) => CSSProperties
+> = {
+  rounded: (fill) => ({ backgroundColor: fill, borderRadius: "0.15em" }),
+  scrap: (fill, index) => ({ backgroundColor: fill, clipPath: scrapClipPath(index) }),
+  ribbon: (fill) => ({ backgroundColor: fill, clipPath: ribbonClipPath() }),
+  box: (fill) => ({ backgroundColor: fill, borderRadius: 4 }),
+  underline: (fill) => ({
+    borderBottom: `0.1em solid ${fill}`,
+    paddingBottom: "0.04em",
+  }),
+};
 
-  if (background.kind === "scrap") {
-    return {
-      backgroundColor: color !== undefined && color !== "" ? color : "#FFFFFF",
-      padding: "0.12em 0.28em",
-      clipPath: scrapClipPath(index),
-      boxDecorationBreak: "clone",
-      WebkitBoxDecorationBreak: "clone",
-    };
-  }
+function isChromeKind(kind: BackgroundKind): kind is ChromeKind {
+  return kind !== "none" && kind !== "wrap";
+}
 
-  if (background.kind === "ribbon") {
-    return {
-      backgroundColor: color !== undefined && color !== "" ? color : "#FFFFFF",
-      padding: "0.42em 0.78em 0.38em",
-      clipPath: ribbonClipPath(),
-    };
-  }
-
-  return {};
+/** CSS chrome for box / rounded / scrap / ribbon / underline. */
+export function backgroundChromeStyle(
+  background: BackgroundStyle | null | undefined,
+  index = 0,
+): CSSProperties {
+  if (!background || !isChromeKind(background.kind)) return {};
+  return GROUP_CHROME[background.kind](background.color?.trim(), index);
 }
 
 /** Word-level highlight — color inside the glyph box, no extra padding. */
@@ -135,49 +151,80 @@ export function wordBackgroundChromeStyle(
   index = 0,
   opacity = 1,
 ): CSSProperties {
-  if (!background || background.kind === "none" || background.kind === "wrap") {
-    return {};
-  }
-
+  if (!background || !isChromeKind(background.kind)) return {};
   const color = background.color?.trim();
   if (!color || opacity <= 0) return {};
-
-  const fill = applyColorOpacity(color, opacity);
-
-  if (background.kind === "rounded") {
-    return {
-      backgroundColor: fill,
-      borderRadius: "0.15em",
-    };
-  }
-
-  if (background.kind === "scrap") {
-    return {
-      backgroundColor: fill,
-      clipPath: scrapClipPath(index),
-    };
-  }
-
-  if (background.kind === "ribbon") {
-    return {
-      backgroundColor: fill,
-      clipPath: ribbonClipPath(),
-    };
-  }
-
-  if (background.kind === "box") {
-    return {
-      backgroundColor: fill,
-      borderRadius: 4,
-    };
-  }
-
-  return {};
+  return WORD_CHROME[background.kind](applyColorOpacity(color, opacity), index);
 }
+
+type GroupBgProps = {
+  background: BackgroundStyle;
+  index: number;
+  style?: CSSProperties;
+  textStyle?: CSSProperties;
+  textAlign: "left" | "center" | "right";
+  children: ReactNode;
+};
+
+function NoneBackground({ style, children }: GroupBgProps) {
+  if (!style) return <>{children}</>;
+  return <span style={style}>{children}</span>;
+}
+
+function WrapBackground({
+  background,
+  textAlign,
+  textStyle,
+  children,
+}: GroupBgProps) {
+  return (
+    <ContourBoard
+      fill={background.color?.trim() ? background.color.trim() : "#FFFFFF"}
+      textAlign={textAlign}
+      textStyle={textStyle ?? {}}
+    >
+      {children}
+    </ContourBoard>
+  );
+}
+
+function ChromeBackground({
+  background,
+  index,
+  style,
+  children,
+}: GroupBgProps) {
+  const scrap =
+    background.kind === "scrap"
+      ? { transform: `rotate(${scrapRotationDeg(index)}deg)` }
+      : {};
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        ...backgroundChromeStyle(background, index),
+        ...scrap,
+        ...style,
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+const GROUP_BACKGROUND: Record<BackgroundKind, React.FC<GroupBgProps>> = {
+  none: NoneBackground,
+  wrap: WrapBackground,
+  box: ChromeBackground,
+  rounded: ChromeBackground,
+  scrap: ChromeBackground,
+  ribbon: ChromeBackground,
+  underline: ChromeBackground,
+};
 
 /**
  * Shared background wrapper for group or word.
- * `wrap` → ContourBoard (inline line boxes + goo); other kinds → CSS chrome.
+ * `BackgroundKind` → component. Word chrome uses the same map (tight variant).
  */
 export const CaptionBackground: React.FC<{
   background: BackgroundStyle | null | undefined;
@@ -195,39 +242,17 @@ export const CaptionBackground: React.FC<{
   textAlign = "center",
   children,
 }) => {
-  if (background?.kind === "wrap") {
-    return (
-      <ContourBoard
-        fill={background.color?.trim() ? background.color.trim() : "#FFFFFF"}
-        textAlign={textAlign}
-        textStyle={textStyle ?? {}}
-      >
-        {children}
-      </ContourBoard>
-    );
-  }
-
-  const chrome = backgroundChromeStyle(background, index);
-  const scrap =
-    background?.kind === "scrap"
-      ? { transform: `rotate(${scrapRotationDeg(index)}deg)` }
-      : {};
-
-  if (!background || background.kind === "none") {
-    if (!style) return <>{children}</>;
-    return <span style={style}>{children}</span>;
-  }
-
+  const kind = background?.kind ?? "none";
+  const Cmp = GROUP_BACKGROUND[kind];
   return (
-    <span
-      style={{
-        display: "inline-block",
-        ...chrome,
-        ...scrap,
-        ...style,
-      }}
+    <Cmp
+      background={background ?? { kind: "none" }}
+      index={index}
+      style={style}
+      textStyle={textStyle}
+      textAlign={textAlign}
     >
       {children}
-    </span>
+    </Cmp>
   );
 };

@@ -2,7 +2,6 @@ import { useState } from "react";
 
 import { overlayMidpointSec } from "~/domain/project-config";
 import { OVERLAY_TRANSFORM_DEFAULTS, transformOf } from "~/domain/transform";
-import { editMiddleSec } from "~/domain/vfx";
 import { CaptionStyleFields } from "~/editor/components/inspector/field/CaptionStyleFields";
 import { TextField } from "~/editor/components/inspector/field/TextField";
 import { TransformFields } from "~/editor/components/inspector/field/TransformFields";
@@ -14,7 +13,6 @@ import {
   isOverlayTemplateId,
   OVERLAY_TEMPLATE_LIST,
   resolveOverlayForEdit,
-  resolveOverlayLayerStyles,
   resolveOverlayTemplate,
 } from "~/remotion/templates/overlay";
 import { mergeTemplateStyleOverrides } from "~/remotion/templates/style";
@@ -24,7 +22,6 @@ import type {
   VfxListicleEdit,
   VfxTextEdit,
 } from "~/domain/project-config";
-import type { OverlayPreviewPair } from "~/editor/components/inspector/preview/constants";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type { OverlayTemplateId } from "~/remotion/templates/overlay";
 
@@ -34,22 +31,6 @@ type LineTab = "heading" | "subheading";
 function persistSerialMiddle(edit: OverlayEdit, stacked: boolean) {
   if (stacked || !edit.subheading.trim() || edit.middle != null) return;
   return { middle: overlayMidpointSec(edit.start, edit.end) };
-}
-
-function previewPair(
-  edit: OverlayEdit,
-  layers: ReturnType<typeof resolveOverlayLayerStyles>,
-  sampleHeading: string,
-): OverlayPreviewPair {
-  const subheadingText = edit.subheading.trim();
-  return {
-    heading: layers.heading,
-    subheading: layers.subheading,
-    stacked: layers.stacked,
-    headingText: edit.heading.trim() || sampleHeading,
-    subheadingText,
-    staggered: editMiddleSec(edit, layers.stacked) != null,
-  };
 }
 
 function OverlayLineStyleFields({
@@ -79,6 +60,7 @@ function OverlayLineStyleFields({
       resolvedFontSize={resolved.fontSize}
       showCaptionsAtATime={false}
       showArc
+      showY={bag === "subheadingOverrides"}
       yMode="line"
       resolvedArc={resolved.arc ?? 0}
       onPatch={(partial, live) =>
@@ -103,7 +85,6 @@ export function OverlayVfxFields({
   defaultTemplateId,
   headingLabel,
   subheadingLabel,
-  sampleHeading,
   onStyleChange,
 }: {
   edit: OverlayEdit;
@@ -111,7 +92,6 @@ export function OverlayVfxFields({
   defaultTemplateId: OverlayTemplateId;
   headingLabel: string;
   subheadingLabel: string;
-  sampleHeading: string;
   onStyleChange: (next: TemplateStyle, live?: boolean) => void;
 }) {
   const patchEdit = useEditor((s) => s.patchEdit);
@@ -184,15 +164,9 @@ export function OverlayVfxFields({
           id: t.id,
           label: t.label,
           style: t.headingStyle,
-          previewPair: previewPair(
-            edit,
-            resolveOverlayLayerStyles(t.id),
-            sampleHeading,
-          ),
         }))}
         value={look.templateId}
         fallbackStyle={look.heading}
-        fallbackPair={previewPair(edit, look, sampleHeading)}
         onChange={(id) => {
           const tid = isOverlayTemplateId(id) ? id : defaultTemplateId;
           onStyleChange({ templateId: tid });
@@ -202,7 +176,6 @@ export function OverlayVfxFields({
           );
           if (patch) patchEdit(edit.id, patch);
         }}
-        previewVariant="static"
       />
 
       {hasSubheading ? (

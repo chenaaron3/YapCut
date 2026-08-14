@@ -7,9 +7,7 @@ import { TransformOverlay } from "~/editor/components/player/TransformOverlay";
 import {
   ensurePlayerAudible,
   getPlayer,
-  peekPlayAfterSeek,
   setPlayer,
-  takePlayAfterSeek,
 } from "~/editor/lib/player-bridge";
 import { isTimelineScrubbing, useEditor } from "~/editor/store";
 import {
@@ -73,7 +71,6 @@ export function PlayerPanel() {
       if (target != null) {
         if (Math.abs(current - target) <= 1) {
           seekTargetRef.current = null;
-          if (takePlayAfterSeek()) player.play();
           syncFromPlayer();
           return;
         }
@@ -81,7 +78,6 @@ export function PlayerPanel() {
         // seek was abandoned), follow the player or store freezes forever.
         if (!player.isPlaying()) return;
         seekTargetRef.current = null;
-        takePlayAfterSeek();
       }
       syncFromPlayer();
     };
@@ -89,7 +85,6 @@ export function PlayerPanel() {
     const onPlay = () => {
       // Space/click-to-play must not stay blocked on a stale seek target.
       seekTargetRef.current = null;
-      takePlayAfterSeek();
       syncFromPlayer();
     };
 
@@ -120,9 +115,7 @@ export function PlayerPanel() {
       const lag = current - frame;
       if (player.isPlaying() && lag > 0 && lag <= 8) return;
       seekTargetRef.current = frame;
-      if (player.isPlaying() && !peekPlayAfterSeek()) {
-        player.pause();
-      }
+      if (player.isPlaying()) player.pause();
       player.seekTo(frame);
     });
   }, []);
