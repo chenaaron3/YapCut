@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 
-import { buildArollLayout } from "~/domain/arolls";
+import { buildArollLayoutFromAssets } from "~/domain/arolls";
 import { clampOverlayMiddle, isTextBaseEdit } from "~/domain/project-config";
 import { editMiddleSec } from "~/domain/vfx";
 import type { ResizeEdge } from "~/editor/components/transcript/RangeHandle";
@@ -37,8 +37,7 @@ export function useRangeResize() {
 
   const keepRanges = useMemo(() => {
     if (!arolls) return [];
-    const durations = new Map(assets.map((a) => [a.id, a.durationSec ?? 0]));
-    return buildArollLayout(arolls, durations)
+    return buildArollLayoutFromAssets(arolls, assets)
       .filter((c) => c.kind === "keep")
       .map((c) => c.timeline);
   }, [arolls, assets]);

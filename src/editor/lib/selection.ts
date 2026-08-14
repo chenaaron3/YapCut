@@ -1,4 +1,4 @@
-import type { ArollLayoutCell } from "~/domain/arolls";
+import { durationMapFromAssets, type ArollLayoutCell } from "~/domain/arolls";
 import type { ProjectConfig } from "~/domain/project-config";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import { selectedArollAssetRun } from "~/editor/lib/aroll-asset-selection";
@@ -40,9 +40,7 @@ export function isSelected(
   }
   if (selection.kind !== "arollAsset" || !editor) return false;
 
-  const durations = new Map(
-    editor.assets.map((a) => [a.id, a.durationSec ?? 0]),
-  );
+  const durations = durationMapFromAssets(editor.assets);
 
   if (kind === "edit" && typeof id === "number") {
     const edit = editor.config?.edits.find((e) => e.id === id);

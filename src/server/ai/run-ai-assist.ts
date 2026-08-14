@@ -1,11 +1,11 @@
 import { and, eq, isNull } from "drizzle-orm";
 
 import { parseAiSfxPoolPath } from "~/domain/ai-sfx-pack";
+import { buildArollLayout } from "~/domain/arolls";
 import {
-  buildArollLayout,
   firstKeepTimelineSec,
   layoutTimelineDuration,
-} from "~/domain/arolls";
+} from "~/domain/layout-time";
 import { projectTimelineWords } from "~/domain/projection";
 import {
   DEFAULT_LISTICLE_TEMPLATE_ID,
@@ -25,6 +25,7 @@ import { generateListicleEdits } from "~/server/ai/listicles";
 import { generatePacingReconcileZooms } from "~/server/ai/pacing-reconcile";
 import { generateQuoteEdits } from "~/server/ai/quotes";
 import { generateTitle } from "~/server/ai/title";
+import { generateTransitionEdits } from "~/server/ai/transitions";
 import { generateZoomEdits } from "~/server/ai/zooms";
 import { db } from "~/server/db";
 import { assets } from "~/server/db/schema";
@@ -97,8 +98,8 @@ async function loadAiSfxPools(): Promise<{
 }
 
 /**
- * Shared create / editor AI assist: punch-ins → listicles → quotes →
- * emphasis → pacing slow zooms → companion SFX.
+ * Shared create / editor AI assist: punch-ins → listicles → transitions →
+ * quotes → emphasis → pacing slow zooms → companion SFX.
  */
 export async function runAiAssist(
   input: AiAssistInput,
@@ -166,6 +167,18 @@ export async function runAiAssist(
   } catch (error) {
     console.warn(
       "[ai-assist] listicle soft-failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  try {
+    edits = await generateTransitionEdits(timelineWords, edits, layout);
+    console.log(
+      `[ai-assist] transitions=${edits.filter((e) => e.kind === "transition").length}`,
+    );
+  } catch (error) {
+    console.warn(
+      "[ai-assist] transition soft-failed:",
       error instanceof Error ? error.message : error,
     );
   }

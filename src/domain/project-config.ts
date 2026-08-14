@@ -50,8 +50,10 @@ export function applyTemplateStylePatch(
   });
 }
 
-/** One keep segment on an A-roll asset (local seconds). */
-export type ArollKeep = LocalTime;
+export type KeepId = number;
+
+/** One keep segment on an A-roll asset (local seconds). `id` is stable across trim/insert. */
+export type ArollKeep = LocalTime & { id: KeepId };
 
 export type EditId = number;
 
@@ -178,13 +180,32 @@ export type SfxEdit = EditBase &
     kind: "sfx";
   };
 
+export type TransitionTemplateId = "flash" | "fade" | "slide";
+
+/** Sequence role or a keep–keep stitch (keep ids, not layout indexes). */
+export type TransitionStitch =
+  | { kind: "opening" }
+  | { kind: "closing" }
+  | { kind: "interior"; outKeepId: KeepId; inKeepId: KeepId };
+
+/**
+ * A-roll picture stitch. Identity is `stitch` + `durationSec` (output seconds);
+ * `start`/`end` are derived timeline range (gaps count).
+ */
+export type TransitionEdit = EditBase & {
+  kind: "transition";
+  templateId: TransitionTemplateId;
+  durationSec: number;
+  stitch: TransitionStitch;
+};
+
 export type VfxEdit =
   | VfxTextEdit
   | VfxQuoteEdit
   | VfxListicleEdit
   | VfxShakeEdit;
 
-export type Edit = BrollEdit | SfxEdit | ZoomEdit | VfxEdit;
+export type Edit = BrollEdit | SfxEdit | ZoomEdit | VfxEdit | TransitionEdit;
 
 /** Edit members that include the `TextBase` mixin. */
 export type TextBaseEdit = Extract<Edit, TextBase>;
@@ -268,6 +289,7 @@ const templateStyleSchema = z.object({
 });
 
 const arollKeepSchema = z.object({
+  id: z.number().int().nonnegative(),
   assetId: z.string().min(1),
   start: z.number(),
   end: z.number(),
@@ -351,6 +373,23 @@ const sfxEditSchema = editBaseSchema
     kind: z.literal("sfx"),
   });
 
+const transitionStitchSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("opening") }),
+  z.object({ kind: z.literal("closing") }),
+  z.object({
+    kind: z.literal("interior"),
+    outKeepId: z.number().int().nonnegative(),
+    inKeepId: z.number().int().nonnegative(),
+  }),
+]);
+
+const transitionEditSchema = editBaseSchema.extend({
+  kind: z.literal("transition"),
+  templateId: z.enum(["flash", "fade", "slide"]),
+  durationSec: z.number().positive(),
+  stitch: transitionStitchSchema,
+});
+
 export const projectConfigSchema = z.object({
   arolls: z.array(arollKeepSchema),
   edits: z.array(
@@ -362,6 +401,7 @@ export const projectConfigSchema = z.object({
       vfxShakeEditSchema,
       brollEditSchema,
       sfxEditSchema,
+      transitionEditSchema,
     ]),
   ),
   captions: templateStyleSchema,
@@ -378,6 +418,28 @@ export const projectConfigSchema = z.object({
     .default(null),
 });
 
+export function nextKeepId(
+  arolls: readonly Pick<ArollKeep, "id">[],
+): KeepId {
+  let max = 0;
+  for (const keep of arolls) {
+    if (keep.id > max) max = keep.id;
+  }
+  return max + 1;
+}
+
+/** Mint 1..n ids for a new keep list (create pipeline). */
+export function assignKeepIds(
+  arolls: readonly LocalTime[],
+): ArollKeep[] {
+  return arolls.map((keep, i) => ({
+    id: i + 1,
+    assetId: keep.assetId,
+    start: keep.start,
+    end: keep.end,
+  }));
+}
+
 export function parseProjectConfig(value: unknown): ProjectConfig {
   return projectConfigSchema.parse(value);
 }
@@ -388,9 +450,4 @@ export function nextEditId(edits: readonly Pick<EditBase, "id">[]): EditId {
     if (edit.id > max) max = edit.id;
   }
   return max + 1;
-}
-
-/** Compacted output duration (sum of keep lengths — Remotion / export). */
-export function outputDurationFromArolls(arolls: readonly ArollKeep[]): number {
-  return arolls.reduce((sum, keep) => sum + Math.max(0, keep.end - keep.start), 0);
 }

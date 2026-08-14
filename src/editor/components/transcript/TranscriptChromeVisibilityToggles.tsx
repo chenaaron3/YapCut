@@ -28,6 +28,7 @@ const VISIBILITY_LABEL: Record<TranscriptChromeGroup, string> = {
   "vfx:shake": "Shake",
   sfx: "SFX",
   zoom: "Zoom",
+  transition: "Transition",
 };
 
 function countEditsByGroup(

@@ -2,7 +2,8 @@ import {
   PROCESS_GAP_THRESHOLD_SEC,
   WORD_MARGIN_SEC,
 } from "~/domain/editing-constants";
-import { PROJECT_FPS, type ArollKeep } from "~/domain/project-config";
+import { PROJECT_FPS } from "~/domain/project-config";
+import type { LocalTime } from "~/domain/time";
 
 import type { TranscriptWord } from "~/domain/transcript";
 
@@ -17,7 +18,7 @@ export function buildArollKeepsFromWords(options: {
   durationSec: number;
   assetId: string;
   fps?: number;
-}): ArollKeep[] {
+}): LocalTime[] {
   const { words, durationSec, assetId } = options;
   const fps = options.fps ?? PROJECT_FPS;
 

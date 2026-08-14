@@ -102,6 +102,26 @@ export type ShakeClipProp = {
   intensity: number;
 };
 
+export type TransitionPictureProp = {
+  src: string;
+  trimBefore: number;
+  trimAfter: number;
+  /** Source frame to hold when the keep picture runs out. */
+  freezeFrame: number;
+};
+
+export type TransitionClipProp = {
+  id: number;
+  templateId: "flash" | "fade" | "slide";
+  startFrame: number;
+  endFrame: number;
+  /** Output frame of the keep join (opening = start, closing = end). */
+  stitchFrame: number;
+  mode: "opening" | "closing" | "interior";
+  out?: TransitionPictureProp;
+  in?: TransitionPictureProp;
+};
+
 export type ProjectProps = {
   /** Project.title at props time (Cover still; TalkingHead ignores). */
   title: string;
@@ -117,4 +137,5 @@ export type ProjectProps = {
   brolls: BrollClipProp[];
   sfx: SfxClipProp[];
   music?: MusicClipProp | null;
+  transitions: TransitionClipProp[];
 };

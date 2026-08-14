@@ -1,6 +1,7 @@
 import { memo, useState } from "react";
 
 import { quoteSeed } from "~/domain/quote";
+import { isValidTransitionDropWord } from "~/domain/transition";
 import { zoomSeed } from "~/domain/zoom";
 import { EditMarkerCluster } from "~/editor/components/transcript/EditMarkerCluster";
 import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
@@ -14,6 +15,7 @@ import {
 import { isChromeKeyVisible } from "~/editor/lib/transcript-chrome-visibility";
 import { useEntitySelected } from "~/editor/lib/use-is-selected";
 import {
+  isAfterMarkerRole,
   isMarkerRole,
   resolvePrimarySpan,
 } from "~/editor/lib/word-annotations";
@@ -32,6 +34,8 @@ type Props = {
   annotation: WordAnnotation;
   onWordDragStart?: (e: React.MouseEvent) => void;
   onResizeEdge?: (edge: ResizeEdge, editId: number) => void;
+  /** Valid transition drop while a Transitions-tab drag is in flight. */
+  transitionDropGlow?: boolean;
 };
 
 export const WordCell = memo(function WordCell({
@@ -39,6 +43,7 @@ export const WordCell = memo(function WordCell({
   annotation,
   onWordDragStart,
   onResizeEdge,
+  transitionDropGlow = false,
 }: Props) {
   const select = useSelection((s) => s.select);
   const seekTimeline = useEditor((s) => s.seekTimeline);
@@ -57,6 +62,8 @@ export const WordCell = memo(function WordCell({
     isChromeKeyVisible(s.chromeKey, chromeVisible),
   );
   const markers = visibleSpans.filter((s) => isMarkerRole(s.role));
+  const beforeMarkers = markers.filter((s) => !isAfterMarkerRole(s.role));
+  const afterMarkers = markers.filter((s) => isAfterMarkerRole(s.role));
 
   // Only re-render when the primary edit for this word changes — word playback
   // selection does not affect chrome primary resolution.
@@ -77,7 +84,8 @@ export const WordCell = memo(function WordCell({
     setEditing(false);
   };
 
-  const handleSelected = primarySelected && primary != null;
+  const handleSelected =
+    primarySelected && primary != null && primary.chromeKey !== "transition";
 
   if (editing) {
     return (
@@ -111,10 +119,14 @@ export const WordCell = memo(function WordCell({
   return (
     <>
       <EditMarkerCluster
-        wordIndex={word.globalIndex}
-        markers={markers}
+        clusterId={`${word.globalIndex}:before`}
+        markers={beforeMarkers}
         onSelect={(editId, toggle) => select("edit", editId, toggle)}
-        onDragStart={(editId) => onResizeEdge?.("start", editId)}
+        onDragStart={(editId) => {
+          const span = beforeMarkers.find((s) => s.editId === editId);
+          if (span?.chromeKey === "transition") return;
+          onResizeEdge?.("start", editId);
+        }}
       />
 
       <WordGap>
@@ -153,6 +165,11 @@ export const WordCell = memo(function WordCell({
               dropActive === "broll" && "bg-broll/30 ring-broll ring-1",
               dropActive === "sfx" && "bg-sfx/30 ring-sfx ring-1",
               dropActive === "vfx" && "bg-vfx/30 ring-vfx ring-1",
+              dropActive === "transition" &&
+                "bg-transition/40 ring-transition ring-1",
+              transitionDropGlow &&
+                dropActive !== "transition" &&
+                "animate-transition-drop-glow",
             )}
             onMouseDown={(e) => {
               // Drag-select applies a word range on mousedown — skip when an
@@ -178,6 +195,18 @@ export const WordCell = memo(function WordCell({
             onDragOver={(e) => {
               const kind = assetDropKindFromTypes([...e.dataTransfer.types]);
               if (!kind) return;
+              if (kind === "transition") {
+                const state = useEditor.getState();
+                if (
+                  !isValidTransitionDropWord(
+                    word.globalIndex,
+                    state.getGlobalWords(),
+                    state.getLayout(),
+                  )
+                ) {
+                  return;
+                }
+              }
               e.preventDefault();
               e.dataTransfer.dropEffect = "copy";
               setDropActive(kind);
@@ -229,6 +258,11 @@ export const WordCell = memo(function WordCell({
           onResizeEdge={onResizeEdge}
         />
       </WordGap>
+      <EditMarkerCluster
+        clusterId={`${word.globalIndex}:after`}
+        markers={afterMarkers}
+        onSelect={(editId, toggle) => select("edit", editId, toggle)}
+      />
     </>
   );
 });

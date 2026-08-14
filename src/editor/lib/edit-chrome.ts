@@ -1,4 +1,5 @@
 import {
+  Blend,
   Film,
   ListOrdered,
   Quote,
@@ -23,7 +24,8 @@ export type EditChromeKey =
   | "vfx:listicle"
   | "vfx:shake"
   | "broll"
-  | "sfx";
+  | "sfx"
+  | "transition";
 
 export type EditChromeSpec = {
   key: EditChromeKey;
@@ -118,6 +120,18 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
       "underline decoration-zoom decoration-2 underline-offset-4",
     highlightClass: "bg-zoom/15",
     matches: (e) => e.kind === "zoom",
+  },
+  {
+    key: "transition",
+    label: "transition",
+    Icon: Blend,
+    markerClass: "bg-transition/80 text-black",
+    markerSelectedClass: "bg-transition text-black",
+    dotClass: "bg-transition",
+    underlineClass:
+      "underline decoration-transition decoration-2 underline-offset-4",
+    highlightClass: "bg-transition/15",
+    matches: (e) => e.kind === "transition",
   },
 ];
 

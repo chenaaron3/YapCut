@@ -4,6 +4,7 @@ import { buildArollKeepsFromWords } from "~/domain/keeps";
 import {
   DEFAULT_CAPTION_TEMPLATE_ID,
   emptyProjectConfig,
+  assignKeepIds,
   type ProjectConfig,
 } from "~/domain/project-config";
 import type { TranscriptWord } from "~/domain/transcript";
@@ -322,12 +323,14 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
     durationByAssetId.set(asset.id, asset.durationSec);
   }
 
-  const arolls = projectAssets.flatMap((asset) =>
-    buildArollKeepsFromWords({
-      words: wordsByAssetId.get(asset.id) ?? [],
-      durationSec: durationByAssetId.get(asset.id) ?? 0,
-      assetId: asset.id,
-    }),
+  const arolls = assignKeepIds(
+    projectAssets.flatMap((asset) =>
+      buildArollKeepsFromWords({
+        words: wordsByAssetId.get(asset.id) ?? [],
+        durationSec: durationByAssetId.get(asset.id) ?? 0,
+        assetId: asset.id,
+      }),
+    ),
   );
 
   if (arolls.length === 0) {

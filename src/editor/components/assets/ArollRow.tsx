@@ -4,7 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 
-import { assetRunForAssetId } from "~/domain/arolls";
+import { assetRunForAssetId, durationMapFromAssets } from "~/domain/arolls";
 import { ArollMiniPlayer } from "~/editor/components/assets/ArollMiniPlayer";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
@@ -110,9 +110,7 @@ export function SortableArollRow({
     select("arollAsset", asset.id);
     const editor = useEditor.getState();
     if (!editor.config) return;
-    const durations = new Map(
-      editor.assets.map((a) => [a.id, a.durationSec ?? 0]),
-    );
+    const durations = durationMapFromAssets(editor.assets);
     const run = assetRunForAssetId(editor.config.arolls, durations, asset.id);
     if (!run) return;
     if (editor.timelineSec < run.start || editor.timelineSec >= run.end) {

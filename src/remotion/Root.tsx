@@ -27,6 +27,7 @@ const defaultProps: ProjectProps = {
   brolls: [],
   sfx: [],
   music: null,
+  transitions: [],
 };
 
 const calculateMetadata: CalculateMetadataFunction<TalkingHeadProps> = ({

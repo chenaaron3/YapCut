@@ -10,6 +10,7 @@ import { SfxAudio } from "~/remotion/components/SfxAudio";
 import { TextOverlay } from "~/remotion/components/TextOverlay";
 import { Zoom } from "~/remotion/components/Zoom";
 import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
+import { TransitionLayer } from "~/remotion/transitions/TransitionLayer";
 
 import type { ProjectProps } from "~/remotion/helpers/types";
 
@@ -52,19 +53,22 @@ export function TalkingHead({
   brolls,
   sfx,
   music,
+  transitions = [],
 }: TalkingHeadProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
       <EnsureLocalFonts />
       <ScreenShake shakes={shakes}>
-        <Zoom zooms={zooms}>
-          {sections.length > 0 ? (
-            <ArollSeries sections={sections} />
-          ) : (
-            <AbsoluteFill style={{ backgroundColor: "#111" }} />
-          )}
-        </Zoom>
-        <BRollOverlay brolls={brolls} />
+        <TransitionLayer transitions={transitions}>
+          <Zoom zooms={zooms}>
+            {sections.length > 0 ? (
+              <ArollSeries sections={sections} />
+            ) : (
+              <AbsoluteFill style={{ backgroundColor: "#111" }} />
+            )}
+          </Zoom>
+          <BRollOverlay brolls={brolls} />
+        </TransitionLayer>
       </ScreenShake>
       <TextOverlay overlays={textOverlays} />
       <Captions groups={captionGroups} />

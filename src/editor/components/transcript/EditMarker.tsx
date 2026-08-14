@@ -43,15 +43,17 @@ export function EditMarker({
       ? (assets.find((a) => a.id === brollAssetId) ?? null)
       : null;
 
+  const movable = onDragStart != null;
   const label = markerLabel(span);
 
   return (
     <button
       type="button"
-      title={`${label} — drag to move`}
+      title={movable ? `${label} — drag to move` : label}
       aria-label={label}
       className={cn(
-        "relative inline-flex size-[1.1em] shrink-0 cursor-ew-resize items-center justify-center overflow-hidden rounded-sm align-middle select-none",
+        "relative inline-flex size-[1.1em] shrink-0 items-center justify-center overflow-hidden rounded-sm align-middle select-none",
+        movable ? "cursor-ew-resize" : "cursor-pointer",
         brollAsset
           ? selected
             ? "ring-2 ring-broll ring-offset-1 ring-offset-background"
@@ -77,7 +79,7 @@ export function EditMarker({
         };
         window.addEventListener("mousemove", onMove);
         window.addEventListener("mouseup", onUp);
-        onDragStart?.(span.editId, e);
+        if (movable) onDragStart?.(span.editId, e);
       }}
       onClick={(e) => {
         e.stopPropagation();

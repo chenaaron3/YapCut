@@ -10,6 +10,7 @@ import { QuoteVfxInspector } from "~/editor/components/inspector/QuoteVfxInspect
 import { SfxInspector } from "~/editor/components/inspector/SfxInspector";
 import { ShakeVfxInspector } from "~/editor/components/inspector/ShakeVfxInspector";
 import { TextVfxInspector } from "~/editor/components/inspector/TextVfxInspector";
+import { TransitionInspector } from "~/editor/components/inspector/TransitionInspector";
 import { ZoomInspector } from "~/editor/components/inspector/ZoomInspector";
 import { primaryId } from "~/editor/lib/selection";
 import { useSelection } from "~/editor/selection-store";
@@ -67,6 +68,9 @@ export function InspectorPanel() {
     } else if (edit?.kind === "zoom") {
       title = "Zoom";
       body = <ZoomInspector edit={edit} />;
+    } else if (edit?.kind === "transition") {
+      title = "Transition";
+      body = <TransitionInspector edit={edit} />;
     }
   }
 

@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { buildArollLayout, layoutTimelineDuration } from '~/domain/arolls';
+import { buildArollLayoutFromAssets } from '~/domain/arolls';
+import { layoutTimelineDuration } from '~/domain/layout-time';
 import { LABEL_OFFSET } from '~/editor/components/timeline/constants';
 import {
     contentXForSec, useTimelineZoom
 } from '~/editor/components/timeline/hooks/useTimelineZoom';
 import { Playhead } from '~/editor/components/timeline/Playhead';
 import { TimelineRuler } from '~/editor/components/timeline/TimelineRuler';
+import { TransitionGutter } from '~/editor/components/timeline/TransitionGutter';
 import { BRollTrack } from '~/editor/components/timeline/tracks/BRollTrack';
 import { CaptionTrack } from '~/editor/components/timeline/tracks/CaptionTrack';
 import { SfxTrack } from '~/editor/components/timeline/tracks/SfxTrack';
@@ -19,6 +21,7 @@ import { isTimelineScrubbing, setTimelineScrubbing, useEditor, useEditorEqual } 
 import type {
   BrollEdit,
   SfxEdit,
+  TransitionEdit,
   VfxEdit,
   ZoomEdit,
 } from "~/domain/project-config";
@@ -55,11 +58,12 @@ export function Timeline() {
     edits?.filter((e): e is BrollEdit => e.kind === "broll") ?? [];
   const sfx =
     edits?.filter((e): e is SfxEdit => e.kind === "sfx") ?? [];
+  const transitions =
+    edits?.filter((e): e is TransitionEdit => e.kind === "transition") ?? [];
 
   const layout = useMemo(() => {
     if (!arolls) return [];
-    const durations = new Map(assets.map((a) => [a.id, a.durationSec ?? 0]));
-    return buildArollLayout(arolls, durations);
+    return buildArollLayoutFromAssets(arolls, assets);
   }, [arolls, assets]);
 
   const timelineDuration = useMemo(
@@ -175,6 +179,11 @@ export function Timeline() {
           />
 
           <div className="py-2 pl-[72px]">
+            <TransitionGutter
+              layout={layout}
+              edits={transitions}
+              width={trackWidth}
+            />
             <VideoTrack layout={layout} width={trackWidth} />
             <CaptionTrack width={trackWidth} />
             <BRollTrack edits={brolls} width={trackWidth} />

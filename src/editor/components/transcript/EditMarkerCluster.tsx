@@ -16,8 +16,8 @@ import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
 type Props = {
-  /** Word globalIndex — identity for single-open expand state. */
-  wordIndex: number;
+  /** Identity for single-open expand state (`{wordIndex}:before` | `:after`). */
+  clusterId: string;
   markers: WordEditSpan[];
   onSelect: (editId: number, toggle: boolean) => void;
   onDragStart?: (editId: number, e: React.MouseEvent) => void;
@@ -73,17 +73,17 @@ function MarkerSelected({
  * Click expands inline to all chips; primary click toggles shut. One cluster open at a time.
  */
 export function EditMarkerCluster({
-  wordIndex,
+  clusterId,
   markers,
   onSelect,
   onDragStart,
 }: Props) {
-  const expandedWordIndex = useTranscriptUi((s) => s.expandedWordIndex);
+  const expandedClusterId = useTranscriptUi((s) => s.expandedClusterId);
   const expandCluster = useTranscriptUi((s) => s.expandCluster);
   const collapseCluster = useTranscriptUi((s) => s.collapseCluster);
   const toggleCluster = useTranscriptUi((s) => s.toggleCluster);
 
-  const expanded = expandedWordIndex === wordIndex;
+  const expanded = expandedClusterId === clusterId;
 
   // Stable across word-playback selection changes (edit selection only).
   const primaryEditId = useSelection((s) => {
@@ -104,19 +104,23 @@ export function EditMarkerCluster({
       ? (markers.find((m) => m.editId === primaryEditId) ?? null)
       : null;
   const clusterHasSelection = selectedEditKey.length > 0;
+  const canExpand = markers.length > 1;
 
   // Collapse when selection leaves every edit in this cluster (incl. clear).
+  // Single-marker clusters never expand — don't steal a sibling cluster's open state.
   useEffect(() => {
-    if (!expanded) return;
+    if (!canExpand || !expanded) return;
     if (!clusterHasSelection) collapseCluster();
-  }, [expanded, clusterHasSelection, collapseCluster]);
+  }, [canExpand, expanded, clusterHasSelection, collapseCluster]);
+
+  const dragFor = (span: WordEditSpan) =>
+    span.chromeKey === "transition" ? undefined : onDragStart;
 
   if (markers.length === 0) return null;
   if (!primary) return null;
 
   const ordered = sortByChromePriority(markers);
   const secondaries = ordered.filter((s) => s.editId !== primary.editId);
-  const canExpand = secondaries.length > 0;
 
   if (!canExpand) {
     return (
@@ -127,7 +131,7 @@ export function EditMarkerCluster({
               span={primary}
               selected={selected}
               onSelect={onSelect}
-              onDragStart={onDragStart}
+              onDragStart={dragFor(primary)}
             />
           )}
         </MarkerSelected>
@@ -153,9 +157,9 @@ export function EditMarkerCluster({
                   )}
                   onSelect={(editId, toggleSelect) => {
                     onSelect(editId, toggleSelect);
-                    if (isPrimary) toggleCluster(wordIndex);
+                    if (isPrimary) toggleCluster(clusterId);
                   }}
-                  onDragStart={onDragStart}
+                  onDragStart={dragFor(span)}
                 />
               )}
             </MarkerSelected>
@@ -174,9 +178,9 @@ export function EditMarkerCluster({
             selected={selected}
             onSelect={(editId, toggleSelect) => {
               onSelect(editId, toggleSelect);
-              expandCluster(wordIndex);
+              expandCluster(clusterId);
             }}
-            onDragStart={onDragStart}
+            onDragStart={dragFor(primary)}
           />
         )}
       </MarkerSelected>
@@ -192,7 +196,7 @@ export function EditMarkerCluster({
                 selected={selected}
                 onSelect={(editId, toggleSelect) => {
                   onSelect(editId, toggleSelect);
-                  expandCluster(wordIndex);
+                  expandCluster(clusterId);
                 }}
               />
             )}

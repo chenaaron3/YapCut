@@ -1,6 +1,8 @@
 import { Captions, Settings2 } from "lucide-react";
 import { useMemo } from "react";
 
+import { buildArollLayoutFromAssets } from "~/domain/arolls";
+import { validTransitionDrops } from "~/domain/transition";
 import { InspectorPanel } from "~/editor/components/inspector/InspectorPanel";
 import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
 import { useRangeResize } from "~/editor/components/transcript/hooks/useRangeResize";
@@ -13,7 +15,8 @@ import {
 } from "~/editor/lib/word-annotations";
 import { editsTopologyEqual } from "~/editor/lib/edit-topology";
 import { useSelection } from "~/editor/selection-store";
-import { useEditorEqual, useGlobalWords } from "~/editor/store";
+import { useEditor, useEditorEqual, useGlobalWords } from "~/editor/store";
+import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
 import type { ReactNode } from "react";
@@ -21,17 +24,30 @@ import type { ReactNode } from "react";
 export function TranscriptPanel() {
   const edits = useEditorEqual((s) => s.config?.edits, editsTopologyEqual);
   const words = useGlobalWords();
+  const arolls = useEditor((s) => s.config?.arolls);
+  const assets = useEditor((s) => s.assets);
+  const layout = useMemo(() => {
+    return buildArollLayoutFromAssets(arolls ?? [], assets);
+  }, [arolls, assets]);
   const projectPanel = useSelection((s) => s.projectPanel);
   const clearSelection = useSelection((s) => s.clearSelection);
   const openCaptionsPanel = useSelection((s) => s.openCaptionsPanel);
   const openSettingsPanel = useSelection((s) => s.openSettingsPanel);
   const { onDragStart } = useWordDragSelect();
   const { beginResize, consumeJustResized } = useRangeResize();
+  const transitionDragActive = useTranscriptUi((s) => s.transitionDragActive);
 
   const annotations = useMemo(
-    () => buildWordAnnotations(words, edits ?? []),
-    [words, edits],
+    () => buildWordAnnotations(words, edits ?? [], layout),
+    [words, edits, layout],
   );
+
+  const transitionDropIndexes = useMemo(() => {
+    if (!transitionDragActive) return null;
+    return new Set(
+      validTransitionDrops(words, layout).map((d) => d.globalIndex),
+    );
+  }, [transitionDragActive, words, layout]);
 
   const nodes: ReactNode[] = [];
   for (const word of words) {
@@ -44,6 +60,9 @@ export function TranscriptPanel() {
         annotation={annotation}
         onWordDragStart={(e) => onDragStart(word.globalIndex, e)}
         onResizeEdge={beginResize}
+        transitionDropGlow={
+          transitionDropIndexes?.has(word.globalIndex) ?? false
+        }
       />,
     );
   }

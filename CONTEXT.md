@@ -33,8 +33,8 @@ Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local 
 _Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type, null inherit-group sentinels, emphasis owning y or captionsAtATime
 
 **Aroll keep** (`ArollKeep`):
-One segment to keep from an A-roll asset: `{ assetId, start, end }` in **local** asset time. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the timeline / output. Keeps for the same asset are **contiguous** in that list (no interleaving another asset between two keeps of one asset — you cannot cut part of a clip and place it after a different asset).
-_Avoid_: Cut (prototype delete-range), storing keep lists grouped by asset as source of truth, parallel delete array, A→B→A stitch order
+One segment to keep from an A-roll asset: `{ id, assetId, start, end }` in **local** asset time. `id` is a monotonic integer (`max(ids)+1`, never reused, never renumbered on insert) — identity for transitions. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the timeline / output. Keeps for the same asset are **contiguous** in that list (no interleaving another asset between two keeps of one asset — you cannot cut part of a clip and place it after a different asset). Keep surgery emits generic `ArollKeepOp` (`split` / `merge` / `remove`); edit kinds that bind to keep ids register an `ArollEditPostprocessor` (transitions today) — arolls do not import those kinds.
+_Avoid_: Cut (prototype delete-range), storing keep lists grouped by asset as source of truth, parallel delete array, A→B→A stitch order, using array index or layout-cell index as keep identity
 
 **Deleted / gap cell**:
 Timeline View chrome for media not in `arolls` (between keeps or trimmed ends). Derived in the View — never stored as topology.
@@ -44,7 +44,7 @@ _Avoid_: Cut as persisted model type
 
 **Edit**:
 A ranged overlay on the **timeline** (expanded; gaps count). Flat `edits[]` with one discriminant `kind`. Mutated through shared Model CRUD.
-_Avoid_: clip (ambiguous), local-time edits, output-time edits, kind+type nesting except `vfx.type`
+_Avoid_: clip (ambiguous), local-time edits, output-time edits, kind+type nesting except `vfx.type`; treating Transition as VFX
 
 **EditId**:
 Monotonic integer identifying an Edit. Assigned at place as `max(ids)+1`; never reused after delete.
@@ -53,11 +53,16 @@ _Avoid_: uuid, array index, string ids
 **Edit kinds (v1)**:
 
 ```
-broll | sfx | zoom | vfx
+broll | sfx | zoom | vfx | transition
 ```
 
 - **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
 - **vfx** — `type: "quote" | "text" | "listicle" | "shake"` (location/cutout out of scope)
+- **transition** — A-roll picture stitch (`templateId: "flash" | "fade" | "slide"`). Identity is `stitch` + `durationSec`; one per keep–keep stitch (plus opening and closing). Not a VFX subtype, not a sting.
+
+**Transition**:
+An Edit at an A-roll stitch: `{ id, start, end, kind: "transition", templateId, durationSec, stitch }`. Identity is `stitch` + `durationSec` (output seconds); `{start,end}` is derived timeline range (gaps count). `stitch` is `{ kind: "opening" }` / `{ kind: "closing" }` (sequence roles — always the current first/last keep) or `{ kind: "interior", outKeepId, inKeepId }`. Interior `{start,end}` bridges exactly one gap. Opening: **in only** from black, left edge pinned to first keep start. Closing: **out only** to black, right edge pinned to last keep end. Resize is symmetric in output seconds (grow/shrink both keeps equally; growing does not eat the gap). Cannot exist mid-keep; cannot drag-move off the junction. Drop on a filled stitch **replaces** `templateId` (no stack). Create seeds opening+closing as a mirrored **flash** pair (same duration); they are not kept in sync after that. Seed template is **flash**. No Project-level default / no fan-out. Keep surgery retargets interiors (split: outgoing follows the right fragment; merge: dying id → left survivor, self-stitch dropped; remove keep: drop refs). Trim and unrelated cell edits do not drop a transition.
+_Avoid_: sting; Cut as persisted type; persisting OutputTime on the Edit; `vfx` subtype for this; mid-keep transitions; stacking two on one stitch; classifying identity from `{start,end}`; attaching to derived layout-cell / gap ids; special-casing place in the store — build stitch + durationSec on the drop caller
 
 **Punch-in**:
 Hard zoom (`ease` false/omitted). Create zoom AI prefers these as intentional camera hits.
@@ -145,7 +150,7 @@ Seconds on the compacted playback/export timeline (sum of keep durations in `aro
 _Avoid_: persisting output times on Edits
 
 **Projection**:
-Derive timeline words from `arolls` + per-asset transcripts + asset durations (for gap layout). Do not persist a separate projected transcript. Map timeline → output at the Remotion edge.
+Derive timeline words from `arolls` + per-asset transcripts + asset durations (for gap layout). Do not persist a separate projected transcript. Map timeline → output at the Remotion edge. Clock conversion, clamp, and snap live in `src/domain/layout-time.ts`; layout construction and keep lookups stay in `arolls.ts`.
 
 **Caption / quote Y**:
 `CaptionGroupStyle.y` for captions and quotes is −1…1 in the **safe area**. `0` = middle, `1` = bottom, `−1` = top. Positive is down.
@@ -169,17 +174,17 @@ React editor + Remotion player/export. Composes View primitives. Kind modules ch
 ### View — transcript primitives
 
 **Transcript marker**, **Handle**, **Highlight**, **Underline**:
-Markers show idle; underline + highlight + handles only when the edit is selected. Appearance is kind-specific. Multiple start markers on one word collapse to a primary chip (shared priority with underline: B-roll → VFX → SFX → Zoom; selected wins) plus vertical color dots for the rest; click expands inline to all chips (one cluster open at a time; primary click toggles shut; collapses when selection leaves the cluster). Transcript header toggles (session-only) can hide chrome per kind (B-roll / VFX / SFX / Zoom) without affecting timeline or player.
+Markers show idle; underline + highlight + handles only when the edit is selected. Appearance is kind-specific. Multiple start markers on one word collapse to a primary chip (shared priority with underline: B-roll → VFX → SFX → Zoom → Transition; selected wins) plus vertical color dots for the rest; click expands inline to all chips (one cluster open at a time; primary click toggles shut; collapses when selection leaves the cluster). Transcript header toggles (session-only) can hide chrome per kind (B-roll / VFX / SFX / Zoom / Transition) without affecting timeline or player. **Transition** is marker-only (cannot move; no RangeHandle). Valid drop words are keep-edge punctuated sentence starts (`.?!` only, including in-gap words) plus opening keep and closing after the last kept word. While a Transitions-tab drag is in flight, every valid word shows a gentle blue glow; illegal spots stay unmarked.
 
 ### View — timeline primitives
 
 **Track**, **Keep/cut cell** (keep vs derived gap), **Edit cell**:
-A-roll track shows keep/gap cells from `arolls`. Each Edit gets an Edit cell on its track. Captions bind as a Project-field track when shown.
+A-roll track shows keep/gap cells from `arolls`. Each Edit gets an Edit cell on its track (except **Transition** — thin gutter above Video, not a full-height keep bar and not a VFX-track clip). Captions bind as a Project-field track when shown. Idle transition chrome is a bowtie/diamond centered on the gap (hairline across long gaps); selected shows wings into adjacent keeps with CapCut-style tip handles. Duration via inspector slider and those wing handles (no caption/word snap).
 
 ### View — player primitives
 
-**Text overlay**, **Zoom**, **ScreenShake**, **Media layer**, **Audio layer**:
-Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside.
+**Text overlay**, **Zoom**, **ScreenShake**, **Media layer**, **Audio layer**, **Transition**:
+Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside. Stack: A-roll → zoom → b-roll → **transition** → text overlays → captions. Fade/slide need both keep pictures at the stitch (overlap). Flash is a short full-frame white pulse on the picture (after A-roll+b-roll+zoom, under title/listicle/captions) — do not cover headings.
 
 **ProjectProps**:
 Fully resolved render DTO (defaults materialized). Built from ProjectConfig + assets + projected transcripts.
@@ -211,10 +216,11 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    1. title if empty → `Project.title` + seed `vfx/text`
    2. punch-in zooms
    3. listicles
-   4. quotes (key phrases ~3–10 words; first starts at word 0 / hook end by LLM; ≥5 words between; no overlap with listicle; may overlap text/zoom)
-   5. emphasis — two LLM passes unioned: sparse over whole script, then denser inside quote ranges
-   6. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
-   7. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
+   4. transitions — code seeds opening+closing as a mirrored **flash** pair (same duration); code seeds a transition on any listicle heading whose start sits on a valid drop word (keep-edge punctuated sentence; mid-keep listicles get none); LLM yes/no on remaining interior valid junctions (soft-fail). No companion SFX role for transitions (existing reveal SFX on title/listicle unchanged).
+   5. quotes (key phrases ~3–10 words; first starts at word 0 / hook end by LLM; ≥5 words between; no overlap with listicle; may overlap text/zoom)
+   6. emphasis — two LLM passes unioned: sparse over whole script, then denser inside quote ranges
+   7. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
+   8. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
       Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
 6. Seed default `captions` TemplateStyle → `ready` (create only)
 
@@ -237,6 +243,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
 - Title and listicle share one overlay catalog and one paint path; both carry `TextBase.style`; listicle’s copy mirrors Project `listicleStyle` (fan-out on patch)
 - Companion SFX are sibling `sfx` edits; AI chooses optional intensity (`soft`/`medium`/`hard`) for a fixed candidate role from the AI SFX pack only; concrete Asset is hash-picked from the seeded role pool; intensity sets volume
+- A **Transition** Edit is one-per keep–keep stitch (plus opening/closing); identity is `stitch` + `durationSec`; derived `{start,end}` spans the gap; not a VFX subtype and not a companion SFX candidate
 - A **Project** has at most one **ScheduleEntry** (v1 strict 1:1); publish media is always the Project’s **current** title, export video key, and **Cover** key (nothing frozen onto the entry except the slot)
 - A **ScheduleEntry** has many **PlatformPublish** rows — at most one current row per platform (no attempt history in v1)
 - **Publisher** consumes opaque refs to that export video + Cover (not local filesystem paths)
@@ -255,6 +262,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 | vfx/shake    | Edit                                                              | yes               | Edit cell      | ScreenShake (wraps A-roll/zoom/b-roll; captions/text outside) |
 | captions     | Project field                                                     | no                | optional track | Text overlay (words from projection)                          |
 | music        | Project field                                                     | no                | —              | Audio layer (looping bed, edge fades, no ducking)             |
+| transition   | Edit                                                              | marker only       | Video gutter   | Picture stitch (fade/slide overlap; flash pulse under text)   |
 | arolls       | topology                                                          | —                 | Keep/gap cells | A-roll Media                                                  |
 | emphasis     | Transcript word flag + Project `emphasisStyle` (+ quote override) | (caption styling) | —              | caption word style                                            |
 
@@ -293,6 +301,6 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid (may reuse **Cover**)
 - ~~whether schedule **Publisher**s require a separate cover Asset vs frame-from-export~~ → **Cover** is a first-class styled Project output (prototype title-on-first-frame look), required for Publisher
-- ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle/shake → SFX → Zoom; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary)
+- ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle/shake → SFX → Zoom → Transition; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary). Transition has no handles.
 - ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority reveal/tick → quote ping → punch-in motion (risers are manual library only)
 - ~~Aggressive quote cadence hard quota vs soft~~ → **key-phrase only** (~3–10 words; first quote from word 0; ≥5 words between — spaced subsets)

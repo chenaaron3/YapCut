@@ -1,5 +1,10 @@
 import { produce } from "immer";
 
+import {
+  buildArollLayout,
+  durationMapFromArolls,
+  type ArollLayoutCell,
+} from "~/domain/arolls";
 import { withBrollKenBurns } from "~/domain/broll";
 import {
   clampTimelineRangeToMedia,
@@ -20,11 +25,26 @@ import { isShakeEdit, withShakeIntensity } from "~/domain/shake";
 import { sfxSeed } from "~/domain/sfx";
 import type { TimelineTime } from "~/domain/time";
 import { withTransform } from "~/domain/transform";
+import {
+  isTransitionEdit,
+  materializeTransition,
+  transitionStitchConflicts,
+} from "~/domain/transition";
 
 export { DEFAULT_ZOOM_SCALE } from "~/domain/zoom";
 
 const EPS = 0.001;
 const MIN_RANGE_SEC = 0.05;
+
+function layoutForConfig(
+  config: ProjectConfig,
+  ctx?: PlaceEditContext,
+): ArollLayoutCell[] {
+  return buildArollLayout(
+    config.arolls,
+    durationMapFromArolls(config.arolls, ctx?.srcDurationSec),
+  );
+}
 
 /** External facts needed at place/patch time (lives outside ProjectConfig). */
 export type PlaceEditContext = {
@@ -32,7 +52,7 @@ export type PlaceEditContext = {
   srcDurationSec?: (assetId: string) => number | null | undefined;
 };
 
-/** Edit fields supplied at place-time (id + range filled by `placeEdit`). */
+/** Edit fields supplied at place-time (id + range filled by `placeEdit`). Kind-specific body comes from the caller (e.g. `transitionSeedFromWord`, `listicleSeedFromWords`). */
 export type EditSeed = Edit extends infer E
   ? E extends Edit
     ? Omit<E, "id" | "start" | "end">
@@ -198,6 +218,7 @@ export function patchEditRange(
 ): ProjectConfig {
   const existing = config.edits.find((e) => e.id === id);
   if (!existing) return config;
+
   const src = srcDurationOf(existing, ctx);
   const proposed = rangeFromEdgeDrag(existing, edge, value, {
     mediaOffsetSec: hasMediaRef(existing) ? existing.mediaOffsetSec : undefined,
@@ -225,6 +246,7 @@ function appendEdit(
   range: TimelineTime,
   timelineDuration: number,
   seed: EditSeed,
+  ctx?: PlaceEditContext,
 ): { config: ProjectConfig; placed: Edit } | null {
   const clamped = clampRange(range, timelineDuration);
   if (!clamped) return null;
@@ -232,6 +254,17 @@ function appendEdit(
     seed.kind === "vfx" &&
     seed.type === "quote" &&
     quoteRangeConflicts(config.edits, clamped)
+  ) {
+    return null;
+  }
+  if (
+    seed.kind === "transition" &&
+    transitionStitchConflicts(
+      config.edits,
+      seed.stitch,
+      seed.durationSec,
+      layoutForConfig(config, ctx),
+    )
   ) {
     return null;
   }
@@ -281,15 +314,18 @@ export function placeEdit(
   timelineDuration: number,
   seed: EditSeed,
   ctx?: PlaceEditContext,
-): ProjectConfig {
-  const result = appendEdit(config, range, timelineDuration, seed);
-  if (!result) return config;
-  return applyPlaceSideEffects(
-    result.config,
-    result.placed,
-    timelineDuration,
-    ctx,
-  );
+): { config: ProjectConfig; placed: Edit } | null {
+  const result = appendEdit(config, range, timelineDuration, seed, ctx);
+  if (!result) return null;
+  return {
+    config: applyPlaceSideEffects(
+      result.config,
+      result.placed,
+      timelineDuration,
+      ctx,
+    ),
+    placed: result.placed,
+  };
 }
 
 /** Same asset lookup as place — kept as an alias for patch call sites. */
@@ -307,6 +343,8 @@ const PLAIN_PATCH_KEYS = [
   "style",
   "ease",
   "emphasisStyle",
+  "templateId",
+  "durationSec",
 ] as const;
 
 function applyPlainPatch(edit: Edit, patch: EditPatch): Edit {
@@ -369,6 +407,18 @@ function applyShakeIntensityPatch(edit: Edit, patch: EditPatch): Edit {
   return withShakeIntensity(edit, patch.intensity);
 }
 
+/** Recompute derived `{start,end}` from stitch + duration. */
+function applyTransitionPatch(
+  edit: Edit,
+  config: ProjectConfig,
+  ctx?: PatchEditContext,
+): Edit {
+  if (!isTransitionEdit(edit)) return edit;
+  return (
+    materializeTransition(edit, layoutForConfig(config, ctx)) ?? edit
+  );
+}
+
 export function patchEdit(
   config: ProjectConfig,
   id: number,
@@ -384,6 +434,7 @@ export function patchEdit(
     next = applyMediaPatch(next, patch, ctx);
     next = applyKenBurnsPatch(next, patch);
     next = applyShakeIntensityPatch(next, patch);
+    next = applyTransitionPatch(next, config, ctx);
     draft.edits[idx] = next;
   });
 }

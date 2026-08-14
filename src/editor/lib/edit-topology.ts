@@ -22,6 +22,15 @@ export function editTopologyEqual(a: Edit, b: Edit): boolean {
       return b.kind === "sfx" && a.assetId === b.assetId;
     case "vfx":
       return b.kind === "vfx" && vfxTopologyEqual(a, b);
+    case "transition":
+      return (
+        b.kind === "transition" &&
+        a.stitch.kind === b.stitch.kind &&
+        (a.stitch.kind !== "interior" ||
+          (b.stitch.kind === "interior" &&
+            a.stitch.outKeepId === b.stitch.outKeepId &&
+            a.stitch.inKeepId === b.stitch.inKeepId))
+      );
     default:
       return assertNever(a);
   }

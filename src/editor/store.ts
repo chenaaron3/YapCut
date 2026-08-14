@@ -6,15 +6,19 @@ import {
   applyArollCellAction,
   setArollKeepEdge as applyArollKeepEdge,
   buildArollLayout,
-  clampTimelineSec,
+  buildArollLayoutFromAssets,
   deleteTimelineRange,
+  durationMapFromAssets,
   keepCellIdForArollIndex,
+  reorderArollAssets,
+} from "~/domain/arolls";
+import {
+  clampTimelineSec,
   layoutTimelineDuration,
   outputToTimelineSec,
-  reorderArollAssets,
   snapTimelineSec,
   timelineToOutputSec,
-} from "~/domain/arolls";
+} from "~/domain/layout-time";
 import {
   patchEdit as applyPatchEdit,
   patchEditRange as applyPatchEditRange,
@@ -56,6 +60,7 @@ import {
   type TemplateStyle,
 } from "~/domain/project-config";
 import type { EmphasisStyle } from "~/domain/emphasis-style";
+import type { TimelineTime } from "~/domain/time";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 import type { ProjectProps } from "~/remotion/helpers/types";
 
@@ -145,12 +150,18 @@ type EditorActions = {
   redo: () => void;
 
   // —— Create (place) ——
-  /** Place an edit over the word (or word selection if it includes this word). */
+  /**
+   * Place an edit over the word (or word selection if it includes this word).
+   * Keep this generic: kind-specific fields (transition stitch/duration, listicle
+   * copy, …) belong on the seed from the caller, not in the store.
+   */
   placeEditOnWord: (
     globalIndex: number,
     seed: EditSeed,
     options?: { maxDurationSec?: number | null },
   ) => void;
+  /** Place an edit on a caller-computed timeline range (e.g. a transition stitch). */
+  placeEditOnRange: (seed: EditSeed, range: TimelineTime) => void;
   /** Project-level default entrance SFX for new b-roll drops (`null` = none). */
   setDefaultBRollSfxAssetId: (assetId: string | null) => void;
   /** Merge newly uploaded assets into the editor library. */
@@ -263,10 +274,6 @@ function transcriptMap(
   return new Map(Object.entries(transcriptsByAssetId));
 }
 
-function durationMap(assets: EditorAsset[]): Map<string, number> {
-  return new Map(assets.map((a) => [a.id, a.durationSec ?? 0]));
-}
-
 function sizeMap(
   assets: EditorAsset[],
 ): Map<string, { width: number; height: number }> {
@@ -305,7 +312,7 @@ function recomputeProps(state: {
     title: state.title,
     mediaUrls: mediaUrlMap(state.assets),
     transcriptsByAssetId: transcriptMap(state.transcriptsByAssetId),
-    assetDurationSec: durationMap(state.assets),
+    assetDurationSec: durationMapFromAssets(state.assets),
     assetSize: sizeMap(state.assets),
     assetKind: kindMap(state.assets),
     assetLoudness: loudnessMap(state.assets),
@@ -336,7 +343,7 @@ function layoutFor(
   if (layoutCache?.config === config && layoutCache.assets === assets) {
     return layoutCache.value;
   }
-  const value = buildArollLayout(config.arolls, durationMap(assets));
+  const value = buildArollLayoutFromAssets(config.arolls, assets);
   layoutCache = { config, assets, value };
   return value;
 }
@@ -356,7 +363,7 @@ function globalWordsFor(
   const value = projectTimelineWords(
     config.arolls,
     transcriptMap(transcriptsByAssetId),
-    durationMap(assets),
+    durationMapFromAssets(assets),
   );
   wordsCache = { config, transcriptsByAssetId, assets, value };
   return value;
@@ -686,7 +693,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
 
       if (!selection) return false;
 
-      const durations = durationMap(assets);
+      const durations = durationMapFromAssets(assets);
 
       if (selection.kind === "aroll") {
         if (selection.ids.length === 0) return false;
@@ -775,7 +782,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const words = projectTimelineWords(
         config.arolls,
         transcriptMap(transcriptsByAssetId),
-        durationMap(assets),
+        durationMapFromAssets(assets),
       );
       const word = words[globalIndex];
       if (!word) return;
@@ -798,8 +805,21 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       );
     },
 
-    placeEditOnWord: (globalIndex, seed, options) => {
+    placeEditOnRange: (seed, range) => {
       const { config, transcriptsByAssetId, assets } = get();
+      if (!config) return;
+      const timelineDuration = layoutTimelineDuration(layoutFor(config, assets));
+      const result = placeEdit(config, range, timelineDuration, seed, {
+        srcDurationSec: (assetId) =>
+          assets.find((a) => a.id === assetId)?.durationSec ?? null,
+      });
+      if (!result) return;
+      commit({ config: result.config, transcriptsByAssetId });
+      useSelection.getState().select("edit", result.placed.id);
+    },
+
+    placeEditOnWord: (globalIndex, seed, options) => {
+      const { config, assets } = get();
       if (!config) return;
       const words = get().getGlobalWords();
       const word = words[globalIndex];
@@ -817,16 +837,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       if (options?.maxDurationSec != null) {
         range = clampTimelineRangeToMedia(range, options.maxDurationSec);
       }
-      const timelineDuration = layoutTimelineDuration(layout);
-      const prevIds = new Set(config.edits.map((e) => e.id));
-      const next = placeEdit(config, range, timelineDuration, seed, {
-        srcDurationSec: (assetId) =>
-          assets.find((a) => a.id === assetId)?.durationSec ?? null,
-      });
-      if (next === config) return;
-      commit({ config: next, transcriptsByAssetId });
-      const created = next.edits.find((e) => !prevIds.has(e.id));
-      if (created) useSelection.getState().select("edit", created.id);
+      get().placeEditOnRange(seed, range);
     },
 
     setDefaultBRollSfxAssetId: (assetId) => {
@@ -876,7 +887,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         config,
         fromIndex,
         toIndex,
-        durationMap(assets),
+        durationMapFromAssets(assets),
       );
       if (nextConfig === config) return;
       commit({ config: nextConfig, transcriptsByAssetId }, { live });
@@ -891,7 +902,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { selection, clearSelection } = useSelection.getState();
       const range = wordActionRange(selection, word, words);
       commit({
-        config: deleteTimelineRange(config, range, durationMap(assets)),
+        config: deleteTimelineRange(config, range, durationMapFromAssets(assets)),
         transcriptsByAssetId,
       });
       clearSelection();
@@ -952,7 +963,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     patchArollRange: (arollIndex, edge, targetTimelineSec) => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config) return;
-      const durations = durationMap(assets);
+      const durations = durationMapFromAssets(assets);
       const next = applyArollKeepEdge(
         config,
         arollIndex,

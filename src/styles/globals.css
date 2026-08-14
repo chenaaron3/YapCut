@@ -70,6 +70,7 @@
   --color-sfx: #2dd4bf;
   --color-music: #a78bfa;
   --color-zoom: #3b82f6;
+  --color-transition: #38bdf8;
 }
 
 /* Editor layout helpers */
@@ -140,6 +141,37 @@
 
 .animate-pulse-line {
   animation: pulse-line 3.2s ease-in-out infinite;
+}
+
+@keyframes transition-drop-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgb(56 189 248 / 0.35),
+      0 0 10px rgb(56 189 248 / 0.18);
+    background-color: rgb(56 189 248 / 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgb(56 189 248 / 0.7),
+      0 0 16px rgb(56 189 248 / 0.4);
+    background-color: rgb(56 189 248 / 0.28);
+  }
+}
+
+.animate-transition-drop-glow {
+  border-radius: 0.25rem;
+  animation: transition-drop-glow 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-transition-drop-glow {
+    animation: none;
+    box-shadow:
+      0 0 0 1px rgb(56 189 248 / 0.55),
+      0 0 12px rgb(56 189 248 / 0.25);
+    background-color: rgb(56 189 248 / 0.2);
+  }
 }
 
 @theme inline {

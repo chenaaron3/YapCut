@@ -1,4 +1,8 @@
-import { buildArollLayout, timelineRangeToOutput } from "~/domain/arolls";
+import { buildArollLayout, type ArollLayoutCell } from "~/domain/arolls";
+import {
+  outputDurationFromArolls,
+  timelineRangeToOutput,
+} from "~/domain/layout-time";
 import {
   arollPlaybackGain,
   mixPlaybackVolume,
@@ -8,13 +12,13 @@ import { pickEmphasisStyle } from "~/domain/emphasis-style";
 import {
   editHidesCaptions,
   isTextBaseEdit,
-  outputDurationFromArolls,
   PROJECT_FPS,
 } from "~/domain/project-config";
 import { projectOutputWords } from "~/domain/projection";
 import { resolveShakeIntensity } from "~/domain/shake";
 import { resolveTransform } from "~/domain/transform";
 import { editMiddleSec } from "~/domain/vfx";
+import { keepsForStitch } from "~/domain/transition";
 import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/zoom";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
@@ -60,6 +64,8 @@ import type {
   SfxClipProp,
   ShakeClipProp,
   TextOverlayProp,
+  TransitionClipProp,
+  TransitionPictureProp,
   ZoomProp,
 } from "~/remotion/helpers/types";
 
@@ -500,6 +506,83 @@ function buildMusic(
   };
 }
 
+function localSecInKeep(keep: ArollLayoutCell, timelineSec: number): number {
+  const t = Math.min(
+    keep.timeline.end,
+    Math.max(keep.timeline.start, timelineSec),
+  );
+  return keep.local.start + (t - keep.timeline.start);
+}
+
+function stitchPicture(
+  keep: ArollLayoutCell,
+  timelineSec: number,
+  side: "out" | "in",
+  mediaUrls: ReadonlyMap<string, string>,
+  fps: number,
+): TransitionPictureProp | undefined {
+  const src = mediaUrls.get(keep.local.assetId);
+  if (!src) return undefined;
+  const trimStart = secToFrame(keep.local.start, fps);
+  const trimEnd = Math.max(trimStart + 1, secToFrame(keep.local.end, fps));
+  const at = secToFrame(localSecInKeep(keep, timelineSec), fps);
+  if (side === "out") {
+    return {
+      src,
+      trimBefore: at,
+      trimAfter: trimEnd,
+      freezeFrame: Math.max(trimStart, trimEnd - 1),
+    };
+  }
+  return {
+    src,
+    trimBefore: trimStart,
+    trimAfter: Math.max(trimStart + 1, at),
+    freezeFrame: trimStart,
+  };
+}
+
+function buildTransitions(
+  edits: ProjectConfig["edits"],
+  cells: ReturnType<typeof buildArollLayout>,
+  mediaUrls: ReadonlyMap<string, string>,
+  fps: number,
+): TransitionClipProp[] {
+  const out: TransitionClipProp[] = [];
+  for (const e of edits) {
+    if (e.kind !== "transition") continue;
+    const pair = keepsForStitch(e.stitch, cells);
+    if (!pair) continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+    const startFrame = secToFrame(range.start, fps);
+    const endFrame = Math.max(startFrame + 1, secToFrame(range.end, fps));
+    const kind = e.stitch.kind;
+    const stitchFrame =
+      kind === "opening"
+        ? startFrame
+        : kind === "closing"
+          ? endFrame
+          : secToFrame(pair.outKeep.output.end, fps);
+
+    out.push({
+      id: e.id,
+      templateId: e.templateId,
+      startFrame,
+      endFrame,
+      stitchFrame,
+      mode: kind,
+      ...(kind !== "opening"
+        ? { out: stitchPicture(pair.outKeep, e.start, "out", mediaUrls, fps) }
+        : {}),
+      ...(kind !== "closing"
+        ? { in: stitchPicture(pair.inKeep, e.end, "in", mediaUrls, fps) }
+        : {}),
+    });
+  }
+  return out;
+}
+
 export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
   const fps = input.fps ?? COMPOSITION_FPS ?? PROJECT_FPS;
   const sections = buildSections(
@@ -550,6 +633,12 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
       input.mediaUrls,
       input.assetKind,
       input.assetLoudness,
+    ),
+    transitions: buildTransitions(
+      input.config.edits,
+      layout,
+      input.mediaUrls,
+      fps,
     ),
   };
 }

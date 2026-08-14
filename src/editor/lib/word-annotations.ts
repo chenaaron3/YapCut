@@ -1,9 +1,11 @@
 import { isTextBaseEdit } from "~/domain/project-config";
+import { isTransitionEdit, markerWordForTransition } from "~/domain/transition";
 import { editMiddleSec } from "~/domain/vfx";
 import { chromeForEdit, chromeRank } from "~/editor/lib/edit-chrome";
 import { isSelected } from "~/editor/lib/selection";
 import { overlayStackedForEdit } from "~/remotion/templates/overlay";
 
+import type { ArollLayoutCell } from "~/domain/arolls";
 import type { Edit, EditId } from "~/domain/project-config";
 import type { GlobalTranscriptWord } from "~/domain/transcript";
 import type { EditChromeKey } from "~/editor/lib/edit-chrome";
@@ -21,7 +23,8 @@ export type RangeRole =
   | "split-end"
   | "end"
   | "both"
-  | "point";
+  | "point"
+  | "point-after";
 
 /** One Edit covering (or pinned to) a transcript word. */
 export type WordEditSpan = {
@@ -71,12 +74,24 @@ function pushSpan(
 export function buildWordAnnotations(
   words: readonly GlobalTranscriptWord[],
   edits: readonly Edit[],
+  layout: readonly ArollLayoutCell[] = [],
 ): Map<number, WordAnnotation> {
   const map = new Map<number, WordAnnotation>();
 
   for (const edit of edits) {
     const chrome = chromeForEdit(edit);
     if (!chrome) continue;
+
+    if (isTransitionEdit(edit)) {
+      const pin = markerWordForTransition(edit, words, layout);
+      if (!pin) continue;
+      pushSpan(map, pin.globalIndex, {
+        editId: edit.id,
+        chromeKey: chrome.key,
+        role: pin.after ? "point-after" : "point",
+      });
+      continue;
+    }
 
     // Words whose timeline range overlaps this edit.
     const covered = words.filter((w) => wordOverlaps(w, edit.start, edit.end));
@@ -131,11 +146,16 @@ export function buildWordAnnotations(
   return map;
 }
 
+export function isAfterMarkerRole(role: RangeRole): boolean {
+  return role === "point-after";
+}
+
 export function isMarkerRole(role: RangeRole): boolean {
   return (
     role === "start" ||
     role === "both" ||
     role === "point" ||
+    role === "point-after" ||
     role === "split-start"
   );
 }

@@ -1,8 +1,10 @@
 import { produce } from "immer";
 
 import {
+  nextKeepId,
   type ArollKeep,
   type Edit,
+  type KeepId,
   type ProjectConfig,
   isTextBaseEdit,
 } from "~/domain/project-config";
@@ -18,7 +20,8 @@ const MIN_KEEP_SEC = 0.05;
  * - `timeline` — expanded timeline range (gaps count)
  * - `output` — compacted playback range (keeps: real span; gaps: degenerate snap point)
  *
- * `id` is unique within a layout build (index in result) — selection key.
+ * Keep cell `id` is the persisted `ArollKeep.id`. Gap cell `id` is negative
+ * (derived, not persisted).
  */
 export type ArollLayoutCell = {
   kind: "keep" | "gap";
@@ -28,11 +31,98 @@ export type ArollLayoutCell = {
   output: OutputTime;
 };
 
+/**
+ * Keep-identity change from A-roll surgery. Edit kinds that bind to keep ids
+ * consume these via {@link registerArollEditPostprocessor} — arolls do not
+ * know about those kinds.
+ */
+export type ArollKeepOp =
+  | { type: "split"; id: KeepId; rightId: KeepId }
+  | { type: "merge"; dyingId: KeepId; survivorId: KeepId }
+  | { type: "remove"; id: KeepId };
+
+export type ArollEditPostprocessor = {
+  owns: (edit: Edit) => boolean;
+  apply: (input: {
+    edits: readonly Edit[];
+    ops: readonly ArollKeepOp[];
+    layout: readonly ArollLayoutCell[];
+  }) => Edit[];
+};
+
+const postprocessors: ArollEditPostprocessor[] = [];
+
+export function registerArollEditPostprocessor(
+  plugin: ArollEditPostprocessor,
+): void {
+  if (postprocessors.includes(plugin)) return;
+  postprocessors.push(plugin);
+}
+
+function ownedByPostprocessor(edit: Edit): boolean {
+  return postprocessors.some((p) => p.owns(edit));
+}
+
+function splitOwnedEdits(edits: readonly Edit[]): {
+  owned: Edit[];
+  unowned: Edit[];
+} {
+  const owned: Edit[] = [];
+  const unowned: Edit[] = [];
+  for (const edit of edits) {
+    if (ownedByPostprocessor(edit)) owned.push(edit);
+    else unowned.push(edit);
+  }
+  return { owned, unowned };
+}
+
+/** Range-prune edits the plugins do not own; owned edits pass through. */
+function pruneUnownedInTimelineRange(
+  edits: readonly Edit[],
+  range: TimelineTime,
+): Edit[] {
+  const { owned, unowned } = splitOwnedEdits(edits);
+  return [...pruneEditsInTimelineRange(unowned, range), ...owned];
+}
+
+function postprocessEdits(
+  edits: readonly Edit[],
+  ops: readonly ArollKeepOp[],
+  layout: readonly ArollLayoutCell[],
+): Edit[] {
+  let next = edits as Edit[];
+  for (const plugin of postprocessors) {
+    next = plugin.apply({ edits: next, ops, layout });
+  }
+  return next;
+}
+
+/** Normalize keeps, then retarget plugin edits. Reorder skips this (no keep-id ops). */
+function commitKeepSurgery(
+  draft: { arolls: ArollKeep[]; edits: Edit[] },
+  assetDurationSec: ReadonlyMap<string, number>,
+  options?: {
+    extraOps?: readonly ArollKeepOp[];
+    edits?: readonly Edit[];
+  },
+): void {
+  const { keeps, ops } = normalizeArolls(draft.arolls);
+  draft.arolls = keeps;
+  draft.edits = postprocessEdits(
+    options?.edits ?? draft.edits,
+    [...(options?.extraOps ?? []), ...ops],
+    buildArollLayout(draft.arolls, assetDurationSec),
+  );
+}
+
 /** Normalize keeps: drop empties, merge consecutive same-asset overlaps/abutments. */
-export function normalizeArolls(arolls: readonly ArollKeep[]): ArollKeep[] {
+export function normalizeArolls(
+  arolls: readonly ArollKeep[],
+): { keeps: ArollKeep[]; ops: ArollKeepOp[] } {
   const sorted = [...arolls]
     .filter((k) => k.end > k.start + EPS)
     .map((k) => ({
+      id: k.id,
       assetId: k.assetId,
       start: k.start,
       end: k.end,
@@ -40,19 +130,53 @@ export function normalizeArolls(arolls: readonly ArollKeep[]): ArollKeep[] {
 
   // Preserve stitch order; merge overlaps and abutments on the same asset.
   const merged: ArollKeep[] = [];
+  const ops: ArollKeepOp[] = [];
   for (const keep of sorted) {
     const last = merged[merged.length - 1];
     if (
       last?.assetId === keep.assetId &&
       keep.start <= last.end + EPS
     ) {
+      if (keep.id !== last.id) {
+        ops.push({
+          type: "merge",
+          dyingId: keep.id,
+          survivorId: last.id,
+        });
+      }
       last.end = Math.max(last.end, keep.end);
       last.start = Math.min(last.start, keep.start);
     } else {
       merged.push({ ...keep });
     }
   }
-  return merged;
+  return { keeps: merged, ops };
+}
+
+/** Library durations for layout (missing → 0). */
+export function durationMapFromAssets(
+  assets: readonly { id: string; durationSec: number | null | undefined }[],
+): Map<string, number> {
+  return new Map(assets.map((a) => [a.id, a.durationSec ?? 0]));
+}
+
+/** Keep-derived durations. `lookup` wins when it returns a number. */
+export function durationMapFromArolls(
+  arolls: readonly ArollKeep[],
+  lookup?: (assetId: string) => number | null | undefined,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const keep of arolls) {
+    map.set(keep.assetId, lookup?.(keep.assetId) ?? keep.end);
+  }
+  return map;
+}
+
+export function buildArollLayoutFromAssets(
+  arolls: readonly ArollKeep[],
+  assets: readonly { id: string; durationSec: number | null | undefined }[],
+): ArollLayoutCell[] {
+  return buildArollLayout(arolls, durationMapFromAssets(assets));
 }
 
 /**
@@ -72,8 +196,13 @@ export function buildArollLayout(
   let outputCursor = 0;
   /** Local media covered so far on the current asset run. */
   let localCursor = 0;
+  let gapSerial = 0;
 
-  const push = (kind: "keep" | "gap", local: LocalTime) => {
+  const push = (
+    kind: "keep" | "gap",
+    local: LocalTime,
+    keepId?: number,
+  ) => {
     const dur = Math.max(0, local.end - local.start);
     if (kind === "gap" && dur <= EPS) return;
 
@@ -85,7 +214,7 @@ export function buildArollLayout(
 
     cells.push({
       kind,
-      id: cells.length,
+      id: kind === "keep" ? keepId! : -(++gapSerial),
       local,
       timeline,
       output,
@@ -110,11 +239,15 @@ export function buildArollLayout(
       });
     }
 
-    push("keep", {
-      assetId: keep.assetId,
-      start: keep.start,
-      end: keep.end,
-    });
+    push(
+      "keep",
+      {
+        assetId: keep.assetId,
+        start: keep.start,
+        end: keep.end,
+      },
+      keep.id,
+    );
     localCursor = keep.end;
 
     const next = arolls[i + 1];
@@ -134,98 +267,45 @@ export function buildArollLayout(
   return cells;
 }
 
-/** Total expanded timeline length (keeps + gaps). */
-export function layoutTimelineDuration(
-  cells: readonly ArollLayoutCell[],
-): number {
-  return cells.length === 0 ? 0 : cells[cells.length - 1]!.timeline.end;
+/** Keep cells only (gaps dropped). Order is stitch order. */
+export function keepCells(
+  layout: readonly ArollLayoutCell[],
+): ArollLayoutCell[] {
+  return layout.filter((c) => c.kind === "keep");
 }
 
-/** Map compacted output seconds → timeline seconds. */
-export function outputToTimelineSec(
-  cells: readonly ArollLayoutCell[],
-  outputSec: number,
-): number {
-  const keeps = cells.filter((c) => c.kind === "keep");
-  if (keeps.length === 0) return 0;
+export function keepCellById(
+  layout: readonly ArollLayoutCell[],
+  keepId: KeepId,
+): ArollLayoutCell | undefined {
+  return layout.find((c) => c.kind === "keep" && c.id === keepId);
+}
 
-  for (const cell of keeps) {
-    if (outputSec >= cell.output.start && outputSec < cell.output.end) {
-      return cell.timeline.start + (outputSec - cell.output.start);
+export function firstKeepCell(
+  layout: readonly ArollLayoutCell[],
+): ArollLayoutCell | undefined {
+  return layout.find((c) => c.kind === "keep");
+}
+
+export function lastKeepCell(
+  layout: readonly ArollLayoutCell[],
+): ArollLayoutCell | undefined {
+  const keeps = keepCells(layout);
+  return keeps[keeps.length - 1];
+}
+
+export function keepsAreAdjacent(
+  layout: readonly ArollLayoutCell[],
+  outKeepId: KeepId,
+  inKeepId: KeepId,
+): boolean {
+  const keeps = keepCells(layout);
+  for (let i = 0; i < keeps.length - 1; i++) {
+    if (keeps[i]!.id === outKeepId && keeps[i + 1]!.id === inKeepId) {
+      return true;
     }
   }
-
-  const last = keeps[keeps.length - 1]!;
-  if (outputSec >= last.output.end) return last.timeline.end;
-
-  const first = keeps[0]!;
-  if (outputSec <= first.output.start) return first.timeline.start;
-
-  for (const cell of keeps) {
-    if (outputSec <= cell.output.start) return cell.timeline.start;
-  }
-  return last.timeline.end;
-}
-
-/**
- * Map timeline seconds → compacted output seconds.
- * Inside a gap, snaps to the attached keep edge (`output` degenerate point).
- */
-export function timelineToOutputSec(
-  cells: readonly ArollLayoutCell[],
-  timelineSec: number,
-): number {
-  if (cells.length === 0) return 0;
-
-  for (const cell of cells) {
-    if (timelineSec >= cell.timeline.start && timelineSec < cell.timeline.end) {
-      if (cell.kind === "keep") {
-        return cell.output.start + (timelineSec - cell.timeline.start);
-      }
-      return cell.output.start;
-    }
-  }
-
-  const last = cells[cells.length - 1]!;
-  if (timelineSec >= last.timeline.end) {
-    return last.kind === "keep" ? last.output.end : last.output.start;
-  }
-
-  return cells[0]!.output.start;
-}
-
-/** Timeline start of the first keep cell (0 if none). */
-export function firstKeepTimelineSec(
-  cells: readonly ArollLayoutCell[],
-): number {
-  for (const cell of cells) {
-    if (cell.kind === "keep") return cell.timeline.start;
-  }
-  return 0;
-}
-
-/** Snap timeline seconds into a keep (for seek). Gaps snap to the attached edge. */
-export function snapTimelineSec(
-  cells: readonly ArollLayoutCell[],
-  timelineSec: number,
-): number {
-  if (cells.length === 0) return 0;
-  const min = firstKeepTimelineSec(cells);
-  const t = Math.min(
-    Math.max(min, timelineSec),
-    layoutTimelineDuration(cells),
-  );
-
-  let seenKeep = false;
-  for (const cell of cells) {
-    if (t >= cell.timeline.start && t < cell.timeline.end) {
-      if (cell.kind === "keep") return t;
-      // Prefer previous keep end; else next keep start (leading gap).
-      return seenKeep ? cell.timeline.start : cell.timeline.end;
-    }
-    if (cell.kind === "keep") seenKeep = true;
-  }
-  return t;
+  return false;
 }
 
 /**
@@ -281,6 +361,8 @@ export function deleteTimelineRange(
 
   const layout = buildArollLayout(config.arolls, assetDurationSec);
   const nextKeeps: ArollKeep[] = [];
+  const ops: ArollKeepOp[] = [];
+  let nextId = nextKeepId(config.arolls);
 
   for (const cell of layout) {
     if (cell.kind !== "keep") continue;
@@ -289,6 +371,7 @@ export function deleteTimelineRange(
     const te = cell.timeline.end;
     if (te <= start + EPS || ts >= end - EPS) {
       nextKeeps.push({
+        id: cell.id,
         assetId: cell.local.assetId,
         start: cell.local.start,
         end: cell.local.end,
@@ -301,25 +384,38 @@ export function deleteTimelineRange(
     const localCutStart = cell.local.start + (cutStart - ts);
     const localCutEnd = cell.local.start + (cutEnd - ts);
 
-    if (localCutStart > cell.local.start + EPS) {
+    const left =
+      localCutStart > cell.local.start + EPS
+        ? {
+            id: cell.id,
+            assetId: cell.local.assetId,
+            start: cell.local.start,
+            end: localCutStart,
+          }
+        : null;
+    const rightRemnant = localCutEnd < cell.local.end - EPS;
+    if (left) nextKeeps.push(left);
+    if (rightRemnant) {
+      const rightId = left ? nextId++ : cell.id;
+      if (left) ops.push({ type: "split", id: cell.id, rightId });
       nextKeeps.push({
-        assetId: cell.local.assetId,
-        start: cell.local.start,
-        end: localCutStart,
-      });
-    }
-    if (localCutEnd < cell.local.end - EPS) {
-      nextKeeps.push({
+        id: rightId,
         assetId: cell.local.assetId,
         start: localCutEnd,
         end: cell.local.end,
       });
     }
+    if (!left && !rightRemnant) {
+      ops.push({ type: "remove", id: cell.id });
+    }
   }
 
   return produce(config, (draft) => {
-    draft.arolls = normalizeArolls(nextKeeps);
-    draft.edits = pruneEditsInTimelineRange(draft.edits, { start, end });
+    draft.arolls = nextKeeps;
+    commitKeepSurgery(draft, assetDurationSec, {
+      extraOps: ops,
+      edits: pruneUnownedInTimelineRange(draft.edits, { start, end }),
+    });
   });
 }
 
@@ -334,13 +430,14 @@ export function applyArollCellAction(
   if (cell.kind === "keep") {
     return deleteTimelineRange(config, cell.timeline, assetDurationSec);
   }
-  return restoreGap(config, cell.local);
+    return restoreGap(config, cell.local, assetDurationSec);
 }
 
 /** Restore a gap layout cell back into arolls (insert keep). No ripple. */
 export function restoreGap(
   config: ProjectConfig,
   gap: LocalTime,
+  assetDurationSec?: ReadonlyMap<string, number>,
 ): ProjectConfig {
   const duration = Math.max(0, gap.end - gap.start);
   if (duration <= EPS) return config;
@@ -366,21 +463,17 @@ export function restoreGap(
 
   return produce(config, (draft) => {
     draft.arolls.splice(insertIndex, 0, {
+      id: nextKeepId(draft.arolls),
       assetId: gap.assetId,
       start: gap.start,
       end: gap.end,
     });
-    draft.arolls = normalizeArolls(draft.arolls);
+    const durations = new Map(assetDurationSec);
+    for (const keep of draft.arolls) {
+      if (!durations.has(keep.assetId)) durations.set(keep.assetId, keep.end);
+    }
+    commitKeepSurgery(draft, durations);
   });
-}
-
-export function clampTimelineSec(
-  cells: readonly ArollLayoutCell[],
-  sec: number,
-): number {
-  const min = firstKeepTimelineSec(cells);
-  const dur = layoutTimelineDuration(cells);
-  return Math.min(Math.max(min, sec), Math.max(min, dur));
 }
 
 /** Index into `config.arolls` for a keep layout cell, or null. */
@@ -463,19 +556,8 @@ export function setArollKeepEdge(
       target.end = nextEnd;
     }
 
-    draft.arolls = normalizeArolls(draft.arolls);
+    commitKeepSurgery(draft, assetDurationSec);
   });
-}
-
-/** Map a timeline range to compacted output (for Remotion). */
-export function timelineRangeToOutput(
-  cells: readonly ArollLayoutCell[],
-  range: TimelineTime,
-): OutputTime | null {
-  const s = timelineToOutputSec(cells, snapTimelineSec(cells, range.start));
-  const e = timelineToOutputSec(cells, snapTimelineSec(cells, range.end));
-  if (e <= s + EPS) return null;
-  return { start: Math.min(s, e), end: Math.max(s, e) };
 }
 
 /** Unique A-roll asset ids in stitch order (contiguous runs). */
@@ -606,16 +688,15 @@ export function reorderArollAssets(
   const keepsByAsset = new Map(groups.map((g) => [g.assetId, g.keeps]));
   const nextArolls = nextOrder.flatMap((id) => keepsByAsset.get(id) ?? []);
 
-  const oldRuns = assetRunTimelineRanges(
-    buildArollLayout(config.arolls, assetDurationSec),
-  );
-  const newRuns = assetRunTimelineRanges(
-    buildArollLayout(nextArolls, assetDurationSec),
-  );
+  const oldLayout = buildArollLayout(config.arolls, assetDurationSec);
+  const newLayout = buildArollLayout(nextArolls, assetDurationSec);
+  const oldRuns = assetRunTimelineRanges(oldLayout);
+  const newRuns = assetRunTimelineRanges(newLayout);
   const newByAsset = new Map(newRuns.map((r) => [r.assetId, r]));
 
   const nextEdits: Edit[] = [];
   for (const edit of config.edits) {
+    if (ownedByPostprocessor(edit)) continue;
     const oldRun = assetRunAtTimelineSec(oldRuns, edit.start);
     if (!oldRun) {
       nextEdits.push(edit);
@@ -644,8 +725,13 @@ export function reorderArollAssets(
     nextEdits.push({ ...edit, start, end });
   }
 
+  const withOwned = [
+    ...nextEdits,
+    ...config.edits.filter(ownedByPostprocessor),
+  ];
+
   return produce(config, (draft) => {
     draft.arolls = nextArolls;
-    draft.edits = nextEdits;
+    draft.edits = postprocessEdits(withOwned, [], newLayout);
   });
 }

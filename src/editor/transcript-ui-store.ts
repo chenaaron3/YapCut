@@ -15,11 +15,15 @@ type State = {
     on: boolean,
   ) => void;
 
-  /** At most one marker cluster expanded (word globalIndex). */
-  expandedWordIndex: number | null;
-  expandCluster: (wordIndex: number) => void;
+  /** At most one marker cluster expanded (`wordIndex:before` | `wordIndex:after`). */
+  expandedClusterId: string | null;
+  expandCluster: (clusterId: string) => void;
   collapseCluster: () => void;
-  toggleCluster: (wordIndex: number) => void;
+  toggleCluster: (clusterId: string) => void;
+
+  /** Transitions tab drag in flight — transcript shows all valid drop words. */
+  transitionDragActive: boolean;
+  setTransitionDragActive: (on: boolean) => void;
 };
 
 /** Session-only transcript UI: chrome visibility + marker cluster expand. */
@@ -36,12 +40,15 @@ export const useTranscriptUi = create<State>((set, get) => ({
       return { visible };
     }),
 
-  expandedWordIndex: null,
-  expandCluster: (wordIndex) => set({ expandedWordIndex: wordIndex }),
-  collapseCluster: () => set({ expandedWordIndex: null }),
-  toggleCluster: (wordIndex) =>
+  expandedClusterId: null,
+  expandCluster: (clusterId) => set({ expandedClusterId: clusterId }),
+  collapseCluster: () => set({ expandedClusterId: null }),
+  toggleCluster: (clusterId) =>
     set({
-      expandedWordIndex:
-        get().expandedWordIndex === wordIndex ? null : wordIndex,
+      expandedClusterId:
+        get().expandedClusterId === clusterId ? null : clusterId,
     }),
+
+  transitionDragActive: false,
+  setTransitionDragActive: (on) => set({ transitionDragActive: on }),
 }));

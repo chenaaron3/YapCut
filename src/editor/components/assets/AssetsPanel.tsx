@@ -5,11 +5,12 @@ import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
 import { BrollLibrary } from "~/editor/components/assets/BrollLibrary";
 import { MusicLibrary } from "~/editor/components/assets/MusicLibrary";
 import { SfxLibrary } from "~/editor/components/assets/SfxLibrary";
+import { TransitionsLibrary } from "~/editor/components/assets/TransitionsLibrary";
 import { VfxLibrary } from "~/editor/components/assets/VfxLibrary";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-type Tab = "aroll" | "broll" | "vfx" | "sfx" | "music";
+type Tab = "aroll" | "broll" | "vfx" | "sfx" | "music" | "transitions";
 
 export function AssetsPanel() {
   const assets = useEditor((s) => s.assets);
@@ -57,6 +58,7 @@ export function AssetsPanel() {
             ["aroll", "A-roll"],
             ["broll", "B-roll"],
             ["vfx", "VFX"],
+            ["transitions", "Transitions"],
             ["sfx", "SFX"],
             ["music", "Music"],
           ] as const
@@ -84,6 +86,8 @@ export function AssetsPanel() {
           <BrollLibrary assets={brollAssets} />
         ) : tab === "vfx" ? (
           <VfxLibrary />
+        ) : tab === "transitions" ? (
+          <TransitionsLibrary />
         ) : tab === "music" ? (
           <MusicLibrary assets={musicAssets} />
         ) : (
