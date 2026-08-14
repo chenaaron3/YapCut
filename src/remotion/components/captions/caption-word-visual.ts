@@ -167,7 +167,6 @@ export function resolveCaptionWordVisual(input: {
   );
   const bg = paint.background;
   const scrap = bg?.kind === "scrap";
-  const typewriter = groupStyle.wordReveal === "typewriter";
   const wordBackground = resolveWordBackground(
     groupStyle,
     word,
@@ -181,17 +180,9 @@ export function resolveCaptionWordVisual(input: {
     wordBackground.fade,
   );
 
-  // Overlay: group owns enter. Typewriter unmounts words that have not
-  // started; once started they stay in layout while letters reveal.
+  // Overlay: group owns enter. Keep every word mounted so typewriter
+  // letter slots (visibility) do not reflow the line as glyphs appear.
   if (!cycleWordStates) {
-    if (typewriter && frame < word.startFrame) {
-      return {
-        mount: false,
-        opacity: 0,
-        wordCss: { ...wordStyleToCss(paint), ...emphasisCss },
-        backgroundCss: {},
-      };
-    }
     return {
       mount: true,
       opacity: paint.opacity ?? 1,

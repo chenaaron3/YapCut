@@ -5,14 +5,10 @@ import {
   TYPEWRITER_CHAR_DELAY_SEC,
 } from "~/remotion/captions/style";
 
-import type {
-  CaptionGroupAnimation,
-  CaptionWordReveal,
-} from "~/remotion/captions/style";
+import type { CaptionGroupAnimation } from "~/remotion/captions/style";
 
 import type { CaptionWordProp } from "~/remotion/helpers/types";
 
-export const CURSOR_BLINK_FRAMES = 16;
 export const SLIDE_OFFSET_PX = 28;
 
 /** Explicit line break in static overlay text (Shift+Enter). */
@@ -308,38 +304,6 @@ export function wordStateBlendT(
   }
 
   return { from: "future", to: "future", t: 1 };
-}
-
-export function lastVisibleWordIndex(
-  words: CaptionWordProp[],
-  frame: number,
-  showAll: boolean,
-): number {
-  let last = -1;
-  for (let i = 0; i < words.length; i++) {
-    if (showAll || frame >= words[i]!.startFrame) {
-      if (!isLineBreakToken(words[i]!.text)) last = i;
-    }
-  }
-  return last;
-}
-
-export function typewriterCursorBlink(frame: number): boolean {
-  return Math.floor(frame / (CURSOR_BLINK_FRAMES / 2)) % 2 === 0;
-}
-
-export function typewriterCursorOn(
-  reveal: CaptionWordReveal,
-  lastVisibleIndex: number,
-  frame: number,
-  groupEndFrame: number,
-): boolean {
-  return (
-    reveal === "typewriter" &&
-    lastVisibleIndex >= 0 &&
-    frame < groupEndFrame &&
-    typewriterCursorBlink(frame)
-  );
 }
 
 /** Char count for typewriter stagger: words + implicit spaces; `\n` is one beat. */

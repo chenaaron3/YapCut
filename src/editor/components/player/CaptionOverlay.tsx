@@ -244,7 +244,7 @@ export function CaptionOverlay({
         data-caption-hit=""
         className={`pointer-events-auto absolute ${
           selected
-            ? "border-primary/90 cursor-ns-resize border shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+            ? "border-primary/90 group cursor-ns-resize border shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
             : hovered
               ? "border-primary/50 cursor-pointer border shadow-[0_0_0_1px_rgba(0,0,0,0.25)]"
               : "cursor-pointer border border-transparent"
@@ -255,10 +255,18 @@ export function CaptionOverlay({
         onPointerLeave={() => setHovered(false)}
       >
         {selected ? (
-          <TransformHandles
-            scale={box.scale}
-            onScale={(e) => startDrag(e, "scale")}
-          />
+          <div
+            className={
+              dragging
+                ? "contents"
+                : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100"
+            }
+          >
+            <TransformHandles
+              scale={box.scale}
+              onScale={(e) => startDrag(e, "scale")}
+            />
+          </div>
         ) : null}
       </div>
     </div>

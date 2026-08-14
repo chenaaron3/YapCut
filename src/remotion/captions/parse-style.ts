@@ -233,6 +233,7 @@ export function normalizeCaptionOverrides(
     const fontSize = Number(raw.fontSize);
     if (Number.isFinite(fontSize) && fontSize > 0) out.fontSize = fontSize;
   }
+  if (isCaptionFontId(raw.fontFamily)) out.fontFamily = raw.fontFamily;
   if ("captionsAtATime" in raw) {
     const n = Number(raw.captionsAtATime);
     if (Number.isFinite(n)) out.captionsAtATime = clampCaptionsAtATime(n);

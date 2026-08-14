@@ -58,6 +58,7 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
         resolvedFill={style.wordStyle.fill}
         resolvedY={style.y}
         resolvedFontSize={style.fontSize}
+        resolvedFontFamily={style.fontFamily}
         resolvedCaptionsAtATime={style.captionsAtATime}
         onPatch={(partial, live) =>
           patchEdit(

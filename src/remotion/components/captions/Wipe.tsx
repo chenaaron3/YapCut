@@ -50,21 +50,11 @@ export function Wipe({
   const duration = Math.max(1, endFrame - startFrame);
   const skip = shouldSkipMotion(duration, enterFrames);
   const local = frame - startFrame;
-  const exitFrames = Math.min(
-    enterFrames,
-    Math.max(1, Math.floor(duration / 2)),
-  );
-  const exitStart = Math.max(enterFrames, duration - exitFrames);
 
   let reveal = 1;
   if (!skip && frame >= startFrame && frame < endFrame) {
     if (local < enterFrames) {
       reveal = interpolate(local, [0, enterFrames], [0, 1], {
-        extrapolateLeft: "clamp",
-        extrapolateRight: "clamp",
-      });
-    } else if (local >= exitStart) {
-      reveal = interpolate(local, [exitStart, duration], [1, 0], {
         extrapolateLeft: "clamp",
         extrapolateRight: "clamp",
       });

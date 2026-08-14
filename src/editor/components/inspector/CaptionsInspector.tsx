@@ -49,6 +49,7 @@ export function CaptionsInspector() {
         resolvedFill={style.wordStyle.fill}
         resolvedY={style.y}
         resolvedFontSize={style.fontSize}
+        resolvedFontFamily={style.fontFamily}
         resolvedCaptionsAtATime={style.captionsAtATime}
         onPatch={(partial, live) =>
           patchCaptions(

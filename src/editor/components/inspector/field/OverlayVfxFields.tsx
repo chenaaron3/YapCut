@@ -58,6 +58,7 @@ function OverlayLineStyleFields({
       resolvedFill={resolved.wordStyle.fill}
       resolvedY={resolved.y}
       resolvedFontSize={resolved.fontSize}
+      resolvedFontFamily={resolved.fontFamily}
       showCaptionsAtATime={false}
       showArc
       showY={bag === "subheadingOverrides"}

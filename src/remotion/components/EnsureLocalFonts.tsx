@@ -4,17 +4,50 @@ import { continueRender, delayRender, staticFile } from "remotion";
 const LOCAL_FACES: {
   family: string;
   file: string;
-  format: string;
+  weight: string;
+  style: "normal" | "italic";
 }[] = [
   {
-    family: "Bootzy TM",
-    file: "fonts/BootzyTM.woff2",
-    format: "woff2",
+    family: "Clash Display",
+    file: "fonts/ClashDisplay-Bold.woff2",
+    weight: "700",
+    style: "normal",
   },
   {
-    family: "Scholar Italic",
-    file: "fonts/ScholarItalic.woff",
-    format: "woff",
+    family: "Satoshi",
+    file: "fonts/Satoshi-Black.woff2",
+    weight: "900",
+    style: "normal",
+  },
+  {
+    family: "Satoshi",
+    file: "fonts/Satoshi-BlackItalic.woff2",
+    weight: "900",
+    style: "italic",
+  },
+  {
+    family: "Tanker",
+    file: "fonts/Tanker-Regular.woff2",
+    weight: "400",
+    style: "normal",
+  },
+  {
+    family: "Comico",
+    file: "fonts/Comico-Regular.woff2",
+    weight: "400",
+    style: "normal",
+  },
+  {
+    family: "Dancing Script",
+    file: "fonts/DancingScript-Bold.woff2",
+    weight: "700",
+    style: "normal",
+  },
+  {
+    family: "Chillax",
+    file: "fonts/Chillax-Bold.woff2",
+    weight: "700",
+    style: "normal",
   },
 ];
 
@@ -31,8 +64,8 @@ export function EnsureLocalFonts() {
       LOCAL_FACES.map((spec) => {
         const face = new FontFace(
           spec.family,
-          `url(${staticFile(spec.file)}) format("${spec.format}")`,
-          { weight: "400", style: "normal", display: "swap" },
+          `url(${staticFile(spec.file)}) format("woff2")`,
+          { weight: spec.weight, style: spec.style, display: "swap" },
         );
         return face
           .load()
@@ -41,7 +74,7 @@ export function EnsureLocalFonts() {
           })
           .catch((error: unknown) => {
             console.warn(
-              `[EnsureLocalFonts] ${spec.family} failed to load:`,
+              `[EnsureLocalFonts] ${spec.family} ${spec.weight} ${spec.style} failed to load:`,
               error instanceof Error ? error.message : error,
             );
           });

@@ -11,6 +11,9 @@ import { runGesture } from "~/editor/lib/gesture";
 import {
   CAPTION_ARC_MAX,
   CAPTION_ARC_MIN,
+  CAPTION_FONT_IDS,
+  CAPTION_FONT_LABELS,
+  type CaptionFontId,
   type CaptionStyleOverrides,
 } from "~/remotion/captions/style";
 
@@ -20,6 +23,7 @@ export function CaptionStyleFields({
   resolvedFill,
   resolvedY,
   resolvedFontSize,
+  resolvedFontFamily,
   resolvedCaptionsAtATime,
   resolvedArc,
   onPatch,
@@ -34,6 +38,7 @@ export function CaptionStyleFields({
   resolvedFill: string;
   resolvedY: number;
   resolvedFontSize: number;
+  resolvedFontFamily: CaptionFontId;
   resolvedCaptionsAtATime?: number;
   resolvedArc?: number;
   onPatch: (partial: CaptionStyleOverrides, live?: boolean) => void;
@@ -109,6 +114,25 @@ export function CaptionStyleFields({
             </div>
           </div>
         ) : null}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          Font
+        </Label>
+        <select
+          className="border-border bg-panel-2 text-foreground h-8 w-full rounded-md border px-2 text-xs"
+          value={overrides.fontFamily ?? resolvedFontFamily}
+          onChange={(e) =>
+            onPatch({ fontFamily: e.target.value as CaptionFontId })
+          }
+        >
+          {CAPTION_FONT_IDS.map((id) => (
+            <option key={id} value={id}>
+              {CAPTION_FONT_LABELS[id]}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex flex-col gap-1">

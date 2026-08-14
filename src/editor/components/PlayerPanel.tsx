@@ -115,7 +115,6 @@ export function PlayerPanel() {
       const lag = current - frame;
       if (player.isPlaying() && lag > 0 && lag <= 8) return;
       seekTargetRef.current = frame;
-      if (player.isPlaying()) player.pause();
       player.seekTo(frame);
     });
   }, []);

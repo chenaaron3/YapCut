@@ -4,6 +4,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
   DEFAULT_EMPHASIS_FILL,
+  DEFAULT_EMPHASIS_FONT_FAMILY,
   DEFAULT_EMPHASIS_SCALE,
   EMPHASIS_SCALE_MAX,
   EMPHASIS_SCALE_MIN,
@@ -16,29 +17,9 @@ import {
 import { runGesture } from "~/editor/lib/gesture";
 import {
   CAPTION_FONT_IDS,
+  CAPTION_FONT_LABELS,
   type CaptionFontId,
 } from "~/remotion/captions/style";
-
-const FONT_LABELS: Record<CaptionFontId, string> = {
-  montserrat: "Montserrat",
-  pacifico: "Pacifico",
-  nunito: "Nunito",
-  inter: "Inter",
-  "proxima-nova": "Proxima Nova",
-  poppins: "Poppins",
-  caveat: "Caveat",
-  "baloo-2": "Baloo 2",
-  oswald: "Oswald",
-  "playfair-display": "Playfair Display",
-  anton: "Anton",
-  "homemade-apple": "Homemade Apple",
-  "pinyon-script": "Pinyon Script",
-  "poiret-one": "Poiret One",
-  "great-vibes": "Great Vibes",
-  "black-ops-one": "Black Ops One",
-  "bootzy-tm": "Bootzy TM",
-  "scholar-it": "Scholar Italic",
-};
 
 function hexOrDefault(fill: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(fill) ? fill : DEFAULT_EMPHASIS_FILL;
@@ -63,7 +44,7 @@ export function EmphasisStyleFields({
 }) {
   const scale = value.scale ?? DEFAULT_EMPHASIS_SCALE;
   const fill = value.fill ?? DEFAULT_EMPHASIS_FILL;
-  const fontSelectValue = value.fontFamily ?? "inherit";
+  const fontSelectValue = value.fontFamily ?? DEFAULT_EMPHASIS_FONT_FAMILY;
   const fillGestureRef = useRef<(() => void) | null>(null);
   const beginFillGesture = () => {
     fillGestureRef.current ??= runGesture();
@@ -139,7 +120,7 @@ export function EmphasisStyleFields({
           <option value="inherit">Inherit group</option>
           {CAPTION_FONT_IDS.map((id) => (
             <option key={id} value={id}>
-              {FONT_LABELS[id]}
+              {CAPTION_FONT_LABELS[id]}
             </option>
           ))}
         </select>

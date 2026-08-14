@@ -1,8 +1,9 @@
 import {
   DEFAULT_CAPTION_STYLE,
   TRENDING_CAPTION_Y,
-  type CaptionGroupStyle,
 } from "~/remotion/captions/style";
+
+import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export const CAPTION_TEMPLATE_IDS = [
   "typewriter",
@@ -10,12 +11,8 @@ export const CAPTION_TEMPLATE_IDS = [
   "bold",
   "hormozi",
   "wipe",
-  "boxed",
   "fade",
-  "wrap",
-  "pop",
   "bounce",
-  "underline",
 ] as const;
 
 export type CaptionTemplateId = (typeof CAPTION_TEMPLATE_IDS)[number];
@@ -43,13 +40,32 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
   typewriter: {
     id: "typewriter",
     label: "Typewriter",
-    style: { ...DEFAULT_CAPTION_STYLE },
+    style: {
+      fontFamily: "comico",
+      fontSize: 72,
+      y: TRENDING_CAPTION_Y,
+      groupAnimation: "none",
+      wordAnimation: "none",
+      wordReveal: "typewriter",
+      textTransform: "lowercase",
+      captionsAtATime: 4,
+      background: { kind: "none" },
+      fontStyle: "normal",
+      textAlign: "center",
+      wordStyle: {
+        fill: "#FFFFFF",
+        border: { width: 6, color: "#000000" },
+        opacity: 1,
+        textShadow: SHADOW,
+      },
+      futureWordStyle: { opacity: 0 },
+    },
   },
   ugc: {
     id: "ugc",
     label: "UGC",
     style: {
-      fontFamily: "inter",
+      fontFamily: "chillax",
       fontSize: 75,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -71,7 +87,7 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     id: "bold",
     label: "Bold",
     style: {
-      fontFamily: "montserrat",
+      fontFamily: "clash-display",
       fontSize: 68,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -94,7 +110,7 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     id: "hormozi",
     label: "Hormozi",
     style: {
-      fontFamily: "montserrat",
+      fontFamily: "clash-display",
       fontSize: 64,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -121,14 +137,14 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     id: "wipe",
     label: "Wipe",
     style: {
-      fontFamily: "montserrat",
+      fontFamily: "clash-display",
       fontSize: 68,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
       wordAnimation: "wipe",
       wordReveal: "none",
       textTransform: "uppercase",
-      captionsAtATime: 1,
+      captionsAtATime: 5,
       background: { kind: "none" },
       fontStyle: "normal",
       textAlign: "center",
@@ -140,32 +156,11 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
       },
     },
   },
-  boxed: {
-    id: "boxed",
-    label: "Boxed",
-    style: {
-      fontFamily: "anton",
-      fontSize: 72,
-      y: TRENDING_CAPTION_Y,
-      groupAnimation: "none",
-      wordAnimation: "none",
-      wordReveal: "none",
-      textTransform: "uppercase",
-      captionsAtATime: 3,
-      background: { kind: "box", color: "rgba(0, 0, 0, 0.88)" },
-      fontStyle: "normal",
-      textAlign: "center",
-      wordStyle: {
-        fill: "#FFFFFF",
-        opacity: 1,
-      },
-    },
-  },
   fade: {
     id: "fade",
     label: "Fade",
     style: {
-      fontFamily: "montserrat",
+      fontFamily: "clash-display",
       fontSize: 68,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -184,55 +179,11 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
       },
     },
   },
-  wrap: {
-    id: "wrap",
-    label: "Wrap",
-    style: {
-      fontFamily: "nunito",
-      fontSize: 62,
-      y: TRENDING_CAPTION_Y,
-      groupAnimation: "none",
-      wordAnimation: "none",
-      wordReveal: "none",
-      textTransform: "uppercase",
-      captionsAtATime: 4,
-      background: { kind: "wrap", color: "#FFFFFF" },
-      fontStyle: "normal",
-      textAlign: "center",
-      wordStyle: {
-        fill: "#111111",
-        opacity: 1,
-      },
-    },
-  },
-  pop: {
-    id: "pop",
-    label: "Pop",
-    style: {
-      fontFamily: "montserrat",
-      fontSize: 68,
-      y: TRENDING_CAPTION_Y,
-      groupAnimation: "none",
-      wordAnimation: "scale",
-      wordReveal: "none",
-      textTransform: "uppercase",
-      captionsAtATime: 1,
-      background: { kind: "none" },
-      fontStyle: "normal",
-      textAlign: "center",
-      wordStyle: {
-        fill: "#FFFFFF",
-        border: { width: 10, color: "#000000" },
-        opacity: 1,
-        textShadow: SHADOW,
-      },
-    },
-  },
   bounce: {
     id: "bounce",
     label: "Bounce",
     style: {
-      fontFamily: "baloo-2",
+      fontFamily: "clash-display",
       fontSize: 70,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -246,29 +197,6 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
       wordStyle: {
         fill: "#FFFFFF",
         border: { width: 8, color: "#000000" },
-        opacity: 1,
-        textShadow: SHADOW,
-      },
-    },
-  },
-  underline: {
-    id: "underline",
-    label: "Underline",
-    style: {
-      fontFamily: "oswald",
-      fontSize: 64,
-      y: TRENDING_CAPTION_Y,
-      groupAnimation: "none",
-      wordAnimation: "none",
-      wordReveal: "none",
-      textTransform: "uppercase",
-      captionsAtATime: 4,
-      background: { kind: "underline", color: "#FFE600" },
-      fontStyle: "normal",
-      textAlign: "center",
-      wordStyle: {
-        fill: "#FFFFFF",
-        border: { width: 6, color: "#000000" },
         opacity: 1,
         textShadow: SHADOW,
       },

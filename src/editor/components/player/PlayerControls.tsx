@@ -68,7 +68,7 @@ export function PlayerControls({
         className="justify-self-center text-foreground"
         aria-label={playing ? "Pause" : "Play"}
         title={playing ? "Pause (Space)" : "Play (Space)"}
-        onClick={() => togglePlayback()}
+        onClick={(e) => togglePlayback(e)}
       >
         {playing ? (
           <Pause className="size-4" fill="currentColor" />

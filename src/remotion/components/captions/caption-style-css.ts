@@ -35,19 +35,17 @@ export function captionGroupCss(style: CaptionGroupStyle): CSSProperties {
     lineHeight: 1.2,
     textAlign: style.textAlign,
     textTransform: style.textTransform,
-    letterSpacing: style.fontFamily === "montserrat" ? "-0.02em" : "0",
     margin: 0,
     maxWidth: "100%",
   };
 }
 
-/** Per-word font override (emphasis) — family + weight + montserrat tracking. */
+/** Per-word font override (emphasis) — family + weight. */
 export function captionFontCss(fontFamily: CaptionFontId): CSSProperties {
   const font = resolveCaptionFont(fontFamily);
   return {
     fontFamily: font.family,
     fontWeight: font.weight,
-    letterSpacing: fontFamily === "montserrat" ? "-0.02em" : "0",
   };
 }
 

@@ -275,6 +275,7 @@ export function TransformOverlay({
             onHitPointerDown={onHitPointerDown}
             startDrag={startDrag}
             onHoverChange={setHoveredId}
+            dragging={dragging}
           />
         );
       })}

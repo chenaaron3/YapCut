@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import {
+  DEFAULT_EMPHASIS_FONT_FAMILY,
+  DEFAULT_EMPHASIS_SCALE,
   emphasisStyleSchema,
   optionalEmphasisStyleSchema,
   type EmphasisStyle,
@@ -251,7 +253,10 @@ export const emptyProjectConfig = (): ProjectConfig => ({
   edits: [],
   captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
   listicleStyle: { templateId: DEFAULT_LISTICLE_TEMPLATE_ID },
-  emphasisStyle: {},
+  emphasisStyle: {
+    scale: DEFAULT_EMPHASIS_SCALE,
+    fontFamily: DEFAULT_EMPHASIS_FONT_FAMILY,
+  },
   defaultBRollSfxAssetId: null,
   music: null,
 });

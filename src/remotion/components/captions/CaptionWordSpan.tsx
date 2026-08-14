@@ -12,10 +12,6 @@ import {
 } from "./arc-layout";
 import { transformCaptionWord } from "./caption-style-css";
 import {
-  lastVisibleWordIndex,
-  typewriterCursorBlink,
-} from "./caption-animation";
-import {
   resolveCaptionWordVisual,
   typewriterLetterVisible,
   type CaptionWordVisual,
@@ -23,23 +19,6 @@ import {
 
 function isWhitespaceWord(text: string): boolean {
   return /^\s+$/.test(text);
-}
-
-function typewriterCursorAt(
-  typewriter: boolean,
-  silhouette: boolean,
-  words: CaptionWordProp[],
-  index: number,
-  frame: number,
-  groupEndFrame: number,
-): boolean {
-  return (
-    !silhouette &&
-    typewriter &&
-    frame < groupEndFrame &&
-    lastVisibleWordIndex(words, frame, false) === index &&
-    typewriterCursorBlink(frame)
-  );
 }
 
 function silhouettePaint(opacity: number): CSSProperties {
@@ -52,10 +31,9 @@ function silhouettePaint(opacity: number): CSSProperties {
 
 function ArcWordPaint({
   word,
-  index,
   words,
+  index,
   frame,
-  groupEndFrame,
   groupStyle,
   visual,
   silhouette,
@@ -63,10 +41,9 @@ function ArcWordPaint({
   arc,
 }: {
   word: CaptionWordProp;
-  index: number;
   words: CaptionWordProp[];
+  index: number;
   frame: number;
-  groupEndFrame: number;
   groupStyle: CaptionGroupStyle;
   visual: CaptionWordVisual;
   silhouette: boolean;
@@ -77,24 +54,6 @@ function ArcWordPaint({
     transformCaptionWord(word.text, groupStyle.textTransform),
   );
   const start = wordGlyphOffset(words, index, groupStyle);
-  const lastVisible = glyphs.reduce((last, _ch, i) => {
-    if (typewriter && !typewriterLetterVisible(word, i, glyphs.length, frame)) {
-      return last;
-    }
-    return i;
-  }, -1);
-  const cursorPose =
-    lastVisible >= 0
-      ? (arc.glyphs[start + lastVisible + 1] ?? arc.glyphs[start + lastVisible])
-      : null;
-  const showCursor = typewriterCursorAt(
-    typewriter,
-    silhouette,
-    words,
-    index,
-    frame,
-    groupEndFrame,
-  );
 
   return (
     <>
@@ -120,18 +79,6 @@ function ArcWordPaint({
           </span>
         );
       })}
-      {showCursor && cursorPose ? (
-        <span
-          aria-hidden
-          style={{
-            ...arcGlyphBoxStyle(cursorPose),
-            width: "0.08em",
-            minWidth: 3,
-            height: "0.85em",
-            backgroundColor: groupStyle.wordStyle.fill,
-          }}
-        />
-      ) : null}
     </>
   );
 }
@@ -201,10 +148,9 @@ export const CaptionWordSpan: React.FC<{
     return (
       <ArcWordPaint
         word={word}
-        index={index}
         words={words}
+        index={index}
         frame={frame}
-        groupEndFrame={groupEndFrame}
         groupStyle={groupStyle}
         visual={visual}
         silhouette={silhouette}
@@ -214,35 +160,28 @@ export const CaptionWordSpan: React.FC<{
     );
   }
 
-  const letterReveal = typewriter && word.text.length > 1 && !whitespace;
+  const glyphs = Array.from(word.text);
+  const letterReveal = typewriter && glyphs.length > 0 && !whitespace;
   const content = letterReveal
-    ? Array.from(word.text).map((ch, i) => (
+    ? glyphs.map((ch, i) => (
         <span
           key={i}
           style={{
             visibility: typewriterLetterVisible(
               word,
               i,
-              word.text.length,
+              glyphs.length,
               frame,
             )
               ? "visible"
               : "hidden",
+            whiteSpace: "pre",
           }}
         >
           {ch}
         </span>
       ))
     : word.text;
-
-  const showCursor = typewriterCursorAt(
-    typewriter,
-    silhouette,
-    words,
-    index,
-    frame,
-    groupEndFrame,
-  );
 
   if (silhouette) {
     return (
@@ -270,20 +209,6 @@ export const CaptionWordSpan: React.FC<{
       }}
     >
       {content}
-      {showCursor ? (
-        <span
-          aria-hidden
-          style={{
-            display: "inline-block",
-            marginLeft: "0.06em",
-            width: "0.08em",
-            minWidth: 3,
-            height: "0.9em",
-            backgroundColor: groupStyle.wordStyle.fill,
-            verticalAlign: "text-bottom",
-          }}
-        />
-      ) : null}
     </span>
   );
 };

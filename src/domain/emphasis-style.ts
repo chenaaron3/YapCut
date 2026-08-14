@@ -1,15 +1,17 @@
 import { z } from "zod";
 
-import {
-  CAPTION_FONT_IDS,
-  type CaptionFontId,
-} from "~/remotion/captions/style";
+import { CAPTION_FONT_IDS } from "~/remotion/captions/style";
+
+import type { CaptionFontId } from "~/remotion/captions/style";
 
 /** Default emphasis scale relative to the surrounding caption/quote group. */
-export const DEFAULT_EMPHASIS_SCALE = 1.15;
+export const DEFAULT_EMPHASIS_SCALE = 1.25;
 
 /** Default emphasis fill when style leaves fill unset. */
 export const DEFAULT_EMPHASIS_FILL = "#FFE600";
+
+/** Default emphasis face when style leaves font unset. */
+export const DEFAULT_EMPHASIS_FONT_FAMILY: CaptionFontId = "tanker";
 
 /** Clamp range for emphasis scale (× group fontSize). */
 export const EMPHASIS_SCALE_MIN = 0.5;
@@ -54,7 +56,7 @@ export function pickEmphasisStyle(
   return {
     scale: clampEmphasisScale(s.scale ?? DEFAULT_EMPHASIS_SCALE),
     fill: s.fill?.trim() ? s.fill.trim() : DEFAULT_EMPHASIS_FILL,
-    fontFamily: s.fontFamily ?? null,
+    fontFamily: s.fontFamily ?? DEFAULT_EMPHASIS_FONT_FAMILY,
   };
 }
 
@@ -89,7 +91,10 @@ const emphasisStyleObjectSchema = z.object({
   fontFamily: captionFontEnum.optional(),
 });
 
-export const emphasisStyleSchema = emphasisStyleObjectSchema.default({});
+export const emphasisStyleSchema = emphasisStyleObjectSchema.default({
+  scale: DEFAULT_EMPHASIS_SCALE,
+  fontFamily: DEFAULT_EMPHASIS_FONT_FAMILY,
+});
 
 /** Optional quote override — same shape as project; omit = use project. */
 export const optionalEmphasisStyleSchema = emphasisStyleObjectSchema.optional();

@@ -1,23 +1,11 @@
 /** Curated caption font IDs — weight is baked into each entry. */
 export const CAPTION_FONT_IDS = [
-  "montserrat",
-  "pacifico",
-  "nunito",
-  "inter",
-  "proxima-nova",
-  "poppins",
-  "caveat",
-  "baloo-2",
-  "oswald",
-  "playfair-display",
-  "anton",
-  "homemade-apple",
-  "pinyon-script",
-  "poiret-one",
-  "great-vibes",
-  "black-ops-one",
-  "bootzy-tm",
-  "scholar-it",
+  "clash-display",
+  "satoshi",
+  "tanker",
+  "comico",
+  "dancing-script",
+  "chillax",
 ] as const;
 export type CaptionFontId = (typeof CAPTION_FONT_IDS)[number];
 
@@ -36,97 +24,45 @@ export type CaptionFontFace = {
 };
 
 export const CAPTION_FONTS: Record<CaptionFontId, CaptionFontFace> = {
-  montserrat: {
-    id: "montserrat",
-    family: '"Montserrat", "Arial Black", Impact, sans-serif',
+  "clash-display": {
+    id: "clash-display",
+    family: '"Clash Display", Impact, "Arial Black", sans-serif',
+    weight: 700,
+  },
+  satoshi: {
+    id: "satoshi",
+    family: '"Satoshi", "Helvetica Neue", Helvetica, Arial, sans-serif',
     weight: 900,
   },
-  pacifico: {
-    id: "pacifico",
-    family: '"Pacifico", "Segoe Script", cursive',
+  tanker: {
+    id: "tanker",
+    family: '"Tanker", Impact, "Arial Narrow", sans-serif',
     weight: 400,
   },
-  nunito: {
-    id: "nunito",
-    family: '"Nunito", "Arial Rounded MT Bold", sans-serif',
-    weight: 800,
+  comico: {
+    id: "comico",
+    family: '"Comico", "Segoe Script", cursive',
+    weight: 400,
   },
-  inter: {
-    id: "inter",
-    family: '"Inter", "Helvetica Neue", Helvetica, Arial, sans-serif',
+  "dancing-script": {
+    id: "dancing-script",
+    family: '"Dancing Script", "Segoe Script", cursive',
     weight: 700,
   },
-  "proxima-nova": {
-    id: "proxima-nova",
-    family:
-      '"Proxima Nova", "Proxima Nova Semibold", "Helvetica Neue", Helvetica, Arial, sans-serif',
-    weight: 600,
-  },
-  poppins: {
-    id: "poppins",
-    family: '"Poppins", "Helvetica Neue", Helvetica, Arial, sans-serif',
+  chillax: {
+    id: "chillax",
+    family: '"Chillax", "Helvetica Neue", Helvetica, Arial, sans-serif',
     weight: 700,
   },
-  caveat: {
-    id: "caveat",
-    family: '"Caveat", "Segoe Script", cursive',
-    weight: 700,
-  },
-  "baloo-2": {
-    id: "baloo-2",
-    family: '"Baloo 2", "Arial Rounded MT Bold", sans-serif',
-    weight: 800,
-  },
-  oswald: {
-    id: "oswald",
-    family: '"Oswald", "Arial Narrow", Impact, sans-serif',
-    weight: 700,
-  },
-  "playfair-display": {
-    id: "playfair-display",
-    family: '"Playfair Display", Georgia, "Times New Roman", serif',
-    weight: 700,
-  },
-  anton: {
-    id: "anton",
-    family: '"Anton", Impact, "Arial Black", sans-serif',
-    weight: 400,
-  },
-  "homemade-apple": {
-    id: "homemade-apple",
-    family: '"Homemade Apple", "Segoe Script", cursive',
-    weight: 400,
-  },
-  "pinyon-script": {
-    id: "pinyon-script",
-    family: '"Pinyon Script", "Segoe Script", cursive',
-    weight: 400,
-  },
-  "poiret-one": {
-    id: "poiret-one",
-    family: '"Poiret One", "Helvetica Neue", Helvetica, Arial, sans-serif',
-    weight: 400,
-  },
-  "great-vibes": {
-    id: "great-vibes",
-    family: '"Great Vibes", "Segoe Script", cursive',
-    weight: 400,
-  },
-  "black-ops-one": {
-    id: "black-ops-one",
-    family: '"Black Ops One", Impact, "Arial Black", sans-serif',
-    weight: 400,
-  },
-  "bootzy-tm": {
-    id: "bootzy-tm",
-    family: '"Bootzy TM", "BootzyTM", Impact, "Arial Black", sans-serif',
-    weight: 400,
-  },
-  "scholar-it": {
-    id: "scholar-it",
-    family: '"Scholar Italic", "Scholar-Italic", Georgia, "Times New Roman", serif',
-    weight: 400,
-  },
+};
+
+export const CAPTION_FONT_LABELS: Record<CaptionFontId, string> = {
+  "clash-display": "Clash Display",
+  satoshi: "Satoshi",
+  tanker: "Tanker",
+  comico: "Comico",
+  "dancing-script": "Dancing Script",
+  chillax: "Chillax",
 };
 
 /** Group wrappers: fade/scale/slide/bounce/spin → EnterExit; wipe → Wipe. */
@@ -174,7 +110,9 @@ export function isCaptionWordAnimation(
 export const CAPTION_WORD_REVEALS = ["none", "typewriter"] as const;
 export type CaptionWordReveal = (typeof CAPTION_WORD_REVEALS)[number];
 
-export function isCaptionWordReveal(value: unknown): value is CaptionWordReveal {
+export function isCaptionWordReveal(
+  value: unknown,
+): value is CaptionWordReveal {
   return (
     typeof value === "string" &&
     (CAPTION_WORD_REVEALS as readonly string[]).includes(value)
@@ -299,6 +237,7 @@ export type CaptionGroupStyle = {
 export type CaptionStyleOverrides = {
   y?: number;
   fontSize?: number;
+  fontFamily?: CaptionFontId;
   captionsAtATime?: number;
   /** Patches `wordStyle.fill`. */
   fill?: string;
@@ -308,7 +247,7 @@ export type CaptionStyleOverrides = {
 
 /** Fallback caption look when a group omits style. */
 export const DEFAULT_CAPTION_STYLE: CaptionGroupStyle = {
-  fontFamily: "inter",
+  fontFamily: "chillax",
   fontSize: 40,
   y: 1,
   groupAnimation: "none",
@@ -413,6 +352,7 @@ export function applyCaptionOverrides(
       overrides.fontSize > 0
         ? overrides.fontSize
         : style.fontSize,
+    fontFamily: overrides.fontFamily ?? style.fontFamily,
     captionsAtATime:
       overrides.captionsAtATime != null
         ? clampCaptionsAtATime(overrides.captionsAtATime)
@@ -435,6 +375,7 @@ export function captionStyleOverridesFrom(
   const out: CaptionStyleOverrides = {};
   if (style.y !== template.y) out.y = style.y;
   if (style.fontSize !== template.fontSize) out.fontSize = style.fontSize;
+  if (style.fontFamily !== template.fontFamily) out.fontFamily = style.fontFamily;
   if (style.captionsAtATime !== template.captionsAtATime) {
     out.captionsAtATime = style.captionsAtATime;
   }

@@ -1,4 +1,5 @@
 import type { PlayerRef } from "@remotion/player";
+import type { SyntheticEvent } from "react";
 
 let player: PlayerRef | null = null;
 
@@ -15,16 +16,17 @@ export function ensurePlayerAudible(target: PlayerRef | null = player) {
   if (target?.isMuted()) target.unmute();
 }
 
-export function togglePlayback() {
+export function play(e?: SyntheticEvent | Event) {
+  if (!player) return;
+  ensurePlayerAudible(player);
+  if (!player.isPlaying()) player.play(e as SyntheticEvent | undefined);
+}
+
+export function togglePlayback(e?: SyntheticEvent | Event) {
   if (!player) return;
   if (player.isPlaying()) {
-    if (player.isMuted()) {
-      player.unmute();
-      return;
-    }
     player.pause();
     return;
   }
-  ensurePlayerAudible(player);
-  player.play();
+  play(e);
 }

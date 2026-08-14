@@ -19,6 +19,7 @@ export function SelectedChrome({
   onHitPointerDown,
   startDrag,
   onHoverChange,
+  dragging,
 }: {
   editable: EditableTransform;
   box: BoxStyle;
@@ -32,21 +33,30 @@ export function SelectedChrome({
     editable: EditableTransform,
   ) => void;
   onHoverChange: (id: number | null) => void;
+  dragging: boolean;
 }) {
   return (
     <div
       data-edit-hit={editable.editId}
-      className="border-primary/90 pointer-events-auto absolute cursor-move border shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
+      className="border-primary/90 group pointer-events-auto absolute cursor-move border shadow-[0_0_0_1px_rgba(0,0,0,0.4)]"
       style={boxCss(box)}
       onPointerDown={(e) => onHitPointerDown(e, editable)}
       onPointerEnter={() => onHoverChange(editable.editId)}
       onPointerLeave={() => onHoverChange(null)}
     >
-      <TransformHandles
-        scale={box.scale}
-        onRotate={(e) => startDrag(e, "rotate", editable)}
-        onScale={(e) => startDrag(e, "scale", editable)}
-      />
+      <div
+        className={
+          dragging
+            ? "contents"
+            : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100"
+        }
+      >
+        <TransformHandles
+          scale={box.scale}
+          onRotate={(e) => startDrag(e, "rotate", editable)}
+          onScale={(e) => startDrag(e, "scale", editable)}
+        />
+      </div>
     </div>
   );
 }

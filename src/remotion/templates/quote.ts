@@ -5,9 +5,6 @@ import type { CaptionGroupStyle } from "~/remotion/captions/style";
 export const QUOTE_TEMPLATE_IDS = [
   "bold-white",
   "handwritten-white",
-  "handwritten-box",
-  "scrappy",
-  "boxed",
   "pop",
 ] as const;
 
@@ -45,7 +42,7 @@ const QUOTE_HANDWRITTEN_WORD = {
 } as const;
 
 const BOLD_WHITE_BASE: CaptionGroupStyle = {
-  fontFamily: "montserrat",
+  fontFamily: "clash-display",
   fontSize: 125,
   y: 0,
   groupAnimation: "none",
@@ -69,7 +66,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplate> = {
     id: "handwritten-white",
     label: "Handwritten",
     style: {
-      fontFamily: "pacifico",
+      fontFamily: "comico",
       fontSize: 64,
       y: QUOTE_CAPTION_Y,
       groupAnimation: "none",
@@ -83,72 +80,11 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplate> = {
       wordStyle: { ...QUOTE_HANDWRITTEN_WORD },
     },
   },
-  "handwritten-box": {
-    id: "handwritten-box",
-    label: "Handwritten Box",
-    style: {
-      fontFamily: "pacifico",
-      fontSize: 58,
-      y: QUOTE_CAPTION_Y,
-      groupAnimation: "none",
-      wordAnimation: "fade",
-      wordReveal: "none",
-      textTransform: "uppercase",
-      captionsAtATime: 3,
-      background: { kind: "box", color: "rgba(0, 0, 0, 0.82)" },
-      fontStyle: "normal",
-      textAlign: "center",
-      wordStyle: { ...QUOTE_HANDWRITTEN_WORD },
-    },
-  },
-  scrappy: {
-    id: "scrappy",
-    label: "Scrappy",
-    style: {
-      fontFamily: "nunito",
-      fontSize: 56,
-      y: QUOTE_CAPTION_Y,
-      groupAnimation: "none",
-      wordAnimation: "fade",
-      wordReveal: "none",
-      textTransform: "uppercase",
-      captionsAtATime: 8,
-      background: { kind: "none" },
-      fontStyle: "normal",
-      textAlign: "center",
-      wordStyle: {
-        fill: "#111111",
-        opacity: 1,
-        background: { kind: "scrap", color: "#FFFFFF" },
-      },
-    },
-  },
-  boxed: {
-    id: "boxed",
-    label: "Boxed",
-    style: {
-      fontFamily: "anton",
-      fontSize: 72,
-      y: QUOTE_CAPTION_Y,
-      groupAnimation: "none",
-      wordAnimation: "fade",
-      wordReveal: "none",
-      textTransform: "uppercase",
-      captionsAtATime: 4,
-      background: { kind: "box", color: "rgba(0, 0, 0, 0.88)" },
-      fontStyle: "normal",
-      textAlign: "center",
-      wordStyle: {
-        fill: "#FFFFFF",
-        opacity: 1,
-      },
-    },
-  },
   pop: {
     id: "pop",
     label: "Pop",
     style: {
-      fontFamily: "montserrat",
+      fontFamily: "clash-display",
       fontSize: 88,
       y: 0,
       groupAnimation: "none",

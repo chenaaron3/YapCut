@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { CaptionTemplatePreview } from "~/editor/components/inspector/preview/CaptionTemplatePreview";
+import { play } from "~/editor/lib/player-bridge";
 import { primaryId } from "~/editor/lib/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
@@ -70,7 +71,7 @@ export function StyleTemplatePicker({
         )}
       </div>
 
-      <div className="flex min-w-0 flex-wrap gap-2">
+      <div className="grid min-w-0 grid-cols-2 gap-2">
         {templates.map((template) => {
           const selectedChip = template.id === value;
           const face = resolveCaptionFont(template.style.fontFamily);
@@ -78,26 +79,28 @@ export function StyleTemplatePicker({
             <button
               key={template.id}
               type="button"
-              onClick={() => {
+              onClick={(e) => {
                 if (template.id === value) return;
                 setHovered(null);
                 onChange(template.id);
+                play(e);
                 const selection = useSelection.getState().selection;
-                if (selection?.kind !== "edit") return;
-                const id = primaryId(selection);
-                const editor = useEditor.getState();
-                const edit =
-                  id != null
-                    ? editor.config?.edits.find((item) => item.id === id)
-                    : undefined;
-                if (edit) editor.seekTimeline(edit.start);
+                if (selection?.kind === "edit") {
+                  const id = primaryId(selection);
+                  const editor = useEditor.getState();
+                  const edit =
+                    id != null
+                      ? editor.config?.edits.find((item) => item.id === id)
+                      : undefined;
+                  if (edit) editor.seekTimeline(edit.start);
+                }
               }}
               onMouseEnter={() => setHovered(template)}
               onMouseLeave={() => setHovered(null)}
               onFocus={() => setHovered(template)}
               onBlur={() => setHovered(null)}
               className={cn(
-                "flex h-14 w-24 shrink-0 flex-col items-center justify-center rounded-lg border px-2 text-center transition-colors",
+                "flex h-14 w-full min-w-0 flex-col items-center justify-center rounded-lg border px-2 text-center transition-colors",
                 selectedChip
                   ? "border-primary bg-primary/15"
                   : "border-border bg-panel-2 hover:bg-panel-2/80",

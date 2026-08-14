@@ -48,9 +48,13 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return el.isContentEditable;
 }
 
+function isSpaceKey(e: KeyboardEvent) {
+  return e.key === " " || e.code === "Space";
+}
+
 function useGlobalShortcuts() {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const onKeyDown = (e: KeyboardEvent) => {
       const editor = useEditor.getState();
       const selection = useSelection.getState();
       const meta = e.metaKey || e.ctrlKey;
@@ -72,12 +76,13 @@ function useGlobalShortcuts() {
         if (editor.deleteSelection()) e.preventDefault();
       } else if (isTypingTarget(e.target)) {
         return;
-      } else if (e.key === " " || e.code === "Space") {
-        // Capture-phase stop so focused words (role=button) don't also
-        // activate and seek back to word.start.
+      } else if (isSpaceKey(e)) {
+        // Capture-phase stop so focused buttons (play, templates, words)
+        // don't also activate on keyup and undo this toggle.
         e.preventDefault();
         e.stopPropagation();
-        togglePlayback();
+        if (e.repeat) return;
+        togglePlayback(e);
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         if (
@@ -100,8 +105,17 @@ function useGlobalShortcuts() {
         editor.seekBySeconds(e.shiftKey ? 0.1 : 1);
       }
     };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (!isSpaceKey(e) || isTypingTarget(e.target)) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+    };
   }, []);
 }
 

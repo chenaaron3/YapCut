@@ -3,6 +3,7 @@ import {
   AbsoluteFill,
   continueRender,
   delayRender,
+  staticFile,
   useVideoConfig,
 } from "remotion";
 import { Video } from "@remotion/media";
@@ -10,7 +11,7 @@ import { Video } from "@remotion/media";
 import { SAFE_AREA } from "~/remotion/helpers/constants";
 import type { ProjectProps } from "~/remotion/helpers/types";
 
-const FONT_FAMILY = '"Montserrat", "Arial Black", Impact, sans-serif';
+const FONT_FAMILY = '"Clash Display", Impact, "Arial Black", sans-serif';
 const MAX_FONT_SIZE = 110;
 const MIN_FONT_SIZE = 36;
 const STROKE_PX = 12;
@@ -37,7 +38,7 @@ function fitFontSize(text: string, maxWidthPx: number): number {
     .map((line) => line.toUpperCase());
 
   for (let size = MAX_FONT_SIZE; size >= MIN_FONT_SIZE; size -= 2) {
-    ctx.font = `900 ${size}px ${FONT_FAMILY}`;
+    ctx.font = `700 ${size}px ${FONT_FAMILY}`;
     const widest = Math.max(
       0,
       ...lines.map((line) => ctx.measureText(line).width),
@@ -50,15 +51,15 @@ function fitFontSize(text: string, maxWidthPx: number): number {
   return MIN_FONT_SIZE;
 }
 
-function EnsureMontserrat() {
-  const [handle] = useState(() => delayRender("montserrat-cover-font"));
+function EnsureCoverFont() {
+  const [handle] = useState(() => delayRender("clash-display-cover-font"));
 
   useEffect(() => {
     let cancelled = false;
     const face = new FontFace(
-      "Montserrat",
-      "url(https://fonts.gstatic.com/s/montserrat/v29/JTUHjIg1_i6t8kCHKm4532VJOt5-QNFgpCvC73w0aXpsog.woff2) format('woff2')",
-      { weight: "900", style: "normal", display: "swap" },
+      "Clash Display",
+      `url(${staticFile("fonts/ClashDisplay-Bold.woff2")}) format("woff2")`,
+      { weight: "700", style: "normal", display: "swap" },
     );
 
     face
@@ -69,7 +70,7 @@ function EnsureMontserrat() {
       })
       .catch((error: unknown) => {
         console.warn(
-          "[Cover] Montserrat failed to load:",
+          "[Cover] Clash Display failed to load:",
           error instanceof Error ? error.message : error,
         );
       })
@@ -99,7 +100,7 @@ export function Cover({ title, sections }: ProjectProps) {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
-      <EnsureMontserrat />
+      <EnsureCoverFont />
       {first?.src ? (
         <Video
           src={first.src}
@@ -126,7 +127,7 @@ export function Cover({ title, sections }: ProjectProps) {
         <h1
           style={{
             fontFamily: FONT_FAMILY,
-            fontWeight: 900,
+            fontWeight: 700,
             fontSize,
             lineHeight: 1.1,
             color: "#FFE600",
