@@ -7,14 +7,14 @@ import {
 /** Platform anchor — voice should sit here. */
 export const AROLL_TARGET_LUFS = -14.5;
 
-/** SFX punctuate ~6 dB below voice (target band −18 to −22). */
-export const SFX_TARGET_LUFS = -20;
+/** SFX punctuate ~10 dB below voice (target band −22 to −26). */
+export const SFX_TARGET_LUFS = -24;
 
 /**
  * Short one-shots measure quiet on integrated LUFS but peak near 0 dBTP.
  * After mix, cap true peak so transients sit under voice.
  */
-export const SFX_MAX_TRUE_PEAK_DB = -12;
+export const SFX_MAX_TRUE_PEAK_DB = -16;
 
 /** Full music bed ~14 dB below voice (target band −24 to −32). */
 export const MUSIC_TARGET_LUFS = -28;
@@ -27,7 +27,7 @@ export function lufsToGain(targetLufs: number, fromLufs: number): number {
   return 10 ** ((targetLufs - fromLufs) / 20);
 }
 
-/** Default SFX slider level (−20 LUFS after library normalize). */
+/** Default SFX slider level (−24 LUFS after library normalize). */
 export const SFX_VOLUME_DEFAULT = lufsToGain(SFX_TARGET_LUFS, LIBRARY_LUFS);
 
 /** Default music bed (−28 LUFS after library normalize). */

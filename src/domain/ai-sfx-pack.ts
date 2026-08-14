@@ -1,3 +1,5 @@
+import { SFX_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
+
 /**
  * Curated AI SFX pack — create-pipeline companion SFX only.
  * LLM picks intensity for a candidate's fixed role; place-time hash picks a
@@ -42,11 +44,11 @@ export const COMPANION_SFX_ROLE_PRIORITY: Record<AiSfxRole, number> = {
   motion: 1,
 };
 
-/** Linear gain by intensity (under dialogue). */
+/** Linear gain by intensity (under dialogue). Medium = mix default. */
 export const AI_SFX_VOLUME_BY_INTENSITY: Record<AiSfxVolumeIntensity, number> = {
-  soft: 0.45,
-  medium: 0.65,
-  hard: 0.85,
+  soft: SFX_VOLUME_DEFAULT * 0.7,
+  medium: SFX_VOLUME_DEFAULT,
+  hard: SFX_VOLUME_DEFAULT * 1.25,
 };
 
 export function volumeForIntensity(intensity: AiSfxVolumeIntensity): number {
