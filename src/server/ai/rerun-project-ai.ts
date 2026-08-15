@@ -80,6 +80,7 @@ export async function rerunProjectAiAssist(options: {
     generateTitleIfEmpty: true,
     baseEdits,
     listicleStyle: config.listicleStyle,
+    companionSfx: config.companionSfx,
   });
 
   for (const [assetId, words] of assist.wordsByAssetId) {

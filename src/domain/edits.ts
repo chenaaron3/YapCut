@@ -9,9 +9,12 @@ import {
   withMediaOffset,
   withVolume,
 } from "~/domain/media";
+import {
+  withCompanionSfx,
+  type CompanionSfxAsset,
+} from "~/domain/companion-sfx";
 import { nextEditId } from "~/domain/project-config";
 import { quoteRangeConflicts } from "~/domain/quote";
-import { sfxSeed } from "~/domain/sfx";
 import { isShakeEdit, withShakeIntensity } from "~/domain/shake";
 import { withTransform } from "~/domain/transform";
 import {
@@ -49,6 +52,8 @@ function layoutForConfig(
 export type PlaceEditContext = {
   /** Source duration for an asset id; null/undefined = unconstrained (e.g. image). */
   srcDurationSec?: (assetId: string) => number | null | undefined;
+  /** Global/project SFX library for create-time companion pick. */
+  sfxAssets?: readonly CompanionSfxAsset[];
 };
 
 /** Edit fields supplied at place-time (id + range filled by `placeEdit`). Kind-specific body comes from the caller (e.g. `transitionSeedFromWord`, `listicleSeedFromWords`). */
@@ -65,8 +70,10 @@ export type EditSeed = Edit extends infer E
  */
 export type EditPatch = Edit extends infer E
   ? E extends Edit
-    ? Partial<Omit<E, "id" | "kind" | "type" | "kenBurns">> & {
+    ? Partial<Omit<E, "id" | "kind" | "type" | "kenBurns" | "companionSfx">> & {
         kenBurns?: number | null;
+        /** `null` clears a nested companion. */
+        companionSfx?: MediaRef | null;
       }
     : never
   : never;
@@ -262,44 +269,20 @@ function appendEdit(
   ) {
     return null;
   }
-  const placed = {
-    ...seed,
-    id: nextEditId(config.edits),
-    start: clamped.start,
-    end: clamped.end,
-  } as Edit;
+  const placed = withCompanionSfx(
+    {
+      ...seed,
+      id: nextEditId(config.edits),
+      start: clamped.start,
+      end: clamped.end,
+    } as Edit,
+    config.companionSfx,
+    ctx?.sfxAssets ?? [],
+  );
   const next = produce(config, (draft) => {
     draft.edits.push(placed);
   });
   return { config: next, placed };
-}
-
-/**
- * Place-time side effects after a successful append (e.g. default b-roll entrance SFX).
- * Pure Model — no store/UI.
- */
-export function applyPlaceSideEffects(
-  config: ProjectConfig,
-  placed: Edit,
-  timelineDuration: number,
-  ctx?: PlaceEditContext,
-): ProjectConfig {
-  if (placed.kind !== "broll") return config;
-  const sfxAssetId = config.defaultBRollSfxAssetId;
-  if (!sfxAssetId) return config;
-
-  const sfxDur = ctx?.srcDurationSec?.(sfxAssetId) ?? null;
-  let sfxRange: TimelineTime = { start: placed.start, end: placed.end };
-  if (sfxDur != null) {
-    sfxRange = clampTimelineRangeToMedia(
-      { start: placed.start, end: placed.start + sfxDur },
-      sfxDur,
-    );
-  }
-  return (
-    appendEdit(config, sfxRange, timelineDuration, sfxSeed(sfxAssetId))
-      ?.config ?? config
-  );
 }
 
 export function placeEdit(
@@ -309,17 +292,7 @@ export function placeEdit(
   seed: EditSeed,
   ctx?: PlaceEditContext,
 ): { config: ProjectConfig; placed: Edit } | null {
-  const result = appendEdit(config, range, timelineDuration, seed, ctx);
-  if (!result) return null;
-  return {
-    config: applyPlaceSideEffects(
-      result.config,
-      result.placed,
-      timelineDuration,
-      ctx,
-    ),
-    placed: result.placed,
-  };
+  return appendEdit(config, range, timelineDuration, seed, ctx);
 }
 
 /** Same asset lookup as place — kept as an alias for patch call sites. */
@@ -405,6 +378,16 @@ function applyShakeIntensityPatch(edit: Edit, patch: EditPatch): Edit {
   return withShakeIntensity(edit, patch.intensity);
 }
 
+function applyCompanionSfxPatch(edit: Edit, patch: EditPatch): Edit {
+  if (!("companionSfx" in patch)) return edit;
+  if (patch.companionSfx == null) {
+    if (!edit.companionSfx) return edit;
+    const { companionSfx: _removed, ...rest } = edit;
+    return rest as Edit;
+  }
+  return { ...edit, companionSfx: patch.companionSfx };
+}
+
 /** Recompute derived `{start,end}` from stitch + duration. */
 function applyTransitionPatch(
   edit: Edit,
@@ -430,6 +413,7 @@ export function patchEdit(
     next = applyMediaPatch(next, patch, ctx);
     next = applyKenBurnsPatch(next, patch);
     next = applyShakeIntensityPatch(next, patch);
+    next = applyCompanionSfxPatch(next, patch);
     next = applyTransitionPatch(next, config, ctx);
     draft.edits[idx] = next;
   });

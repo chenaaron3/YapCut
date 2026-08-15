@@ -63,6 +63,7 @@ import {
   type ProjectConfig,
   type TemplateStyle,
 } from "~/domain/project-config";
+import type { CompanionSfxCueId, CompanionSfxSource } from "~/domain/companion-sfx-map";
 import type { EmphasisStyle } from "~/domain/emphasis-style";
 import type { TimelineTime } from "~/domain/time";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
@@ -166,8 +167,11 @@ type EditorActions = {
   ) => void;
   /** Place an edit on a caller-computed timeline range (e.g. a transition stitch). */
   placeEditOnRange: (seed: EditSeed, range: TimelineTime) => void;
-  /** Project-level default entrance SFX for new b-roll drops (`null` = none). */
-  setDefaultBRollSfxAssetId: (assetId: string | null) => void;
+  /** Replace one companion-SFX cue (settings). */
+  setCompanionSfxCue: (
+    cue: CompanionSfxCueId,
+    source: CompanionSfxSource,
+  ) => void;
   /** Merge newly uploaded assets into the editor library. */
   addAssets: (assets: EditorAsset[]) => void;
   setMusic: (assetId: string) => void;
@@ -821,6 +825,12 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const result = placeEdit(config, range, timelineDuration, seed, {
         srcDurationSec: (assetId) =>
           assets.find((a) => a.id === assetId)?.durationSec ?? null,
+        sfxAssets: assets
+          .filter((a) => a.audioLibrary === "sfx")
+          .map((a) => ({
+            id: a.id,
+            originalFilename: a.originalFilename,
+          })),
       });
       if (!result) return;
       commit({ config: result.config, transcriptsByAssetId });
@@ -849,12 +859,13 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       get().placeEditOnRange(seed, range);
     },
 
-    setDefaultBRollSfxAssetId: (assetId) => {
+    setCompanionSfxCue: (cue, source) => {
       const { config, transcriptsByAssetId } = get();
       if (!config) return;
-      if (config.defaultBRollSfxAssetId === assetId) return;
+      const current = config.companionSfx[cue];
+      if (JSON.stringify(current) === JSON.stringify(source)) return;
       const next = produce(config, (draft) => {
-        draft.defaultBRollSfxAssetId = assetId;
+        draft.companionSfx[cue] = source;
       });
       commit({ config: next, transcriptsByAssetId });
     },

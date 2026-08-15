@@ -1,202 +1,47 @@
-import { zodResponseFormat } from "openai/helpers/zod";
-import { z } from "zod";
-
 import {
-  AI_SFX_INTENSITIES,
-  COMPANION_SFX_MIN_GAP_SEC,
-  COMPANION_SFX_ROLE_PRIORITY,
-  formatAiSfxPackForPrompt,
-  isAiSfxVolumeIntensity,
-  resolveAiSfxAssetId,
-  volumeForIntensity,
-  type AiSfxRole,
-  type AiSfxVolumeIntensity,
-} from "~/domain/ai-sfx-pack";
-import { isListicleEdit } from "~/domain/listicle";
-import { buildNumberedTranscript } from "~/domain/projection";
+  attachCompanionSfxToEdits,
+  resolveCompanionSfxPool,
+} from "~/domain/companion-sfx";
+import {
+  defaultCompanionSfxMap,
+  type CompanionSfxMap,
+} from "~/domain/companion-sfx-map";
+import { isTextBaseEdit, nextEditId } from "~/domain/project-config";
+import { COMPANION_SFX_VOLUME, pickSfxAssetId, sfxSeed } from "~/domain/sfx";
+import { editMiddleSec } from "~/domain/vfx";
+import { overlayStackedForEdit } from "~/remotion/templates/overlay";
+import { loadGlobalSfxAssets } from "~/server/ai/global-sfx";
+
+import type { CompanionSfxAsset } from "~/domain/companion-sfx";
 import type { Edit, SfxEdit } from "~/domain/project-config";
-import { nextEditId } from "~/domain/project-config";
-import { isQuoteEdit } from "~/domain/quote";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
-import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
-export type CompanionCandidate = {
-  id: string;
-  role: AiSfxRole;
-  /** Timeline onset for the SFX. */
-  startSec: number;
-  /** Hint for the LLM. */
-  label: string;
-};
+type DurationSecFor = (assetId: string) => number | null;
 
-export type CompanionSfxAssetDuration = (assetId: string) => number | null;
-
-/** role → global asset ids in that pool. */
-export type CompanionSfxPools = ReadonlyMap<string, readonly string[]>;
-
-const CompanionChoiceSchema = z.object({
-  assignments: z.array(
-    z.object({
-      candidateId: z.string().describe("Id from the candidate list"),
-      intensity: z
-        .enum(AI_SFX_INTENSITIES)
-        .describe("Intensity for the candidate role, or none to skip SFX"),
-      reason: z.string().describe("One short sentence"),
-    }),
-  ),
-});
-
-export type CompanionSfxDetection = z.infer<typeof CompanionChoiceSchema>;
-
-/** Build optional companion candidates (punch-ins, quotes, listicles, title). */
-export function buildCompanionCandidates(
+/** Sibling tick/pop at overlay `middle` from the overlayMiddle cue. */
+function generateOverlayMiddleSfxEdits(
   edits: readonly Edit[],
-  words: readonly GlobalTranscriptWord[],
-): CompanionCandidate[] {
-  const out: CompanionCandidate[] = [];
-
-  for (const edit of edits) {
-    if (edit.kind === "zoom" && !edit.ease) {
-      out.push({
-        id: `punch-${edit.id}`,
-        role: "motion",
-        startSec: edit.start,
-        label: `punch-in zoom #${edit.id}`,
-      });
-      continue;
-    }
-
-    if (isQuoteEdit(edit)) {
-      const inQuote = words.filter(
-        (w) =>
-          !w.inGap &&
-          w.emphasized &&
-          w.start < edit.end - 0.001 &&
-          w.end > edit.start + 0.001,
-      );
-      // Peak = last emphasized word in the quote (often the payoff).
-      const peak = inQuote[inQuote.length - 1];
-      if (peak) {
-        out.push({
-          id: `quote-peak-${edit.id}`,
-          role: "ping",
-          startSec: peak.start,
-          label: `quote #${edit.id} peak "${peak.text}"`,
-        });
-      }
-      continue;
-    }
-
-    if (isListicleEdit(edit)) {
-      out.push({
-        id: `listicle-ind-${edit.id}`,
-        role: "reveal",
-        startSec: edit.start,
-        label: `listicle #${edit.id} heading "${edit.heading}"`,
-      });
-      const valueAt = edit.middle ?? edit.start;
-      out.push({
-        id: `listicle-val-${edit.id}`,
-        role: "tick",
-        startSec: valueAt,
-        label: `listicle #${edit.id} subheading "${edit.subheading}"`,
-      });
-      continue;
-    }
-
-    if (edit.kind === "vfx" && edit.type === "text") {
-      out.push({
-        id: `title-reveal-${edit.id}`,
-        role: "reveal",
-        startSec: edit.start,
-        label: `title card #${edit.id} "${edit.heading}"`,
-      });
-    }
-  }
-
-  return out;
-}
-
-type RankedHit = {
-  candidateId: string;
-  role: AiSfxRole;
-  startSec: number;
-  intensity: AiSfxVolumeIntensity;
-  priority: number;
-};
-
-/** Apply min-gap suppress with role priority; higher priority keeps the onset. */
-export function applyCompanionMinGap(
-  hits: readonly RankedHit[],
-  minGapSec = COMPANION_SFX_MIN_GAP_SEC,
-): RankedHit[] {
-  const sorted = [...hits].sort(
-    (a, b) =>
-      a.startSec - b.startSec ||
-      b.priority - a.priority ||
-      a.candidateId.localeCompare(b.candidateId),
-  );
-  const kept: RankedHit[] = [];
-
-  for (const hit of sorted) {
-    const conflictIdx = kept.findIndex(
-      (k) => Math.abs(k.startSec - hit.startSec) < minGapSec,
-    );
-    if (conflictIdx < 0) {
-      kept.push(hit);
-      continue;
-    }
-    const existing = kept[conflictIdx]!;
-    if (hit.priority > existing.priority) {
-      kept[conflictIdx] = hit;
-    }
-  }
-
-  return kept.sort((a, b) => a.startSec - b.startSec);
-}
-
-export function detectionToSfxEdits(
-  detection: CompanionSfxDetection,
-  candidates: readonly CompanionCandidate[],
-  existingEdits: readonly { id: number }[],
-  durationSecFor: CompanionSfxAssetDuration,
-  pools: CompanionSfxPools,
+  map: CompanionSfxMap,
+  assets: readonly CompanionSfxAsset[],
+  durationSecFor: DurationSecFor,
 ): SfxEdit[] {
-  const byId = new Map(candidates.map((c) => [c.id, c]));
-  const ranked: RankedHit[] = [];
+  const pool = resolveCompanionSfxPool(map.overlayMiddle, assets);
+  if (pool.length === 0) return [];
 
-  for (const row of detection.assignments) {
-    const raw = row.intensity.trim().toLowerCase();
-    if (!isAiSfxVolumeIntensity(raw)) continue;
-    const candidate = byId.get(row.candidateId);
-    if (!candidate) continue;
-
-    ranked.push({
-      candidateId: candidate.id,
-      role: candidate.role,
-      startSec: candidate.startSec,
-      intensity: raw,
-      priority: COMPANION_SFX_ROLE_PRIORITY[candidate.role],
-    });
-  }
-
-  const kept = applyCompanionMinGap(ranked);
-  let nextId = nextEditId(existingEdits);
+  let nextId = nextEditId(edits);
   const out: SfxEdit[] = [];
 
-  for (const hit of kept) {
-    const assetId = resolveAiSfxAssetId(hit.role, hit.candidateId, pools);
+  for (const edit of edits) {
+    if (!isTextBaseEdit(edit)) continue;
+    const middle = editMiddleSec(edit, overlayStackedForEdit(edit));
+    if (middle == null) continue;
+    const assetId = pickSfxAssetId(pool, `middle-${edit.id}`);
     if (!assetId) continue;
     const dur = durationSecFor(assetId) ?? 0.35;
-    const end = hit.startSec + Math.max(0.05, dur);
     out.push({
       id: nextId,
-      kind: "sfx",
-      start: hit.startSec,
-      end,
-      assetId,
-      mediaOffsetSec: 0,
-      volume: volumeForIntensity(hit.intensity),
+      ...sfxSeed(assetId, COMPANION_SFX_VOLUME),
+      start: middle,
+      end: middle + Math.max(0.05, dur),
     });
     nextId += 1;
   }
@@ -204,79 +49,38 @@ export function detectionToSfxEdits(
   return out;
 }
 
-function formatCandidates(candidates: readonly CompanionCandidate[]): string {
-  return candidates
-    .map(
-      (c) =>
-        `- ${c.id} role=${c.role} t=${c.startSec.toFixed(2)}s — ${c.label}`,
-    )
-    .join("\n");
-}
+/**
+ * Create-time companionSfx on visuals, then overlay-middle sibling pops.
+ * No LLM. Emphasis-word pings live in `emphasis-sfx`.
+ */
+export async function generateCompanionSfxEdits(options: {
+  edits: readonly Edit[];
+  companionSfx?: CompanionSfxMap;
+  skipIds?: ReadonlySet<number>;
+}): Promise<Edit[]> {
+  const map = options.companionSfx ?? defaultCompanionSfxMap();
+  const skipIds = options.skipIds ?? new Set<number>();
+  const { assets: sfxAssets, durationByAssetId } = await loadGlobalSfxAssets();
+  const durationSecFor = (assetId: string) =>
+    durationByAssetId.get(assetId) ?? null;
 
-async function callOpenAI(
-  candidates: readonly CompanionCandidate[],
-  words: readonly GlobalTranscriptWord[],
-): Promise<CompanionSfxDetection> {
-  const client = getOpenAIClient();
-  const numbered = buildNumberedTranscript(words);
-
-  const completion = await client.chat.completions.parse({
-    model: OPENAI_MODEL,
-    messages: [
-      {
-        role: "system",
-        content: [
-          "You assign companion SFX to visual edit candidates for a talking-head short.",
-          "Each candidate already has a fixed role — choose soft, medium, hard, or none using that role's guidance in the pack.",
-          "Bias toward placing SFX so the short feels punctuated; prefer soft over none when unsure.",
-          "Return exactly one assignment for every candidate.",
-        ].join(" "),
-      },
-      {
-        role: "user",
-        content: [
-          formatAiSfxPackForPrompt(),
-          "",
-          "Candidates:",
-          formatCandidates(candidates),
-          "",
-          "Numbered transcript (context):",
-          numbered,
-        ].join("\n"),
-      },
-    ],
-    response_format: zodResponseFormat(
-      CompanionChoiceSchema,
-      "companion_sfx",
-    ),
-  });
-
-  const parsed = completion.choices[0]?.message.parsed;
-  if (!parsed) {
-    const refusal = completion.choices[0]?.message.refusal;
-    throw new Error(
-      `OpenAI companion SFX failed${refusal ? `: ${refusal}` : ""}`,
-    );
-  }
-
-  return parsed;
-}
-
-/** Optional companion SFX edits from punch-ins, quote peaks, listicles, title. */
-export async function generateCompanionSfxEdits(
-  words: readonly GlobalTranscriptWord[],
-  edits: readonly Edit[],
-  durationSecFor: CompanionSfxAssetDuration,
-  pools: CompanionSfxPools,
-): Promise<SfxEdit[]> {
-  const candidates = buildCompanionCandidates(edits, words);
-  if (candidates.length === 0) return [];
-  const detection = await callOpenAI(candidates, words);
-  return detectionToSfxEdits(
-    detection,
-    candidates,
-    edits,
-    durationSecFor,
-    pools,
+  let edits = attachCompanionSfxToEdits(
+    options.edits,
+    map,
+    sfxAssets,
+    skipIds,
   );
+  const attached = edits.filter((e) => e.companionSfx && !skipIds.has(e.id));
+  console.log(`[ai-assist] companionSfx attached=${attached.length}`);
+
+  const middlePops = generateOverlayMiddleSfxEdits(
+    edits,
+    map,
+    sfxAssets,
+    durationSecFor,
+  );
+  edits = [...edits, ...middlePops];
+  console.log(`[ai-assist] overlayMiddleSfx=${middlePops.length}`);
+
+  return edits;
 }

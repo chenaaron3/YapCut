@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
+import type { Edit } from "~/domain/project-config";
 import { BRollInspector } from "~/editor/components/inspector/BRollInspector";
+import { CompanionSfxFields } from "~/editor/components/inspector/field";
 import { CaptionsInspector } from "~/editor/components/inspector/CaptionsInspector";
 import { ListicleVfxInspector } from "~/editor/components/inspector/ListicleVfxInspector";
 import { MusicInspector } from "~/editor/components/inspector/MusicInspector";
@@ -31,6 +33,7 @@ export function InspectorPanel() {
 
   let title: string | null = null;
   let body: ReactNode = null;
+  let companionEdit: Edit | null = null;
 
   if (projectPanel === "settings") {
     title = "Settings";
@@ -72,6 +75,7 @@ export function InspectorPanel() {
       title = "Transition";
       body = <TransitionInspector edit={edit} />;
     }
+    if (edit && edit.kind !== "sfx") companionEdit = edit;
   }
 
   return (
@@ -97,6 +101,11 @@ export function InspectorPanel() {
           </div>
           <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-3">
             {body}
+            {companionEdit ? (
+              <div className="mt-4">
+                <CompanionSfxFields edit={companionEdit} />
+              </div>
+            ) : null}
           </div>
         </>
       ) : null}

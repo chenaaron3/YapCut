@@ -6,6 +6,9 @@ import {
   DEFAULT_SFX_VOLUME,
   formatSfxLabel,
   SFX_DRAG_MIME,
+  SFX_FOLDER_ORDER,
+  sfxFolderLabel,
+  sfxFolderOf,
 } from "~/domain/sfx";
 import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
 import { cn } from "~/lib/utils";
@@ -13,40 +16,10 @@ import { cn } from "~/lib/utils";
 import type { SfxDragPayload } from "~/domain/sfx";
 import type { EditorAsset } from "~/editor/store";
 
-const FOLDER_ORDER = [
-  "meme",
-  "riser",
-  "reveal",
-  "tick",
-  "ping",
-  "motion",
-] as const;
-
-const FOLDER_LABELS: Record<string, string> = {
-  meme: "Meme",
-  riser: "Riser",
-  reveal: "Reveal",
-  tick: "Tick",
-  ping: "Ping",
-  motion: "Motion",
-};
-
-/** Group key for SFX tab sections from seeded relative path. */
-function folderOf(filename: string | null): string | null {
-  if (!filename) return null;
-  const parts = filename.split("/");
-  if (parts[0] === "custom" && parts.length >= 3) {
-    const sub = parts[1]!;
-    if (sub === "memes") return "meme";
-    return sub;
-  }
-  return parts.length >= 2 ? (parts[0] ?? null) : null;
-}
-
 function groupSfx(assets: EditorAsset[]) {
   const groups = new Map<string | null, EditorAsset[]>();
   for (const asset of assets) {
-    const key = folderOf(asset.originalFilename);
+    const key = sfxFolderOf(asset.originalFilename);
     const list = groups.get(key) ?? [];
     list.push(asset);
     groups.set(key, list);
@@ -58,12 +31,12 @@ function groupSfx(assets: EditorAsset[]) {
     assets: EditorAsset[];
   }> = [];
 
-  for (const folder of FOLDER_ORDER) {
+  for (const folder of SFX_FOLDER_ORDER) {
     const list = groups.get(folder);
     if (!list?.length) continue;
     ordered.push({
       folder,
-      label: FOLDER_LABELS[folder] ?? folder,
+      label: sfxFolderLabel(folder),
       assets: list,
     });
     groups.delete(folder);
@@ -72,7 +45,7 @@ function groupSfx(assets: EditorAsset[]) {
     if (!list.length) continue;
     ordered.push({
       folder,
-      label: folder ? (FOLDER_LABELS[folder] ?? folder) : "Other",
+      label: folder ? sfxFolderLabel(folder) : "Other",
       assets: list,
     });
   }
@@ -146,7 +119,7 @@ export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
   const groups = useMemo(() => groupSfx(assets), [assets]);
   const [open, setOpen] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
-    for (const g of FOLDER_ORDER) init[g] = true;
+    for (const g of SFX_FOLDER_ORDER) init[g] = true;
     return init;
   });
 

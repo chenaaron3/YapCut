@@ -5,7 +5,7 @@
  * Prunes obsolete global SFX keys not in the keep set (never music).
  *
  * Layout:
- *   public/sfx/<role>/*               — AI companion pools (flat per role)
+ *   public/sfx/<folder>/*             — official library pools (reveal/tick/ping/motion)
  *   public/sfx/custom/<folder>/*      — manual library only (memes, riser, …)
  *
  * Usage:
@@ -19,10 +19,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  AI_SFX_ROLES,
-  expectedAiSfxPoolDirs,
-  parseAiSfxPoolPath,
-} from "~/domain/ai-sfx-pack";
+  expectedSfxPoolDirs,
+  parseOfficialSfxPath,
+  SFX_FOLDER_ORDER,
+} from "~/domain/sfx";
 import { globalSfxKey, isGlobalSfxKey } from "~/server/media/keys";
 import {
   parseSeedDirArgs,
@@ -53,7 +53,7 @@ async function walkAudioFiles(dir: string): Promise<string[]> {
 
 function isKeepRelativePath(relativePath: string): boolean {
   if (relativePath.startsWith(CUSTOM_PREFIX)) return true;
-  return parseAiSfxPoolPath(relativePath) != null;
+  return parseOfficialSfxPath(relativePath) != null;
 }
 
 export async function seedGlobalSfx(options: {
@@ -71,8 +71,29 @@ export async function seedGlobalSfx(options: {
   }
   console.log(`[seed-global-sfx] found ${files.length} files`);
 
+  const topDirs = (await readdir(sfxDir, { withFileTypes: true }))
+    .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+    .map((e) => e.name)
+    .sort();
+  const expected = new Set(expectedSfxPoolDirs());
+  const unexpected = topDirs.filter((d) => d !== "custom" && !expected.has(d));
+  const missing = [...expected].filter((d) => !topDirs.includes(d));
+  if (unexpected.length > 0 || missing.length > 0) {
+    throw new Error(
+      [
+        "public/sfx folders do not match SFX_FOLDER_ORDER.",
+        missing.length > 0 ? `  missing: ${missing.join(", ")}` : "",
+        unexpected.length > 0
+          ? `  unexpected (not custom/): ${unexpected.join(", ")}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
+
   const poolCounts = new Map<string, number>();
-  for (const dir of expectedAiSfxPoolDirs()) {
+  for (const dir of expectedSfxPoolDirs()) {
     poolCounts.set(dir, 0);
   }
   const customCounts = new Map<string, number>();
@@ -84,27 +105,27 @@ export async function seedGlobalSfx(options: {
       customCounts.set(folder, (customCounts.get(folder) ?? 0) + 1);
       continue;
     }
-    const parsed = parseAiSfxPoolPath(relativePath);
+    const parsed = parseOfficialSfxPath(relativePath);
     if (!parsed) {
       console.warn(
-        `[seed-global-sfx] skipping non-pack path (won't keep): ${relativePath}`,
+        `[seed-global-sfx] skipping non-library path (won't keep): ${relativePath}`,
       );
       continue;
     }
-    poolCounts.set(parsed.role, (poolCounts.get(parsed.role) ?? 0) + 1);
+    poolCounts.set(parsed.folder, (poolCounts.get(parsed.folder) ?? 0) + 1);
   }
 
   const emptyPools = [...poolCounts.entries()].filter(([, n]) => n === 0);
   if (emptyPools.length > 0) {
     throw new Error(
-      `Empty AI SFX pools (need ≥1 file each):\n${emptyPools
+      `Empty official SFX pools (need ≥1 file each):\n${emptyPools
         .map(([d]) => `  - ${d}/`)
         .join("\n")}`,
     );
   }
 
-  for (const role of AI_SFX_ROLES) {
-    console.log(`  pool  ${role}: ${poolCounts.get(role) ?? 0}`);
+  for (const folder of SFX_FOLDER_ORDER) {
+    console.log(`  pool  ${folder}: ${poolCounts.get(folder) ?? 0}`);
   }
   for (const [folder, n] of [...customCounts.entries()].sort()) {
     console.log(`  pool  custom/${folder}: ${n}`);

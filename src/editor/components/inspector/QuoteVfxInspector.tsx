@@ -1,5 +1,7 @@
-import { CaptionStyleFields } from "~/editor/components/inspector/field";
-import { EmphasisStyleFields } from "~/editor/components/inspector/EmphasisStyleFields";
+import {
+  CaptionStyleFields,
+  EmphasisStyleFields,
+} from "~/editor/components/inspector/field";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
 import { applyEmphasisPatch } from "~/domain/emphasis-style";

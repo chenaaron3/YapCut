@@ -10,10 +10,8 @@ import {
   EMPHASIS_SCALE_MIN,
   type EmphasisStyle,
 } from "~/domain/emphasis-style";
-import {
-  InspectorCollapsible,
-  NumberField,
-} from "~/editor/components/inspector/field";
+import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
+import { NumberField } from "~/editor/components/inspector/field/NumberField";
 import { runGesture } from "~/editor/lib/gesture";
 import {
   CAPTION_FONT_IDS,

@@ -453,6 +453,60 @@ function buildShakes(
   return out;
 }
 
+const COMPANION_SFX_FALLBACK_SEC = 0.35;
+
+function pushSfxClip(
+  out: SfxClipProp[],
+  args: {
+    id: number;
+    start: number;
+    end: number;
+    assetId: string;
+    mediaOffsetSec: number;
+    volume: number;
+    cells: ReturnType<typeof buildArollLayout>;
+    mediaUrls: ReadonlyMap<string, string>;
+    assetKind: ReadonlyMap<string, "video" | "image" | "audio">;
+    assetLoudness:
+      | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
+      | undefined;
+    fps: number;
+  },
+): void {
+  const src = args.mediaUrls.get(args.assetId);
+  if (!src) return;
+  if (args.assetKind.get(args.assetId) !== "audio") return;
+  const range = timelineRangeToOutput(args.cells, {
+    start: args.start,
+    end: args.end,
+  });
+  if (!range) return;
+  const loud = loudnessOf(args.assetLoudness, args.assetId);
+  out.push({
+    id: args.id,
+    startFrame: secToFrame(range.start, args.fps),
+    endFrame: Math.max(
+      secToFrame(range.start, args.fps) + 1,
+      secToFrame(range.end, args.fps),
+    ),
+    src,
+    mediaOffsetSec: args.mediaOffsetSec,
+    volume: sfxPlaybackVolume(args.volume, loud.lufs, loud.truePeakDb),
+  });
+}
+
+function companionPlayEnd(
+  start: number,
+  mediaOffsetSec: number,
+  srcDurationSec: number | undefined,
+): number {
+  const play =
+    srcDurationSec != null && srcDurationSec > 0
+      ? Math.max(0.05, srcDurationSec - mediaOffsetSec)
+      : COMPANION_SFX_FALLBACK_SEC;
+  return start + play;
+}
+
 function buildSfx(
   edits: ProjectConfig["edits"],
   cells: ReturnType<typeof buildArollLayout>,
@@ -461,27 +515,45 @@ function buildSfx(
   assetLoudness:
     | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
     | undefined,
+  assetDurationSec: ReadonlyMap<string, number>,
   fps: number,
 ): SfxClipProp[] {
   const out: SfxClipProp[] = [];
   for (const e of edits) {
-    if (e.kind !== "sfx") continue;
-    const src = mediaUrls.get(e.assetId);
-    if (!src) continue;
-    if (assetKind.get(e.assetId) !== "audio") continue;
-    const range = timelineRangeToOutput(cells, e);
-    if (!range) continue;
-    const loud = loudnessOf(assetLoudness, e.assetId);
-    out.push({
+    if (e.kind === "sfx") {
+      pushSfxClip(out, {
+        id: e.id,
+        start: e.start,
+        end: e.end,
+        assetId: e.assetId,
+        mediaOffsetSec: e.mediaOffsetSec,
+        volume: e.volume,
+        cells,
+        mediaUrls,
+        assetKind,
+        assetLoudness,
+        fps,
+      });
+      continue;
+    }
+    const companion = e.companionSfx;
+    if (!companion) continue;
+    pushSfxClip(out, {
       id: e.id,
-      startFrame: secToFrame(range.start, fps),
-      endFrame: Math.max(
-        secToFrame(range.start, fps) + 1,
-        secToFrame(range.end, fps),
+      start: e.start,
+      end: companionPlayEnd(
+        e.start,
+        companion.mediaOffsetSec,
+        assetDurationSec.get(companion.assetId),
       ),
-      src,
-      mediaOffsetSec: e.mediaOffsetSec,
-      volume: sfxPlaybackVolume(e.volume, loud.lufs, loud.truePeakDb),
+      assetId: companion.assetId,
+      mediaOffsetSec: companion.mediaOffsetSec,
+      volume: companion.volume,
+      cells,
+      mediaUrls,
+      assetKind,
+      assetLoudness,
+      fps,
     });
   }
   return out;
@@ -632,6 +704,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
       input.mediaUrls,
       input.assetKind,
       input.assetLoudness,
+      input.assetDurationSec,
       fps,
     ),
     music: buildMusic(

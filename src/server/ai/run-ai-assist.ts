@@ -1,7 +1,5 @@
-import { and, eq, isNull } from "drizzle-orm";
-
-import { parseAiSfxPoolPath } from "~/domain/ai-sfx-pack";
 import { buildArollLayout } from "~/domain/arolls";
+import type { CompanionSfxMap } from "~/domain/companion-sfx-map";
 import {
   firstKeepTimelineSec,
   layoutTimelineDuration,
@@ -16,19 +14,15 @@ import {
 import { seedTitleTextVfx } from "~/domain/vfx";
 import { snapWordBoundsToKeepEdges } from "~/domain/snap";
 import type { TranscriptWord } from "~/domain/transcript";
-import {
-  generateCompanionSfxEdits,
-  type CompanionSfxPools,
-} from "~/server/ai/companion-sfx";
+import { generateCompanionSfxEdits } from "~/server/ai/companion-sfx";
 import { generateEmphasisUpdates } from "~/server/ai/emphasis";
+import { generateEmphasisSfxEdits } from "~/server/ai/emphasis-sfx";
 import { generateListicleEdits } from "~/server/ai/listicles";
 import { generatePacingReconcileZooms } from "~/server/ai/pacing-reconcile";
 import { generateQuoteEdits } from "~/server/ai/quotes";
 import { generateTitle } from "~/server/ai/title";
 import { generateTransitionEdits } from "~/server/ai/transitions";
 import { generateZoomEdits } from "~/server/ai/zooms";
-import { db } from "~/server/db";
-import { assets } from "~/server/db/schema";
 
 export type AiAssistInput = {
   arolls: ArollKeep[];
@@ -42,6 +36,8 @@ export type AiAssistInput = {
   baseEdits?: readonly Edit[];
   /** SoT listicle look — copied onto each seeded listicle. */
   listicleStyle?: TemplateStyle;
+  /** Companion cue map (create uses shipped defaults). */
+  companionSfx?: CompanionSfxMap;
 };
 
 export type AiAssistResult = {
@@ -68,38 +64,9 @@ function clearEmphasis(
   return out;
 }
 
-async function loadAiSfxPools(): Promise<{
-  pools: CompanionSfxPools;
-  durationByAssetId: Map<string, number | null>;
-}> {
-  const rows = await db
-    .select({
-      id: assets.id,
-      durationSec: assets.durationSec,
-      originalFilename: assets.originalFilename,
-    })
-    .from(assets)
-    .where(and(isNull(assets.projectId), eq(assets.kind, "audio")));
-
-  const poolMap = new Map<string, string[]>();
-  const durationByAssetId = new Map<string, number | null>();
-
-  for (const row of rows) {
-    if (!row.originalFilename) continue;
-    const parsed = parseAiSfxPoolPath(row.originalFilename);
-    if (!parsed) continue;
-    const list = poolMap.get(parsed.role) ?? [];
-    list.push(row.id);
-    poolMap.set(parsed.role, list);
-    durationByAssetId.set(row.id, row.durationSec);
-  }
-
-  return { pools: poolMap, durationByAssetId };
-}
-
 /**
  * Shared create / editor AI assist: punch-ins → listicles → transitions →
- * quotes → emphasis → pacing slow zooms → companion SFX.
+ * quotes → emphasis → pacing slow zooms → companion SFX → emphasis pings.
  */
 export async function runAiAssist(
   input: AiAssistInput,
@@ -231,19 +198,28 @@ export async function runAiAssist(
   }
 
   try {
-    const { pools, durationByAssetId: durationBySfxId } =
-      await loadAiSfxPools();
-    const sfxEdits = await generateCompanionSfxEdits(
-      timelineWordsAfterEmphasis,
+    edits = await generateCompanionSfxEdits({
       edits,
-      (assetId) => durationBySfxId.get(assetId) ?? null,
-      pools,
-    );
-    edits = [...edits, ...sfxEdits];
-    console.log(`[ai-assist] companionSfx=${sfxEdits.length}`);
+      companionSfx: input.companionSfx,
+      skipIds: new Set((input.baseEdits ?? []).map((e) => e.id)),
+    });
   } catch (error) {
     console.warn(
       "[ai-assist] companion SFX soft-failed:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  try {
+    const sfxEdits = await generateEmphasisSfxEdits({
+      words: timelineWordsAfterEmphasis,
+      edits,
+    });
+    edits = [...edits, ...sfxEdits];
+    console.log(`[ai-assist] emphasisSfx=${sfxEdits.length}`);
+  } catch (error) {
+    console.warn(
+      "[ai-assist] emphasis SFX soft-failed:",
       error instanceof Error ? error.message : error,
     );
   }

@@ -1,4 +1,6 @@
 export { CaptionStyleFields } from "./CaptionStyleFields";
+export { CompanionSfxFields } from "./CompanionSfxFields";
+export { EmphasisStyleFields } from "./EmphasisStyleFields";
 export { InspectorCollapsible } from "./InspectorCollapsible";
 export { MediaRefFields } from "./MediaRefFields";
 export { NumberField } from "./NumberField";

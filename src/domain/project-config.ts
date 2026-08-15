@@ -2,6 +2,11 @@ import { z } from "zod";
 
 import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import {
+  companionSfxMapSchema,
+  defaultCompanionSfxMap,
+  type CompanionSfxMap,
+} from "~/domain/companion-sfx-map";
+import {
   DEFAULT_EMPHASIS_FONT_FAMILY,
   DEFAULT_EMPHASIS_SCALE,
   emphasisStyleSchema,
@@ -11,6 +16,7 @@ import {
 import type { LocalTime, TimelineTime } from "~/domain/time";
 
 export type { EmphasisStyle };
+export type { CompanionSfxCueId, CompanionSfxMap, CompanionSfxSource } from "~/domain/companion-sfx-map";
 
 /** Catalog base + sparse user overrides. Overlay adds a subheading bag. */
 export type TemplateStyle = {
@@ -60,6 +66,11 @@ export type EditId = number;
 /** Shared fields on every Edit (expanded timeline seconds — gaps count). */
 export type EditBase = TimelineTime & {
   id: EditId;
+  /**
+   * Nested entrance SFX (not an `SfxEdit`, no transcript marker).
+   * Omit = none. Plays from `start` for the SFX file duration.
+   */
+  companionSfx?: MediaRef;
 };
 
 /**
@@ -253,10 +264,11 @@ export type ProjectConfig = {
    */
   emphasisStyle: EmphasisStyle;
   /**
-   * Global audio Asset id placed as a sibling `sfx` edit when dropping b-roll.
-   * `null` = no entrance SFX on place.
+   * Default companion SFX pools per visual cue. Factory hash-picks at
+   * create time onto `Edit.companionSfx`. `overlayMiddle` is AI-only
+   * (sibling `SfxEdit` at overlay split).
    */
-  defaultBRollSfxAssetId: string | null;
+  companionSfx: CompanionSfxMap;
   /**
    * Looping music bed for the whole output, or null when unset.
    * Not an Edit — pick from the Music tab.
@@ -281,7 +293,7 @@ export const emptyProjectConfig = (): ProjectConfig => ({
     scale: DEFAULT_EMPHASIS_SCALE,
     fontFamily: DEFAULT_EMPHASIS_FONT_FAMILY,
   },
-  defaultBRollSfxAssetId: null,
+  companionSfx: defaultCompanionSfxMap(),
   music: null,
 });
 
@@ -298,10 +310,17 @@ const arollKeepSchema = z.object({
   end: z.number(),
 });
 
+const mediaRefSchema = z.object({
+  assetId: z.string().min(1),
+  mediaOffsetSec: z.number(),
+  volume: z.number(),
+});
+
 const editBaseSchema = z.object({
   id: z.number().int().nonnegative(),
   start: z.number(),
   end: z.number(),
+  companionSfx: mediaRefSchema.optional(),
 });
 
 const transformSchema = z.object({
@@ -356,12 +375,6 @@ const vfxShakeEditSchema = editBaseSchema.extend({
   intensity: z.number().optional(),
 });
 
-const mediaRefSchema = z.object({
-  assetId: z.string().min(1),
-  mediaOffsetSec: z.number(),
-  volume: z.number(),
-});
-
 const brollEditSchema = editBaseSchema
   .merge(transformSchema)
   .merge(mediaRefSchema)
@@ -413,7 +426,7 @@ export const projectConfigSchema = z.object({
   captions: templateStyleSchema,
   listicleStyle: templateStyleSchema,
   emphasisStyle: emphasisStyleSchema,
-  defaultBRollSfxAssetId: z.string().min(1).nullable().default(null),
+  companionSfx: companionSfxMapSchema,
   music: z
     .object({
       assetId: z.string().min(1),

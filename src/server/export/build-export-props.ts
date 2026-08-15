@@ -59,8 +59,15 @@ export async function buildExportProps(
   const projectAssetIds = new Set(project.assets.map((a) => a.id));
   const missingIds = new Set<string>();
   for (const edit of config.edits) {
-    if (edit.kind !== "sfx" && edit.kind !== "broll") continue;
-    if (!projectAssetIds.has(edit.assetId)) missingIds.add(edit.assetId);
+    if (edit.kind === "sfx" || edit.kind === "broll") {
+      if (!projectAssetIds.has(edit.assetId)) missingIds.add(edit.assetId);
+    }
+    if (
+      edit.companionSfx &&
+      !projectAssetIds.has(edit.companionSfx.assetId)
+    ) {
+      missingIds.add(edit.companionSfx.assetId);
+    }
   }
   if (config.music && !projectAssetIds.has(config.music.assetId)) {
     missingIds.add(config.music.assetId);
