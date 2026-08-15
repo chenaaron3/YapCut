@@ -8,22 +8,46 @@ import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
 import { useRangeResize } from "~/editor/components/transcript/hooks/useRangeResize";
 import { TranscriptChromeVisibilityToggles } from "~/editor/components/transcript/TranscriptChromeVisibilityToggles";
 import { WordCell } from "~/editor/components/transcript/WordCell";
+import { editsTopologyEqual } from "~/editor/lib/edit-topology";
 import { useWordDragSelect } from "~/editor/lib/use-word-drag-select";
 import {
   buildWordAnnotations,
   EMPTY_WORD_ANNOTATION,
 } from "~/editor/lib/word-annotations";
-import { editsTopologyEqual } from "~/editor/lib/edit-topology";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useEditorEqual, useGlobalWords } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
+import type { GlobalTranscriptWord } from "~/domain/transcript";
 import type { ReactNode } from "react";
+
+function endsWithSentencePunctuation(text: string): boolean {
+  return /[.?!]+$/.test(text.trim());
+}
+
+/** Group spoken (non-gap) words into sentences on `.?!`. */
+function groupWordsBySentence(
+  words: readonly GlobalTranscriptWord[],
+): GlobalTranscriptWord[][] {
+  if (words.length === 0) return [];
+  const sentences: GlobalTranscriptWord[][] = [];
+  let batch: GlobalTranscriptWord[] = [];
+  for (const word of words) {
+    batch.push(word);
+    if (endsWithSentencePunctuation(word.text)) {
+      sentences.push(batch);
+      batch = [];
+    }
+  }
+  if (batch.length > 0) sentences.push(batch);
+  return sentences;
+}
 
 export function TranscriptPanel() {
   const edits = useEditorEqual((s) => s.config?.edits, editsTopologyEqual);
   const words = useGlobalWords();
+  const visibleWords = useMemo(() => words.filter((w) => !w.inGap), [words]);
   const arolls = useEditor((s) => s.config?.arolls);
   const assets = useEditor((s) => s.assets);
   const layout = useMemo(() => {
@@ -38,8 +62,8 @@ export function TranscriptPanel() {
   const transitionDragActive = useTranscriptUi((s) => s.transitionDragActive);
 
   const annotations = useMemo(
-    () => buildWordAnnotations(words, edits ?? [], layout),
-    [words, edits, layout],
+    () => buildWordAnnotations(visibleWords, edits ?? [], layout),
+    [visibleWords, edits, layout],
   );
 
   const transitionDropIndexes = useMemo(() => {
@@ -49,23 +73,34 @@ export function TranscriptPanel() {
     );
   }, [transitionDragActive, words, layout]);
 
-  const nodes: ReactNode[] = [];
-  for (const word of words) {
-    const annotation =
-      annotations.get(word.globalIndex) ?? EMPTY_WORD_ANNOTATION;
-    nodes.push(
-      <WordCell
-        key={word.globalIndex}
-        word={word}
-        annotation={annotation}
-        onWordDragStart={(e) => onDragStart(word.globalIndex, e)}
-        onResizeEdge={beginResize}
-        transitionDropGlow={
-          transitionDropIndexes?.has(word.globalIndex) ?? false
-        }
-      />,
+  const sentences = useMemo(
+    () => groupWordsBySentence(visibleWords),
+    [visibleWords],
+  );
+
+  const nodes: ReactNode[] = sentences.map((sentence) => {
+    const first = sentence[0]!;
+    return (
+      <div key={first.globalIndex}>
+        {sentence.map((word) => {
+          const annotation =
+            annotations.get(word.globalIndex) ?? EMPTY_WORD_ANNOTATION;
+          return (
+            <WordCell
+              key={word.globalIndex}
+              word={word}
+              annotation={annotation}
+              onWordDragStart={(e) => onDragStart(word.globalIndex, e)}
+              onResizeEdge={beginResize}
+              transitionDropGlow={
+                transitionDropIndexes?.has(word.globalIndex) ?? false
+              }
+            />
+          );
+        })}
+      </div>
     );
-  }
+  });
 
   return (
     <div className="border-border bg-panel flex min-h-0 min-w-0 flex-col overflow-hidden border-r">
@@ -118,7 +153,7 @@ export function TranscriptPanel() {
           }}
         >
           <div className="px-6 py-5 text-[18px] leading-[1.85]">
-            {words.length === 0 ? (
+            {visibleWords.length === 0 ? (
               <p className="text-muted-foreground text-sm">
                 No transcript words.
               </p>

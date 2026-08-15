@@ -1,19 +1,24 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 
+import { BrollPreviewModal } from "~/editor/components/assets/BrollPreviewModal";
 import { BrollTile } from "~/editor/components/assets/BrollTile";
 import { putToPresignedUrl } from "~/editor/components/assets/put-presigned-url";
 import { prepareMediaFileForUpload } from "~/editor/lib/prepare-media-file";
 import { probeMediaFile } from "~/editor/lib/probe-media";
-import { useEditor, type EditorAsset } from "~/editor/store";
+import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
+
+import type { EditorAsset } from "~/editor/store";
 
 export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
   const projectId = useEditor((s) => s.projectId);
   const addAssets = useEditor((s) => s.addAssets);
   const [error, setError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const previewAsset = assets.find((a) => a.id === previewId) ?? null;
 
   const uploadStart = api.project.uploadAssetsStart.useMutation();
   const uploadFinalize = api.project.uploadAssetsFinalize.useMutation();
@@ -87,45 +92,49 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
   return (
     <div
       {...getRootProps()}
-      className={cn(
-        "flex min-h-full flex-col",
-        isDragActive && "bg-primary/5",
-      )}
+      className={cn("flex min-h-full flex-col", isDragActive && "bg-primary/5")}
     >
       <input {...getInputProps()} />
       <div className="grid grid-cols-2 content-start gap-2 p-2.5">
         {assets.map((asset) => (
-          <BrollTile key={asset.id} asset={asset} />
+          <BrollTile
+            key={asset.id}
+            asset={asset}
+            onPreview={() => setPreviewId(asset.id)}
+          />
         ))}
         {assets.length === 0 && !importing ? (
-          <p className="col-span-2 text-xs text-muted-foreground">
+          <p className="text-muted-foreground col-span-2 text-xs">
             Drop images or videos here, then drag onto the transcript.
           </p>
         ) : null}
         {importing ? (
-          <p className="col-span-2 text-xs text-muted-foreground">
-            Importing…
-          </p>
+          <p className="text-muted-foreground col-span-2 text-xs">Importing…</p>
         ) : null}
         {error ? (
           <p className="col-span-2 text-xs text-red-400">{error}</p>
         ) : null}
         {isDragActive ? (
-          <p className="col-span-2 text-center text-xs font-medium text-primary">
+          <p className="text-primary col-span-2 text-center text-xs font-medium">
             Drop media to add
           </p>
         ) : null}
       </div>
-      <div className="mt-auto border-t border-border p-2">
+      <div className="border-border mt-auto border-t p-2">
         <button
           type="button"
-          className="w-full rounded-md border border-border px-2 py-1.5 text-xs text-muted-foreground hover:bg-panel-2 hover:text-foreground disabled:opacity-50"
+          className="border-border text-muted-foreground hover:bg-panel-2 hover:text-foreground w-full rounded-md border px-2 py-1.5 text-xs disabled:opacity-50"
           disabled={importing || !projectId}
           onClick={() => open()}
         >
           Upload b-roll
         </button>
       </div>
+      <BrollPreviewModal
+        asset={previewAsset}
+        open={previewAsset != null}
+        onClose={() => setPreviewId(null)}
+      />
     </div>
   );
 }

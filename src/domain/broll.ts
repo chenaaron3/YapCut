@@ -1,7 +1,8 @@
-import type { EditSeed } from "~/domain/edits";
 import { DEFAULT_MEDIA_VOLUME } from "~/domain/media";
 import { type BrollEdit } from "~/domain/project-config";
 import { TRANSFORM_DEFAULTS } from "~/domain/transform";
+
+import type { EditSeed } from "~/domain/edits";
 
 export const DEFAULT_KEN_BURNS = 1.15;
 export const KEN_BURNS_MIN = 0.5;
@@ -51,13 +52,16 @@ export function isBrollActiveAt(
 }
 
 /** Place-time defaults for a b-roll edit (range filled by `placeEdit`). */
-export function brollSeed(assetId: string): Extract<EditSeed, { kind: "broll" }> {
+export function brollSeed(
+  assetId: string,
+  opts?: { mediaOffsetSec?: number },
+): Extract<EditSeed, { kind: "broll" }> {
   return {
     kind: "broll",
     assetId,
     ...TRANSFORM_DEFAULTS,
     kenBurns: DEFAULT_KEN_BURNS,
-    mediaOffsetSec: 0,
+    mediaOffsetSec: opts?.mediaOffsetSec ?? 0,
     volume: DEFAULT_MEDIA_VOLUME,
   };
 }

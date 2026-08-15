@@ -7,9 +7,11 @@ import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
 import { ExportButton } from "~/editor/components/ExportButton";
 import { Timeline } from "~/editor/components/timeline/Timeline";
 import { TranscriptPanel } from "~/editor/components/transcript/TranscriptPanel";
+import { hydrateInputFromProject } from "~/editor/lib/hydrate-project";
 import { togglePlayback } from "~/editor/lib/player-bridge";
 import { useSelection } from "~/editor/selection-store";
 import { bindEditorSavers, useEditor } from "~/editor/store";
+import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 
@@ -67,6 +69,11 @@ function useGlobalShortcuts() {
         else editor.undo();
       } else if (e.key === "Escape") {
         e.preventDefault();
+        const ui = useTranscriptUi.getState();
+        if (ui.pendingBrollPlace) {
+          ui.clearPendingBrollPlace();
+          return;
+        }
         selection.clearSelection();
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
@@ -82,6 +89,12 @@ function useGlobalShortcuts() {
         e.preventDefault();
         e.stopPropagation();
         if (e.repeat) return;
+        const togglePreview =
+          useTranscriptUi.getState().toggleBrollPreviewPlayback;
+        if (togglePreview) {
+          togglePreview();
+          return;
+        }
         togglePlayback(e);
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -160,60 +173,54 @@ export function EditorShell({ projectId }: Props) {
     if (!data) return;
     if (data.status !== "ready" && data.status !== "exporting") return;
 
-    // Don't clobber in-progress local edits when react-query refetches.
     const current = useEditor.getState();
-    if (
-      current.loadState === "ready" &&
-      current.projectId === data.id &&
-      (current.configDirty || current.transcriptsDirty || current.saving)
-    ) {
-      return;
-    }
-    const configUpdatedAt = data.configUpdatedAt?.toISOString() ?? null;
-    if (
-      current.loadState === "ready" &&
-      current.projectId === data.id &&
-      current.configUpdatedAt === configUpdatedAt
-    ) {
-      // Still merge global libraries if they arrived after initial hydrate.
-      const extras = globalAssetsQuery.data;
-      if (extras?.length) {
-        useEditor.getState().addAssets(extras);
+    const extras = globalAssetsQuery.data ?? [];
+    const alreadyOpen =
+      current.loadState === "ready" && current.projectId === data.id;
+
+    // Store is the working copy after first open. Query refetches may patch
+    // server-owned status and merge late library assets — never replace config.
+    if (alreadyOpen) {
+      if (extras.length > 0) {
+        const have = new Set(current.assets.map((asset) => asset.id));
+        if (extras.some((asset) => !have.has(asset.id))) {
+          current.addAssets(extras);
+        }
+      }
+      if (current.status !== data.status) {
+        useEditor.setState({ status: data.status });
       }
       return;
     }
 
-    const projectAssets = data.assets;
-    const globalAssets = globalAssetsQuery.data ?? [];
-    const byId = new Map(
-      [...projectAssets, ...globalAssets].map((a) => [a.id, a]),
-    );
-
-    hydrateFromServer({
-      id: data.id,
-      title: data.title,
-      status: data.status,
-      config: data.config,
-      configUpdatedAt,
-      assets: [...byId.values()],
-      // Only assets that have a transcript row — b-roll/etc. must not be
-      // hydrated as empty maps or autosave will 404 on updateTranscriptWords.
-      transcripts: data.assets.flatMap((a) =>
-        a.transcript
-          ? [{ assetId: a.id, words: a.transcript.words ?? [] }]
-          : [],
-      ),
-    });
+    hydrateFromServer(hydrateInputFromProject(data, extras));
   }, [projectQuery.data, globalAssetsQuery.data, hydrateFromServer]);
+
+  useEffect(() => {
+    const flush = () => {
+      void useEditor.getState().save();
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, []);
 
   useEffect(() => {
     const label = title || "Editor";
     document.title = `${dirty ? "● " : ""}${label} · Talking Head`;
   }, [title, dirty]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("editor-lock");
+    return () => root.classList.remove("editor-lock");
+  }, []);
+
   if (projectQuery.isLoading || loadState === "loading") {
     return (
-      <div className="text-muted-foreground flex h-dvh items-center justify-center text-sm">
+      <div className="text-muted-foreground flex h-screen items-center justify-center text-sm">
         Loading editor…
       </div>
     );
@@ -222,7 +229,7 @@ export function EditorShell({ projectId }: Props) {
   const project = projectQuery.data;
   if (project === null || project === undefined) {
     return (
-      <div className="flex h-dvh flex-col items-center justify-center gap-3">
+      <div className="flex h-screen flex-col items-center justify-center gap-3">
         <p className="text-muted-foreground text-sm">
           {projectQuery.isError
             ? "Failed to load project."
@@ -242,7 +249,7 @@ export function EditorShell({ projectId }: Props) {
   return (
     <div
       className={cn(
-        "bg-background text-foreground relative grid h-dvh min-h-0 w-full max-w-[100vw] overflow-hidden",
+        "bg-background text-foreground fixed inset-0 grid h-screen min-h-0 w-full overflow-hidden overscroll-none",
         "grid-rows-[auto_1fr_320px]",
       )}
     >
@@ -254,11 +261,6 @@ export function EditorShell({ projectId }: Props) {
           >
             ← Projects
           </Link>
-          {project.status === "exporting" ? (
-            <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-200">
-              exporting
-            </span>
-          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <SaveStatusBadge />

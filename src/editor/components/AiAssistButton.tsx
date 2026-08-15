@@ -2,6 +2,7 @@ import { Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "~/components/ui/button";
+import { hydrateInputFromProject } from "~/editor/lib/hydrate-project";
 import { useEditor } from "~/editor/store";
 import { api } from "~/utils/api";
 
@@ -10,6 +11,7 @@ export function AiAssistButton() {
   const status = useEditor((s) => s.status);
   const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
   const save = useEditor((s) => s.save);
+  const hydrateFromServer = useEditor((s) => s.hydrateFromServer);
   const clearForAiAssist = useEditor((s) => s.clearForAiAssist);
 
   const [error, setError] = useState<string | null>(null);
@@ -17,14 +19,13 @@ export function AiAssistButton() {
 
   const mutation = api.project.runAiAssist.useMutation({
     onSuccess: async () => {
-      // Allow hydrateFromServer to accept the new snapshot.
-      useEditor.setState({
-        configDirty: false,
-        transcriptsDirty: false,
-        saving: false,
-        error: null,
-      });
-      await utils.project.byId.invalidate({ id: projectId ?? "" });
+      if (!projectId) return;
+      const data = await utils.project.byId.fetch({ id: projectId });
+      if (!data) return;
+      if (data.status !== "ready" && data.status !== "exporting") return;
+      hydrateFromServer(
+        hydrateInputFromProject(data, useEditor.getState().assets),
+      );
     },
     onError: (err) => {
       setError(err.message);

@@ -51,8 +51,8 @@ export function AssetsPanel() {
   );
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden border-r border-border bg-panel">
-      <div className="flex shrink-0 flex-nowrap gap-1 overflow-x-auto border-b border-border px-2 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <aside className="border-border bg-panel flex h-full min-h-0 flex-col overflow-hidden border-r">
+      <div className="border-border flex shrink-0 [scrollbar-width:none] flex-nowrap gap-1 overflow-x-auto border-b px-2 py-1.5 [&::-webkit-scrollbar]:hidden">
         {(
           [
             ["aroll", "A-roll"],
@@ -67,7 +67,7 @@ export function AssetsPanel() {
             key={id}
             type="button"
             className={cn(
-              "shrink-0 whitespace-nowrap rounded px-2 py-1 text-[11px] font-medium",
+              "shrink-0 rounded px-2 py-1 text-[11px] font-medium whitespace-nowrap",
               tab === id
                 ? "bg-panel-2 text-foreground"
                 : "text-muted-foreground hover:text-foreground",

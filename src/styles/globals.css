@@ -296,4 +296,10 @@
   html {
     @apply font-sans;
   }
+  html.editor-lock,
+  html.editor-lock body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
 }

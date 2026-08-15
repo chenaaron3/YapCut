@@ -4,7 +4,7 @@ import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export const QUOTE_TEMPLATE_IDS = [
   "bold-white",
-  "handwritten-white",
+  "typewriter",
   "pop",
 ] as const;
 
@@ -34,7 +34,7 @@ const QUOTE_WHITE_WORD = {
   textShadow: QUOTE_TEXT_SHADOW,
 } as const;
 
-const QUOTE_HANDWRITTEN_WORD = {
+const QUOTE_TYPEWRITER_WORD = {
   fill: "#FFFFFF",
   opacity: 1,
   border: { width: 5, color: "#000000" },
@@ -62,22 +62,23 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplate> = {
     label: "Bold White",
     style: { ...BOLD_WHITE_BASE },
   },
-  "handwritten-white": {
-    id: "handwritten-white",
-    label: "Handwritten",
+  typewriter: {
+    id: "typewriter",
+    label: "Typewriter",
     style: {
       fontFamily: "comico",
-      fontSize: 64,
+      fontSize: 72,
       y: QUOTE_CAPTION_Y,
       groupAnimation: "none",
-      wordAnimation: "fade",
-      wordReveal: "none",
-      textTransform: "uppercase",
+      wordAnimation: "none",
+      wordReveal: "typewriter",
+      textTransform: "lowercase",
       captionsAtATime: 3,
       background: { kind: "none" },
       fontStyle: "normal",
       textAlign: "center",
-      wordStyle: { ...QUOTE_HANDWRITTEN_WORD },
+      wordStyle: { ...QUOTE_TYPEWRITER_WORD },
+      futureWordStyle: { opacity: 0 },
     },
   },
   pop: {

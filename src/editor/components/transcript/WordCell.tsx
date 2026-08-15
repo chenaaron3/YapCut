@@ -12,6 +12,7 @@ import {
   assetDropKindFromTypes,
   placeEditFromAssetDrop,
 } from "~/editor/lib/place-asset-drop";
+import { placePendingBrollOnWord } from "~/editor/lib/place-pending-broll";
 import { isChromeKeyVisible } from "~/editor/lib/transcript-chrome-visibility";
 import { useEntitySelected } from "~/editor/lib/use-is-selected";
 import {
@@ -55,6 +56,7 @@ export const WordCell = memo(function WordCell({
   const [draft, setDraft] = useState(word.text);
 
   const chromeVisible = useTranscriptUi((s) => s.visible);
+  const pendingBrollPlace = useTranscriptUi((s) => s.pendingBrollPlace);
 
   const selected = useEntitySelected("word", word.globalIndex, word.assetId);
 
@@ -160,9 +162,15 @@ export const WordCell = memo(function WordCell({
               word.emphasized && "font-semibold text-amber-300",
               selected && "bg-primary/35",
               // Underline only when the primary edit is selected — idle markers carry the signal.
-              primarySelected && primary != null && primaryChrome?.underlineClass,
-              primarySelected && primary != null && primaryChrome?.highlightClass,
+              primarySelected &&
+                primary != null &&
+                primaryChrome?.underlineClass,
+              primarySelected &&
+                primary != null &&
+                primaryChrome?.highlightClass,
               dropActive === "broll" && "bg-broll/30 ring-broll ring-1",
+              pendingBrollPlace &&
+                "hover:bg-broll/30 hover:ring-broll hover:ring-1",
               dropActive === "sfx" && "bg-sfx/30 ring-sfx ring-1",
               dropActive === "vfx" && "bg-vfx/30 ring-vfx ring-1",
               dropActive === "transition" &&
@@ -174,11 +182,13 @@ export const WordCell = memo(function WordCell({
             onMouseDown={(e) => {
               // Drag-select applies a word range on mousedown — skip when an
               // edit covering this word is selected so the edit stays selected.
+              if (pendingBrollPlace) return;
               if (primarySelected) return;
               onWordDragStart?.(e);
             }}
             onClick={(e) => {
               e.stopPropagation();
+              if (placePendingBrollOnWord(word.globalIndex)) return;
               // Keep edit selection when clicking inside its range.
               if (primarySelected) {
                 if (!(e.metaKey || e.ctrlKey)) seekTimeline(word.start);
@@ -230,6 +240,7 @@ export const WordCell = memo(function WordCell({
               // Space is global play/pause — only Enter activates the word.
               if (e.key === "Enter") {
                 e.preventDefault();
+                if (placePendingBrollOnWord(word.globalIndex)) return;
                 if (primarySelected) {
                   seekTimeline(word.start);
                   return;

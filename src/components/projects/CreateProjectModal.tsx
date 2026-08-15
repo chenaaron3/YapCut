@@ -63,7 +63,8 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
         prev.map((f) => `${f.name}:${f.size}:${f.lastModified}`),
       );
       const next = [...prev];
-      for (const file of accepted) {
+      // macOS file picker / Finder multi-select returns FileList last→first.
+      for (const file of [...accepted].reverse()) {
         const key = `${file.name}:${file.size}:${file.lastModified}`;
         if (!seen.has(key)) {
           seen.add(key);

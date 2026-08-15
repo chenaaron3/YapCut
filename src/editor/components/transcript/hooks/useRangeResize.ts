@@ -59,7 +59,7 @@ export function useRangeResize() {
       const hit = wordIndexFromPoint(e.clientX, e.clientY);
       if (hit == null) return;
       const word = useEditor.getState().getGlobalWords()[hit];
-      if (!word) return;
+      if (!word || word.inGap) return;
 
       // Listicle split clips to word ends (same as an end handle).
       const edgeForSnap =
