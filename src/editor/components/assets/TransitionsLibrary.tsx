@@ -1,4 +1,4 @@
-import { Blend, PanelRight, Zap } from "lucide-react";
+import { PanelRight, ScanSearch, Zap } from "lucide-react";
 
 import { TRANSITION_DRAG_MIME, TRANSITION_PRESETS } from "~/domain/transition";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
@@ -8,9 +8,9 @@ import type {
   TransitionTemplateId,
 } from "~/domain/transition";
 
-const PRESET_ICON: Record<TransitionTemplateId, typeof Blend> = {
+const PRESET_ICON: Record<TransitionTemplateId, typeof Zap> = {
   flash: Zap,
-  fade: Blend,
+  flashZoom: ScanSearch,
   slide: PanelRight,
 };
 

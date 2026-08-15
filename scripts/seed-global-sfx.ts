@@ -141,8 +141,10 @@ if (isDirectRun()) {
     process.argv.slice(2),
     DEFAULT_SFX_DIR,
   );
-  seedGlobalSfx({ dir, force }).catch((error: unknown) => {
-    console.error("[seed-global-sfx] failed:", error);
-    process.exit(1);
-  });
+  seedGlobalSfx({ dir, force })
+    .then(() => process.exit(0))
+    .catch((error: unknown) => {
+      console.error("[seed-global-sfx] failed:", error);
+      process.exit(1);
+    });
 }

@@ -69,8 +69,10 @@ if (isDirectRun()) {
     process.argv.slice(2),
     DEFAULT_MUSIC_DIR,
   );
-  seedGlobalMusic({ dir, force }).catch((error: unknown) => {
-    console.error("[seed-global-music] failed:", error);
-    process.exit(1);
-  });
+  seedGlobalMusic({ dir, force })
+    .then(() => process.exit(0))
+    .catch((error: unknown) => {
+      console.error("[seed-global-music] failed:", error);
+      process.exit(1);
+    });
 }

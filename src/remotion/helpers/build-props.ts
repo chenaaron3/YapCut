@@ -4,6 +4,7 @@ import {
   timelineRangeToOutput,
 } from "~/domain/layout-time";
 import {
+  MUSIC_VOLUME_DEFAULT,
   arollPlaybackGain,
   mixPlaybackVolume,
   sfxPlaybackVolume,
@@ -501,7 +502,12 @@ function buildMusic(
   const loud = loudnessOf(assetLoudness, music.assetId);
   return {
     src,
-    volume: mixPlaybackVolume(music.volume, loud.lufs, loud.truePeakDb),
+    volume: mixPlaybackVolume(
+      music.volume,
+      loud.lufs,
+      loud.truePeakDb,
+      MUSIC_VOLUME_DEFAULT,
+    ),
     mediaOffsetSec: music.mediaOffsetSec,
   };
 }

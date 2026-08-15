@@ -117,14 +117,14 @@ export function buildWordAnnotations(
     const stacked = isTextBaseEdit(edit) ? overlayStackedForEdit(edit) : true;
     const middle = editMiddleSec(edit, stacked);
     if (middle != null && covered.length > 1) {
-      // Middle is an end-of-word boundary: pin the handle on the last
-      // covered word that ends at/before the split (heading side).
+      // Middle is a start-of-word boundary: pin the handle on the first
+      // covered word that starts at/after the split (body side).
       const splitWord =
-        [...covered].filter((w) => w.end <= middle + 0.001).at(-1) ??
+        covered.find((w) => w.start >= middle - 0.001) ??
         covered.find(
           (w) => w.start < middle + 0.001 && w.end > middle - 0.001,
         ) ??
-        covered[0]!;
+        covered[covered.length - 1]!;
       splitIndex = splitWord.globalIndex;
     }
 

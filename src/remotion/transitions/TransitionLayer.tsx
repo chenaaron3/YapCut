@@ -7,7 +7,7 @@ import {
 } from "remotion";
 
 import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
-import { openCloseProgress } from "~/remotion/transitions/progress";
+import { clipProgress, openCloseProgress } from "~/remotion/transitions/progress";
 import { TRANSITION_PAINTERS } from "~/remotion/transitions/registry";
 
 import type { TransitionClipProp } from "~/remotion/helpers/types";
@@ -17,11 +17,16 @@ function pictureStackStyle(
   transitions: readonly TransitionClipProp[],
 ): CSSProperties {
   let style: CSSProperties = { backfaceVisibility: "hidden" };
-  for (const mode of ["opening", "closing"] as const) {
-    const clip = transitions.find((t) => t.mode === mode);
-    if (!clip) continue;
+  for (const clip of transitions) {
     const painter = TRANSITION_PAINTERS[clip.templateId];
     if (!painter.pictureStyle) continue;
+    if (clip.mode === "interior") {
+      if (frame < clip.startFrame || frame >= clip.endFrame) continue;
+      const duration = Math.max(1, clip.endFrame - clip.startFrame);
+      const p = clipProgress(frame - clip.startFrame, duration, painter.ease);
+      style = { ...style, ...painter.pictureStyle(p, "interior") };
+      continue;
+    }
     const p = openCloseProgress(
       frame,
       clip.startFrame,
@@ -29,7 +34,7 @@ function pictureStackStyle(
       painter.ease,
     );
     if (p == null) continue;
-    style = painter.pictureStyle(p, mode);
+    style = painter.pictureStyle(p, clip.mode);
   }
   return style;
 }

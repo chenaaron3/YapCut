@@ -14,7 +14,9 @@ async function main(): Promise<void> {
   await seedGlobalMusic({ force });
 }
 
-main().catch((error: unknown) => {
-  console.error("[seed-global] failed:", error);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error: unknown) => {
+    console.error("[seed-global] failed:", error);
+    process.exit(1);
+  });

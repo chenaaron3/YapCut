@@ -1,7 +1,8 @@
-import type { SfxEdit } from "~/domain/project-config";
 import { formatSfxLabel } from "~/domain/sfx";
 import { MediaRefFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
+
+import type { SfxEdit } from "~/domain/project-config";
 
 export function SfxInspector({ edit }: { edit: SfxEdit }) {
   const assets = useEditor((s) => s.assets);
@@ -10,7 +11,7 @@ export function SfxInspector({ edit }: { edit: SfxEdit }) {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      <p className="truncate text-[11px] text-muted-foreground" title={label}>
+      <p className="text-muted-foreground truncate text-[11px]" title={label}>
         {label}
       </p>
       <MediaRefFields media={edit} target={edit.id} />

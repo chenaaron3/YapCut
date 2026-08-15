@@ -1,3 +1,10 @@
+import {
+  MIX_SLIDER_MAX,
+  MUSIC_VOLUME_DEFAULT,
+  SFX_VOLUME_DEFAULT,
+  mixSliderOf,
+  volumeFromMixSlider,
+} from "~/domain/audio/mix-levels";
 import type { MediaRefPatch } from "~/domain/media";
 import type { EditId, MediaRef } from "~/domain/project-config";
 import { Label } from "~/components/ui/label";
@@ -21,18 +28,23 @@ export function MediaRefFields({
     srcDur != null ? Math.max(0, srcDur - MIN_RANGE_SEC) : 0;
 
   const patch = (next: MediaRefPatch) => patchMediaRef(target, next, true);
+  const roleDefault =
+    target === "music" ? MUSIC_VOLUME_DEFAULT : SFX_VOLUME_DEFAULT;
+  const slider = mixSliderOf(media.volume, roleDefault);
+  const setSlider = (v: number) =>
+    patch({ volume: volumeFromMixSlider(v, roleDefault) });
 
   return (
     <>
       <SliderField
         label="Volume"
-        value={media.volume}
+        value={slider}
         min={0}
-        max={1}
+        max={MIX_SLIDER_MAX}
         step={0.01}
-        display={`${Math.round(media.volume * 100)}%`}
-        onLiveChange={(v) => patch({ volume: v })}
-        onCommit={(v) => patch({ volume: v })}
+        display={`${Math.round(slider * 100)}%`}
+        onLiveChange={setSlider}
+        onCommit={setSlider}
       />
 
       {srcDur == null ? (

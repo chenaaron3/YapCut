@@ -1,10 +1,7 @@
 import { produce } from "immer";
 
-import {
-  buildArollLayout,
-  durationMapFromArolls,
-  type ArollLayoutCell,
-} from "~/domain/arolls";
+import { buildArollLayout, durationMapFromArolls } from "~/domain/arolls";
+import { SFX_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import { withBrollKenBurns } from "~/domain/broll";
 import {
   clampTimelineRangeToMedia,
@@ -12,24 +9,26 @@ import {
   withMediaOffset,
   withVolume,
 } from "~/domain/media";
-import {
-  nextEditId,
-  type Edit,
-  type EditBase,
-  type MediaRef,
-  type ProjectConfig,
-  type Transform,
-} from "~/domain/project-config";
+import { nextEditId } from "~/domain/project-config";
 import { quoteRangeConflicts } from "~/domain/quote";
-import { isShakeEdit, withShakeIntensity } from "~/domain/shake";
 import { sfxSeed } from "~/domain/sfx";
-import type { TimelineTime } from "~/domain/time";
+import { isShakeEdit, withShakeIntensity } from "~/domain/shake";
 import { withTransform } from "~/domain/transform";
 import {
   isTransitionEdit,
   materializeTransition,
   transitionStitchConflicts,
 } from "~/domain/transition";
+
+import type { ArollLayoutCell } from "~/domain/arolls";
+import type {
+  Edit,
+  EditBase,
+  MediaRef,
+  ProjectConfig,
+  Transform,
+} from "~/domain/project-config";
+import type { TimelineTime } from "~/domain/time";
 
 export { DEFAULT_ZOOM_SCALE } from "~/domain/zoom";
 
@@ -79,9 +78,7 @@ function hasTransform(edit: Edit): edit is Edit & Transform {
 function hasMediaRef(
   edit: Edit,
 ): edit is Edit & MediaRef & { start: number; end: number } {
-  return (
-    "assetId" in edit && "mediaOffsetSec" in edit && "volume" in edit
-  );
+  return "assetId" in edit && "mediaOffsetSec" in edit && "volume" in edit;
 }
 
 function clampRange(
@@ -102,10 +99,7 @@ export function removeEdit(config: ProjectConfig, id: number): ProjectConfig {
 
 export type RangeEdge = "start" | "end";
 
-function srcDurationOf(
-  edit: Edit,
-  ctx?: PatchEditContext,
-): number | null {
+function srcDurationOf(edit: Edit, ctx?: PatchEditContext): number | null {
   if (!hasMediaRef(edit)) return null;
   return ctx?.srcDurationSec?.(edit.assetId) ?? null;
 }
@@ -385,7 +379,11 @@ function applyMediaPatch(
   if (!hasMediaRef(edit)) return edit;
   let next = edit;
   if ("volume" in patch && typeof patch.volume === "number") {
-    next = withVolume(next, patch.volume);
+    next = withVolume(
+      next,
+      patch.volume,
+      next.kind === "sfx" ? SFX_VOLUME_DEFAULT : undefined,
+    );
   }
   if ("mediaOffsetSec" in patch && typeof patch.mediaOffsetSec === "number") {
     const src = ctx?.srcDurationSec?.(next.assetId) ?? null;
@@ -414,9 +412,7 @@ function applyTransitionPatch(
   ctx?: PatchEditContext,
 ): Edit {
   if (!isTransitionEdit(edit)) return edit;
-  return (
-    materializeTransition(edit, layoutForConfig(config, ctx)) ?? edit
-  );
+  return materializeTransition(edit, layoutForConfig(config, ctx)) ?? edit;
 }
 
 export function patchEdit(

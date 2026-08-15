@@ -61,9 +61,9 @@ export function useRangeResize() {
       const word = useEditor.getState().getGlobalWords()[hit];
       if (!word || word.inGap) return;
 
-      // Listicle split clips to word ends (same as an end handle).
+      // Listicle split clips to word starts (same as a start handle).
       const edgeForSnap =
-        resize.edge === "middle" ? "end" : resize.edge;
+        resize.edge === "middle" ? "start" : resize.edge;
 
       let value: number;
       if (e.shiftKey) {

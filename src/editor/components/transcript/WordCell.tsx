@@ -138,6 +138,12 @@ export const WordCell = memo(function WordCell({
           selected={handleSelected}
           onResizeEdge={onResizeEdge}
         />
+        <RangeHandle
+          edge="middle"
+          span={primary}
+          selected={handleSelected}
+          onResizeEdge={onResizeEdge}
+        />
       </WordGap>
 
       <span
@@ -256,12 +262,6 @@ export const WordCell = memo(function WordCell({
       </span>
 
       <WordGap>
-        <RangeHandle
-          edge="middle"
-          span={primary}
-          selected={handleSelected}
-          onResizeEdge={onResizeEdge}
-        />
         <RangeHandle
           edge="end"
           span={primary}

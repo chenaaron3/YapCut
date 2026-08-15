@@ -1,5 +1,5 @@
-import { fadePainter } from "~/remotion/transitions/fade";
 import { flashPainter } from "~/remotion/transitions/flash";
+import { flashZoomPainter } from "~/remotion/transitions/flash-zoom";
 import { slidePainter } from "~/remotion/transitions/slide";
 import type { TransitionPainter } from "~/remotion/transitions/types";
 
@@ -13,6 +13,6 @@ export const TRANSITION_PAINTERS: Record<
   TransitionPainter
 > = {
   flash: flashPainter,
-  fade: fadePainter,
+  flashZoom: flashZoomPainter,
   slide: slidePainter,
 };

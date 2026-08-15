@@ -20,7 +20,7 @@
     "typecheck": "tsc --noEmit",
     "remotion:deploy": "tsx scripts/deploy-remotion-lambda.ts",
     "remotion:studio": "remotion studio src/remotion/index.ts",
-    "seed:global": "tsx --env-file=.env scripts/seed-global.ts",
+    "seed": "tsx --env-file=.env scripts/seed-global.ts",
     "seed:global-sfx": "tsx --env-file=.env scripts/seed-global-sfx.ts",
     "seed:global-music": "tsx --env-file=.env scripts/seed-global-music.ts",
     "schedule": "tsx --env-file=.env src/schedule/run.ts",

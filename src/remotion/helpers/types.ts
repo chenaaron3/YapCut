@@ -112,7 +112,7 @@ export type TransitionPictureProp = {
 
 export type TransitionClipProp = {
   id: number;
-  templateId: "flash" | "fade" | "slide";
+  templateId: "flash" | "flashZoom" | "slide";
   startFrame: number;
   endFrame: number;
   /** Output frame of the keep join (opening = start, closing = end). */

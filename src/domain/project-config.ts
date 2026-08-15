@@ -157,7 +157,10 @@ export type MediaRef = {
   assetId: string;
   /** Trim into source media (sec). */
   mediaOffsetSec: number;
-  /** Linear gain 0–1. */
+  /**
+   * Linear mix gain. SFX/music: 100% slider = role default, max 200% (2×).
+   * B-roll: 0–1 of the file.
+   */
   volume: number;
 };
 
@@ -180,7 +183,7 @@ export type SfxEdit = EditBase &
     kind: "sfx";
   };
 
-export type TransitionTemplateId = "flash" | "fade" | "slide";
+export type TransitionTemplateId = "flash" | "flashZoom" | "slide";
 
 /** Sequence role or a keep–keep stitch (keep ids, not layout indexes). */
 export type TransitionStitch =
@@ -385,7 +388,10 @@ const transitionStitchSchema = z.discriminatedUnion("kind", [
 
 const transitionEditSchema = editBaseSchema.extend({
   kind: z.literal("transition"),
-  templateId: z.enum(["flash", "fade", "slide"]),
+  templateId: z
+    .string()
+    .transform((id) => (id === "fade" ? "flash" : id))
+    .pipe(z.enum(["flash", "flashZoom", "slide"])),
   durationSec: z.number().positive(),
   stitch: transitionStitchSchema,
 });

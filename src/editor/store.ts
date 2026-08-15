@@ -28,6 +28,7 @@ import {
   removeEdit,
   type RangeEdge,
 } from "~/domain/edits";
+import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import {
   clampTimelineRangeToMedia,
   withMediaRefPatch,
@@ -1070,7 +1071,12 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         assets.find((a) => a.id === config.music!.assetId)?.durationSec ??
         null;
       const next = produce(config, (draft) => {
-        draft.music = withMediaRefPatch(draft.music!, patch, srcDur);
+        draft.music = withMediaRefPatch(
+          draft.music!,
+          patch,
+          srcDur,
+          MUSIC_VOLUME_DEFAULT,
+        );
       });
       commit({ config: next, transcriptsByAssetId }, { live });
     },

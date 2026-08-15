@@ -460,7 +460,7 @@ function abcProject(): ProjectConfig {
   next = placeTransitionAtStitch(
     next,
     { kind: "interior", outKeepId: keepsAbc[1]!.id, inKeepId: keepsAbc[2]!.id },
-    "fade",
+    "slide",
     lay,
   );
   next = placeTransitionAtStitch(next, openingStitch, "flash", lay);

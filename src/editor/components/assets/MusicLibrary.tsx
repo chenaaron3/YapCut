@@ -103,6 +103,7 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
             mixVolume,
             asset.lufs,
             asset.truePeakDb,
+            MUSIC_VOLUME_DEFAULT,
           );
           return (
             <div

@@ -52,9 +52,9 @@ export const TRANSITION_DEFAULT_DURATION_SEC: Record<
   TransitionTemplateId,
   number
 > = {
-  flash: 0.12,
-  fade: 0.25,
-  slide: 0.28,
+  flash: 0.3,
+  flashZoom: 0.3,
+  slide: 0.3,
 };
 
 export const TRANSITION_MIN_DURATION_SEC = 0.05;
@@ -69,7 +69,7 @@ export type TransitionDragPayload = {
 
 export const TRANSITION_PRESETS: readonly TransitionDragPayload[] = [
   { templateId: "flash", label: "Flash" },
-  { templateId: "fade", label: "Fade" },
+  { templateId: "flashZoom", label: "Flash Zoom" },
   { templateId: "slide", label: "Slide" },
 ] as const;
 
@@ -80,7 +80,7 @@ export function isTransitionEdit(edit: Edit): edit is TransitionEdit {
 export function isTransitionTemplateId(
   value: string,
 ): value is TransitionTemplateId {
-  return value === "flash" || value === "fade" || value === "slide";
+  return value in TRANSITION_DEFAULT_DURATION_SEC;
 }
 
 export function transitionSeed(

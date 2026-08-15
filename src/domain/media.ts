@@ -1,3 +1,4 @@
+import { clampMixVolume } from "~/domain/audio/mix-levels";
 import type { MediaRef } from "~/domain/project-config";
 import type { TimelineTime } from "~/domain/time";
 
@@ -65,18 +66,29 @@ export function clampMediaOffset(
   return Math.min(Math.max(0, mediaOffsetSec), maxOffset);
 }
 
-export function withVolume<T extends MediaRef>(item: T, volume: number): T {
-  return { ...item, volume: clampVolume(volume) };
+export function withVolume<T extends MediaRef>(
+  item: T,
+  volume: number,
+  roleDefault?: number,
+): T {
+  return {
+    ...item,
+    volume:
+      roleDefault != null
+        ? clampMixVolume(volume, roleDefault)
+        : clampVolume(volume),
+  };
 }
 
 export function withMediaRefPatch<T extends MediaRef>(
   item: T,
   patch: MediaRefPatch,
   srcDurationSec: number | null,
+  roleDefault?: number,
 ): T {
   let next = item;
   if (typeof patch.volume === "number") {
-    next = withVolume(next, patch.volume);
+    next = withVolume(next, patch.volume, roleDefault);
   }
   if (typeof patch.mediaOffsetSec === "number") {
     next = {

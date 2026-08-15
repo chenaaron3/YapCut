@@ -1,7 +1,8 @@
 import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
-import type { MusicBed } from "~/domain/project-config";
 import { MediaRefFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
+
+import type { MusicBed } from "~/domain/project-config";
 
 export function MusicInspector({ clip }: { clip: MusicBed }) {
   const assets = useEditor((s) => s.assets);
@@ -12,18 +13,13 @@ export function MusicInspector({ clip }: { clip: MusicBed }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="truncate text-[11px] text-muted-foreground" title={label}>
+      <p className="text-muted-foreground truncate text-[11px]" title={label}>
         {label}
       </p>
       <MediaRefFields media={clip} target="music" />
-      <p className="text-[10px] leading-snug text-muted-foreground">
-        Bed sits low under dialogue
-        {clip.volume === MUSIC_VOLUME_DEFAULT ? " (default mix)." : "."} Fades
-        in and out at the edges.
-      </p>
       <button
         type="button"
-        className="rounded border border-border bg-panel-2 px-2 py-1.5 text-[11px] text-foreground hover:border-accent"
+        className="border-border bg-panel-2 text-foreground hover:border-accent rounded border px-2 py-1.5 text-[11px]"
         onClick={() => clearMusic()}
       >
         Remove music
