@@ -3,9 +3,11 @@ import {
   WORD_MARGIN_SEC,
 } from "~/domain/editing-constants";
 import { PROJECT_FPS } from "~/domain/project-config";
-import type { LocalTime } from "~/domain/time";
+import type { LocalTime, TimelineTime } from "~/domain/time";
 
-import type { TranscriptWord } from "~/domain/transcript";
+import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
+
+const EPS = 0.001;
 
 type Interval = { start: number; end: number };
 
@@ -79,4 +81,82 @@ export function buildArollKeepsFromWords(options: {
     start: interval.start,
     end: interval.end,
   }));
+}
+
+function rangesOverlap(a: TimelineTime, b: TimelineTime): boolean {
+  return a.start < b.end - EPS && a.end > b.start + EPS;
+}
+
+function keepAt(
+  keeps: readonly TimelineTime[],
+  sec: number,
+): TimelineTime | undefined {
+  return keeps.find((k) => k.start - EPS <= sec && sec <= k.end + EPS);
+}
+
+/** Closest remaining word that ends at or before `t` (words are timeline-ordered). */
+function nearestWordBefore(
+  words: readonly GlobalTranscriptWord[],
+  t: number,
+): GlobalTranscriptWord | undefined {
+  let nearest: GlobalTranscriptWord | undefined;
+  for (const w of words) {
+    if (w.end > t + EPS) return nearest;
+    nearest = w;
+  }
+  return nearest;
+}
+
+/** Closest remaining word that starts at or after `t` (words are timeline-ordered). */
+function nearestWordAfter(
+  words: readonly GlobalTranscriptWord[],
+  t: number,
+): GlobalTranscriptWord | undefined {
+  for (const w of words) {
+    if (w.start >= t - EPS) return w;
+  }
+  return undefined;
+}
+
+/**
+ * Expand a word-delete range to the auto-trim margin (`WORD_MARGIN_SEC`).
+ *
+ * Remaining kept words (not in a gap, not overlapping the cut) are the
+ * boundaries: left = prev.end + margin, right = next.start − margin.
+ * No remaining word on a side → eat that keep to its edge (whole keep if
+ * every word in it is deleted).
+ */
+export function expandWordDeleteRange(
+  range: TimelineTime,
+  words: readonly GlobalTranscriptWord[],
+  keepRanges: readonly TimelineTime[],
+): TimelineTime {
+  const start = Math.min(range.start, range.end);
+  const end = Math.max(range.start, range.end);
+  if (end <= start + EPS || keepRanges.length === 0) return { start, end };
+
+  const leftKeep = keepAt(keepRanges, start);
+  const rightKeep = keepAt(keepRanges, Math.max(start, end - EPS));
+  if (!leftKeep && !rightKeep) return { start, end };
+
+  const remaining = words.filter(
+    (w) => !w.inGap && !rangesOverlap(w, { start, end }),
+  );
+  const prev = nearestWordBefore(remaining, start);
+  const next = nearestWordAfter(remaining, end);
+
+  const cutStart = prev
+    ? Math.max(
+        leftKeep?.start ?? start,
+        Math.min(start, prev.end + WORD_MARGIN_SEC),
+      )
+    : (leftKeep?.start ?? start);
+  const cutEnd = next
+    ? Math.min(
+        rightKeep?.end ?? end,
+        Math.max(end, next.start - WORD_MARGIN_SEC),
+      )
+    : (rightKeep?.end ?? end);
+
+  return { start: cutStart, end: Math.max(cutStart, cutEnd) };
 }

@@ -134,3 +134,17 @@ export function wordIndexAtTimelineSec(
   }
   return null;
 }
+
+/** Next kept (not cut-out / `inGap`) word index in `direction`, or null. */
+export function adjacentKeptWordIndex(
+  fromIndex: number,
+  direction: -1 | 1,
+  words: readonly GlobalTranscriptWord[],
+): number | null {
+  let i = fromIndex + direction;
+  while (i >= 0 && i < words.length) {
+    if (!words[i]!.inGap) return i;
+    i += direction;
+  }
+  return null;
+}

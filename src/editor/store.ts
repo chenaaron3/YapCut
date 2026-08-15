@@ -10,8 +10,10 @@ import {
   deleteTimelineRange,
   durationMapFromAssets,
   keepCellIdForArollIndex,
+  keepCells,
   reorderArollAssets,
 } from "~/domain/arolls";
+import { expandWordDeleteRange } from "~/domain/keeps";
 import {
   clampTimelineSec,
   layoutTimelineDuration,
@@ -34,12 +36,13 @@ import {
 import { musicFromAsset } from "~/domain/music";
 import { PROJECT_FPS } from "~/domain/project-config";
 import {
+  adjacentKeptWordIndex,
   projectTimelineWords,
   wordIndexAtTimelineSec,
 } from "~/domain/projection";
 import { primaryId } from "~/editor/lib/selection";
 import { snapWordActionRangeToKeeps } from "~/editor/lib/snap";
-import { wordActionRange } from "~/editor/lib/word-selection";
+import { wordActionRange, wordDeleteRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
 import { buildProjectProps } from "~/remotion/helpers/build-props";
 import {
@@ -617,8 +620,8 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const words = get().getGlobalWords();
       const focusId = primaryId(selection);
       if (focusId == null) return false;
-      const next = focusId + direction;
-      if (next < 0 || next >= words.length) return false;
+      const next = adjacentKeptWordIndex(focusId, direction, words);
+      if (next == null) return false;
       const word = words[next]!;
       select("word", next);
       get().seekTimeline(word.start);
@@ -754,8 +757,13 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         if (selected.length === 0) return false;
         const start = Math.min(...selected.map((w) => w.start));
         const end = Math.max(...selected.map((w) => w.end));
+        const range = expandWordDeleteRange(
+          { start, end },
+          words,
+          keepCells(layoutFor(config, assets)).map((c) => c.timeline),
+        );
         commit({
-          config: deleteTimelineRange(config, { start, end }, durations),
+          config: deleteTimelineRange(config, range, durations),
           transcriptsByAssetId,
         });
         clearSelection();
@@ -900,7 +908,12 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const word = words[globalIndex];
       if (!word) return;
       const { selection, clearSelection } = useSelection.getState();
-      const range = wordActionRange(selection, word, words);
+      const range = wordDeleteRange(
+        selection,
+        word,
+        words,
+        keepCells(get().getLayout()).map((c) => c.timeline),
+      );
       commit({
         config: deleteTimelineRange(config, range, durationMapFromAssets(assets)),
         transcriptsByAssetId,

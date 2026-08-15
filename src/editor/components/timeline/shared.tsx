@@ -21,12 +21,12 @@ export function TrackLabel({
   children: ReactNode;
 }) {
   return (
-    <div className="relative mb-2 h-11">
-      <div className="absolute top-0 left-[-72px] flex h-11 w-16 items-center text-[11px] tracking-wide text-muted-foreground uppercase">
+    <div className="relative mb-1.5 h-[29px]">
+      <div className="absolute top-0 left-[-72px] flex h-[29px] w-16 items-center text-[11px] tracking-wide text-muted-foreground uppercase">
         {label}
       </div>
       <div
-        className="relative h-11 overflow-hidden rounded-md border border-border bg-panel-2"
+        className="relative h-[29px] overflow-hidden rounded-md border border-border bg-panel-2"
         style={{ width }}
       >
         {children}
