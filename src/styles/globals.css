@@ -301,6 +301,19 @@
   animation: ember-glow-pulse 1.8s ease-in-out infinite;
 }
 
+@keyframes ember-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+.ember-indeterminate {
+  animation: ember-indeterminate 1.35s ease-in-out infinite;
+}
+
 @keyframes create-step-pulse {
   0%,
   100% {
@@ -385,7 +398,8 @@
   }
 
   .ember-line-shimmer,
-  .ember-glow-pulse {
+  .ember-glow-pulse,
+  .ember-indeterminate {
     animation: none;
   }
 }

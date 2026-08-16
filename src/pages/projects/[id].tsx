@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 
 import { AppLayout } from "~/components/layout/AppLayout";
+import { EmberLoading } from "~/components/layout/EmberLoading";
 import { CreateProgressBar } from "~/components/projects/CreateProgressBar";
 import { useCreateProgressStream } from "~/components/projects/use-create-progress-stream";
 import { buttonVariants } from "~/components/ui/button";
@@ -48,9 +49,7 @@ export default function ProjectPage() {
     <AppLayout title={`${title} · YapCut`}>
       <div className="relative">
         <div className="relative">
-          {projectQuery.isLoading ? (
-            <p className="text-sm text-[#432E6F]">Loading…</p>
-          ) : null}
+          {projectQuery.isLoading ? <EmberLoading /> : null}
           {projectQuery.data === null ? (
             <p className="text-sm text-[#432E6F]">Project not found.</p>
           ) : null}

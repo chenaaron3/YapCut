@@ -93,26 +93,33 @@ export const WordCell = memo(function WordCell({
     return (
       <>
         <WordGap />
-        <input
-          className="m-0 inline w-auto min-w-0 border-0 bg-transparent p-0 font-[inherit] leading-[inherit] text-inherit caret-[#F5F9CE] outline-none"
-          value={draft}
-          autoFocus
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commitText}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              commitText();
-            }
-            if (e.key === "Escape") {
-              e.preventDefault();
-              setEditing(false);
-            }
-          }}
-          size={Math.max(2, draft.length + 1)}
-        />
+        <span className="relative inline-block align-baseline">
+          <span
+            aria-hidden
+            className="invisible whitespace-pre font-[inherit] leading-[inherit]"
+          >
+            {draft || " "}
+          </span>
+          <input
+            className="absolute inset-0 m-0 border-0 bg-transparent p-0 font-[inherit] leading-[inherit] text-inherit caret-[#F5F9CE] outline-none"
+            value={draft}
+            autoFocus
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitText}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitText();
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setEditing(false);
+              }
+            }}
+          />
+        </span>
         <WordGap />
       </>
     );
