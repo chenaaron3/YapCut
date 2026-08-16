@@ -1,4 +1,14 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Blend,
+  ChevronRight,
+  Film,
+  Image,
+  Music2,
+  Sparkles,
+  Volume2,
+  type LucideIcon,
+} from "lucide-react";
 
 import { arollAssetOrder } from "~/domain/arolls";
 import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
@@ -12,10 +22,40 @@ import { cn } from "~/lib/utils";
 
 type Tab = "aroll" | "broll" | "vfx" | "sfx" | "music" | "transitions";
 
+const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
+  { id: "aroll", label: "A-roll", Icon: Film },
+  { id: "broll", label: "B-roll", Icon: Image },
+  { id: "sfx", label: "SFX", Icon: Volume2 },
+  { id: "vfx", label: "VFX", Icon: Sparkles },
+  { id: "transitions", label: "Transitions", Icon: Blend },
+  { id: "music", label: "Music", Icon: Music2 },
+];
+
 export function AssetsPanel() {
   const assets = useEditor((s) => s.assets);
   const config = useEditor((s) => s.config);
   const [tab, setTab] = useState<Tab>("vfx");
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateOverflow = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    updateOverflow();
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(el);
+    el.addEventListener("scroll", updateOverflow, { passive: true });
+    return () => {
+      observer.disconnect();
+      el.removeEventListener("scroll", updateOverflow);
+    };
+  }, [updateOverflow]);
 
   const arollOrder = useMemo(
     () => arollAssetOrder(config?.arolls ?? []),
@@ -52,31 +92,49 @@ export function AssetsPanel() {
 
   return (
     <aside className="border-border bg-panel flex h-full min-h-0 flex-col overflow-hidden border-r">
-      <div className="border-border flex shrink-0 [scrollbar-width:none] flex-nowrap gap-1 overflow-x-auto border-b px-2 py-1.5 [&::-webkit-scrollbar]:hidden">
-        {(
-          [
-            ["aroll", "A-roll"],
-            ["broll", "B-roll"],
-            ["vfx", "VFX"],
-            ["transitions", "Transitions"],
-            ["sfx", "SFX"],
-            ["music", "Music"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={cn(
-              "ember-mono shrink-0 rounded-[8px] px-2 py-1 text-[10px] font-medium tracking-[.06em] whitespace-nowrap uppercase",
-              tab === id
-                ? "bg-[#FFA102] text-[#450E16]"
-                : "text-[#F5F9CE]/55 hover:text-[#F5F9CE]",
-            )}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="border-border relative flex h-12 shrink-0 items-center border-b">
+        <div
+          ref={scrollerRef}
+          role="tablist"
+          aria-label="Asset categories"
+          className="scrollbar-none flex min-w-0 w-full gap-1 overflow-x-auto px-1.5 pr-7"
+        >
+          {TABS.map(({ id, label, Icon }) => {
+            const active = tab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                className={cn(
+                  "flex shrink-0 flex-col items-center gap-1 px-1.5 text-[10px] leading-none whitespace-nowrap transition-colors",
+                  active
+                    ? "text-[#FFA102]"
+                    : "text-[#C8CDD8] hover:text-[#F5F9CE]",
+                )}
+                onClick={() => setTab(id)}
+              >
+                <Icon className="size-4 stroke-[1.6]" aria-hidden />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        {canScrollRight ? (
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex w-8 items-center justify-end bg-linear-to-l from-panel from-55% to-transparent pr-1">
+            <button
+              type="button"
+              aria-label="Scroll to more asset categories"
+              className="pointer-events-auto flex size-5 items-center justify-center rounded-md bg-[#2A2F3C] text-[#C8CDD8] hover:text-[#F5F9CE]"
+              onClick={() => {
+                scrollerRef.current?.scrollBy({ left: 72, behavior: "smooth" });
+              }}
+            >
+              <ChevronRight className="size-3.5" aria-hidden />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto">

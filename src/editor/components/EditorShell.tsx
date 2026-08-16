@@ -281,7 +281,7 @@ export function EditorShell({ projectId }: Props) {
         </div>
       ) : null}
 
-      <div className="border-border grid min-h-0 min-w-0 grid-cols-[200px_minmax(0,1fr)_280px] border-b">
+      <div className="border-border grid min-h-0 min-w-0 grid-cols-[240px_minmax(0,1fr)_280px] border-b">
         <AssetsPanel />
         <TranscriptPanel />
         <PlayerPanel />

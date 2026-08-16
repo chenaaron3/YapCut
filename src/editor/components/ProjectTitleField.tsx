@@ -37,26 +37,33 @@ export function ProjectTitleField({
   };
 
   return (
-    <input
-      type="text"
-      value={draft}
-      aria-label="Project title"
-      className={cn(
-        "min-w-0 flex-1 truncate rounded border border-transparent bg-transparent px-1 text-sm font-semibold text-[#F5F9CE] outline-none hover:border-border focus:border-ring focus:ring-1 focus:ring-ring/40",
-        className,
-      )}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          (e.target as HTMLInputElement).blur();
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          setDraft(title);
-          (e.target as HTMLInputElement).blur();
-        }
-      }}
-    />
+    <label
+      className={cn("inline-grid max-w-full min-w-0 items-center", className)}
+    >
+      <span
+        aria-hidden
+        className="invisible col-start-1 row-start-1 whitespace-pre px-1 text-sm font-semibold"
+      >
+        {draft || " "}
+      </span>
+      <input
+        type="text"
+        value={draft}
+        aria-label="Project title"
+        className="col-start-1 row-start-1 w-full min-w-0 truncate rounded border border-transparent bg-transparent px-1 text-sm font-semibold text-[#F5F9CE] outline-none hover:border-border focus:border-ring focus:ring-1 focus:ring-ring/40"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            (e.target as HTMLInputElement).blur();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            setDraft(title);
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+    </label>
   );
 }

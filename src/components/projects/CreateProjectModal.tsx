@@ -1,19 +1,19 @@
-import { FileVideo, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { X } from "lucide-react";
 
-import { Button, buttonVariants } from "~/components/ui/button";
+import { ClipStack } from "~/components/projects/create-project/ClipStack";
+import { clipCountLabel } from "~/components/projects/create-project/format";
+import { StitchedPreview } from "~/components/projects/create-project/StitchedPreview";
+import { useCreateClips } from "~/components/projects/create-project/use-create-clips";
+import { useCreateProject } from "~/components/projects/create-project/use-create-project";
+import { Button } from "~/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
-import { probeVideoFile } from "~/editor/lib/probe-media";
 import { cn } from "~/lib/utils";
-import { api } from "~/utils/api";
 
 type Props = {
   open: boolean;
@@ -21,142 +21,35 @@ type Props = {
   onCreated?: (projectId: string) => void;
 };
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-async function putToPresignedUrl(
-  file: File,
-  uploadUrl: string,
-  contentType: string,
-): Promise<void> {
-  const response = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": contentType },
-    body: file,
-  });
-  if (!response.ok) {
-    throw new Error(
-      `Upload failed for ${file.name} (${response.status} ${response.statusText})`,
-    );
-  }
-}
-
 export function CreateProjectModal({ open, onClose, onCreated }: Props) {
-  const [files, setFiles] = useState<File[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [phase, setPhase] = useState<"idle" | "uploading" | "finalizing">(
-    "idle",
-  );
-
-  const utils = api.useUtils();
-  const createStart = api.project.createStart.useMutation();
-  const createFinalize = api.project.createFinalize.useMutation();
-
-  useEffect(() => {
-    if (!open) {
-      setFiles([]);
-      setError(null);
-      setPhase("idle");
-    }
-  }, [open]);
-
-  const onDrop = useCallback((accepted: File[]) => {
-    setFiles((prev) => {
-      const seen = new Set(
-        prev.map((f) => `${f.name}:${f.size}:${f.lastModified}`),
-      );
-      const next = [...prev];
-      // macOS file picker / Finder multi-select returns FileList last→first.
-      for (const file of [...accepted].reverse()) {
-        const key = `${file.name}:${file.size}:${file.lastModified}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          next.push(file);
-        }
-      }
-      return next;
-    });
-  }, []);
+  const { error, phase, busy, handleCreate } = useCreateProject({
+    open,
+    onClose,
+    onCreated,
+  });
+  const {
+    clips,
+    activeId,
+    setActiveId,
+    setDraggingId,
+    draggingClip,
+    status,
+    setStatus,
+    limitError,
+    checking,
+    dropzone,
+    moveClip,
+    removeClip,
+    onDragStart,
+    onDragEnd,
+  } = useCreateClips(open, busy);
 
   const {
     getRootProps,
     getInputProps,
-    isDragActive,
     open: openFilePicker,
-  } = useDropzone({
-    onDrop,
-    accept: { "video/*": [".mp4", ".mov", ".webm", ".m4v"] },
-    multiple: true,
-    noClick: true,
-    noKeyboard: true,
-    disabled: phase !== "idle",
-  });
-
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const busy = phase !== "idle";
-
-  const handleCreate = async () => {
-    if (files.length === 0 || busy) return;
-    setError(null);
-    setPhase("uploading");
-
-    try {
-      const probed = await Promise.all(
-        files.map(async (file) => {
-          const meta = await probeVideoFile(file);
-          return { file, meta };
-        }),
-      );
-
-      const { projectId, uploads } = await createStart.mutateAsync({
-        files: probed.map(({ file, meta }) => ({
-          filename: file.name,
-          contentType: file.type || "video/mp4",
-          size: file.size,
-          width: meta.width,
-          height: meta.height,
-          durationSec: meta.durationSec!,
-        })),
-      });
-
-      await Promise.all(
-        uploads.map(async (upload, index) => {
-          const file = probed[index]?.file;
-          if (!file) {
-            throw new Error("File/upload mismatch");
-          }
-          await putToPresignedUrl(file, upload.uploadUrl, upload.contentType);
-        }),
-      );
-
-      setPhase("finalizing");
-      await createFinalize.mutateAsync({ projectId });
-      await utils.project.list.invalidate();
-      onCreated?.(projectId);
-      onClose();
-    } catch (err) {
-      let message = "Could not create project";
-      if (err instanceof Error) {
-        message = err.message;
-        // tRPC client errors often nest the server message
-        const data = err as {
-          data?: { message?: string };
-          shape?: { message?: string };
-        };
-        if (data.shape?.message) message = data.shape.message;
-        else if (data.data?.message) message = data.data.message;
-      }
-      setError(message);
-      setPhase("idle");
-      void utils.project.list.invalidate();
-    }
-  };
+    isDragAccept,
+  } = dropzone;
 
   return (
     <Dialog
@@ -166,96 +59,100 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
       }}
     >
       <DialogContent
-        className="ember-shell rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[8px_9px_0_#450E16] sm:max-w-lg"
-        showCloseButton={!busy}
+        showCloseButton={false}
+        className="ember-shell grid max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] p-0 text-[#450E16] shadow-[12px_13px_0_#450E16] ring-0 sm:max-w-[min(44rem,calc(100%-2rem))] lg:h-[min(40rem,calc(100dvh-2rem))] lg:grid-cols-2 lg:overflow-hidden"
       >
-        <DialogHeader>
-          <DialogTitle className="ember-display text-3xl leading-none">
-            New project
-          </DialogTitle>
-        </DialogHeader>
-
-        <div
+        <section
           {...getRootProps()}
           className={cn(
-            "flex min-h-44 flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center transition-colors",
-            isDragActive
-              ? "border-[#FFA102] bg-[#FFA102]/15"
-              : "border-[#450E16] bg-[#F5F9CE]",
-            busy && "pointer-events-none opacity-60",
+            "relative flex min-h-0 min-w-0 flex-col overflow-x-hidden border-[#450E16]/20 px-6 pt-6 pb-6 outline-none lg:border-r-[1.5px] lg:px-7",
+            isDragAccept && "bg-[#FFA102]/15",
           )}
         >
-          <input {...getInputProps()} />
-          <p className="text-foreground text-sm font-medium">
-            {isDragActive ? "Drop videos to add them" : "Drag videos here"}
-          </p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            MP4, MOV — A-roll only
-          </p>
-          <Button
-            type="button"
-            size="sm"
-            className="mt-5 h-auto rounded-[16px] border-2 border-[#450E16] bg-[#FFA102] px-4 py-2 text-[#450E16] shadow-[4px_4px_0_#450E16] hover:bg-[#FFA102]"
-            onClick={openFilePicker}
-            disabled={busy}
-          >
-            Choose files
-          </Button>
-        </div>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <DialogTitle className="ember-display text-[clamp(2.2rem,4vw,3.2rem)] leading-[0.82] font-bold tracking-[-0.06em]">
+                New project
+              </DialogTitle>
+              <DialogDescription className="mt-3 max-w-[34ch] text-base leading-snug text-[#432E6F]">
+                Upload clips here. We’ll stitch them together into one video, in
+                this order.
+              </DialogDescription>
+            </div>
+            <DialogClose
+              disabled={busy}
+              render={
+                <button
+                  type="button"
+                  className="grid size-11 shrink-0 place-items-center rounded-full text-[#450E16] hover:bg-[#FFA102]/18"
+                  aria-label="Close new project dialog"
+                  title="Close"
+                />
+              }
+            >
+              <X className="size-6" aria-hidden />
+            </DialogClose>
+          </div>
 
-        {files.length > 0 ? (
-          <ul className="max-h-40 space-y-2 overflow-y-auto">
-            {files.map((file, index) => (
-              <li
-                key={`${file.name}-${file.size}-${file.lastModified}`}
-                className="flex items-center gap-3 rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2"
-              >
-                <FileVideo className="text-muted-foreground size-4 shrink-0" />
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="truncate text-sm font-medium">{file.name}</p>
-                  <p className="text-muted-foreground text-xs">
-                    {formatBytes(file.size)}
-                  </p>
-                </div>
-                {!busy ? (
-                  <button
-                    type="button"
-                    className={cn(
-                      buttonVariants({ variant: "ghost", size: "icon-xs" }),
-                    )}
-                    aria-label={`Remove ${file.name}`}
-                    onClick={() => removeFile(index)}
-                  >
-                    <X />
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        {error ? (
-          <p className="text-destructive text-sm" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <DialogFooter>
-          <Button
-            type="button"
-            disabled={files.length === 0 || busy}
-            className="h-auto rounded-[16px] border-2 border-[#450E16] bg-[#FFA102] px-4 py-2.5 text-[#450E16] shadow-[4px_4px_0_#450E16] hover:bg-[#FFA102]"
-            onClick={() => {
-              void handleCreate();
+          <ClipStack
+            clips={clips}
+            activeId={activeId}
+            draggingClip={draggingClip}
+            busy={busy}
+            checking={checking}
+            isDragAccept={isDragAccept}
+            limitError={limitError}
+            getInputProps={getInputProps}
+            openFilePicker={openFilePicker}
+            onSelect={(id, index) => {
+              setActiveId(id);
+              const clip = clips.find((item) => item.id === id);
+              setStatus(
+                `Previewing clip ${index + 1}: ${clip?.file.name ?? ""}`,
+              );
             }}
-          >
-            {phase === "uploading"
-              ? "Uploading…"
-              : phase === "finalizing"
-                ? "Starting…"
-                : `Create project${files.length > 0 ? ` (${files.length})` : ""}`}
-          </Button>
-        </DialogFooter>
+            onRemove={removeClip}
+            onMove={moveClip}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            onDragCancel={() => setDraggingId(null)}
+          />
+          <p className="sr-only" role="status" aria-live="polite">
+            {status}
+          </p>
+        </section>
+
+        <section className="flex min-h-0 min-w-0 flex-col bg-[#ECEFC0]/70 px-4 pt-5 pb-4 lg:h-full">
+          <StitchedPreview
+            clips={clips}
+            activeId={activeId}
+            onActiveChange={setActiveId}
+          />
+
+          {error ? (
+            <p className="text-destructive mt-3 text-sm" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <footer className="mt-3 flex shrink-0 justify-center">
+            <Button
+              type="button"
+              variant="ember"
+              disabled={clips.length === 0 || busy || checking}
+              className="h-auto min-h-12 w-fit rounded-2xl px-4 py-2.5 text-base font-bold shadow-[4px_5px_0_#450E16] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_3px_0_#450E16]"
+              onClick={() => {
+                void handleCreate(clips);
+              }}
+            >
+              {phase === "uploading"
+                ? "Uploading…"
+                : phase === "finalizing"
+                  ? "Starting…"
+                  : `Create project · ${clipCountLabel(clips.length)}`}
+            </Button>
+          </footer>
+        </section>
       </DialogContent>
     </Dialog>
   );

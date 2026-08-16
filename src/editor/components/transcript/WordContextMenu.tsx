@@ -1,5 +1,5 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
-import { Bold, Plus, Quote, Trash2 } from "lucide-react";
+import { Bold, Plus, Quote, Type } from "lucide-react";
 import { ContextMenu } from "@base-ui/react/context-menu";
 
 import { cn } from "~/lib/utils";
@@ -11,7 +11,7 @@ type Props = {
   onEmphasis: () => void;
   onZoom: () => void;
   onQuote: () => void;
-  onDelete: () => void;
+  onTextVfx: () => void;
 };
 
 /**
@@ -24,7 +24,7 @@ export function WordContextMenu({
   onEmphasis,
   onZoom,
   onQuote,
-  onDelete,
+  onTextVfx,
 }: Props) {
   if (!isValidElement(children)) return children;
 
@@ -58,12 +58,8 @@ export function WordContextMenu({
             <MenuIcon label="Quote" onClick={onQuote}>
               <Quote className="size-3.5" />
             </MenuIcon>
-            <MenuIcon
-              label="Delete"
-              className="text-[#BC2D29] focus:bg-[#BC2D29]/10 focus:text-[#BC2D29] data-highlighted:bg-[#BC2D29]/10 data-highlighted:text-[#BC2D29]"
-              onClick={onDelete}
-            >
-              <Trash2 className="size-3.5" />
+            <MenuIcon label="Text VFX" onClick={onTextVfx}>
+              <Type className="size-3.5" />
             </MenuIcon>
           </ContextMenu.Popup>
         </ContextMenu.Positioner>

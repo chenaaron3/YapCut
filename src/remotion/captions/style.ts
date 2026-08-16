@@ -276,7 +276,7 @@ export const QUOTE_CAPTION_Y = -0.84;
 export const TRENDING_CAPTION_Y = 1;
 
 /** Default enter/exit window used for short-duration hard-skip. */
-export const CAPTION_ENTER_SEC = 0.18;
+export const CAPTION_ENTER_SEC = 0.1;
 
 /** Word-state blend duration (future → active → past). */
 export const WORD_STATE_BLEND_SEC = 0.08;

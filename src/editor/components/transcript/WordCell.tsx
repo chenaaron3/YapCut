@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 
 import { quoteSeed } from "~/domain/quote";
 import { isValidTransitionDropWord } from "~/domain/transition";
+import { textSeed } from "~/domain/vfx";
 import { zoomSeed } from "~/domain/zoom";
 import { EditMarkerCluster } from "~/editor/components/transcript/EditMarkerCluster";
 import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
@@ -50,7 +51,6 @@ export const WordCell = memo(function WordCell({
   const seekTimeline = useEditor((s) => s.seekTimeline);
   const patchWord = useEditor((s) => s.patchWord);
   const placeEditOnWord = useEditor((s) => s.placeEditOnWord);
-  const cutWord = useEditor((s) => s.cutWord);
   const [dropActive, setDropActive] = useState<AssetDropKind | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(word.text);
@@ -164,7 +164,7 @@ export const WordCell = memo(function WordCell({
           }
           onZoom={() => placeEditOnWord(word.globalIndex, zoomSeed())}
           onQuote={() => placeEditOnWord(word.globalIndex, quoteSeed())}
-          onDelete={() => cutWord(word.globalIndex)}
+          onTextVfx={() => placeEditOnWord(word.globalIndex, textSeed())}
         >
           <span
             role="button"

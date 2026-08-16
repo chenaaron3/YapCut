@@ -1,9 +1,11 @@
 import { desc, eq } from "drizzle-orm";
 
-import type { db } from "~/server/db";
-import { assets, type AssetKind } from "~/server/db/schema";
+import { assets } from "~/server/db/schema";
 import { assetSourceKey } from "~/server/media/keys";
 import { headObject, presignPutObject } from "~/server/media/s3";
+
+import type { db } from "~/server/db";
+import type { AssetKind } from "~/server/db/schema";
 
 type Db = typeof db;
 
@@ -86,7 +88,20 @@ export async function assertAssetsUploaded(
     s3Key: string;
     originalFilename: string | null;
   }>,
-): Promise<void> {
+): Promise<
+  Array<{
+    id: string;
+    s3Key: string;
+    originalFilename: string | null;
+    contentLength?: number;
+  }>
+> {
+  const uploaded: Array<{
+    id: string;
+    s3Key: string;
+    originalFilename: string | null;
+    contentLength?: number;
+  }> = [];
   for (const asset of rows) {
     let head;
     try {
@@ -103,5 +118,10 @@ export async function assertAssetsUploaded(
         `Upload missing for ${asset.originalFilename ?? asset.id} (nothing at s3://${asset.s3Key})`,
       );
     }
+    uploaded.push({
+      ...asset,
+      contentLength: head.contentLength,
+    });
   }
+  return uploaded;
 }

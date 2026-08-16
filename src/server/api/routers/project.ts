@@ -4,6 +4,12 @@ import { z } from "zod";
 
 import { arollAssetOrder } from "~/domain/arolls";
 import {
+  assertCreateBatch,
+  assertCreateUploadBytes,
+  CREATE_MAX_BYTES,
+  CREATE_MAX_CLIPS,
+} from "~/domain/create-limits";
+import {
   emptyProjectConfig,
   parseProjectConfig,
   projectConfigSchema,
@@ -29,9 +35,9 @@ import { measureAsset } from "~/server/media/measure-asset";
 const createFileSchema = z.object({
   filename: z.string().min(1).max(512),
   contentType: z.string().min(1).max(255),
-  size: z.number().int().nonnegative(),
-  width: z.number().int().positive().optional(),
-  height: z.number().int().positive().optional(),
+  size: z.number().int().nonnegative().max(CREATE_MAX_BYTES),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
   /** Client-probed media duration (required for correct trailing gap layout). */
   durationSec: z.number().positive(),
 });
@@ -490,7 +496,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         title: z.string().max(512).optional(),
-        files: z.array(createFileSchema).min(1),
+        files: z.array(createFileSchema).min(1).max(CREATE_MAX_CLIPS),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -501,6 +507,16 @@ export const projectRouter = createTRPCRouter({
             message: `Expected video content type, got ${file.contentType}`,
           });
         }
+      }
+
+      try {
+        assertCreateBatch(input.files);
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            error instanceof Error ? error.message : "Project exceeds limits",
+        });
       }
 
       const trimmedTitle = input.title?.trim();
@@ -524,8 +540,8 @@ export const projectRouter = createTRPCRouter({
           contentType: file.contentType,
           kind: "video" as const,
           sortOrder: i,
-          width: file.width ?? null,
-          height: file.height ?? null,
+          width: file.width,
+          height: file.height,
           durationSec: file.durationSec,
         })),
       });
@@ -583,7 +599,8 @@ export const projectRouter = createTRPCRouter({
       }
 
       try {
-        await assertAssetsUploaded(projectAssets);
+        const uploaded = await assertAssetsUploaded(projectAssets);
+        assertCreateUploadBytes(uploaded);
       } catch (error) {
         let reason =
           error instanceof Error
