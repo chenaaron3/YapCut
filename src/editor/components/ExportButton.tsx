@@ -1,4 +1,5 @@
 import { ChevronDown, CloudUpload, ExternalLink } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 import { Button } from "~/components/ui/button";
@@ -12,6 +13,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { canUseSchedule } from "~/domain/schedule";
 import { useEditor } from "~/editor/store";
 import { api } from "~/utils/api";
 
@@ -38,6 +40,8 @@ function platformLabel(id: string) {
 }
 
 export function ExportButton() {
+  const { data: session } = useSession();
+  const showSchedule = canUseSchedule(session?.user?.email);
   const projectId = useEditor((s) => s.projectId);
   const status = useEditor((s) => s.status);
   const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
@@ -53,7 +57,7 @@ export function ExportButton() {
   );
   const entryQuery = api.schedule.entryForProject.useQuery(
     { projectId: projectId ?? "" },
-    { enabled: Boolean(projectId) },
+    { enabled: Boolean(projectId) && showSchedule },
   );
 
   const exporting = status === "exporting" || localBusy;
@@ -187,7 +191,9 @@ export function ExportButton() {
                   type="button"
                   variant="ember"
                   size="icon-sm"
-                  aria-label="Download and schedule"
+                  aria-label={
+                    showSchedule ? "Download and schedule" : "Download"
+                  }
                   className="relative rounded-[10px] before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-[#450E16]/30"
                 />
               }
@@ -201,7 +207,7 @@ export function ExportButton() {
               <DropdownMenuItem disabled={!canDownload} onClick={onDownload}>
                 Download
               </DropdownMenuItem>
-              {alreadyQueued ? (
+              {showSchedule && alreadyQueued ? (
                 <DropdownMenuItem disabled>
                   On schedule
                   {entry?.scheduledAt ? (
@@ -210,20 +216,21 @@ export function ExportButton() {
                     </DropdownMenuShortcut>
                   ) : null}
                 </DropdownMenuItem>
-              ) : (
+              ) : null}
+              {showSchedule && !alreadyQueued ? (
                 <DropdownMenuItem
                   disabled={!canSchedule || addSchedule.isPending}
                   onClick={onAddToSchedule}
                 >
-                  {addSchedule.isPending ? "Adding…" : "Add to schedule"}
+                  {addSchedule.isPending ? "Adding…" : "Schedule"}
                   {scheduleDisabledReason ? (
                     <DropdownMenuShortcut>
                       {scheduleDisabledReason}
                     </DropdownMenuShortcut>
                   ) : null}
                 </DropdownMenuItem>
-              )}
-              {entry?.platforms.length ? (
+              ) : null}
+              {showSchedule && entry?.platforms.length ? (
                 <>
                   <DropdownMenuSeparator />
                   {entry.platforms.map((p) =>

@@ -58,3 +58,10 @@ export function assertValidTimezone(timezone: string): void {
     throw new Error(`Invalid timezone "${timezone}"`);
   }
 }
+
+/** App "Add to schedule" is operator-only for now. */
+export const SCHEDULE_OPERATOR_EMAIL = "chenaaron3@gmail.com";
+
+export function canUseSchedule(email: string | null | undefined): boolean {
+  return email?.trim().toLowerCase() === SCHEDULE_OPERATOR_EMAIL;
+}

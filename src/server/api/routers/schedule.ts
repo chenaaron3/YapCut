@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { scheduleSettingsSchema } from "~/domain/schedule";
+import { canUseSchedule, scheduleSettingsSchema } from "~/domain/schedule";
 import { getScheduleUploadService } from "~/schedule/upload-service";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import {
@@ -60,6 +60,12 @@ export const scheduleRouter = createTRPCRouter({
   addEntry: protectedProcedure
     .input(z.object({ projectId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
+      if (!canUseSchedule(ctx.session.user.email)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Schedule is not available for this account",
+        });
+      }
       try {
         const entry = await scheduleProject({
           userId: ctx.session.user.id,

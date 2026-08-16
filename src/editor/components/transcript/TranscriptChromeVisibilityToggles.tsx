@@ -85,11 +85,11 @@ export function TranscriptChromeVisibilityToggles() {
       <DropdownMenuContent
         align="start"
         sideOffset={6}
-        className="w-max min-w-0 p-1"
+        className="w-max min-w-0 border border-[#F5F9CE]/15 bg-[#1A1D26] p-1 text-[#F5F9CE] shadow-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-2 py-1">
-          <p className="flex-1 text-xs font-semibold whitespace-nowrap">
+          <p className="flex-1 text-xs font-semibold whitespace-nowrap text-[#F5F9CE]">
             Toggle visibility
           </p>
           <button
@@ -97,7 +97,7 @@ export function TranscriptChromeVisibilityToggles() {
             title={masterLabel}
             aria-label={masterLabel}
             aria-pressed={majorityOn}
-            className="text-muted-foreground hover:bg-panel-2 hover:text-foreground flex size-6 items-center justify-center rounded-md"
+            className="flex size-6 items-center justify-center rounded-md text-[#C4B8A8] hover:bg-white/10 hover:text-[#F5F9CE]"
             onClick={(e) => {
               e.stopPropagation();
               setGroupsVisible(
@@ -109,7 +109,7 @@ export function TranscriptChromeVisibilityToggles() {
             <MasterIcon className="size-3.5" />
           </button>
         </div>
-        <DropdownMenuSeparator className="mx-0" />
+        <DropdownMenuSeparator className="mx-0 bg-[#F5F9CE]/15" />
         {shown.map((spec) => {
           const on = visible[spec.key];
           const count = counts[spec.key] ?? 0;
@@ -123,8 +123,9 @@ export function TranscriptChromeVisibilityToggles() {
               aria-pressed={on}
               label={label}
               className={cn(
-                "h-8 gap-2 px-2 text-xs",
-                !on && "text-muted-foreground/50",
+                "h-8 gap-2 px-2 text-xs text-[#F5F9CE]",
+                "focus:bg-white/10 focus:text-[#F5F9CE] data-highlighted:bg-white/10 data-highlighted:text-[#F5F9CE]",
+                !on && "text-[#F5F9CE]/40",
               )}
               onClick={(e) => {
                 e.stopPropagation();
@@ -135,10 +136,10 @@ export function TranscriptChromeVisibilityToggles() {
                 className={cn("size-2 shrink-0 rounded-full", spec.dotClass)}
               />
               <span className="pr-4 whitespace-nowrap">{label}</span>
-              <span className="text-muted-foreground ml-auto text-[11px] tabular-nums">
+              <span className="ml-auto text-[11px] tabular-nums text-[#C4B8A8]">
                 {count}
               </span>
-              <RowIcon className="text-muted-foreground size-3.5" />
+              <RowIcon className="size-3.5 text-[#C4B8A8]" />
             </DropdownMenuItem>
           );
         })}

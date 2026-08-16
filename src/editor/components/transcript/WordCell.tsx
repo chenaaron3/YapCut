@@ -94,7 +94,7 @@ export const WordCell = memo(function WordCell({
       <>
         <WordGap />
         <input
-          className="bg-panel-2 m-0 inline rounded-sm py-px font-[inherit] leading-[inherit] text-inherit outline-2 outline-solid outline-ring"
+          className="m-0 inline w-auto min-w-0 border-0 bg-transparent p-0 font-[inherit] leading-[inherit] text-inherit caret-[#F5F9CE] outline-none"
           value={draft}
           autoFocus
           onChange={(e) => setDraft(e.target.value)}
