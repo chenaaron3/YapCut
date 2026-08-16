@@ -57,12 +57,12 @@ export function Playhead({
       {!scrubbing && hoverX != null && hoverSec != null ? (
         <>
           <div
-            className="pointer-events-none absolute top-0 bottom-0 z-50 w-px bg-white/30"
+            className="pointer-events-none absolute top-0 bottom-0 z-50 w-px bg-[#F5F9CE]/25"
             style={{ left: hoverX }}
           />
           <div className="pointer-events-none sticky top-1 z-50 h-0">
             <div
-              className="absolute -translate-x-1/2 rounded bg-panel-2/90 px-1 py-px text-[10px] leading-none text-[#e8eaef]"
+              className="absolute -translate-x-1/2 rounded border border-[#F5F9CE]/15 bg-[#1A1D26] px-1 py-px text-[10px] leading-none text-[#F5F9CE]"
               style={{ left: hoverX }}
             >
               {formatTimeHover(hoverSec)}

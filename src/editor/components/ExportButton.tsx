@@ -156,10 +156,11 @@ export function ExportButton() {
   const primary = (
     <Button
       type="button"
-      variant="default"
+      variant="ember"
       size="sm"
       disabled={exporting}
       onClick={() => void onExport()}
+      className="h-7 rounded-[10px] px-2.5 text-xs"
     >
       <CloudUpload className="size-3.5" />
       {exporting ? `Exporting… ${pct}%` : "Export video"}
@@ -170,7 +171,7 @@ export function ExportButton() {
     <div className="flex items-center gap-2">
       {error && !exporting ? (
         <span
-          className="max-w-50 truncate text-[11px] text-red-300"
+          className="max-w-50 truncate text-[11px] text-[#F5F9CE]"
           title={error}
         >
           {error}
@@ -184,16 +185,19 @@ export function ExportButton() {
               render={
                 <Button
                   type="button"
-                  variant="default"
+                  variant="ember"
                   size="icon-sm"
                   aria-label="Download and schedule"
-                  className="before:bg-primary-foreground/30 relative before:absolute before:inset-y-1.5 before:left-0 before:w-px"
+                  className="relative rounded-[10px] before:absolute before:inset-y-1.5 before:left-0 before:w-px before:bg-[#450E16]/30"
                 />
               }
             >
               <ChevronDown />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-48">
+            <DropdownMenuContent
+              align="end"
+              className="min-w-48 rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[4px_4px_0_#450E16] ring-0"
+            >
               <DropdownMenuItem disabled={!canDownload} onClick={onDownload}>
                 Download
               </DropdownMenuItem>

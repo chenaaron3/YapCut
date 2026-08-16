@@ -34,14 +34,14 @@ const CaptionWord = memo(function CaptionWord({
       data-word-index={word.globalIndex}
       className={cn(
         "absolute top-1 bottom-1 z-[1] flex cursor-pointer items-center overflow-hidden rounded px-0.5 text-[10px] select-none",
-        word.inGap ? "text-[#e8eaef]/55" : "text-[#e8eaef]",
+        word.inGap ? "text-[#F5F9CE]/45" : "text-[#F5F9CE]",
         selected
-          ? "bg-accent/50 z-[2] outline outline-2 outline-white"
+          ? "z-[2] bg-[#FFA102]/80 text-[#450E16] outline outline-2 outline-[#F5F9CE]"
           : word.inGap
-            ? "bg-accent/10"
+            ? "bg-[#F5F9CE]/6"
             : word.emphasized
-              ? "bg-amber-500/40"
-              : "bg-accent/25",
+              ? "bg-[#FFA102]/40"
+              : "bg-[#F5F9CE]/12",
       )}
       style={{ left, width: w }}
       title={`${word.text}  ${word.start.toFixed(2)}–${word.end.toFixed(2)}s${word.inGap ? " (deleted)" : ""}`}

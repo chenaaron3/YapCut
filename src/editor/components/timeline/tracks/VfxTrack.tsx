@@ -75,7 +75,7 @@ export function VfxTrack({ edits, width }: Props) {
             title={`${vfxCellLabel(edit)}  ${edit.start.toFixed(2)}–${edit.end.toFixed(2)}s`}
             className={cn(
               "bg-vfx absolute top-1 bottom-1 flex items-center overflow-hidden rounded px-1.5 text-[10px] text-[#1a1508] select-none",
-              isSel("edit", edit.id) && "z-[2] outline outline-2 outline-white",
+              isSel("edit", edit.id) && "z-[2] outline outline-2 outline-[#F5F9CE]",
             )}
             style={{ left, width: w }}
             onClick={(e) => {

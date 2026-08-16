@@ -10,6 +10,7 @@ import {
 import { companionSfxRef, formatSfxLabel } from "~/domain/sfx";
 import { Label } from "~/components/ui/label";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
+import { SfxSearchSelect } from "~/editor/components/inspector/field/SfxSearchSelect";
 import { SliderField } from "~/editor/components/inspector/field/SliderField";
 import { useEditor } from "~/editor/store";
 
@@ -47,11 +48,11 @@ export function CompanionSfxFields({ edit }: { edit: Edit }) {
         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
           Sound
         </Label>
-        <select
-          className="w-full rounded-md border border-border bg-panel-2 px-2 py-1.5 text-xs text-foreground"
-          value={companion?.assetId ?? ""}
-          onChange={(e) => {
-            const assetId = e.target.value;
+        <SfxSearchSelect
+          aria-label="Sound"
+          assetId={companion?.assetId ?? null}
+          assets={sfxAssets}
+          onChange={(assetId) => {
             if (!assetId) {
               setCompanion(null);
               return;
@@ -62,19 +63,7 @@ export function CompanionSfxFields({ edit }: { edit: Edit }) {
             }
             setCompanion(companionSfxRef(assetId));
           }}
-        >
-          <option value="">None</option>
-          {companion && !sfxAssets.some((a) => a.id === companion.assetId) ? (
-            <option value={companion.assetId}>
-              {companion.assetId.slice(0, 8)}…
-            </option>
-          ) : null}
-          {sfxAssets.map((a) => (
-            <option key={a.id} value={a.id}>
-              {formatSfxLabel(a.originalFilename, a.id)}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       {companion ? (

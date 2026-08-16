@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import type { RangeEdge } from "~/domain/edits";
+import { TRACK_HEIGHT } from "~/editor/components/timeline/constants";
 import { runGesture } from "~/editor/lib/gesture";
 import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
@@ -21,13 +22,16 @@ export function TrackLabel({
   children: ReactNode;
 }) {
   return (
-    <div className="relative mb-1.5 h-[29px]">
-      <div className="absolute top-0 left-[-72px] flex h-[29px] w-16 items-center text-[11px] tracking-wide text-muted-foreground uppercase">
+    <div className="relative mb-1.5 last:mb-0" style={{ height: TRACK_HEIGHT }}>
+      <div
+        className="ember-mono absolute top-0 left-[-72px] flex w-16 items-center text-[10px] tracking-[.1em] text-muted-foreground uppercase"
+        style={{ height: TRACK_HEIGHT }}
+      >
         {label}
       </div>
       <div
-        className="relative h-[29px] overflow-hidden rounded-md border border-border bg-panel-2"
-        style={{ width }}
+        className="relative overflow-hidden rounded-md border border-border bg-panel-2"
+        style={{ width, height: TRACK_HEIGHT }}
       >
         {children}
       </div>
@@ -49,7 +53,7 @@ export function Handle({
     <span
       role="presentation"
       className={cn(
-        "absolute top-0 bottom-0 z-10 w-2.5 cursor-ew-resize touch-none bg-white/35 hover:bg-white/60",
+        "absolute top-0 bottom-0 z-10 w-2.5 cursor-ew-resize touch-none bg-[#F5F9CE]/35 hover:bg-[#F5F9CE]/60",
         side === "left" ? "left-0" : "right-0",
         className,
       )}

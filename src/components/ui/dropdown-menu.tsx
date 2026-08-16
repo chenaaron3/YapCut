@@ -38,7 +38,8 @@ function DropdownMenuContent({
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            "bg-popover text-popover-foreground ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg p-1 shadow-md ring-1 duration-100 outline-none",
+            "z-50 max-h-(--available-height) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] p-1 text-[#450E16] shadow-[4px_4px_0_#450E16] ring-0 outline-none duration-100",
+            "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className,
           )}
           {...props}
@@ -63,7 +64,11 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-inset:pl-7 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center gap-1.5 rounded-[8px] px-1.5 py-1 text-sm outline-hidden select-none",
+        "focus:bg-[#FFA102] focus:text-[#450E16] data-highlighted:bg-[#FFA102] data-highlighted:text-[#450E16]",
+        "data-[variant=destructive]:text-[#BC2D29] data-[variant=destructive]:focus:bg-[#BC2D29]/10 data-[variant=destructive]:focus:text-[#BC2D29]",
+        "data-disabled:pointer-events-none data-disabled:opacity-50 data-inset:pl-7",
+        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -81,7 +86,9 @@ function DropdownMenuLinkItem({
       data-slot="dropdown-menu-item"
       closeOnClick={closeOnClick}
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center gap-1.5 rounded-[8px] px-1.5 py-1 text-sm outline-hidden select-none",
+        "focus:bg-[#FFA102] focus:text-[#450E16] data-highlighted:bg-[#FFA102] data-highlighted:text-[#450E16]",
+        "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}

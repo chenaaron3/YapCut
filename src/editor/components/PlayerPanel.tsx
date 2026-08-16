@@ -121,7 +121,7 @@ export function PlayerPanel() {
 
   if (!inputProps) {
     return (
-      <div className="text-muted-foreground flex h-full items-center justify-center bg-[#0b0c10] text-sm">
+      <div className="flex h-full items-center justify-center bg-[#0b0c10] text-sm text-[#F5F9CE]/55">
         No preview
       </div>
     );

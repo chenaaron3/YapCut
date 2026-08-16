@@ -50,13 +50,13 @@ export function PlayerControls({
   }, []);
 
   return (
-    <div className="grid h-9 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-t border-border px-2">
-      <div className="justify-self-start overflow-hidden font-mono text-[11px] leading-none tabular-nums tracking-tight whitespace-nowrap">
-        <span className="text-teal-400">
+    <div className="grid h-9 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-t border-white/10 px-2">
+      <div className="ember-mono justify-self-start overflow-hidden text-[11px] leading-none tabular-nums tracking-tight whitespace-nowrap">
+        <span className="text-[#FFA102]">
           {formatTimecode(frame, COMPOSITION_FPS)}
         </span>
-        <span className="text-muted-foreground/50"> / </span>
-        <span className="text-muted-foreground">
+        <span className="text-[#F5F9CE]/35"> / </span>
+        <span className="text-[#F5F9CE]/55">
           {formatTimecode(durationInFrames, COMPOSITION_FPS)}
         </span>
       </div>
@@ -65,7 +65,7 @@ export function PlayerControls({
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="justify-self-center text-foreground"
+        className="justify-self-center text-[#F5F9CE] hover:bg-white/10 hover:text-[#F5F9CE]"
         aria-label={playing ? "Pause" : "Play"}
         title={playing ? "Pause (Space)" : "Play (Space)"}
         onClick={(e) => togglePlayback(e)}
@@ -81,7 +81,7 @@ export function PlayerControls({
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="justify-self-end text-muted-foreground hover:text-foreground"
+        className="justify-self-end text-[#F5F9CE]/55 hover:bg-white/10 hover:text-[#F5F9CE]"
         aria-label={fullscreen ? "Exit full screen" : "Full screen"}
         title={fullscreen ? "Exit full screen" : "Full screen"}
         onClick={onToggleFullscreen}

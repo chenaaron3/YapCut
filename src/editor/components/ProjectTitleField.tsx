@@ -42,7 +42,7 @@ export function ProjectTitleField({
       value={draft}
       aria-label="Project title"
       className={cn(
-        "min-w-0 flex-1 truncate rounded border border-transparent bg-transparent px-1 text-sm font-semibold outline-none hover:border-border focus:border-ring focus:ring-1 focus:ring-ring/40",
+        "min-w-0 flex-1 truncate rounded border border-transparent bg-transparent px-1 text-sm font-semibold text-[#F5F9CE] outline-none hover:border-border focus:border-ring focus:ring-1 focus:ring-ring/40",
         className,
       )}
       onChange={(e) => setDraft(e.target.value)}

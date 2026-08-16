@@ -37,7 +37,7 @@ export function ZoomTrack({ edits, width }: Props) {
             className={cn(
               "absolute top-1 bottom-1 flex items-center overflow-hidden rounded bg-purple-500/50 px-1 text-[10px] text-white select-none",
               isSel("edit", edit.id) &&
-                "z-[2] outline outline-2 outline-white",
+                "z-[2] outline outline-2 outline-[#F5F9CE]",
             )}
             style={{ left, width: w }}
             onClick={(e) => {

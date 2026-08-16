@@ -41,7 +41,7 @@ export function SfxTrack({ edits, width }: Props) {
             className={cn(
               "bg-sfx/50 absolute top-1 bottom-1 flex items-center overflow-hidden rounded px-1 text-[10px] text-black select-none",
               isSel("edit", edit.id) &&
-                "z-[2] outline outline-2 outline-white",
+                "z-[2] outline outline-2 outline-[#F5F9CE]",
             )}
             style={{ left, width: w }}
             onClick={(e) => {

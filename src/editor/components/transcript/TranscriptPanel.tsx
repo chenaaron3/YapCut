@@ -111,10 +111,10 @@ export function TranscriptPanel() {
           <button
             type="button"
             className={cn(
-              "inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors",
+              "inline-flex h-7 items-center gap-1.5 rounded-[8px] px-2 text-xs font-medium transition-colors",
               projectPanel === "captions"
-                ? "bg-primary/20 text-foreground"
-                : "text-muted-foreground hover:bg-panel-2 hover:text-foreground",
+                ? "bg-[#FFA102] text-[#450E16]"
+                : "text-[#F5F9CE]/60 hover:bg-white/10 hover:text-[#F5F9CE]",
             )}
             title="Open caption style inspector"
             onClick={(e) => {
@@ -128,10 +128,10 @@ export function TranscriptPanel() {
           <button
             type="button"
             className={cn(
-              "inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors",
+              "inline-flex h-7 items-center gap-1.5 rounded-[8px] px-2 text-xs font-medium transition-colors",
               projectPanel === "settings"
-                ? "bg-primary/20 text-foreground"
-                : "text-muted-foreground hover:bg-panel-2 hover:text-foreground",
+                ? "bg-[#FFA102] text-[#450E16]"
+                : "text-[#F5F9CE]/60 hover:bg-white/10 hover:text-[#F5F9CE]",
             )}
             title="Project settings"
             onClick={(e) => {
@@ -152,7 +152,7 @@ export function TranscriptPanel() {
             clearSelection();
           }}
         >
-          <div className="px-6 py-5 text-[18px] leading-[1.85]">
+          <div className="px-6 py-5 text-[18px] leading-[1.85] text-[#F5F9CE]">
             {visibleWords.length === 0 ? (
               <p className="text-muted-foreground text-sm">
                 No transcript words.

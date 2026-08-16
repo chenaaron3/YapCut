@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
+import { InspectorSelect } from "~/editor/components/inspector/field/InspectorSelect";
 import { NumberField } from "~/editor/components/inspector/field/NumberField";
 import { SliderField } from "~/editor/components/inspector/field/SliderField";
 import { runGesture } from "~/editor/lib/gesture";
@@ -120,19 +121,17 @@ export function CaptionStyleFields({
         <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
           Font
         </Label>
-        <select
-          className="border-border bg-panel-2 text-foreground h-8 w-full rounded-md border px-2 text-xs"
+        <InspectorSelect
+          aria-label="Font"
           value={overrides.fontFamily ?? resolvedFontFamily}
-          onChange={(e) =>
-            onPatch({ fontFamily: e.target.value as CaptionFontId })
+          options={CAPTION_FONT_IDS.map((id) => ({
+            value: id,
+            label: CAPTION_FONT_LABELS[id],
+          }))}
+          onChange={(fontFamily) =>
+            onPatch({ fontFamily: fontFamily as CaptionFontId })
           }
-        >
-          {CAPTION_FONT_IDS.map((id) => (
-            <option key={id} value={id}>
-              {CAPTION_FONT_LABELS[id]}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       <div className="flex flex-col gap-1">

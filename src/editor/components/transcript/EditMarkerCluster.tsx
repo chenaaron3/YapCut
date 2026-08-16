@@ -43,7 +43,7 @@ function MarkerDot({
       className={cn(
         "size-[0.35em] shrink-0 rounded-full",
         chrome.dotClass,
-        selected && "ring-1 ring-white/80 ring-offset-1 ring-offset-background",
+        selected && "ring-1 ring-[#F5F9CE]/80 ring-offset-1 ring-offset-background",
       )}
       onMouseDown={(e) => {
         e.preventDefault();
@@ -151,9 +151,9 @@ export function EditMarkerCluster({
                   span={span}
                   selected={selected}
                   className={cn(
-                    "hover:ring-1 hover:ring-white/80 hover:ring-offset-1 hover:ring-offset-background",
+                    "hover:ring-1 hover:ring-[#F5F9CE]/80 hover:ring-offset-1 hover:ring-offset-background",
                     selected &&
-                      "ring-1 ring-white/80 ring-offset-1 ring-offset-background",
+                      "ring-1 ring-[#F5F9CE]/80 ring-offset-1 ring-offset-background",
                   )}
                   onSelect={(editId, toggleSelect) => {
                     onSelect(editId, toggleSelect);

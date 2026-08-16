@@ -51,7 +51,7 @@ export function VideoTrack({ layout, width }: Props) {
               className={cn(
                 "absolute top-1 bottom-1 cursor-pointer overflow-hidden rounded text-[10px] text-[#1a1508] select-none",
                 selected
-                  ? "z-[2] bg-yellow-400 outline outline-2 outline-white"
+                  ? "z-[2] bg-yellow-400 outline outline-2 outline-[#F5F9CE]"
                   : "bg-yellow-500/80 hover:bg-yellow-500",
               )}
               style={style}
@@ -121,8 +121,8 @@ export function VideoTrack({ layout, width }: Props) {
             className={cn(
               "absolute top-1 bottom-1 z-10 flex items-center justify-center overflow-hidden rounded px-0.5 text-[10px] select-none",
               selected
-                ? "z-[2] bg-red-500/80 text-white outline outline-2 outline-white"
-                : "bg-red-900/60 text-red-200 hover:bg-red-800/70",
+                ? "z-[2] bg-[#BC2D29] text-[#F5F9CE] outline outline-2 outline-[#F5F9CE]"
+                : "bg-[#BC2D29]/35 text-[#F5F9CE] hover:bg-[#BC2D29]/50",
             )}
             style={style}
             onClick={(e) => {

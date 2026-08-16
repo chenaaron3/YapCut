@@ -14,6 +14,11 @@ import {
   sfxFolderLabel,
   sfxFolderOf,
 } from "~/domain/sfx";
+import { InspectorSelect } from "~/editor/components/inspector/field/InspectorSelect";
+import {
+  matchesSfxQuery,
+  type SfxAssetOption,
+} from "~/editor/components/inspector/field/sfx-search";
 import { useEditor } from "~/editor/store";
 
 import type {
@@ -106,11 +111,18 @@ function CueRow({
       <Label className="text-muted-foreground text-[10px] tracking-wider uppercase">
         {COMPANION_SFX_CUE_LABELS[cue]}
       </Label>
-      <select
-        className="border-border bg-panel-2 text-foreground w-full rounded-md border px-2 py-1.5 text-xs"
+      <InspectorSelect
+        aria-label={COMPANION_SFX_CUE_LABELS[cue]}
         value={sourceSelectValue(source)}
-        onChange={(e) => {
-          const value = e.target.value;
+        options={[
+          { value: "none", label: "None" },
+          ...folders.map((folder) => ({
+            value: `folder:${folder}`,
+            label: `${sfxFolderLabel(folder)} folder`,
+          })),
+          { value: "paths", label: "Custom list…" },
+        ]}
+        onChange={(value) => {
           if (value === "none") {
             onChange({ type: "none" });
             return;
@@ -123,15 +135,7 @@ function CueRow({
             onChange({ type: "folder", folder: value.slice("folder:".length) });
           }
         }}
-      >
-        <option value="none">None</option>
-        {folders.map((folder) => (
-          <option key={folder} value={`folder:${folder}`}>
-            {sfxFolderLabel(folder)} folder
-          </option>
-        ))}
-        <option value="paths">Custom list…</option>
-      </select>
+      />
       {source.type === "paths" ? (
         <SfxPathChips
           paths={source.paths}
@@ -140,20 +144,6 @@ function CueRow({
         />
       ) : null}
     </div>
-  );
-}
-
-type SfxAssetOption = { id: string; originalFilename: string | null };
-
-function matchesSfxQuery(asset: SfxAssetOption, query: string): boolean {
-  const path = asset.originalFilename;
-  if (!path) return false;
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const label = formatSfxLabel(path, asset.id).toLowerCase();
-  const folder = (sfxFolderOf(path) ?? "").toLowerCase();
-  return (
-    label.includes(q) || path.toLowerCase().includes(q) || folder.includes(q)
   );
 }
 

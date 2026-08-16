@@ -43,8 +43,8 @@ export function RangeHandle({ edge, span, selected, onResizeEdge }: Props) {
     >
       <span
         className={cn(
-          "w-full rounded-sm bg-white",
-          edge === "middle" && "bg-amber-200",
+          "w-full rounded-sm bg-[#F5F9CE]",
+          edge === "middle" && "bg-[#FFA102]",
         )}
       />
     </button>

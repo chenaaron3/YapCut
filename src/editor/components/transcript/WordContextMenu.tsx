@@ -42,12 +42,12 @@ export function WordContextMenu({
             // Portal bubbles through React to the transcript panel — don't clear selection.
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
-            className="z-50 flex w-auto min-w-0 flex-row items-center gap-0.5 rounded-md border border-border bg-panel-2 p-1 text-[#e8eaef] shadow-md outline-none"
+            className="z-50 flex w-auto min-w-0 flex-row items-center gap-0.5 rounded-[10px] border-2 border-[#450E16] bg-[#F5F9CE] p-1 text-[#450E16] shadow-[3px_3px_0_#450E16] outline-none"
           >
             <MenuIcon
               label={emphasized ? "Remove emphasis" : "Emphasis"}
               active={emphasized}
-              activeClass="bg-amber-700/80 text-amber-100"
+              activeClass="bg-[#FFA102] text-[#450E16]"
               onClick={onEmphasis}
             >
               <Bold className="size-3.5" />
@@ -60,7 +60,7 @@ export function WordContextMenu({
             </MenuIcon>
             <MenuIcon
               label="Delete"
-              className="text-red-300 focus:bg-red-950/60 focus:text-red-200 data-highlighted:bg-red-950/60 data-highlighted:text-red-200"
+              className="text-[#BC2D29] focus:bg-[#BC2D29]/10 focus:text-[#BC2D29] data-highlighted:bg-[#BC2D29]/10 data-highlighted:text-[#BC2D29]"
               onClick={onDelete}
             >
               <Trash2 className="size-3.5" />
@@ -94,8 +94,8 @@ function MenuIcon({
       aria-label={label}
       aria-pressed={active}
       className={cn(
-        "flex size-8 cursor-default items-center justify-center rounded-md text-[#e8eaef] outline-none select-none",
-        "hover:bg-[#3d4a66] focus:bg-[#3d4a66] data-highlighted:bg-[#3d4a66]",
+        "flex size-8 cursor-default items-center justify-center rounded-md text-[#450E16] outline-none select-none",
+        "hover:bg-[#FFA102] focus:bg-[#FFA102] data-highlighted:bg-[#FFA102]",
         active && activeClass,
         className,
       )}

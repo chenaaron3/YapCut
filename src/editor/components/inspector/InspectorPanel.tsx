@@ -87,7 +87,7 @@ export function InspectorPanel() {
       {title && body ? (
         <>
           <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-            <h2 className="text-xs font-medium tracking-wide text-foreground">
+            <h2 className="ember-mono text-[10px] font-medium tracking-[.12em] text-foreground uppercase">
               {title}
             </h2>
             <button

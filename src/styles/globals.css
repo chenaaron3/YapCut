@@ -93,7 +93,7 @@
   display: none;
 }
 
-/* Ember marketing / app chrome — not used by the editor */
+/* Ember marketing / app chrome. Editor remaps the same tokens on html.editor-lock. */
 .ember-shell {
   --ember-cream: #f5f9ce;
   --ember-ink: #450e16;
@@ -518,4 +518,45 @@
     overflow: hidden;
     overscroll-behavior: none;
   }
+}
+
+/*
+ * Night Ember — same chrome as the rest of the app, dark working surface.
+ * Unlayered so it wins over :root / .dark.
+ */
+html.editor-lock {
+  --background: #12141a;
+  --foreground: #f5f9ce;
+  --card: #1a1d26;
+  --card-foreground: #f5f9ce;
+  --popover: #1a1d26;
+  --popover-foreground: #f5f9ce;
+  --primary: #ffa102;
+  --primary-foreground: #450e16;
+  --secondary: #241b22;
+  --secondary-foreground: #f5f9ce;
+  --muted: #222632;
+  --muted-foreground: #c4b8a8;
+  --accent: #241b22;
+  --accent-foreground: #f5f9ce;
+  --destructive: #bc2d29;
+  --border: #453239;
+  --input: #453239;
+  --ring: #ffa102;
+  --sidebar: #1a1d26;
+  --sidebar-foreground: #f5f9ce;
+  --sidebar-primary: #ffa102;
+  --sidebar-primary-foreground: #450e16;
+  --sidebar-accent: #241b22;
+  --sidebar-accent-foreground: #f5f9ce;
+  --sidebar-border: #453239;
+  --sidebar-ring: #ffa102;
+  --color-panel: #1a1d26;
+  --color-panel-2: #222632;
+}
+
+html.editor-lock,
+html.editor-lock body {
+  background: #12141a;
+  color: #f5f9ce;
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildArollLayoutFromAssets } from '~/domain/arolls';
 import { layoutTimelineDuration } from '~/domain/layout-time';
-import { LABEL_OFFSET } from '~/editor/components/timeline/constants';
+import { LABEL_OFFSET, TIMELINE_MAX_HEIGHT } from '~/editor/components/timeline/constants';
 import {
     contentXForSec, useTimelineZoom
 } from '~/editor/components/timeline/hooks/useTimelineZoom';
@@ -139,14 +139,17 @@ export function Timeline() {
   }, []);
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 w-full flex-col overflow-hidden border-t border-border bg-panel">
+    <div
+      className="flex w-full min-w-0 shrink-0 flex-col overflow-hidden border-t border-border bg-panel"
+      style={{ maxHeight: TIMELINE_MAX_HEIGHT }}
+    >
       <div
         ref={scrollRef}
-        className="relative min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-auto [touch-action:pan-x_pan-y]"
+        className="relative min-h-0 min-w-0 overflow-x-auto overflow-y-auto [touch-action:pan-x_pan-y]"
       >
         <div
           ref={contentRef}
-          className="relative min-h-full"
+          className="relative"
           style={{ width: totalWidth }}
           onMouseMove={(e) => {
             if (scrubbing) return;

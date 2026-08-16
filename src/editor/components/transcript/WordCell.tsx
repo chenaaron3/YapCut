@@ -94,7 +94,7 @@ export const WordCell = memo(function WordCell({
       <>
         <WordGap />
         <input
-          className="bg-panel-2 outline-accent m-0 inline rounded-sm py-px font-[inherit] leading-[inherit] text-[#e8eaef] text-[inherit] outline outline-2"
+          className="bg-panel-2 m-0 inline rounded-sm py-px font-[inherit] leading-[inherit] text-inherit outline-2 outline-solid outline-ring"
           value={draft}
           autoFocus
           onChange={(e) => setDraft(e.target.value)}
@@ -165,7 +165,7 @@ export const WordCell = memo(function WordCell({
             className={cn(
               "relative cursor-pointer rounded transition-colors select-none",
               word.inGap && "line-through opacity-40",
-              word.emphasized && "font-semibold text-amber-300",
+              word.emphasized && "font-semibold text-[#FFA102]",
               selected && "bg-primary/35",
               // Underline only when the primary edit is selected — idle markers carry the signal.
               primarySelected &&

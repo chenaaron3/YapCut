@@ -29,7 +29,7 @@ function VfxPresetRow({ preset }: { preset: VfxDragPayload }) {
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-vfx/25 text-vfx">
         <Icon className="size-3.5" />
       </span>
-      <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+      <span className="min-w-0 flex-1 truncate text-[11px] text-[#F5F9CE]">
         {preset.label}
       </span>
     </div>

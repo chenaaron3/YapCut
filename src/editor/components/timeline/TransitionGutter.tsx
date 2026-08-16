@@ -102,7 +102,7 @@ export function TransitionGutter({ layout, edits, width }: Props) {
                   className={cn(
                     "block size-1.5 rotate-45 rounded-[1px]",
                     selected ? "bg-transition" : "bg-transition/80",
-                    selected && "outline outline-1 outline-white",
+                    selected && "outline outline-1 outline-[#F5F9CE]",
                   )}
                 />
               </button>
@@ -194,7 +194,7 @@ function TipHandle({
     <span
       data-cell
       role="presentation"
-      className="absolute top-0 z-[4] h-3 w-2 -translate-x-1/2 cursor-ew-resize rounded-sm bg-white/80 hover:bg-white"
+      className="absolute top-0 z-[4] h-3 w-2 -translate-x-1/2 cursor-ew-resize rounded-sm bg-[#F5F9CE]/80 hover:bg-[#F5F9CE]"
       style={{ left: sec * pxPerSec }}
       onMouseDown={onMouseDown}
     />

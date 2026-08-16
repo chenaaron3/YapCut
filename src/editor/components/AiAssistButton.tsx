@@ -53,7 +53,7 @@ export function AiAssistButton() {
     <div className="flex items-center gap-2">
       {error && !busy ? (
         <span
-          className="max-w-50 truncate text-[11px] text-red-300"
+          className="max-w-50 truncate text-[11px] text-[#F5F9CE]"
           title={error}
         >
           {error}
@@ -61,11 +61,12 @@ export function AiAssistButton() {
       ) : null}
       <Button
         type="button"
-        variant="outline"
+        variant="ember-ghost"
         size="sm"
         disabled={disabled}
         onClick={() => void onClick()}
         title="Generate a new set of edits with AI"
+        className="h-7 rounded-[10px] px-2.5 text-xs"
       >
         <Sparkles className="size-3.5" />
         {busy ? "Generating…" : "Generate edits"}

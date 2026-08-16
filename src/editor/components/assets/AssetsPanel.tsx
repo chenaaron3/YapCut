@@ -67,10 +67,10 @@ export function AssetsPanel() {
             key={id}
             type="button"
             className={cn(
-              "shrink-0 rounded px-2 py-1 text-[11px] font-medium whitespace-nowrap",
+              "ember-mono shrink-0 rounded-[8px] px-2 py-1 text-[10px] font-medium tracking-[.06em] whitespace-nowrap uppercase",
               tab === id
-                ? "bg-panel-2 text-foreground"
-                : "text-muted-foreground hover:text-foreground",
+                ? "bg-[#FFA102] text-[#450E16]"
+                : "text-[#F5F9CE]/55 hover:text-[#F5F9CE]",
             )}
             onClick={() => setTab(id)}
           >

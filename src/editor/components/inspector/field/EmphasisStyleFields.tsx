@@ -11,6 +11,7 @@ import {
   type EmphasisStyle,
 } from "~/domain/emphasis-style";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
+import { InspectorSelect } from "~/editor/components/inspector/field/InspectorSelect";
 import { NumberField } from "~/editor/components/inspector/field/NumberField";
 import { runGesture } from "~/editor/lib/gesture";
 import {
@@ -102,11 +103,17 @@ export function EmphasisStyleFields({
         <Label className="text-muted-foreground text-[10px] tracking-wider uppercase">
           Font
         </Label>
-        <select
-          className="border-border bg-panel-2 text-foreground h-8 w-full rounded-md border px-2 text-xs"
+        <InspectorSelect
+          aria-label="Font"
           value={fontSelectValue}
-          onChange={(e) => {
-            const v = e.target.value;
+          options={[
+            { value: "inherit", label: "Inherit group" },
+            ...CAPTION_FONT_IDS.map((id) => ({
+              value: id,
+              label: CAPTION_FONT_LABELS[id],
+            })),
+          ]}
+          onChange={(v) => {
             if (v === "inherit") {
               // Omit font — parent drops the key from the style being edited.
               onPatch({ fontFamily: undefined });
@@ -114,14 +121,7 @@ export function EmphasisStyleFields({
             }
             onPatch({ fontFamily: v as CaptionFontId });
           }}
-        >
-          <option value="inherit">Inherit group</option>
-          {CAPTION_FONT_IDS.map((id) => (
-            <option key={id} value={id}>
-              {CAPTION_FONT_LABELS[id]}
-            </option>
-          ))}
-        </select>
+        />
       </div>
     </InspectorCollapsible>
   );

@@ -1,13 +1,13 @@
-import { Label } from "~/components/ui/label";
 import { useMemo } from "react";
 
+import { Label } from "~/components/ui/label";
 import { buildArollLayoutFromAssets } from "~/domain/arolls";
 import {
   maxTransitionDuration,
+  resizeTransitionFromDuration,
   TRANSITION_MIN_DURATION_SEC,
   TRANSITION_PRESETS,
   transitionOutputDuration,
-  resizeTransitionFromDuration,
 } from "~/domain/transition";
 import { SliderField } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
@@ -73,7 +73,11 @@ export function TransitionInspector({ edit }: { edit: TransitionEdit }) {
           if (next) {
             patchEdit(
               edit.id,
-              { durationSec: next.durationSec, start: next.start, end: next.end },
+              {
+                durationSec: next.durationSec,
+                start: next.start,
+                end: next.end,
+              },
               true,
             );
           }
@@ -83,20 +87,16 @@ export function TransitionInspector({ edit }: { edit: TransitionEdit }) {
           if (next) {
             patchEdit(
               edit.id,
-              { durationSec: next.durationSec, start: next.start, end: next.end },
+              {
+                durationSec: next.durationSec,
+                start: next.start,
+                end: next.end,
+              },
               false,
             );
           }
         }}
       />
-
-      <p className="text-[10px] text-muted-foreground">
-        {stitch.kind === "opening"
-          ? "In-only from black at the first keep."
-          : stitch.kind === "closing"
-            ? "Out-only to black at the last keep."
-            : "Bridges one keep–keep stitch. Resize is symmetric."}
-      </p>
     </div>
   );
 }

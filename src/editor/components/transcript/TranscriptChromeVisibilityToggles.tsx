@@ -72,7 +72,7 @@ export function TranscriptChromeVisibilityToggles() {
         render={
           <button
             type="button"
-            className="border-border bg-panel-2 hover:border-muted-foreground/40 inline-flex h-7 items-center gap-2 rounded-md border px-2.5 text-xs font-medium"
+            className="inline-flex h-7 items-center gap-2 rounded-[8px] border border-[#F5F9CE]/20 bg-[#222632] px-2.5 text-xs font-medium text-[#F5F9CE] hover:border-[#FFA102]"
             aria-label={`Toggle visibility, ${typeLabel}`}
             title="Show or hide edit markers in the transcript"
           />
@@ -123,8 +123,7 @@ export function TranscriptChromeVisibilityToggles() {
               aria-pressed={on}
               label={label}
               className={cn(
-                "h-8 gap-2 px-2 text-xs hover:bg-panel-2",
-                "focus:bg-panel-2 focus:text-foreground data-highlighted:bg-panel-2 data-highlighted:text-foreground",
+                "h-8 gap-2 px-2 text-xs",
                 !on && "text-muted-foreground/50",
               )}
               onClick={(e) => {

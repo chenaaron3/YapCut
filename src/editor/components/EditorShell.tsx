@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 
 import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
@@ -21,13 +21,13 @@ function SaveStatusBadge() {
   const label = saving ? "Saving…" : dirty ? "Unsaved" : "Saved";
   return (
     <span
-      className="border-border bg-panel-2 text-muted-foreground inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[11px]"
+      className="ember-mono inline-flex h-7 items-center gap-1.5 rounded-full border-2 border-[#450E16] bg-[#F5F9CE] px-2.5 text-[10px] font-medium tracking-[.08em] text-[#450E16] uppercase"
       title={label}
     >
       <span
         className={cn(
           "size-1.5 rounded-full",
-          saving ? "bg-muted-foreground" : dirty ? "bg-amber-400" : "bg-sfx",
+          saving ? "bg-[#75677F]" : dirty ? "bg-[#FFA102]" : "bg-sfx",
         )}
       />
       {label}
@@ -212,7 +212,7 @@ export function EditorShell({ projectId }: Props) {
     document.title = `${dirty ? "● " : ""}${label} · YapCut`;
   }, [title, dirty]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.classList.add("editor-lock");
     return () => root.classList.remove("editor-lock");
@@ -220,7 +220,7 @@ export function EditorShell({ projectId }: Props) {
 
   if (projectQuery.isLoading || loadState === "loading") {
     return (
-      <div className="text-muted-foreground flex h-screen items-center justify-center text-sm">
+      <div className="flex h-screen items-center justify-center bg-[#12141A] text-sm text-[#C4B8A8]">
         Loading editor…
       </div>
     );
@@ -229,13 +229,16 @@ export function EditorShell({ projectId }: Props) {
   const project = projectQuery.data;
   if (project === null || project === undefined) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-3">
-        <p className="text-muted-foreground text-sm">
+      <div className="flex h-screen flex-col items-center justify-center gap-3 bg-[#12141A]">
+        <p className="text-sm text-[#C4B8A8]">
           {projectQuery.isError
             ? "Failed to load project."
             : "Project not found."}
         </p>
-        <Link href="/projects" className="text-primary text-sm underline">
+        <Link
+          href="/projects"
+          className="text-sm text-[#F5F9CE] underline decoration-[#FFA102] decoration-2 underline-offset-4"
+        >
           Back to projects
         </Link>
       </div>
@@ -250,14 +253,15 @@ export function EditorShell({ projectId }: Props) {
     <div
       className={cn(
         "bg-background text-foreground fixed inset-0 grid h-screen min-h-0 w-full overflow-hidden overscroll-none",
-        "grid-rows-[auto_1fr_320px]",
+        "grid-rows-[auto_1fr_auto]",
+        "selection:bg-[#FFA102] selection:text-[#450E16]",
       )}
     >
-      <header className="border-border bg-panel flex h-11 shrink-0 items-center justify-between border-b px-3">
+      <header className="flex h-11 shrink-0 items-center justify-between border-b border-[#450E16]/25 bg-[#BC2D29] px-3 text-[#F5F9CE]">
         <div className="flex min-w-0 items-center gap-3">
           <Link
             href="/projects"
-            className="text-muted-foreground hover:text-foreground shrink-0 text-xs"
+            className="ember-mono shrink-0 text-[10px] tracking-[.12em] text-[#F5F9CE]/80 uppercase hover:text-[#F5F9CE]"
           >
             ← Projects
           </Link>
@@ -271,7 +275,7 @@ export function EditorShell({ projectId }: Props) {
 
       {error ? (
         <div className="pointer-events-none absolute top-11 right-0 left-0 z-20 px-3 py-2">
-          <div className="pointer-events-auto rounded-md bg-red-950 px-3 py-2 text-sm text-red-200 shadow-lg">
+          <div className="pointer-events-auto rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2 text-sm text-[#BC2D29] shadow-[4px_4px_0_#450E16]">
             {error}
           </div>
         </div>
