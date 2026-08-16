@@ -22,8 +22,8 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout
-      title="Projects · Talking Head"
-      description="Your Talking Head projects."
+      title="Projects · YapCut"
+      description="Your YapCut projects."
     >
       <div className="flex flex-col gap-6 pt-10 sm:flex-row sm:items-end sm:justify-between">
             <div>

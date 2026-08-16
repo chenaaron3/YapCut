@@ -1,13 +1,19 @@
-import { FileVideo, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { Button, buttonVariants } from '~/components/ui/button';
+import { FileVideo, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useDropzone } from "react-dropzone";
+
+import { Button, buttonVariants } from "~/components/ui/button";
 import {
-    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
-} from '~/components/ui/dialog';
-import { probeVideoFile } from '~/editor/lib/probe-media';
-import { cn } from '~/lib/utils';
-import { api } from '~/utils/api';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { probeVideoFile } from "~/editor/lib/probe-media";
+import { cn } from "~/lib/utils";
+import { api } from "~/utils/api";
 
 type Props = {
   open: boolean;
@@ -75,15 +81,19 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
     });
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive, open: openFilePicker } =
-    useDropzone({
-      onDrop,
-      accept: { "video/*": [".mp4", ".mov", ".webm", ".m4v"] },
-      multiple: true,
-      noClick: true,
-      noKeyboard: true,
-      disabled: phase !== "idle",
-    });
+  const {
+    getRootProps,
+    getInputProps,
+    isDragActive,
+    open: openFilePicker,
+  } = useDropzone({
+    onDrop,
+    accept: { "video/*": [".mp4", ".mov", ".webm", ".m4v"] },
+    multiple: true,
+    noClick: true,
+    noKeyboard: true,
+    disabled: phase !== "idle",
+  });
 
   const removeFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
@@ -135,7 +145,10 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
       if (err instanceof Error) {
         message = err.message;
         // tRPC client errors often nest the server message
-        const data = (err as { data?: { message?: string }; shape?: { message?: string } });
+        const data = err as {
+          data?: { message?: string };
+          shape?: { message?: string };
+        };
         if (data.shape?.message) message = data.shape.message;
         else if (data.data?.message) message = data.data.message;
       }
@@ -152,15 +165,14 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
         if (!next && !busy) onClose();
       }}
     >
-      <DialogContent className="ember-shell sm:max-w-lg rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[8px_9px_0_#450E16]" showCloseButton={!busy}>
+      <DialogContent
+        className="ember-shell rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[8px_9px_0_#450E16] sm:max-w-lg"
+        showCloseButton={!busy}
+      >
         <DialogHeader>
           <DialogTitle className="ember-display text-3xl leading-none">
             New project
           </DialogTitle>
-          <DialogDescription>
-            Drop one or more A-roll videos. We&apos;ll upload, transcribe, and
-            seed edits automatically.
-          </DialogDescription>
         </DialogHeader>
 
         <div
@@ -174,10 +186,10 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
           )}
         >
           <input {...getInputProps()} />
-          <p className="text-sm font-medium text-foreground">
+          <p className="text-foreground text-sm font-medium">
             {isDragActive ? "Drop videos to add them" : "Drag videos here"}
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="text-muted-foreground mt-1 text-xs">
             MP4, MOV — A-roll only
           </p>
           <Button
@@ -198,10 +210,10 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
                 key={`${file.name}-${file.size}-${file.lastModified}`}
                 className="flex items-center gap-3 rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2"
               >
-                <FileVideo className="size-4 shrink-0 text-muted-foreground" />
+                <FileVideo className="text-muted-foreground size-4 shrink-0" />
                 <div className="min-w-0 flex-1 text-left">
                   <p className="truncate text-sm font-medium">{file.name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {formatBytes(file.size)}
                   </p>
                 </div>
@@ -223,7 +235,7 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
         ) : null}
 
         {error ? (
-          <p className="text-sm text-destructive" role="alert">
+          <p className="text-destructive text-sm" role="alert">
             {error}
           </p>
         ) : null}

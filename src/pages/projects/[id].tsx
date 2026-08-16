@@ -45,7 +45,7 @@ export default function ProjectPage() {
   }
 
   return (
-    <AppLayout title={`${title} · Talking Head`}>
+    <AppLayout title={`${title} · YapCut`}>
       <div className="relative">
         <div className="relative">
           {projectQuery.isLoading ? (

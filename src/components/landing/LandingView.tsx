@@ -1,7 +1,6 @@
 "use client";
 
 import { LandingCta, LandingFooter } from "~/components/landing/LandingCta";
-import { LandingDemo } from "~/components/landing/LandingDemo";
 import { LandingFeatures } from "~/components/landing/LandingFeatures";
 import { LandingHeader } from "~/components/landing/LandingHeader";
 import { LandingHero } from "~/components/landing/LandingHero";
@@ -17,7 +16,6 @@ export function LandingView() {
       <LandingHeader />
       <main className="relative z-10">
         <LandingHero />
-        <LandingDemo />
         <LandingFeatures />
         <LandingHowItWorks />
         <LandingCta />

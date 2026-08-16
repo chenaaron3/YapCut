@@ -16,7 +16,7 @@ export function Navbar() {
         aria-label="Primary navigation"
         className="mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-6 py-5 sm:px-10 lg:px-14"
       >
-        <Link href="/projects" aria-label="Talking Head home">
+        <Link href="/projects" aria-label="YapCut home">
           <BrandMark light />
         </Link>
         <div className="hidden items-center gap-8 text-sm font-semibold md:flex">

@@ -32,11 +32,11 @@ export function LandingCta() {
           className="mt-10 h-auto px-6 py-4"
           onClick={landingSignIn}
         >
-          Try Talking Head free
+          Try for free
           <ArrowUpRight data-icon="inline-end" className="size-[15px]" />
         </Button>
         <p className="mt-6 text-lg text-[#450E16]/65">
-          Vertical talking-head Shorts only.
+          Designed for Vertical talking-head Shorts.
         </p>
       </div>
     </section>
@@ -47,12 +47,12 @@ export function LandingFooter() {
   return (
     <footer className="border-t-2 border-[#F5F9CE]/20 bg-[#450E16] px-6 py-7 text-[#F5F9CE] sm:px-10 lg:px-14">
       <div className="mx-auto flex max-w-[1280px] flex-col justify-between gap-4 text-sm sm:flex-row sm:items-center">
-        <span className="font-semibold">talking head</span>
+        <span className="font-semibold">YapCut</span>
         <span className="ember-mono text-[9px] tracking-[.14em] text-[#F5F9CE]/50 uppercase">
           Edit less. Say more.
         </span>
         <span className="ember-mono text-[9px] tracking-[.14em] text-[#F5F9CE]/50 uppercase">
-          © 2026 Talking Head
+          © 2026 YapCut
         </span>
       </div>
     </footer>

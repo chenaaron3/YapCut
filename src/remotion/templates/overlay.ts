@@ -10,6 +10,7 @@ import type { TemplateStyle, TextBaseEdit } from "~/domain/project-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export const OVERLAY_TEMPLATE_IDS = [
+  "typewriter",
   "arc-ribbon",
   "red-teal",
   "black-white",
@@ -82,7 +83,49 @@ function overlayTemplate(
   };
 }
 
+const OVERLAY_TYPEWRITER_SHADOW = "0 3px 0 #000, 0 6px 16px rgba(0,0,0,0.85)";
+
 export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
+  typewriter: overlayTemplate(
+    "typewriter",
+    "Typewriter",
+    true,
+    {
+      ...OVERLAY_TEXT_BASE,
+      fontFamily: "comico",
+      fontSize: 72,
+      groupAnimation: "none",
+      wordAnimation: "none",
+      wordReveal: "typewriter",
+      textTransform: "lowercase",
+      background: { kind: "none" },
+      wordStyle: {
+        fill: "#FFFFFF",
+        opacity: 1,
+        border: { width: 6, color: "#000000" },
+        textShadow: OVERLAY_TYPEWRITER_SHADOW,
+      },
+      futureWordStyle: { opacity: 0 },
+    },
+    {
+      ...OVERLAY_TEXT_BASE,
+      fontFamily: "comico",
+      fontSize: 48,
+      groupAnimation: "none",
+      wordAnimation: "none",
+      wordReveal: "typewriter",
+      textTransform: "lowercase",
+      background: { kind: "none" },
+      y: -0.2,
+      wordStyle: {
+        fill: "#FFFFFF",
+        opacity: 1,
+        border: { width: 5, color: "#000000" },
+        textShadow: OVERLAY_TYPEWRITER_SHADOW,
+      },
+      futureWordStyle: { opacity: 0 },
+    },
+  ),
   "arc-ribbon": overlayTemplate(
     "arc-ribbon",
     "Arc + Ribbon",

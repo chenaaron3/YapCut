@@ -27,8 +27,8 @@ export function lufsToGain(targetLufs: number, fromLufs: number): number {
 /** SFX mix at 100% slider (−24 LUFS after library normalize). */
 export const SFX_VOLUME_DEFAULT = lufsToGain(SFX_TARGET_LUFS, LIBRARY_LUFS);
 
-/** Auto companion / overlay-pop mix (70% of the SFX role default). */
-export const COMPANION_SFX_VOLUME = SFX_VOLUME_DEFAULT * 0.7;
+/** Auto companion / overlay-pop mix (50% of the SFX role default). */
+export const COMPANION_SFX_VOLUME = SFX_VOLUME_DEFAULT * 0.5;
 
 /** Music bed at 100% slider (−28 LUFS after library normalize). */
 export const MUSIC_VOLUME_DEFAULT = lufsToGain(MUSIC_TARGET_LUFS, LIBRARY_LUFS);

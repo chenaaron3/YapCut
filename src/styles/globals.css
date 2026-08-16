@@ -180,6 +180,36 @@
   animation: ember-orbit 8s ease-in-out infinite alternate;
 }
 
+.ember-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  color: rgb(69 14 22 / 0.42);
+}
+
+.ember-nav-item.is-active {
+  color: var(--ember-ink);
+}
+
+.ember-nav-dot {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1.5px solid rgb(69 14 22 / 0.32);
+  border-radius: 999px;
+  font: 600 0.7rem / 1 var(--font-mono), ui-monospace, monospace;
+}
+
+.ember-nav-item.is-active .ember-nav-dot {
+  border-color: var(--ember-orange);
+  background: var(--ember-orange);
+  color: var(--ember-ink);
+  box-shadow: 0 0 0 6px rgb(255 161 2 / 0.18);
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -228,6 +258,47 @@
 
 .animate-pulse-line {
   animation: pulse-line 3.2s ease-in-out infinite;
+}
+
+@keyframes ember-line-shimmer {
+  0%,
+  8% {
+    background-position: 140% 0;
+  }
+  18% {
+    background-position: -40% 0;
+  }
+  18.01%,
+  100% {
+    background-position: 140% 0;
+  }
+}
+
+.ember-line-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 161 2 / 0.1) 46%,
+    rgb(245 249 206 / 0.22) 50%,
+    rgb(255 161 2 / 0.1) 54%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: ember-line-shimmer 16s ease-in-out infinite;
+}
+
+@keyframes ember-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgb(255 161 2 / 0.22);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgb(255 161 2 / 0.48);
+  }
+}
+
+.ember-glow-pulse {
+  animation: ember-glow-pulse 1.8s ease-in-out infinite;
 }
 
 @keyframes create-step-pulse {
@@ -311,6 +382,11 @@
       0 0 0 1px rgb(56 189 248 / 0.55),
       0 0 12px rgb(56 189 248 / 0.25);
     background-color: rgb(56 189 248 / 0.2);
+  }
+
+  .ember-line-shimmer,
+  .ember-glow-pulse {
+    animation: none;
   }
 }
 

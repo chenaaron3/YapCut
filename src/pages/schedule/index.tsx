@@ -57,7 +57,7 @@ export default function SchedulePage() {
 
   return (
     <AppLayout
-      title="Schedule · Talking Head"
+      title="Schedule · YapCut"
       description="Publish queue and cadence settings."
     >
       <div className="flex flex-col gap-2 pt-10 sm:flex-row sm:items-end sm:justify-between">

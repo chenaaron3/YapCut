@@ -1,108 +1,470 @@
-import { Check, Download, Upload, Video } from "lucide-react";
+import { Check, Share2, Upload } from "lucide-react";
 
 import { StoryCursor } from "~/components/landing/StoryCursor";
 import { lerp, spanProgress } from "~/components/landing/use-story-progress";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
 
-export const TRANSCRIPT = [
-  { word: "The", key: "the" },
-  { word: "idea", key: "idea" },
-  { word: "is", key: "is" },
-  { word: "already", key: "already" },
-  { word: "there.", key: "there" },
+const TRANSCRIPT_WORDS = [
+  { word: "The" },
+  { word: "idea", mark: "emphasis" },
+  { word: "is" },
+  { word: "already", mark: "zoom" },
+  { word: "there." },
+  { word: "You" },
+  { word: "just" },
+  { word: "have" },
+  { word: "to" },
+  { word: "make" },
+  { word: "it" },
+  { word: "land.", mark: "sfx" },
 ] as const;
 
-const EDIT_STYLE = {
-  Emphasis: "border-[#DD5533] bg-[#DD5533] text-[#F5F9CE]",
-  Zoom: "border-[#3B82F6] bg-[#3B82F6] text-[#450E16]",
-  SFX: "border-[#2DD4BF] bg-[#2DD4BF] text-[#450E16]",
-} as const;
+const MARKS = [
+  {
+    id: "zoom",
+    label: "zoom",
+    color: "#3B82F6",
+    text: "#2563EB",
+    fill: "59 130 246",
+  },
+  {
+    id: "sfx",
+    label: "sfx",
+    color: "#2DD4BF",
+    text: "#087F77",
+    fill: "45 212 191",
+  },
+  {
+    id: "emphasis",
+    label: "emphasis",
+    color: "#DD5533",
+    text: "#BC2D29",
+    fill: "221 85 51",
+  },
+] as const;
 
-type EditKind = keyof typeof EDIT_STYLE;
+type MarkId = (typeof MARKS)[number]["id"];
 
-function EditChip({ kind, show }: { kind: EditKind; show: number }) {
+const MARK_BEATS: Record<MarkId, [number, number]> = {
+  zoom: [0.48, 0.62],
+  sfx: [0.64, 0.78],
+  emphasis: [0.8, 0.94],
+};
+
+function markAmount(progress: number, id: MarkId) {
+  const beat = MARK_BEATS[id];
+  return spanProgress(progress, beat[0], beat[1]);
+}
+
+function PanelHeader({
+  label,
+  badge,
+  tone,
+  badgeTone,
+}: {
+  label: string;
+  badge: string;
+  tone: "teal" | "orange" | "purple" | "gold";
+  badgeTone?: "teal" | "orange" | "purple" | "gold";
+}) {
+  const tones = {
+    teal: {
+      label: "text-[#2DD4BF]",
+      badge: "border-[#2DD4BF]/55 text-[#9DEEE1]",
+    },
+    gold: {
+      label: "text-[#FFA102]",
+      badge: "border-[#FFA102]/55 text-[#FFA102]",
+    },
+    orange: {
+      label: "text-[#DD5533]",
+      badge: "border-[#DD5533]/55 text-[#FFB3A1]",
+    },
+    purple: {
+      label: "text-[#A78BFA]",
+      badge: "border-[#A78BFA]/55 text-[#D9CCFF]",
+    },
+  } as const;
+
   return (
-    <Badge
-      className={cn(
-        "ember-mono absolute -top-6 left-1/2 h-auto rounded-[6px] border-2 px-1.5 py-0.5 text-[8px] font-semibold tracking-[.12em] uppercase",
-        EDIT_STYLE[kind],
-      )}
-      style={{
-        opacity: show,
-        transform: `translateX(-50%) translateY(${(1 - show) * 8}px) scale(${0.75 + show * 0.25})`,
-      }}
-    >
-      {kind}
-    </Badge>
+    <div className="flex shrink-0 items-center justify-between gap-4">
+      <p
+        className={cn(
+          "ember-mono m-0 text-[10px] tracking-[.18em] uppercase",
+          tones[tone].label,
+        )}
+      >
+        {label}
+      </p>
+      <span
+        className={cn(
+          "ember-mono rounded-full border px-3 py-2 text-[9px] tracking-[.12em] uppercase",
+          tones[badgeTone ?? tone].badge,
+        )}
+      >
+        {badge}
+      </span>
+    </div>
   );
 }
 
-export function StoryUpload({ progress }: { progress: number }) {
-  const click = spanProgress(progress, 0.04, 0.12);
-  const drag = spanProgress(progress, 0.12, 0.55);
-  const drop = spanProgress(progress, 0.55, 0.7);
-  const confirm = spanProgress(progress, 0.68, 0.82);
-  const pressed = click > 0.2 && click < 1 && drag < 0.08;
+function PanelFooter({ children }: { children: string }) {
+  return (
+    <p className="ember-mono m-0 shrink-0 text-center text-[9px] tracking-[.16em] text-[#F5F9CE]/45 uppercase">
+      {children}
+    </p>
+  );
+}
+
+const RAW_CLIP_SRC = "/landing/before.mp4?v=3";
+const EDITED_CLIP_SRC = "/landing/after.mp4?v=2";
+
+function RawClip({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "aspect-9/16 overflow-hidden rounded-[12px] border-2 border-[#FFA102] bg-[#432E6F] shadow-[4px_5px_0_rgba(69,14,22,.55)]",
+        className,
+      )}
+    >
+      <video
+        aria-hidden
+        autoPlay
+        className="h-full w-full object-cover"
+        loop
+        muted
+        playsInline
+        src={RAW_CLIP_SRC}
+      />
+    </div>
+  );
+}
+
+function MarkBadge({
+  mark,
+  amount,
+}: {
+  mark: (typeof MARKS)[number];
+  amount: number;
+}) {
+  return (
+    <span
+      className="ember-mono rounded-[6px] border px-2 py-1 text-[8px] tracking-[.1em] uppercase"
+      style={{
+        borderColor: mark.color,
+        color: mark.text,
+        background: `rgb(${mark.fill} / ${0.08 + amount * 0.16})`,
+        opacity: 0.28 + amount * 0.72,
+        transform: `translateY(${(1 - amount) * 6}px)`,
+      }}
+    >
+      {mark.label}
+    </span>
+  );
+}
+
+function HighlightedWord({
+  word,
+  mark,
+  appear,
+  amount,
+}: {
+  word: string;
+  mark?: MarkId;
+  appear: number;
+  amount: number;
+}) {
+  const style = mark ? MARKS.find((item) => item.id === mark) : undefined;
 
   return (
-    <div className="relative h-full min-h-[520px]">
-      <p className="ember-mono m-0 text-[10px] tracking-[.18em] text-[#FFA102] uppercase">
-        01 / upload
+    <span
+      className="inline-block rounded-[8px] px-1"
+      style={{
+        opacity: appear,
+        transform: `translateY(${(1 - appear) * 10}px)`,
+        color: style && amount > 0.2 ? style.text : "#450E16",
+        background:
+          style && amount > 0
+            ? `rgb(${style.fill} / ${amount * 0.2})`
+            : undefined,
+        boxShadow:
+          style && amount > 0.45 ? `inset 0 0 0 1px ${style.color}` : undefined,
+      }}
+    >
+      {word}
+    </span>
+  );
+}
+
+function wordTreatment(
+  word: string,
+  amounts: Record<MarkId, number>,
+  zoomAlready: number,
+  zoomThere: number,
+): { mark?: MarkId; amount: number } {
+  if (word === "already") return { mark: "zoom", amount: zoomAlready };
+  if (word === "there.") return { mark: "zoom", amount: zoomThere };
+  const item = TRANSCRIPT_WORDS.find((entry) => entry.word === word);
+  if (item && "mark" in item) {
+    return { mark: item.mark, amount: amounts[item.mark] };
+  }
+  return { amount: 0 };
+}
+
+function TranscriptCard({
+  progress,
+  zoomAlready,
+  zoomThere,
+  animateWords,
+}: {
+  progress: number;
+  zoomAlready: number;
+  zoomThere: number;
+  animateWords: boolean;
+}) {
+  const amounts = {
+    zoom: markAmount(progress, "zoom"),
+    sfx: animateWords ? markAmount(progress, "sfx") : 1,
+    emphasis: animateWords ? markAmount(progress, "emphasis") : 1,
+  };
+
+  return (
+    <div className="w-full rounded-[14px] border-2 border-[#450E16] bg-[#F5F9CE] p-5 text-[#450E16] shadow-[6px_7px_0_rgba(0,0,0,.18)]">
+      <div className="ember-mono mb-5 flex items-center justify-between text-[8px] tracking-[.14em] text-[#DD5533] uppercase">
+        <span>transcript</span>
+        <span className="text-[#450E16]/40">00:08</span>
+      </div>
+      <p className="m-0 flex flex-wrap gap-x-1.5 gap-y-2 text-[clamp(1.35rem,3.1vw,2rem)] leading-[1.15]">
+        {TRANSCRIPT_WORDS.map((item, i) => {
+          const appear = animateWords
+            ? spanProgress(
+                progress,
+                (i / TRANSCRIPT_WORDS.length) * 0.4,
+                ((i + 1) / TRANSCRIPT_WORDS.length) * 0.4 + 0.04,
+              )
+            : 1;
+          const treatment = wordTreatment(
+            item.word,
+            amounts,
+            zoomAlready,
+            zoomThere,
+          );
+          return (
+            <HighlightedWord
+              key={`${item.word}-${i}`}
+              word={item.word}
+              mark={treatment.mark}
+              appear={appear}
+              amount={treatment.amount}
+            />
+          );
+        })}
       </p>
-      <h3 className="ember-display mt-4 mb-0 max-w-[16ch] text-4xl leading-[.82] sm:text-6xl">
-        Drop your Short. <span className="text-[#FFA102]">Keep moving.</span>
-      </h3>
-      <div className="relative mt-12 grid items-center gap-6 md:grid-cols-[1fr_1fr]">
-        <Card
-          className="relative z-10 rounded-[16px] border border-[#F5F9CE]/25 bg-[#BC2D29] py-4 ring-0 shadow-[8px_8px_0_rgba(69,14,22,.75)]"
+      <div className="mt-5 flex flex-wrap gap-2">
+        {MARKS.map((mark) => (
+          <MarkBadge
+            key={mark.id}
+            mark={mark}
+            amount={animateWords ? amounts[mark.id] : 1}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function InstagramMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cn("size-6", className)} aria-hidden>
+      <defs>
+        <linearGradient id="story-ig" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stopColor="#F58529" />
+          <stop offset="48%" stopColor="#DD2A7B" />
+          <stop offset="100%" stopColor="#8134AF" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#story-ig)" />
+      <circle
+        cx="12"
+        cy="12"
+        r="4.1"
+        fill="none"
+        stroke="#F5F9CE"
+        strokeWidth="1.7"
+      />
+      <circle cx="17.1" cy="6.9" r="1.05" fill="#F5F9CE" />
+    </svg>
+  );
+}
+
+function YouTubeMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cn("size-6", className)} aria-hidden>
+      <rect x="1.2" y="5.2" width="21.6" height="13.6" rx="4" fill="#FF0000" />
+      <path d="M10.2 9.2v5.6l5.4-2.8z" fill="#F5F9CE" />
+    </svg>
+  );
+}
+
+function TikTokMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={cn("size-6", className)} aria-hidden>
+      <path
+        d="M14.6 3.2v9.6a3.4 3.4 0 1 1-3.3-3.4"
+        fill="none"
+        stroke="#25F4EE"
+        strokeLinecap="round"
+        strokeWidth="2.3"
+      />
+      <path
+        d="M16.6 3.4c.7 3 2.5 4.7 5 5.3"
+        fill="none"
+        stroke="#25F4EE"
+        strokeLinecap="round"
+        strokeWidth="2.3"
+      />
+      <path
+        d="M13.8 3.8v9.6a3.4 3.4 0 1 1-3.3-3.4"
+        fill="none"
+        stroke="#111"
+        strokeLinecap="round"
+        strokeWidth="2.3"
+      />
+      <path
+        d="M15.8 4c.7 3 2.5 4.7 5 5.3"
+        fill="none"
+        stroke="#111"
+        strokeLinecap="round"
+        strokeWidth="2.3"
+      />
+      <path
+        d="M13 4.2v9.6a3.4 3.4 0 1 1-3.3-3.4"
+        fill="none"
+        stroke="#FE2C55"
+        strokeLinecap="round"
+        strokeWidth="2.3"
+      />
+      <path
+        d="M15 4.4c.7 3 2.5 4.7 5 5.3"
+        fill="none"
+        stroke="#FE2C55"
+        strokeLinecap="round"
+        strokeWidth="2.3"
+      />
+    </svg>
+  );
+}
+
+const SHARE_ICONS = [
+  {
+    id: "ig",
+    label: "Instagram",
+    Icon: InstagramMark,
+    start: 0.52,
+    end: 0.66,
+    className: "top-2 left-1",
+    rotate: -8,
+    origin: "0",
+  },
+  {
+    id: "yt",
+    label: "YouTube",
+    Icon: YouTubeMark,
+    start: 0.66,
+    end: 0.8,
+    className: "top-1 left-1/2",
+    rotate: 4,
+    origin: "-50%",
+  },
+  {
+    id: "tt",
+    label: "TikTok",
+    Icon: TikTokMark,
+    start: 0.8,
+    end: 0.94,
+    className: "top-2 right-1",
+    rotate: 9,
+    origin: "0",
+  },
+] as const;
+
+export function StoryUpload({ progress }: { progress: number }) {
+  const grab = spanProgress(progress, 0.04, 0.12);
+  const drag = spanProgress(progress, 0.12, 0.45);
+  const drop = spanProgress(progress, 0.45, 0.56);
+  const confirm = spanProgress(progress, 0.5, 0.64);
+  const travel = Math.max(grab * 0.12, drag);
+  const overZone = spanProgress(drag, 0.55, 1);
+  const pressed = grab > 0.25 && grab < 1 && drag < 0.08;
+  const flying = travel > 0.02 && confirm < 0.92;
+
+  return (
+    <div className="relative flex h-full flex-col gap-3">
+      <PanelHeader
+        label="01 / drop it in"
+        badge="Upload clip"
+        tone="gold"
+        badgeTone="teal"
+      />
+      <div className="grid min-h-0 flex-1 grid-cols-[1fr_2fr] gap-3">
+        <div className="flex min-h-0 flex-col rounded-[16px] border border-[#F5F9CE]/25 bg-[#BC2D29] p-2.5 shadow-[6px_6px_0_rgba(69,14,22,.75)]">
+          <div className="ember-mono mb-2 flex shrink-0 items-center justify-between text-[9px] tracking-[.13em] text-[#F5F9CE]/65 uppercase">
+            <span>Finder</span>
+            <span>01 file</span>
+          </div>
+          <div
+            className="flex min-h-0 flex-1 items-center justify-center"
+            style={{ opacity: flying ? 0.28 : 1 - confirm * 0.35 }}
+          >
+            <RawClip className="h-full max-h-[210px] w-auto max-w-full" />
+          </div>
+        </div>
+
+        <div
+          className="relative flex min-h-0 items-center justify-center rounded-[16px] border-2 border-dashed"
           style={{
-            transform: `translate(${drag * 220}px, ${drag * -8}px)`,
-            opacity: 1 - drop * 0.25,
+            borderColor: `color-mix(in srgb, #2DD4BF ${30 + overZone * 50 + confirm * 20}%, transparent)`,
+            background: `rgb(45 212 191 / ${0.06 + overZone * 0.08 + confirm * 0.06})`,
           }}
         >
-          <CardHeader className="ember-mono flex-row items-center justify-between pb-0 text-[9px] tracking-[.13em] text-[#F5F9CE]/65 uppercase">
-            <span>Finder</span>
-            <span>short_014.mp4</span>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3 rounded-[10px] border border-[#F5F9CE]/20 bg-[#450E16] p-3">
-              <span className="grid h-9 w-9 place-items-center rounded-[8px] bg-[#FFA102] text-[#450E16]">
-                <Video className="size-[18px]" />
-              </span>
-              <span>
-                <strong className="block text-base">short_014.mp4</strong>
-                <small className="ember-mono text-[9px] text-[#F5F9CE]/55">
-                  1080 × 1920 · 00:28
-                </small>
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-        <div className="relative rounded-[16px] border-2 border-dashed border-[#2DD4BF] bg-[#2DD4BF]/10 p-6 text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full border border-[#2DD4BF] text-[#2DD4BF]">
-            <Upload className="size-[23px]" />
-          </div>
-          <h4 className="mt-5 text-2xl font-semibold">Drop surface</h4>
-          <p className="mt-2 text-base text-[#F5F9CE]/60">9:16 talking-head Shorts.</p>
           <div
-            className="absolute top-4 right-4 grid h-8 w-8 place-items-center rounded-full bg-[#2DD4BF] text-[#450E16]"
+            className="grid size-12 place-items-center rounded-full border border-[#2DD4BF] text-[#2DD4BF]"
+            style={{ opacity: 1 - confirm }}
+          >
+            <Upload className="size-5" />
+          </div>
+          <div
+            className="absolute top-1/2 left-1/2 grid size-14 place-items-center rounded-full bg-[#2DD4BF] text-[#450E16] shadow-[0_0_0_8px_rgb(45_212_191/0.22)]"
             style={{
-            opacity: confirm,
-            transform: `scale(${0.5 + confirm * 0.5})`,
-            visibility: confirm > 0.04 ? "visible" : "hidden",
+              opacity: confirm,
+              transform: `translate(-50%, -50%) scale(${0.4 + confirm * 0.6})`,
             }}
           >
-            <Check className="size-[17px]" />
+            <Check className="size-7" />
           </div>
         </div>
       </div>
+
+      {flying ? (
+        <div
+          className="pointer-events-none absolute z-20"
+          style={{
+            left: `${lerp(16, 66, travel)}%`,
+            top: `${lerp(54, 54, travel)}%`,
+            opacity: 1 - confirm,
+            transform: `translate(-50%, -50%) scale(${pressed ? 0.96 : 1})`,
+          }}
+        >
+          <RawClip className="w-[76px] shadow-[5px_6px_0_rgba(69,14,22,.75)]" />
+        </div>
+      ) : null}
+
       <StoryCursor
-        x={lerp(18, 72, drag)}
-        y={lerp(58, 48, drag)}
-        pressed={pressed || (drop > 0 && drop < 0.5)}
+        x={lerp(16, 66, travel)}
+        y={lerp(54, 54, travel)}
+        pressed={pressed || (drop > 0 && drop < 0.55)}
+        visible={confirm < 0.85}
       />
     </div>
   );
@@ -110,192 +472,129 @@ export function StoryUpload({ progress }: { progress: number }) {
 
 export function StoryTranscript({ progress }: { progress: number }) {
   return (
-    <div className="relative h-full min-h-[520px]">
-      <p className="ember-mono m-0 text-[10px] tracking-[.18em] text-[#2DD4BF] uppercase">
-        02 / first pass
-      </p>
-      <h3 className="ember-display mt-4 mb-0 max-w-[16ch] text-4xl leading-[.82] sm:text-6xl">
-        Let the words <span className="text-[#2DD4BF]">show up.</span>
-      </h3>
-      <TranscriptStage progress={progress} mode="reveal" />
+    <div className="flex h-full flex-col gap-4">
+      <PanelHeader label="02 / let it read" badge="AI Edits" tone="teal" />
+      <div className="flex min-h-0 flex-1 items-center">
+        <TranscriptCard
+          progress={progress}
+          zoomAlready={markAmount(progress, "zoom")}
+          zoomThere={0}
+          animateWords
+        />
+      </div>
+      <PanelFooter>speech becomes a surface you can edit</PanelFooter>
     </div>
   );
 }
 
 export function StoryEdit({ progress }: { progress: number }) {
-  const move1 = spanProgress(progress, 0.08, 0.28);
-  const click1 = spanProgress(progress, 0.28, 0.38);
-  const change = spanProgress(progress, 0.38, 0.52);
-  const move2 = spanProgress(progress, 0.55, 0.75);
-  const add = spanProgress(progress, 0.75, 0.9);
-  const pressed = (click1 > 0.15 && click1 < 0.85) || (add > 0.1 && add < 0.55);
+  const toAlready = spanProgress(progress, 0.16, 0.34);
+  const clickAlready = spanProgress(progress, 0.34, 0.48);
+  const removeZoom = spanProgress(progress, 0.4, 0.54);
+  const toThere = spanProgress(progress, 0.56, 0.74);
+  const clickThere = spanProgress(progress, 0.74, 0.86);
+  const addThere = spanProgress(progress, 0.8, 0.94);
 
-  const x =
-    move2 > 0
-      ? lerp(38, 14, move2)
-      : lerp(12, 38, move1);
-  const y =
-    move2 > 0
-      ? lerp(62, 62, move2)
-      : lerp(48, 62, move1);
+  const cursorX = lerp(40, 56, toThere);
+  const cursorY = lerp(46, 46, toThere);
+  const movingToAlready = toAlready;
+  const x = lerp(28, 40, movingToAlready) + (cursorX - 40) * toThere;
+  const y = lerp(38, 46, movingToAlready);
 
   return (
-    <div className="relative h-full min-h-[520px]">
-      <p className="ember-mono m-0 text-[10px] tracking-[.18em] text-[#FFA102] uppercase">
-        03 / edit
-      </p>
-      <h3 className="ember-display mt-4 mb-0 max-w-[16ch] text-4xl leading-[.82] sm:text-6xl">
-        Make the pass <span className="text-[#FFA102]">your own.</span>
-      </h3>
-      <TranscriptStage
-        progress={1}
-        mode="edit"
-        ideaKind={change > 0.5 ? "Zoom" : "Emphasis"}
-        theSfx={add}
-        menu={click1 > 0.4 && change < 0.85}
+    <div className="relative flex h-full flex-col gap-4">
+      <PanelHeader label="03 / make it yours" badge="your call" tone="orange" />
+      <div className="flex min-h-0 flex-1 items-center">
+        <TranscriptCard
+          progress={1}
+          zoomAlready={1 - removeZoom}
+          zoomThere={addThere}
+          animateWords={false}
+        />
+      </div>
+      <PanelFooter>choose the treatment. keep the say.</PanelFooter>
+      <StoryCursor
+        x={x}
+        y={y}
+        pressed={
+          (clickAlready > 0.15 && clickAlready < 0.85) ||
+          (clickThere > 0.15 && clickThere < 0.85)
+        }
       />
-      <StoryCursor x={x} y={y} pressed={pressed} />
     </div>
   );
 }
 
-export function StoryExport({ progress }: { progress: number }) {
-  const move = spanProgress(progress, 0.1, 0.45);
-  const click = spanProgress(progress, 0.45, 0.58);
-  const done = spanProgress(progress, 0.58, 0.78);
+export function StoryShare({ progress }: { progress: number }) {
+  const move = spanProgress(progress, 0.1, 0.34);
+  const click = spanProgress(progress, 0.34, 0.48);
 
   return (
-    <div className="relative h-full min-h-[520px]">
-      <p className="ember-mono m-0 text-[10px] tracking-[.18em] text-[#FFA102] uppercase">
-        04 / export
-      </p>
-      <h3 className="ember-display mt-4 mb-0 max-w-[16ch] text-4xl leading-[.82] sm:text-6xl">
-        Click export. <span className="text-[#FFA102]">Post the Short.</span>
-      </h3>
-      <div className="mt-14 max-w-md rounded-[16px] border border-[#F5F9CE]/20 bg-[#BC2D29] p-6">
-        <p className="ember-mono m-0 text-[9px] tracking-[.15em] text-[#F5F9CE]/55 uppercase">
-          final render · 9:16
-        </p>
-        <h4 className="mt-4 mb-0 text-3xl font-semibold">The cut is yours.</h4>
-        <Button
-          variant="ember"
-          size="lg"
-          className="relative mt-7 h-auto px-5 py-3 shadow-[5px_6px_0_#450E16]"
-          style={{ transform: `scale(${click > 0.2 && click < 0.7 ? 0.94 : 1})` }}
-        >
-          <Download data-icon="inline-start" className="size-4" />
-          Export 1080 × 1920
-        </Button>
-        <Badge
-          variant="outline"
-          className="mt-4 h-auto rounded-[8px] border-[#2DD4BF] bg-[#2DD4BF]/15 px-3 py-2 text-[9px] tracking-[.12em] text-[#9DEEE1] uppercase"
-          style={{ opacity: done, transform: `translateY(${(1 - done) * 8}px)` }}
-        >
-          <Check className="size-[13px]" />
-          short_014.mp4 downloading
-        </Badge>
-        <div
-          className="pointer-events-none absolute right-[18%] top-[58%] z-30 flex items-center gap-2 rounded-[10px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2 text-[#450E16] shadow-[5px_5px_0_#450E16]"
-          style={{
-            opacity: done,
-            transform: `translateY(${done * 48}px) scale(${0.85 + done * 0.15})`,
-          }}
-        >
-          <Video className="size-4" />
-          <span className="ember-mono text-[9px] font-semibold tracking-[.12em] uppercase">
-            short_014.mp4
-          </span>
+    <div className="relative flex h-full flex-col gap-4">
+      <PanelHeader label="04 / share it" badge="go viral" tone="purple" />
+      <div className="flex min-h-0 flex-1 items-center justify-center">
+        <div className="flex items-center justify-center gap-5 sm:gap-6">
+          <div className="relative w-[128px] rotate-[-3deg] rounded-[18px] border-2 border-[#FFA102] bg-[#BC2D29] p-1.5 shadow-[6px_7px_0_rgba(69,14,22,.76)] sm:w-[140px]">
+            <div className="relative aspect-9/16 overflow-hidden rounded-[12px] bg-[#432E6F]">
+              <video
+                aria-hidden
+                autoPlay
+                className="h-full w-full object-cover"
+                loop
+                muted
+                playsInline
+                src={EDITED_CLIP_SRC}
+              />
+              {SHARE_ICONS.map((platform) => {
+                const amount = spanProgress(
+                  progress,
+                  platform.start,
+                  platform.end,
+                );
+                return (
+                  <span
+                    key={platform.id}
+                    aria-label={platform.label}
+                    className={cn(
+                      "absolute z-10 grid size-9 place-items-center rounded-[10px] border border-[#450E16]/15 bg-white shadow-[3px_4px_0_rgba(69,14,22,.45)] sm:size-10",
+                      platform.className,
+                    )}
+                    style={{
+                      opacity: amount,
+                      transform: `translateX(${platform.origin}) rotate(${platform.rotate}deg) scale(${0.55 + amount * 0.45})`,
+                    }}
+                  >
+                    <platform.Icon className="size-5 sm:size-6" />
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+          <div className="w-fit rounded-[16px] border-2 border-[#450E16] bg-[#F5F9CE] px-4 py-4 text-[#450E16] shadow-[6px_7px_0_rgba(0,0,0,.18)]">
+            <p className="ember-mono m-0 text-[9px] tracking-[.15em] text-[#432E6F] uppercase">
+              share your short
+            </p>
+            <Button
+              variant="ember"
+              size="lg"
+              className="mt-4 h-auto px-4 py-2.5"
+              style={{
+                transform: `scale(${click > 0.2 && click < 0.7 ? 0.94 : 1})`,
+              }}
+            >
+              <Share2 data-icon="inline-start" className="size-4" />
+              Share short
+            </Button>
+          </div>
         </div>
       </div>
+      <PanelFooter>captions on · 9:16 · ready to share</PanelFooter>
       <StoryCursor
-        x={lerp(22, 36, move)}
-        y={lerp(40, 68, move)}
+        x={lerp(56, 67, move)}
+        y={lerp(46, 53, move)}
         pressed={click > 0.2 && click < 0.85}
+        visible={click < 0.95}
       />
     </div>
-  );
-}
-
-function TranscriptStage({
-  progress,
-  mode,
-  ideaKind = "Emphasis",
-  theSfx = 0,
-  menu = false,
-}: {
-  progress: number;
-  mode: "reveal" | "edit";
-  ideaKind?: EditKind;
-  theSfx?: number;
-  menu?: boolean;
-}) {
-  const wordCount = TRANSCRIPT.length;
-  return (
-    <Card className="relative mt-12 rounded-[16px] border border-[#F5F9CE]/20 bg-[#BC2D29] py-5 ring-0 text-[#F5F9CE] sm:py-8">
-      <CardHeader className="ember-mono flex-row items-center justify-between pb-0 text-[9px] tracking-[.14em] text-[#F5F9CE]/55 uppercase">
-        <span>words / 00:08</span>
-        <span className="text-[#2DD4BF]">talking-head Short</span>
-      </CardHeader>
-      <CardContent>
-      <p className="mt-8 mb-0 flex flex-wrap gap-x-3 gap-y-6 text-[clamp(1.6rem,3.6vw,3.1rem)] leading-[1.05]">
-        {TRANSCRIPT.map((item, i) => {
-          const appear =
-            mode === "edit"
-              ? 1
-              : spanProgress(
-                  progress,
-                  (i / wordCount) * 0.48,
-                  ((i + 1) / wordCount) * 0.48 + 0.04,
-                );
-          const highlightStart = 0.52 + i * 0.08;
-          const highlight =
-            mode === "edit"
-              ? 1
-              : spanProgress(progress, highlightStart, highlightStart + 0.12);
-          const chip =
-            item.key === "idea"
-              ? { kind: ideaKind, show: highlight }
-              : item.key === "already"
-                ? { kind: "Zoom" as const, show: highlight }
-                : item.key === "there"
-                  ? { kind: "SFX" as const, show: highlight }
-                  : item.key === "the"
-                    ? { kind: "SFX" as const, show: theSfx }
-                    : null;
-          return (
-            <span key={item.key} className="relative inline-block">
-              {chip && chip.show > 0.02 ? (
-                <EditChip kind={chip.kind} show={chip.show} />
-              ) : null}
-              <span
-                className={cn(
-                  "inline-block rounded-[6px] px-1 transition-colors",
-                  chip && chip.show > 0.4 ? "bg-[#F5F9CE] text-[#450E16]" : undefined,
-                )}
-                style={{
-                  opacity: appear,
-                  transform: `translateY(${(1 - appear) * 14}px)`,
-                }}
-              >
-                {item.word}
-              </span>
-              {item.key === "idea" && menu ? (
-                <span className="absolute top-full left-0 z-20 mt-2 w-28 rounded-[10px] border-2 border-[#450E16] bg-[#F5F9CE] p-1 text-[#450E16] shadow-[4px_4px_0_#450E16]">
-                  <span className="ember-mono block px-2 py-1 text-[8px] tracking-[.12em] text-[#75677F] uppercase">
-                    Change
-                  </span>
-                  <span className="block rounded-[6px] px-2 py-1 text-sm">Emphasis</span>
-                  <span className="block rounded-[6px] bg-[#FFA102] px-2 py-1 text-sm font-semibold">
-                    Zoom
-                  </span>
-                  <span className="block rounded-[6px] px-2 py-1 text-sm">SFX</span>
-                </span>
-              ) : null}
-            </span>
-          );
-        })}
-      </p>
-      </CardContent>
-    </Card>
   );
 }

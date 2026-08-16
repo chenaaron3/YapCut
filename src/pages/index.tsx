@@ -9,7 +9,7 @@ export default function LandingPage() {
   return (
     <>
       <Head>
-        <title>Talking Head</title>
+        <title>YapCut</title>
         <meta
           name="description"
           content="Vertical talking-head edits, from words to ready-to-post."

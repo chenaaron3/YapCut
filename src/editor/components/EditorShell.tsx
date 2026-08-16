@@ -209,7 +209,7 @@ export function EditorShell({ projectId }: Props) {
 
   useEffect(() => {
     const label = title || "Editor";
-    document.title = `${dirty ? "● " : ""}${label} · Talking Head`;
+    document.title = `${dirty ? "● " : ""}${label} · YapCut`;
   }, [title, dirty]);
 
   useEffect(() => {

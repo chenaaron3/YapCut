@@ -42,7 +42,7 @@ const BOLD_WHITE_BASE: CaptionGroupStyle = {
   fontSize: 125,
   y: 0,
   groupAnimation: "none",
-  wordAnimation: "fade",
+  wordAnimation: "none",
   wordReveal: "none",
   textTransform: "uppercase",
   captionsAtATime: 1,
