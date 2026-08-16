@@ -8,6 +8,7 @@ import {
   fetchLambdaProgress,
   renderCoverStill,
 } from "~/server/export/lambda";
+import { idleProjectStatusAfterExport } from "~/server/schedule/service";
 
 export type ExportProgressResult = {
   status: string;
@@ -100,10 +101,11 @@ export async function pollProjectExport(options: {
   if (progress.fatalErrorEncountered) {
     const reason =
       progress.errors[0]?.message ?? "Remotion Lambda render failed";
+    const status = await idleProjectStatusAfterExport(options.projectId);
     await db
       .update(projects)
       .set({
-        status: "ready",
+        status,
         failureReason: reason,
         exportRenderId: null,
         updatedAt: new Date(),
@@ -111,7 +113,7 @@ export async function pollProjectExport(options: {
       .where(eq(projects.id, options.projectId));
 
     return {
-      status: "ready",
+      status,
       progress: progress.overallProgress,
       exportS3Key: project.exportS3Key,
       coverS3Key: project.coverS3Key,
@@ -128,17 +130,18 @@ export async function pollProjectExport(options: {
     const outKey = progress.outputKey;
     if (!outKey) {
       const reason = "Render finished without an output key";
+      const status = await idleProjectStatusAfterExport(options.projectId);
       await db
         .update(projects)
         .set({
-          status: "ready",
+          status,
           failureReason: reason,
           exportRenderId: null,
           updatedAt: new Date(),
         })
         .where(eq(projects.id, options.projectId));
       return {
-        status: "ready",
+        status,
         progress: 1,
         exportS3Key: project.exportS3Key,
         coverS3Key: project.coverS3Key,
@@ -159,10 +162,11 @@ export async function pollProjectExport(options: {
         bucketName: project.exportBucketName,
       });
 
+      const status = await idleProjectStatusAfterExport(options.projectId);
       await db
         .update(projects)
         .set({
-          status: "ready",
+          status,
           exportS3Key: outKey,
           coverS3Key,
           failureReason: null,
@@ -172,7 +176,7 @@ export async function pollProjectExport(options: {
         .where(eq(projects.id, options.projectId));
 
       return {
-        status: "ready",
+        status,
         progress: 1,
         exportS3Key: outKey,
         coverS3Key,
@@ -182,10 +186,11 @@ export async function pollProjectExport(options: {
     } catch (err) {
       const reason =
         err instanceof Error ? err.message : "Cover still render failed";
+      const status = await idleProjectStatusAfterExport(options.projectId);
       await db
         .update(projects)
         .set({
-          status: "ready",
+          status,
           exportS3Key: outKey,
           failureReason: reason,
           exportRenderId: null,
@@ -194,7 +199,7 @@ export async function pollProjectExport(options: {
         .where(eq(projects.id, options.projectId));
 
       return {
-        status: "ready",
+        status,
         progress: 1,
         exportS3Key: outKey,
         coverS3Key: project.coverS3Key,

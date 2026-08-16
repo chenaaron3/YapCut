@@ -1,9 +1,11 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 
+import { canStartProjectExport } from "~/domain/project-status";
 import { db } from "~/server/db";
 import { projects } from "~/server/db/schema";
 import { buildExportProps } from "~/server/export/build-export-props";
 import { startLambdaRender } from "~/server/export/lambda";
+import { idleProjectStatusAfterExport } from "~/server/schedule/service";
 
 export async function startProjectExport(options: {
   projectId: string;
@@ -29,7 +31,7 @@ export async function startProjectExport(options: {
   if (project.status === "exporting") {
     throw new Error("Export already in progress");
   }
-  if (project.status !== "ready") {
+  if (!canStartProjectExport(project.status)) {
     throw new Error(`Cannot export while status is ${project.status}`);
   }
 
@@ -49,7 +51,10 @@ export async function startProjectExport(options: {
       updatedAt: new Date(),
     })
     .where(
-      and(eq(projects.id, options.projectId), eq(projects.status, "ready")),
+      and(
+        eq(projects.id, options.projectId),
+        or(eq(projects.status, "ready"), eq(projects.status, "scheduled")),
+      ),
     )
     .returning({ id: projects.id });
 
@@ -78,7 +83,7 @@ export async function startProjectExport(options: {
     await db
       .update(projects)
       .set({
-        status: "ready",
+        status: await idleProjectStatusAfterExport(options.projectId),
         failureReason: message,
         exportRenderId: null,
         updatedAt: new Date(),

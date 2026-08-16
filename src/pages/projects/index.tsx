@@ -36,7 +36,6 @@ export default function ProjectsPage() {
         onQueryChange={list.setQuery}
         status={list.status}
         onStatusChange={list.setStatus}
-        availableStatuses={list.availableStatuses}
         onCreate={() => setCreateOpen(true)}
       />
 

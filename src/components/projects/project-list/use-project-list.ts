@@ -1,77 +1,59 @@
-import { useEffect, useMemo, useState } from "react";
+import { keepPreviousData } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
-import { PROJECT_LIST_BADGES } from "~/domain/project-list-badge";
 import { api } from "~/utils/api";
-
-import { projectTitle } from "./format";
 
 import type { ProjectStatusFilter } from "./types";
 
-export const PROJECT_PAGE_SIZE = 9;
-
 export function useProjectList() {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [status, setStatus] = useState<ProjectStatusFilter>("all");
   const [page, setPage] = useState(1);
-  const projectsQuery = api.project.list.useQuery();
-  const projects = projectsQuery.data ?? [];
-  const count = projects.length;
 
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return projects.filter((project) => {
-      if (status !== "all" && project.badge !== status) return false;
-      if (!needle) return true;
-      return projectTitle(project.title).toLowerCase().includes(needle);
-    });
-  }, [projects, query, status]);
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setDebouncedQuery((current) => {
+        if (current === query) return current;
+        setPage(1);
+        return query;
+      });
+    }, 300);
+    return () => window.clearTimeout(id);
+  }, [query]);
 
-  const availableStatuses = useMemo(
-    () =>
-      PROJECT_LIST_BADGES.filter((badge) =>
-        projects.some((project) => project.badge === badge),
-      ),
-    [projects],
+  const projectsQuery = api.project.list.useQuery(
+    { page, query: debouncedQuery, status },
+    { placeholderData: keepPreviousData },
   );
-
+  const data = projectsQuery.data;
+  const count = data?.total ?? 0;
   const filtering = query.trim().length > 0 || status !== "all";
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PROJECT_PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const pageItems = filtered.slice(
-    (safePage - 1) * PROJECT_PAGE_SIZE,
-    safePage * PROJECT_PAGE_SIZE,
-  );
-
-  useEffect(() => {
-    setPage(1);
-  }, [query, status]);
-
-  useEffect(() => {
-    if (status !== "all" && !availableStatuses.includes(status)) {
-      setStatus("all");
-    }
-  }, [availableStatuses, status]);
 
   return {
     isLoading: projectsQuery.isLoading,
     isError: projectsQuery.isError,
     count,
-    filteredCount: filtered.length,
+    filteredCount: data?.filteredTotal ?? 0,
     filtering,
     query,
     setQuery,
     status,
-    setStatus,
-    availableStatuses,
-    pageItems,
-    page: safePage,
-    pageCount,
+    setStatus: (next: ProjectStatusFilter) => {
+      setStatus(next);
+      setPage(1);
+    },
+    pageItems: data?.items ?? [],
+    page: data?.page ?? page,
+    pageCount: data?.pageCount ?? 1,
     setPage,
-    isEmpty: projectsQuery.data?.length === 0,
-    noMatches: count > 0 && filtered.length === 0,
+    isEmpty: data?.total === 0,
+    noMatches: (data?.total ?? 0) > 0 && data?.filteredTotal === 0,
     clearFilters: () => {
       setQuery("");
+      setDebouncedQuery("");
       setStatus("all");
+      setPage(1);
     },
   };
 }

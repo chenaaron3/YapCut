@@ -75,8 +75,8 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
                 New project
               </DialogTitle>
               <DialogDescription className="mt-3 max-w-[34ch] text-base leading-snug text-[#432E6F]">
-                Upload clips here. We’ll stitch them together into one video, in
-                this order.
+                Upload talking head clips here. We’ll stitch them together into
+                one video.
               </DialogDescription>
             </div>
             <DialogClose

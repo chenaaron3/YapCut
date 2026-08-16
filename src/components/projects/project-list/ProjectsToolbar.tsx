@@ -7,10 +7,12 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
-import { PROJECT_LIST_BADGE_LABEL } from "~/domain/project-list-badge";
+import {
+  PROJECT_LIST_BADGE_LABEL,
+  PROJECT_LIST_BADGES,
+} from "~/domain/project-list-badge";
 import { cn } from "~/lib/utils";
 
-import type { ProjectListBadge } from "~/domain/project-list-badge";
 import type { ProjectStatusFilter } from "./types";
 
 const FIELD =
@@ -21,7 +23,6 @@ type Props = {
   onQueryChange: (query: string) => void;
   status: ProjectStatusFilter;
   onStatusChange: (status: ProjectStatusFilter) => void;
-  availableStatuses: readonly ProjectListBadge[];
 };
 
 export function ProjectsToolbar({
@@ -29,7 +30,6 @@ export function ProjectsToolbar({
   onQueryChange,
   status,
   onStatusChange,
-  availableStatuses,
 }: Props) {
   const statusLabel =
     status === "all" ? "All statuses" : PROJECT_LIST_BADGE_LABEL[status];
@@ -74,7 +74,7 @@ export function ProjectsToolbar({
           >
             All statuses
           </DropdownMenuItem>
-          {availableStatuses.map((badge) => (
+          {PROJECT_LIST_BADGES.map((badge) => (
             <DropdownMenuItem
               key={badge}
               className={

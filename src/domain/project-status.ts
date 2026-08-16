@@ -1,6 +1,7 @@
 export const PROJECT_STATUSES = [
   "processing",
   "ready",
+  "scheduled",
   "exporting",
   "failed",
 ] as const;
@@ -12,4 +13,13 @@ export function isProjectStatus(value: unknown): value is ProjectStatus {
     typeof value === "string" &&
     (PROJECT_STATUSES as readonly string[]).includes(value)
   );
+}
+
+/** Editor, rename, config, AI, and media upload. */
+export function isEditorProjectStatus(status: ProjectStatus): boolean {
+  return status === "ready" || status === "scheduled" || status === "exporting";
+}
+
+export function canStartProjectExport(status: ProjectStatus): boolean {
+  return status === "ready" || status === "scheduled";
 }

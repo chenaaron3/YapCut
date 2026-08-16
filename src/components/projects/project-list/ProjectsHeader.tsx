@@ -4,7 +4,6 @@ import { Button } from "~/components/ui/button";
 
 import { ProjectsToolbar } from "./ProjectsToolbar";
 
-import type { ProjectListBadge } from "~/domain/project-list-badge";
 import type { ProjectStatusFilter } from "./types";
 
 type Props = {
@@ -16,7 +15,6 @@ type Props = {
   onQueryChange: (query: string) => void;
   status: ProjectStatusFilter;
   onStatusChange: (status: ProjectStatusFilter) => void;
-  availableStatuses: readonly ProjectListBadge[];
   onCreate: () => void;
 };
 
@@ -29,7 +27,6 @@ export function ProjectsHeader({
   onQueryChange,
   status,
   onStatusChange,
-  availableStatuses,
   onCreate,
 }: Props) {
   return (
@@ -58,7 +55,6 @@ export function ProjectsHeader({
             onQueryChange={onQueryChange}
             status={status}
             onStatusChange={onStatusChange}
-            availableStatuses={availableStatuses}
           />
         ) : null}
         <Button

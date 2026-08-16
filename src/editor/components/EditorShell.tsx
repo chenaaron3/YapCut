@@ -12,6 +12,7 @@ import { togglePlayback } from "~/editor/lib/player-bridge";
 import { useSelection } from "~/editor/selection-store";
 import { bindEditorSavers, useEditor } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
+import { isEditorProjectStatus, isProjectStatus } from "~/domain/project-status";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 
@@ -171,7 +172,9 @@ export function EditorShell({ projectId }: Props) {
   useEffect(() => {
     const data = projectQuery.data;
     if (!data) return;
-    if (data.status !== "ready" && data.status !== "exporting") return;
+    if (!isProjectStatus(data.status) || !isEditorProjectStatus(data.status)) {
+      return;
+    }
 
     const current = useEditor.getState();
     const extras = globalAssetsQuery.data ?? [];

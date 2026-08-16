@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 
 import { parseProjectConfig } from "~/domain/project-config";
+import { isEditorProjectStatus } from "~/domain/project-status";
 import { runAiAssist } from "~/server/ai/run-ai-assist";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
@@ -29,7 +30,7 @@ export async function rerunProjectAiAssist(options: {
   if (!project) {
     throw new Error("Project not found");
   }
-  if (project.status !== "ready" && project.status !== "exporting") {
+  if (!isEditorProjectStatus(project.status)) {
     throw new Error(`Cannot run AI while status is ${project.status}`);
   }
 

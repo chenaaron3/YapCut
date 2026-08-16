@@ -151,7 +151,22 @@ export async function scheduleProject(options: {
     );
   }
 
+  await db
+    .update(projects)
+    .set({ status: "scheduled", updatedAt: new Date() })
+    .where(eq(projects.id, options.projectId));
+
   return { entryId: entry.id, scheduledAt: entry.scheduledAt };
+}
+
+export async function idleProjectStatusAfterExport(
+  projectId: string,
+): Promise<"ready" | "scheduled"> {
+  const entry = await db.query.scheduleEntries.findFirst({
+    where: eq(scheduleEntries.projectId, projectId),
+    columns: { id: true },
+  });
+  return entry ? "scheduled" : "ready";
 }
 
 /** ScheduleEntries that still have pending/failed PlatformPublish rows. */

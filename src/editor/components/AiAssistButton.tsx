@@ -2,6 +2,7 @@ import { Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "~/components/ui/button";
+import { isEditorProjectStatus, isProjectStatus } from "~/domain/project-status";
 import { hydrateInputFromProject } from "~/editor/lib/hydrate-project";
 import { useEditor } from "~/editor/store";
 import { api } from "~/utils/api";
@@ -22,7 +23,9 @@ export function AiAssistButton() {
       if (!projectId) return;
       const data = await utils.project.byId.fetch({ id: projectId });
       if (!data) return;
-      if (data.status !== "ready" && data.status !== "exporting") return;
+      if (!isProjectStatus(data.status) || !isEditorProjectStatus(data.status)) {
+        return;
+      }
       hydrateFromServer(
         hydrateInputFromProject(data, useEditor.getState().assets),
       );

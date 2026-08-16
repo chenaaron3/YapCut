@@ -67,17 +67,13 @@ function formatScheduledAt(date: Date): string {
 function badgeClass(badge: ProjectListBadge): string {
   switch (badge) {
     case "failed":
-    case "publish_failed":
       return "border-2 border-[#450E16] bg-[#BC2D29] text-[#F5F9CE]";
     case "creating":
-    case "publishing":
       return "border-2 border-[#450E16] bg-[#FFA102] text-[#450E16]";
     case "exporting":
       return "border-2 border-[#450E16] bg-[#3B82F6] text-[#450E16]";
     case "scheduled":
       return "border-2 border-[#450E16] bg-[#A78BFA] text-[#450E16]";
-    case "published":
-      return "border-2 border-[#450E16] bg-[#2DD4BF] text-[#450E16]";
     default:
       return "border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16]";
   }

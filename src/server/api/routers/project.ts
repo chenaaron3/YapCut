@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { arollAssetOrder } from "~/domain/arolls";
@@ -14,12 +14,21 @@ import {
   parseProjectConfig,
   projectConfigSchema,
 } from "~/domain/project-config";
-import { projectListBadge } from "~/domain/project-list-badge";
+import {
+  PROJECT_LIST_BADGES,
+  PROJECT_LIST_PAGE_SIZE,
+  projectListBadge,
+} from "~/domain/project-list-badge";
+import { isEditorProjectStatus } from "~/domain/project-status";
 import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { parseCreateProgress } from "~/server/create/publish-progress";
 import { startCreatePipeline } from "~/server/create/start-create-pipeline";
 import { assets, projects, transcripts } from "~/server/db/schema";
+import {
+  projectListOwned,
+  projectListWhere,
+} from "~/server/project-list-query";
 import { exportDownloadUrl } from "~/server/export/download-url";
 import { pollProjectExport } from "~/server/export/poll-export";
 import { startProjectExport } from "~/server/export/start-export";
@@ -90,80 +99,119 @@ function toClientAsset<
 }
 
 export const projectRouter = createTRPCRouter({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    const rows = await ctx.db.query.projects.findMany({
-      where: eq(projects.userId, ctx.session.user.id),
-      orderBy: [desc(projects.updatedAt)],
-      columns: {
-        id: true,
-        title: true,
-        status: true,
-        failureReason: true,
-        createProgress: true,
-        updatedAt: true,
-        createdAt: true,
-        coverS3Key: true,
-        exportBucketName: true,
-      },
-      with: {
-        assets: {
-          orderBy: [asc(assets.sortOrder)],
-          columns: { kind: true, s3Key: true },
+  list: protectedProcedure
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        query: z.string().max(512).default(""),
+        status: z
+          .union([z.literal("all"), z.enum(PROJECT_LIST_BADGES)])
+          .default("all"),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const owned = projectListOwned(userId);
+      const filtered = projectListWhere({
+        userId,
+        query: input.query,
+        status: input.status,
+      });
+
+      const [[totalRow], [filteredRow]] = await Promise.all([
+        ctx.db.select({ n: count() }).from(projects).where(owned),
+        ctx.db.select({ n: count() }).from(projects).where(filtered),
+      ]);
+      const total = Number(totalRow?.n ?? 0);
+      const filteredTotal = Number(filteredRow?.n ?? 0);
+      const pageCount = Math.max(
+        1,
+        Math.ceil(filteredTotal / PROJECT_LIST_PAGE_SIZE),
+      );
+      const page = Math.min(input.page, pageCount);
+
+      const pageRows = await ctx.db.query.projects.findMany({
+        where: filtered,
+        orderBy: [desc(projects.updatedAt)],
+        limit: PROJECT_LIST_PAGE_SIZE,
+        offset: (page - 1) * PROJECT_LIST_PAGE_SIZE,
+        columns: {
+          id: true,
+          title: true,
+          status: true,
+          failureReason: true,
+          createProgress: true,
+          updatedAt: true,
+          createdAt: true,
+          coverS3Key: true,
+          exportBucketName: true,
         },
-        scheduleEntry: {
-          columns: { scheduledAt: true },
-          with: {
-            platformPublishes: {
-              columns: { status: true },
-            },
+        with: {
+          scheduleEntry: {
+            columns: { scheduledAt: true },
           },
         },
-      },
-    });
+      });
+      const pageIds = pageRows.map((row) => row.id);
 
-    return Promise.all(
-      rows.map(async (row) => {
-        const firstVideo = row.assets.find((a) => a.kind === "video");
-        const coverUrl =
-          row.coverS3Key && row.exportBucketName
-            ? await exportDownloadUrl({
-                bucketName: row.exportBucketName,
-                objectKey: row.coverS3Key,
-              })
-            : null;
-        const previewUrl =
-          coverUrl ??
-          (firstVideo
-            ? signedCloudFrontUrl(firstVideo.s3Key, {
-                expiresInSec: 60 * 60 * 6,
-              })
-            : null);
-        const publishStatuses =
-          row.scheduleEntry?.platformPublishes.map((p) => p.status) ?? null;
-        return {
-          id: row.id,
-          title: row.title,
-          status: row.status,
-          failureReason: row.failureReason,
-          createProgress: parseCreateProgress(row.createProgress),
-          updatedAt: row.updatedAt,
-          createdAt: row.createdAt,
-          previewUrl,
-          previewKind: coverUrl
-            ? ("image" as const)
-            : previewUrl
-              ? ("video" as const)
-              : null,
-          scheduledAt: row.scheduleEntry?.scheduledAt ?? null,
-          badge: projectListBadge({
+      const videoAssets =
+        pageIds.length === 0
+          ? []
+          : await ctx.db.query.assets.findMany({
+              where: and(
+                inArray(assets.projectId, pageIds),
+                eq(assets.kind, "video"),
+              ),
+              orderBy: [asc(assets.sortOrder)],
+              columns: { projectId: true, s3Key: true },
+            });
+
+      const firstVideoByProject = new Map<string, string>();
+      for (const asset of videoAssets) {
+        if (asset.projectId && !firstVideoByProject.has(asset.projectId)) {
+          firstVideoByProject.set(asset.projectId, asset.s3Key);
+        }
+      }
+
+      const items = await Promise.all(
+        pageRows.map(async (row) => {
+          const firstVideoKey = firstVideoByProject.get(row.id) ?? null;
+          const coverUrl =
+            row.coverS3Key && row.exportBucketName
+              ? await exportDownloadUrl({
+                  bucketName: row.exportBucketName,
+                  objectKey: row.coverS3Key,
+                })
+              : null;
+          const previewUrl =
+            coverUrl ??
+            (firstVideoKey
+              ? signedCloudFrontUrl(firstVideoKey, {
+                  expiresInSec: 60 * 60 * 6,
+                })
+              : null);
+          return {
+            id: row.id,
+            title: row.title,
             status: row.status,
+            failureReason: row.failureReason,
+            createProgress: parseCreateProgress(row.createProgress),
+            updatedAt: row.updatedAt,
+            createdAt: row.createdAt,
+            previewUrl,
+            previewKind: coverUrl
+              ? ("image" as const)
+              : previewUrl
+                ? ("video" as const)
+                : null,
             scheduledAt: row.scheduleEntry?.scheduledAt ?? null,
-            publishStatuses,
-          }),
-        };
-      }),
-    );
-  }),
+            badge: projectListBadge(row.status),
+          };
+        }),
+      );
+
+      return { items, total, filteredTotal, page, pageCount };
+    }),
 
   /** Global SFX + music libraries (`projectId` null). */
   listGlobalAssets: protectedProcedure.query(async ({ ctx }) => {
@@ -355,7 +403,7 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      if (project.status !== "ready" && project.status !== "exporting") {
+      if (!isEditorProjectStatus(project.status)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Cannot rename while status is ${project.status}`,
@@ -401,7 +449,7 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      if (project.status !== "ready" && project.status !== "exporting") {
+      if (!isEditorProjectStatus(project.status)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Cannot update config while status is ${project.status}`,
@@ -669,7 +717,7 @@ export const projectRouter = createTRPCRouter({
           message: "Project not found",
         });
       }
-      if (project.status !== "ready" && project.status !== "exporting") {
+      if (!isEditorProjectStatus(project.status)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Project is ${project.status}; upload only when ready`,

@@ -117,7 +117,7 @@ No dual-read of prototype YAML shapes, string edit ids, or `cuts` delete lists.
 ### Publish / schedule
 
 **ScheduleEntry**:
-One Project slotted for platform publish. Created by an explicit app “Add to schedule” action (not by export, not by the CLI). Requires the Project to be `ready` with both export video and **Cover** keys present. Owns the publish slot (`scheduledAt`), assigned once at Add from cadence and not changed afterward. At most one per Project (v1). Does not snapshot title or media — those are read live from the Project at publish time. Platform outcomes live on child **PlatformPublish** rows. Once created, not deleted or rescheduled.
+One Project slotted for platform publish. Created by an explicit app “Add to schedule” action (not by export, not by the CLI). Requires the Project to be `ready` with both export video and **Cover** keys present. Creating the entry sets Project status to `scheduled`. Owns the publish slot (`scheduledAt`), assigned once at Add from cadence and not changed afterward. At most one per Project (v1). Does not snapshot title or media — those are read live from the Project at publish time. Platform outcomes live on child **PlatformPublish** rows. Once created, not deleted or rescheduled.
 _Avoid_: Manifest / ManifestEntry as the persisted document; Episode; stuffing publish URLs onto the Project row; republish history as extra ScheduleEntries; auto-queue on export; CLI creating queue rows; freezing export keys onto the entry; removing or rescheduling ScheduleEntries; queuing without Cover
 
 **PlatformPublish**:
@@ -201,10 +201,11 @@ Single mega-status on Project:
 | ------------ | -------------------------------------- |
 | `processing` | Create workflow running                |
 | `ready`      | Editable; may have prior `exportS3Key` |
+| `scheduled`  | Slotted for publish; still editable    |
 | `exporting`  | Lambda render in flight                |
 | `failed`     | Create failed (editor not openable)    |
 
-Transitions: `processing → ready | failed`; `ready → exporting`; `exporting → ready` (set `exportS3Key` on success, set `failureReason` on export failure and return to `ready`). Create failure uses `failed` + `failureReason`.
+Transitions: `processing → ready | failed`; `ready → scheduled` on **Add to schedule** (stays `scheduled` forever — the **ScheduleEntry** is permanent); `ready | scheduled → exporting`; `exporting → ready | scheduled` (restore `scheduled` if the Project has a ScheduleEntry). Set `exportS3Key` on export success; set `failureReason` on export failure and return to the idle status. Create failure uses `failed` + `failureReason`. Publish outcomes stay on **PlatformPublish** — they are not Project statuses.
 
 Export is a snapshot at click; editing during `exporting` is allowed. Only one export at a time.
 
@@ -287,7 +288,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - ~~**PlatformPublish** status set / when rows are seeded~~ → seeded `pending` from **ScheduleSettings.platforms** at Add; `pending|failed` → `uploading` → `succeeded`|`failed`
 - ~~If **ScheduleSettings** platforms change after entries are queued~~ → settings apply to **new** entries only; existing PlatformPublish rows unchanged
 - ~~Remove / reschedule a **ScheduleEntry**~~ → **no remove, no reschedule** — slot is fixed at Add; entries are permanent
-- ~~Add-to-schedule prerequisites (export + Cover required?)~~ → require export video + **Cover** keys (Project `ready`)
+- ~~Add-to-schedule prerequisites (export + Cover required?)~~ → require export video + **Cover** keys (Project `ready`); Add sets Project to `scheduled`
 - ~~v1 UI surface (settings + queue + add)~~ → ScheduleSettings + queue list + Add (no remove/reschedule/calendar)
 - ~~CLI invocation shape (all incomplete vs per-project)~~ → due incomplete by default (`scheduledAt ≤ now`); `--project`; `--force` for early upload; local **Add to schedule** starts the same run in the background with `--force` for that Project
 - ~~Cover still shows title baked at export while Publisher caption/title uses live `Project.title` if renamed after export~~ → **acceptable**; re-export if thumb text must match

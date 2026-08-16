@@ -6,6 +6,7 @@ import { EmberLoading } from "~/components/layout/EmberLoading";
 import { CreateProgressBar } from "~/components/projects/CreateProgressBar";
 import { useCreateProgressStream } from "~/components/projects/use-create-progress-stream";
 import { buttonVariants } from "~/components/ui/button";
+import { isEditorProjectStatus } from "~/domain/project-status";
 import { EditorShell } from "~/editor/components/EditorShell";
 import { cn } from "~/lib/utils";
 import { requireUser } from "~/server/auth/session";
@@ -41,7 +42,7 @@ export default function ProjectPage() {
   const trimmedTitle = projectQuery.data?.title?.trim() ?? "";
   const title = trimmedTitle.length > 0 ? trimmedTitle : "Untitled";
 
-  if (status === "ready" || status === "exporting") {
+  if (status && isEditorProjectStatus(status)) {
     return <EditorShell projectId={id} />;
   }
 

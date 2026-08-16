@@ -88,9 +88,6 @@ export function ClipStack({
           {checking ? "" : "or drop them here"}
         </span>
       </button>
-      <p className="mt-2 text-sm leading-snug text-[#432E6F]">
-        {CREATE_LIMITS_HINT}
-      </p>
       {limitError ? (
         <p className="text-destructive mt-2 text-sm" role="alert">
           {limitError}
