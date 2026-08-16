@@ -14,7 +14,7 @@ import {
   type CompanionSfxAsset,
 } from "~/domain/companion-sfx";
 import { nextEditId } from "~/domain/project-config";
-import { quoteRangeConflicts } from "~/domain/quote";
+import { quoteRangeConflict, quoteRangeConflicts } from "~/domain/quote";
 import { isShakeEdit, withShakeIntensity } from "~/domain/shake";
 import { withTransform } from "~/domain/transform";
 import {
@@ -242,21 +242,31 @@ export function patchEditRange(
   return applyEditRange(config, existing, clamped);
 }
 
+export type PlaceEditFailure =
+  | "invalid-range"
+  | "quote-overlap"
+  | "quote-listicle-overlap"
+  | "transition-conflict";
+
+export type PlaceEditResult =
+  | { ok: true; config: ProjectConfig; placed: Edit }
+  | { ok: false; reason: PlaceEditFailure };
+
 function appendEdit(
   config: ProjectConfig,
   range: TimelineTime,
   timelineDuration: number,
   seed: EditSeed,
   ctx?: PlaceEditContext,
-): { config: ProjectConfig; placed: Edit } | null {
+): PlaceEditResult {
   const clamped = clampRange(range, timelineDuration);
-  if (!clamped) return null;
-  if (
-    seed.kind === "vfx" &&
-    seed.type === "quote" &&
-    quoteRangeConflicts(config.edits, clamped)
-  ) {
-    return null;
+  if (!clamped) return { ok: false, reason: "invalid-range" };
+  if (seed.kind === "vfx" && seed.type === "quote") {
+    const conflict = quoteRangeConflict(config.edits, clamped);
+    if (conflict === "quote") return { ok: false, reason: "quote-overlap" };
+    if (conflict === "listicle") {
+      return { ok: false, reason: "quote-listicle-overlap" };
+    }
   }
   if (
     seed.kind === "transition" &&
@@ -267,7 +277,7 @@ function appendEdit(
       layoutForConfig(config, ctx),
     )
   ) {
-    return null;
+    return { ok: false, reason: "transition-conflict" };
   }
   const placed = withCompanionSfx(
     {
@@ -282,7 +292,7 @@ function appendEdit(
   const next = produce(config, (draft) => {
     draft.edits.push(placed);
   });
-  return { config: next, placed };
+  return { ok: true, config: next, placed };
 }
 
 export function placeEdit(
@@ -291,7 +301,7 @@ export function placeEdit(
   timelineDuration: number,
   seed: EditSeed,
   ctx?: PlaceEditContext,
-): { config: ProjectConfig; placed: Edit } | null {
+): PlaceEditResult {
   return appendEdit(config, range, timelineDuration, seed, ctx);
 }
 

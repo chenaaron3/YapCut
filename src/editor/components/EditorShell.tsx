@@ -9,6 +9,7 @@ import { Timeline } from "~/editor/components/timeline/Timeline";
 import { TranscriptPanel } from "~/editor/components/transcript/TranscriptPanel";
 import { hydrateInputFromProject } from "~/editor/lib/hydrate-project";
 import { togglePlayback } from "~/editor/lib/player-bridge";
+import { applyWordSelectionHotkey } from "~/editor/lib/word-hotkeys";
 import { useSelection } from "~/editor/selection-store";
 import { bindEditorSavers, useEditor } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
@@ -84,6 +85,12 @@ function useGlobalShortcuts() {
         if (editor.deleteSelection()) e.preventDefault();
       } else if (isTypingTarget(e.target)) {
         return;
+      } else if (
+        !meta &&
+        !e.repeat &&
+        applyWordSelectionHotkey(e.key.toLowerCase())
+      ) {
+        e.preventDefault();
       } else if (isSpaceKey(e)) {
         // Capture-phase stop so focused buttons (play, templates, words)
         // don't also activate on keyup and undo this toggle.
@@ -142,7 +149,6 @@ export function EditorShell({ projectId }: Props) {
   const loadState = useEditor((s) => s.loadState);
   const title = useEditor((s) => s.title);
   const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
-  const error = useEditor((s) => s.error);
 
   const updateConfig = api.project.updateConfig.useMutation();
   const updateTranscriptWords = api.project.updateTranscriptWords.useMutation();
@@ -275,14 +281,6 @@ export function EditorShell({ projectId }: Props) {
           <ExportButton />
         </div>
       </header>
-
-      {error ? (
-        <div className="pointer-events-none absolute top-11 right-0 left-0 z-20 px-3 py-2">
-          <div className="pointer-events-auto rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2 text-sm text-[#BC2D29] shadow-[4px_4px_0_#450E16]">
-            {error}
-          </div>
-        </div>
-      ) : null}
 
       <div className="border-border grid min-h-0 min-w-0 grid-cols-[240px_minmax(0,1fr)_280px] border-b">
         <AssetsPanel />

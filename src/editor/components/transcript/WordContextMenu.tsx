@@ -2,6 +2,7 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { Bold, Plus, Quote, Type } from "lucide-react";
 import { ContextMenu } from "@base-ui/react/context-menu";
 
+import { WORD_SELECTION_HOTKEYS } from "~/editor/lib/word-hotkeys";
 import { cn } from "~/lib/utils";
 
 type Props = {
@@ -46,19 +47,32 @@ export function WordContextMenu({
           >
             <MenuIcon
               label={emphasized ? "Remove emphasis" : "Emphasis"}
+              hotkey={WORD_SELECTION_HOTKEYS.emphasis}
               active={emphasized}
               activeClass="bg-[#FFA102] text-[#450E16]"
               onClick={onEmphasis}
             >
               <Bold className="size-3.5" />
             </MenuIcon>
-            <MenuIcon label="Zoom" onClick={onZoom}>
+            <MenuIcon
+              label="Zoom"
+              hotkey={WORD_SELECTION_HOTKEYS.zoom}
+              onClick={onZoom}
+            >
               <Plus className="size-3.5" />
             </MenuIcon>
-            <MenuIcon label="Quote" onClick={onQuote}>
+            <MenuIcon
+              label="Quote"
+              hotkey={WORD_SELECTION_HOTKEYS.quote}
+              onClick={onQuote}
+            >
               <Quote className="size-3.5" />
             </MenuIcon>
-            <MenuIcon label="Text VFX" onClick={onTextVfx}>
+            <MenuIcon
+              label="Text VFX"
+              hotkey={WORD_SELECTION_HOTKEYS.text}
+              onClick={onTextVfx}
+            >
               <Type className="size-3.5" />
             </MenuIcon>
           </ContextMenu.Popup>
@@ -70,6 +84,7 @@ export function WordContextMenu({
 
 function MenuIcon({
   label,
+  hotkey,
   active,
   activeClass,
   className,
@@ -77,27 +92,38 @@ function MenuIcon({
   children,
 }: {
   label: string;
+  hotkey: string;
   active?: boolean;
   activeClass?: string;
   className?: string;
   onClick: () => void;
   children: ReactNode;
 }) {
+  const titled = `${label} (${hotkey})`;
   return (
     <ContextMenu.Item
-      label={label}
-      title={label}
-      aria-label={label}
+      label={titled}
+      title={titled}
+      aria-label={titled}
+      aria-keyshortcuts={hotkey}
       aria-pressed={active}
       className={cn(
-        "flex size-8 cursor-default items-center justify-center rounded-md text-[#450E16] outline-none select-none",
+        "relative flex size-8 cursor-default items-center justify-center rounded-md text-[#450E16] outline-none select-none",
         "hover:bg-[#FFA102] focus:bg-[#FFA102] data-highlighted:bg-[#FFA102]",
         active && activeClass,
         className,
       )}
       onClick={onClick}
     >
-      {children}
+      <span className="relative inline-flex">
+        {children}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -right-1.5 -bottom-1 text-[9px] leading-none font-medium text-[#450E16]/55"
+        >
+          {hotkey}
+        </span>
+      </span>
     </ContextMenu.Item>
   );
 }

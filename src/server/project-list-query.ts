@@ -1,8 +1,9 @@
-import { and, eq, sql, type SQL } from "drizzle-orm";
-
-import type { ProjectListBadge } from "~/domain/project-list-badge";
+import { and, eq, sql } from "drizzle-orm";
 
 import { projects } from "~/server/db/schema";
+
+import type { ProjectListBadge } from "~/domain/project-list-badge";
+import type { SQL } from "drizzle-orm";
 
 /** Same fallback as `projectTitle`: blank titles search as "Untitled". */
 function titleSearch(query: string): SQL | undefined {
@@ -22,13 +23,22 @@ export function projectListOwned(userId: string) {
   return eq(projects.userId, userId);
 }
 
+/** Hide create drafts (processing, pipeline not started). */
+export function projectListNotDraft() {
+  return sql`not (${projects.status} = 'processing' and ${projects.createProgress} is null and ${projects.workflowRunId} is null)`;
+}
+
+export function projectListVisible(userId: string) {
+  return and(projectListOwned(userId), projectListNotDraft());
+}
+
 export function projectListWhere(options: {
   userId: string;
   query: string;
   status: ProjectListBadge | "all";
 }) {
   return and(
-    projectListOwned(options.userId),
+    projectListVisible(options.userId),
     titleSearch(options.query),
     statusFilter(options.status),
   );

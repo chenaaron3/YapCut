@@ -30,19 +30,31 @@ function rangesOverlap(a: TimelineTime, b: TimelineTime): boolean {
   return a.start < b.end - EPS && b.start < a.end - EPS;
 }
 
+export type QuoteRangeConflict = "quote" | "listicle";
+
 /**
- * True if `range` conflicts with another quote (optionally excluding one id)
- * or any listicle (quotes must not stack on listicles).
+ * Why `range` cannot host a quote: another quote, or a listicle
+ * (quotes must not stack on listicles).
  */
+export function quoteRangeConflict(
+  edits: readonly Edit[],
+  range: TimelineTime,
+  excludeId?: number,
+): QuoteRangeConflict | null {
+  for (const e of edits) {
+    if (isListicleEdit(e) && rangesOverlap(e, range)) return "listicle";
+    if (isQuoteEdit(e) && e.id !== excludeId && rangesOverlap(e, range)) {
+      return "quote";
+    }
+  }
+  return null;
+}
+
+/** True if `range` conflicts with another quote or any listicle. */
 export function quoteRangeConflicts(
   edits: readonly Edit[],
   range: TimelineTime,
   excludeId?: number,
 ): boolean {
-  return edits.some((e) => {
-    if (isListicleEdit(e) && rangesOverlap(e, range)) return true;
-    return (
-      isQuoteEdit(e) && e.id !== excludeId && rangesOverlap(e, range)
-    );
-  });
+  return quoteRangeConflict(edits, range, excludeId) != null;
 }

@@ -1,16 +1,24 @@
-import { MUSIC_VOLUME_DEFAULT, mixPlaybackVolume } from "~/domain/audio/mix-levels";
-import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
-import { putToPresignedUrl } from "~/editor/components/assets/put-presigned-url";
-import { probeAudioFile } from "~/editor/lib/probe-media";
-import { cn } from "~/lib/utils";
-import { useEditor, type EditorAsset } from "~/editor/store";
-import { useSelection } from "~/editor/selection-store";
-import { api } from "~/utils/api";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { toast } from "sonner";
+
+import {
+  mixPlaybackVolume,
+  MUSIC_VOLUME_DEFAULT,
+} from "~/domain/audio/mix-levels";
+import { putToPresignedUrl } from "~/editor/components/assets/put-presigned-url";
+import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
+import { probeAudioFile } from "~/editor/lib/probe-media";
+import { useSelection } from "~/editor/selection-store";
+import { useEditor } from "~/editor/store";
+import { cn } from "~/lib/utils";
+import { api } from "~/utils/api";
+
+import type { EditorAsset } from "~/editor/store";
 
 function musicLabel(asset: EditorAsset): string {
-  const name = asset.originalFilename?.split(/[/\\]/).pop() ?? asset.id.slice(0, 8);
+  const name =
+    asset.originalFilename?.split(/[/\\]/).pop() ?? asset.id.slice(0, 8);
   return name.replace(/\.[^.]+$/, "");
 }
 
@@ -23,7 +31,6 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
   const activeId = config?.music?.assetId ?? null;
   const mixVolume = config?.music?.volume ?? MUSIC_VOLUME_DEFAULT;
   const { playingKey, preview, stopPreview } = useAudioPreview();
-  const [error, setError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
   const uploadStart = api.project.uploadAssetsStart.useMutation();
@@ -32,7 +39,6 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
   const onDrop = useCallback(
     async (accepted: File[]) => {
       if (!projectId || accepted.length === 0 || importing) return;
-      setError(null);
       setImporting(true);
       stopPreview();
       try {
@@ -67,7 +73,7 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
 
         addAssets(created);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload failed");
+        toast.error(err instanceof Error ? err.message : "Upload failed");
       } finally {
         setImporting(false);
       }
@@ -109,9 +115,9 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
             <div
               key={asset.id}
               className={cn(
-                "flex cursor-pointer items-center gap-2 rounded-lg border bg-panel-2 px-2 py-1.5 select-none",
+                "bg-panel-2 flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 select-none",
                 active
-                  ? "border-music ring-1 ring-music"
+                  ? "border-music ring-music ring-1"
                   : "border-border hover:border-music/60",
               )}
               onClick={() => {
@@ -130,7 +136,7 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
             >
               <button
                 type="button"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-music/25 text-music hover:bg-music/40"
+                className="bg-music/25 text-music hover:bg-music/40 flex h-7 w-7 shrink-0 items-center justify-center rounded"
                 onClick={(e) => {
                   e.stopPropagation();
                   preview(asset.id, asset.playbackUrl, previewVol);
@@ -139,10 +145,10 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
               >
                 {playingKey === asset.id ? "■" : "▶"}
               </button>
-              <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">
+              <span className="text-foreground min-w-0 flex-1 truncate text-[11px]">
                 {musicLabel(asset)}
               </span>
-              <span className="shrink-0 text-[10px] text-muted-foreground">
+              <span className="text-muted-foreground shrink-0 text-[10px]">
                 {active
                   ? "On"
                   : asset.durationSec != null
@@ -161,9 +167,8 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
         {importing ? (
           <p className="text-muted-foreground text-xs">Importing…</p>
         ) : null}
-        {error ? <p className="text-xs text-red-400">{error}</p> : null}
         {isDragActive ? (
-          <p className="text-center text-xs font-medium text-accent">
+          <p className="text-accent text-center text-xs font-medium">
             Drop audio to add
           </p>
         ) : null}

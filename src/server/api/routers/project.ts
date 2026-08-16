@@ -22,13 +22,14 @@ import {
 import { isEditorProjectStatus } from "~/domain/project-status";
 import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  deleteAssetObjects,
+  deleteDraftProject,
+  requireDraftProject,
+} from "~/server/create/draft-project";
 import { parseCreateProgress } from "~/server/create/publish-progress";
 import { startCreatePipeline } from "~/server/create/start-create-pipeline";
 import { assets, projects, transcripts } from "~/server/db/schema";
-import {
-  projectListOwned,
-  projectListWhere,
-} from "~/server/project-list-query";
 import { exportDownloadUrl } from "~/server/export/download-url";
 import { pollProjectExport } from "~/server/export/poll-export";
 import { startProjectExport } from "~/server/export/start-export";
@@ -40,6 +41,10 @@ import {
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";
 import { isGlobalMusicKey, isGlobalSfxKey } from "~/server/media/keys";
 import { measureAsset } from "~/server/media/measure-asset";
+import {
+  projectListVisible,
+  projectListWhere,
+} from "~/server/project-list-query";
 
 const createFileSchema = z.object({
   filename: z.string().min(1).max(512),
@@ -111,7 +116,7 @@ export const projectRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      const owned = projectListOwned(userId);
+      const owned = projectListVisible(userId);
       const filtered = projectListWhere({
         userId,
         query: input.query,
@@ -597,39 +602,141 @@ export const projectRouter = createTRPCRouter({
       return { projectId, uploads };
     }),
 
-  createFinalize: protectedProcedure
-    .input(z.object({ projectId: z.string().min(1) }))
+  /** Presign more A-roll clips onto an unstarted create draft. */
+  createAddFiles: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        files: z.array(createFileSchema).min(1).max(CREATE_MAX_CLIPS),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const [project] = await ctx.db
+      await requireDraftProject(ctx.db, {
+        projectId: input.projectId,
+        userId: ctx.session.user.id,
+      });
+
+      for (const file of input.files) {
+        if (!file.contentType.startsWith("video/")) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Expected video content type, got ${file.contentType}`,
+          });
+        }
+      }
+
+      const existing = await ctx.db
         .select({
-          id: projects.id,
-          status: projects.status,
-          userId: projects.userId,
+          originalFilename: assets.originalFilename,
+          durationSec: assets.durationSec,
+          width: assets.width,
+          height: assets.height,
         })
-        .from(projects)
+        .from(assets)
+        .where(eq(assets.projectId, input.projectId));
+
+      try {
+        assertCreateBatch([
+          ...existing.map((row) => ({
+            filename: row.originalFilename ?? "clip",
+            size: 0,
+            durationSec: row.durationSec ?? 0,
+            width: row.width ?? 1,
+            height: row.height ?? 1,
+          })),
+          ...input.files,
+        ]);
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            error instanceof Error ? error.message : "Project exceeds limits",
+        });
+      }
+
+      let nextSort = await nextAssetSortOrder(ctx.db, input.projectId);
+      const uploads = await insertAssetsAndPresign({
+        db: ctx.db,
+        projectId: input.projectId,
+        files: input.files.map((file) => ({
+          filename: file.filename,
+          contentType: file.contentType,
+          kind: "video" as const,
+          sortOrder: nextSort++,
+          width: file.width,
+          height: file.height,
+          durationSec: file.durationSec,
+        })),
+      });
+
+      return { projectId: input.projectId, uploads };
+    }),
+
+  createRemoveAsset: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        assetId: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await requireDraftProject(ctx.db, {
+        projectId: input.projectId,
+        userId: ctx.session.user.id,
+      });
+
+      const [asset] = await ctx.db
+        .select({ id: assets.id, s3Key: assets.s3Key })
+        .from(assets)
         .where(
           and(
-            eq(projects.id, input.projectId),
-            eq(projects.userId, ctx.session.user.id),
+            eq(assets.id, input.assetId),
+            eq(assets.projectId, input.projectId),
           ),
         )
         .limit(1);
 
-      if (!project) {
+      if (!asset) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Project not found",
+          message: "Asset not found",
         });
       }
 
-      if (project.status !== "processing") {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Project is ${project.status}, expected processing`,
-        });
-      }
+      await deleteAssetObjects([asset]);
+      await ctx.db.delete(assets).where(eq(assets.id, asset.id));
+      return { ok: true as const };
+    }),
 
-      const projectAssets = await ctx.db
+  createDiscard: protectedProcedure
+    .input(z.object({ projectId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      await requireDraftProject(ctx.db, {
+        projectId: input.projectId,
+        userId: ctx.session.user.id,
+      });
+      await deleteDraftProject(ctx.db, input.projectId);
+      return { ok: true as const };
+    }),
+
+  createFinalize: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        assetIds: z
+          .array(z.string().min(1))
+          .min(1)
+          .max(CREATE_MAX_CLIPS)
+          .optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await requireDraftProject(ctx.db, {
+        projectId: input.projectId,
+        userId: ctx.session.user.id,
+      });
+
+      const allAssets = await ctx.db
         .select({
           id: assets.id,
           s3Key: assets.s3Key,
@@ -639,11 +746,43 @@ export const projectRouter = createTRPCRouter({
         .where(eq(assets.projectId, input.projectId))
         .orderBy(asc(assets.sortOrder));
 
+      const orderedIds = input.assetIds ?? allAssets.map((row) => row.id);
+      const byId = new Map(allAssets.map((row) => [row.id, row]));
+      const projectAssets = orderedIds.map((id) => {
+        const row = byId.get(id);
+        if (!row) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "One or more assets are not on this project",
+          });
+        }
+        return row;
+      });
+
       if (projectAssets.length === 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Project has no assets",
         });
+      }
+
+      const keepIds = new Set(orderedIds);
+      const extras = allAssets.filter((row) => !keepIds.has(row.id));
+      if (extras.length > 0) {
+        await deleteAssetObjects(extras);
+        await ctx.db.delete(assets).where(
+          inArray(
+            assets.id,
+            extras.map((row) => row.id),
+          ),
+        );
+      }
+
+      for (const [index, id] of orderedIds.entries()) {
+        await ctx.db
+          .update(assets)
+          .set({ sortOrder: index })
+          .where(eq(assets.id, id));
       }
 
       try {

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { toast } from "sonner";
 
 import { BrollPreviewModal } from "~/editor/components/assets/BrollPreviewModal";
 import { BrollTile } from "~/editor/components/assets/BrollTile";
@@ -15,7 +16,6 @@ import type { EditorAsset } from "~/editor/store";
 export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
   const projectId = useEditor((s) => s.projectId);
   const addAssets = useEditor((s) => s.addAssets);
-  const [error, setError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewAsset = assets.find((a) => a.id === previewId) ?? null;
@@ -26,7 +26,6 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
   const onDrop = useCallback(
     async (accepted: File[]) => {
       if (!projectId || accepted.length === 0 || importing) return;
-      setError(null);
       setImporting(true);
       try {
         const probed = await Promise.all(
@@ -65,7 +64,7 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
 
         addAssets(created);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload failed");
+        toast.error(err instanceof Error ? err.message : "Upload failed");
       } finally {
         setImporting(false);
       }
@@ -110,9 +109,6 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
         ) : null}
         {importing ? (
           <p className="text-muted-foreground col-span-2 text-xs">Importing…</p>
-        ) : null}
-        {error ? (
-          <p className="col-span-2 text-xs text-red-400">{error}</p>
         ) : null}
         {isDragActive ? (
           <p className="text-primary col-span-2 text-center text-xs font-medium">

@@ -1,6 +1,7 @@
 import { ChevronDown, CloudUpload, ExternalLink } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
 import { ButtonGroup } from "~/components/ui/button-group";
@@ -47,8 +48,8 @@ export function ExportButton() {
   const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
   const save = useEditor((s) => s.save);
 
-  const [error, setError] = useState<string | null>(null);
   const [localBusy, setLocalBusy] = useState(false);
+  const toastedExportFailureRef = useRef<string | null>(null);
 
   const utils = api.useUtils();
   const projectQuery = api.project.byId.useQuery(
@@ -76,21 +77,19 @@ export function ExportButton() {
       await utils.project.byId.invalidate({ id: projectId ?? "" });
       await utils.project.exportProgress.invalidate({ id: projectId ?? "" });
     },
-    onError: (err) => {
-      setError(err.message);
+    onError: () => {
       setLocalBusy(false);
     },
   });
 
   const addSchedule = api.schedule.addEntry.useMutation({
     onSuccess: async () => {
-      setError(null);
       await utils.schedule.entryForProject.invalidate({
         projectId: projectId ?? "",
       });
       await utils.schedule.queue.invalidate();
     },
-    onError: (err) => setError(err.message),
+    onError: (err) => toast.error(err.message),
   });
 
   useEffect(() => {
@@ -100,8 +99,12 @@ export function ExportButton() {
       setLocalBusy(false);
       useEditor.setState({ status: progress.status });
       void utils.project.byId.invalidate({ id: projectId ?? "" });
-      if (progress.failureReason) {
-        setError(progress.failureReason);
+      if (
+        progress.failureReason &&
+        toastedExportFailureRef.current !== progress.failureReason
+      ) {
+        toastedExportFailureRef.current = progress.failureReason;
+        toast.error(progress.failureReason);
       }
     }
   }, [progressQuery.data, projectId, utils.project.byId]);
@@ -126,14 +129,13 @@ export function ExportButton() {
   const pct = Math.round((progressQuery.data?.progress ?? 0) * 100);
 
   const onExport = async () => {
-    setError(null);
+    toastedExportFailureRef.current = null;
     setLocalBusy(true);
     try {
       if (dirty) await save();
       await exportMutation.mutateAsync({ id: projectId });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
+      toast.error(err instanceof Error ? err.message : String(err));
       setLocalBusy(false);
     }
   };
@@ -147,7 +149,6 @@ export function ExportButton() {
   };
 
   const onAddToSchedule = () => {
-    setError(null);
     addSchedule.mutate({ projectId });
   };
 
@@ -173,14 +174,6 @@ export function ExportButton() {
 
   return (
     <div className="flex items-center gap-2">
-      {error && !exporting ? (
-        <span
-          className="max-w-50 truncate text-[11px] text-[#F5F9CE]"
-          title={error}
-        >
-          {error}
-        </span>
-      ) : null}
       {hasExport ? (
         <ButtonGroup>
           {primary}

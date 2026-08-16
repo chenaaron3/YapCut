@@ -22,7 +22,7 @@ type Props = {
 };
 
 export function CreateProjectModal({ open, onClose, onCreated }: Props) {
-  const { error, phase, busy, handleCreate } = useCreateProject({
+  const { phase, busy, handleCreate, uploader } = useCreateProject({
     open,
     onClose,
     onCreated,
@@ -35,14 +35,13 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
     draggingClip,
     status,
     setStatus,
-    limitError,
     checking,
     dropzone,
     moveClip,
     removeClip,
     onDragStart,
     onDragEnd,
-  } = useCreateClips(open, busy);
+  } = useCreateClips(open, busy, uploader);
 
   const {
     getRootProps,
@@ -101,7 +100,6 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
             busy={busy}
             checking={checking}
             isDragAccept={isDragAccept}
-            limitError={limitError}
             getInputProps={getInputProps}
             openFilePicker={openFilePicker}
             onSelect={(id, index) => {
@@ -129,26 +127,29 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
             onActiveChange={setActiveId}
           />
 
-          {error ? (
-            <p className="text-destructive mt-3 text-sm" role="alert">
-              {error}
-            </p>
-          ) : null}
-
           <footer className="mt-3 flex shrink-0 justify-center">
             <Button
               type="button"
               variant="ember"
-              disabled={clips.length === 0 || busy || checking}
+              disabled={
+                clips.length === 0 ||
+                busy ||
+                checking ||
+                clips.some((clip) => clip.uploadStatus !== "done")
+              }
               className="h-auto min-h-12 w-fit rounded-2xl px-4 py-2.5 text-base font-bold shadow-[4px_5px_0_#450E16] hover:translate-x-px hover:translate-y-px hover:shadow-[2px_3px_0_#450E16]"
               onClick={() => {
                 void handleCreate(clips);
               }}
             >
-              {phase === "uploading"
-                ? "Uploading…"
-                : phase === "finalizing"
-                  ? "Starting…"
+              {phase === "finalizing"
+                ? "Starting…"
+                : clips.some(
+                      (clip) =>
+                        clip.uploadStatus === "queued" ||
+                        clip.uploadStatus === "uploading",
+                    )
+                  ? "Uploading…"
                   : `Create project · ${clipCountLabel(clips.length)}`}
             </Button>
           </footer>

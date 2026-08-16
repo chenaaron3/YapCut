@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import { useState } from "react";
 
 import { AppLayout } from "~/components/layout/AppLayout";
@@ -19,14 +20,12 @@ type Props = {
 };
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const list = useProjectList();
 
   return (
-    <AppLayout
-      title="Projects · YapCut"
-      description="Your YapCut projects."
-    >
+    <AppLayout title="Projects · YapCut" description="Your YapCut projects.">
       <ProjectsHeader
         loading={list.isLoading}
         count={list.count}
@@ -69,6 +68,9 @@ export default function ProjectsPage() {
       <CreateProjectModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        onCreated={(projectId) => {
+          void router.push(`/projects/${projectId}`);
+        }}
       />
     </AppLayout>
   );

@@ -33,7 +33,10 @@ export function ClipCard({
       role="option"
       aria-selected={selected}
       tabIndex={busy ? -1 : 0}
-      aria-label={`Clip ${index + 1}, ${clip.file.name}. Use Alt plus arrow keys to reorder.`}
+      aria-busy={
+        clip.uploadStatus === "queued" || clip.uploadStatus === "uploading"
+      }
+      aria-label={clipAriaLabel(clip, index)}
       onClick={onSelect}
       onKeyDown={(event) => {
         if (event.key === "Enter") {
@@ -49,17 +52,7 @@ export function ClipCard({
         "focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#FFA102]",
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "ember-mono grid size-8 place-items-center rounded-full border-[1.5px] border-[#450E16] text-xs font-bold",
-          selected
-            ? "bg-[#450E16] text-[#FFA102]"
-            : "bg-[#F5F9CE] text-[#450E16]",
-        )}
-      >
-        {index + 1}
-      </span>
+      <ClipIndexBadge clip={clip} index={index} selected={selected} />
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-1.5">
           <Film className="size-4 shrink-0" aria-hidden />
@@ -111,6 +104,103 @@ export function ClipCard({
       </div>
     </div>
   );
+}
+
+const RING_SIZE = 32;
+const RING_STROKE = 2.5;
+const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+function ClipIndexBadge({
+  clip,
+  index,
+  selected,
+}: {
+  clip: ClipItem;
+  index: number;
+  selected: boolean;
+}) {
+  const uploading =
+    clip.uploadStatus === "queued" || clip.uploadStatus === "uploading";
+  if (!uploading) {
+    return (
+      <span
+        aria-hidden
+        className={cn(
+          "ember-mono grid size-8 place-items-center rounded-full border-[1.5px] border-[#450E16] text-xs font-bold",
+          selected
+            ? "bg-[#450E16] text-[#FFA102]"
+            : "bg-[#F5F9CE] text-[#450E16]",
+        )}
+      >
+        {index + 1}
+      </span>
+    );
+  }
+
+  const percent =
+    clip.uploadStatus === "queued" ? 0 : Math.round(clip.uploadProgress * 100);
+  const offset = RING_CIRCUMFERENCE * (1 - percent / 100);
+
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "relative grid size-8 place-items-center rounded-full",
+        selected
+          ? "bg-[#450E16] text-[#FFA102]"
+          : "bg-[#F5F9CE] text-[#450E16]",
+      )}
+    >
+      <svg
+        className="absolute inset-0 -rotate-90"
+        width={RING_SIZE}
+        height={RING_SIZE}
+        viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+      >
+        <circle
+          cx={RING_SIZE / 2}
+          cy={RING_SIZE / 2}
+          r={RING_RADIUS}
+          fill="none"
+          stroke={selected ? "rgb(255 161 2 / 0.35)" : "rgb(69 14 22 / 0.2)"}
+          strokeWidth={RING_STROKE}
+        />
+        <circle
+          cx={RING_SIZE / 2}
+          cy={RING_SIZE / 2}
+          r={RING_RADIUS}
+          fill="none"
+          stroke={selected ? "#FFA102" : "#450E16"}
+          strokeWidth={RING_STROKE}
+          strokeLinecap="round"
+          strokeDasharray={RING_CIRCUMFERENCE}
+          strokeDashoffset={offset}
+          className="transition-[stroke-dashoffset] duration-150"
+        />
+      </svg>
+      <span
+        className={cn(
+          "ember-mono leading-none font-bold tabular-nums",
+          percent >= 100 ? "text-[7px]" : "text-[8px]",
+        )}
+      >
+        {percent}%
+      </span>
+    </span>
+  );
+}
+
+function clipAriaLabel(clip: ClipItem, index: number): string {
+  const base = `Clip ${index + 1}, ${clip.file.name}. Use Alt plus arrow keys to reorder.`;
+  if (clip.uploadStatus === "queued") return `${base} Waiting to upload.`;
+  if (clip.uploadStatus === "uploading") {
+    return `${base} Uploading ${Math.round(clip.uploadProgress * 100)} percent.`;
+  }
+  if (clip.uploadStatus === "error") {
+    return `${base} ${clip.uploadError ?? "Upload failed"}.`;
+  }
+  return base;
 }
 
 export function SortableClipCard({

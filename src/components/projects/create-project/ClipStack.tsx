@@ -36,7 +36,6 @@ export function ClipStack({
   busy,
   checking,
   isDragAccept,
-  limitError,
   getInputProps,
   openFilePicker,
   onSelect,
@@ -52,7 +51,6 @@ export function ClipStack({
   busy: boolean;
   checking: boolean;
   isDragAccept: boolean;
-  limitError: string | null;
   getInputProps: () => DropzoneInputProps;
   openFilePicker: () => void;
   onSelect: (id: string, index: number) => void;
@@ -88,11 +86,6 @@ export function ClipStack({
           {checking ? "" : "or drop them here"}
         </span>
       </button>
-      {limitError ? (
-        <p className="text-destructive mt-2 text-sm" role="alert">
-          {limitError}
-        </p>
-      ) : null}
 
       <div
         className="mt-4 min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto overscroll-contain py-1 pr-2"

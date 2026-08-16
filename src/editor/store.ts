@@ -1,4 +1,5 @@
 import { produce } from "immer";
+import { toast } from "sonner";
 import { create } from "zustand";
 import { useStoreWithEqualityFn } from "zustand/traditional";
 
@@ -41,6 +42,7 @@ import {
   wordIndexAtTimelineSec,
 } from "~/domain/projection";
 import { primaryId } from "~/editor/lib/selection";
+import { placeFailureMessage } from "~/editor/lib/place-failure";
 import { snapWordActionRangeToKeeps } from "~/editor/lib/snap";
 import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
@@ -97,7 +99,6 @@ type Snapshot = {
 
 type EditorState = {
   loadState: "idle" | "loading" | "ready" | "error";
-  error: string | null;
   projectId: string | null;
   title: string;
   status: string | null;
@@ -217,6 +218,12 @@ type EditorActions = {
   ) => void;
   /** Patch a projected word (writes through to the asset transcript). */
   patchWord: (globalIndex: number, patch: WordPatch, live?: boolean) => void;
+  /** Same as `patchWord` for many indices — one undo / save. */
+  patchWords: (
+    globalIndices: readonly number[],
+    patch: WordPatch,
+    live?: boolean,
+  ) => void;
   /** Rename Project.title column only (does not sync text VFX). */
   setProjectTitle: (title: string) => void;
 
@@ -428,7 +435,6 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       frame: Math.round(outputSec * state.fps),
       configDirty,
       transcriptsDirty,
-      error: null,
     });
     // Live updates stay local; endGesture (or a non-live commit) flushes.
     if (!live && (configDirty || transcriptsDirty)) scheduleSave();
@@ -479,9 +485,12 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     });
   };
 
+  const fail = (message: string) => {
+    toast.error(message);
+  };
+
   return {
     loadState: "idle",
-    error: null,
     projectId: null,
     title: "",
     status: null,
@@ -525,7 +534,6 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const outputSec = timelineToOutputSec(layout, timelineSec);
       set({
         loadState: "ready",
-        error: null,
         projectId: data.id,
         title: data.title?.trim() ? data.title.trim() : "Untitled",
         status: data.status,
@@ -551,7 +559,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       if (state.configDirty && !saveConfigMutate) return;
       if (state.transcriptsDirty && !saveWordsMutate) return;
 
-      set({ saving: true, error: null });
+      set({ saving: true });
       const projectId = state.projectId;
       const savedConfig = state.config;
       const savedTranscripts = state.transcriptsByAssetId;
@@ -598,7 +606,8 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Failed to save";
-        set({ saving: false, error: message });
+        fail(message);
+        set({ saving: false });
       }
     },
 
@@ -793,32 +802,35 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     },
 
     patchWord: (globalIndex, patch, live = false) => {
+      get().patchWords([globalIndex], patch, live);
+    },
+
+    patchWords: (globalIndices, patch, live = false) => {
       const { config, transcriptsByAssetId, assets } = get();
-      if (!config) return;
+      if (!config || globalIndices.length === 0) return;
       const words = projectTimelineWords(
         config.arolls,
         transcriptMap(transcriptsByAssetId),
         durationMapFromAssets(assets),
       );
-      const word = words[globalIndex];
-      if (!word) return;
 
-      commit(
-        {
-          config,
-          transcriptsByAssetId: produce(transcriptsByAssetId, (draft) => {
-            const local = draft[word.assetId]?.[word.localIndex];
-            if (!local) return;
-            if ("text" in patch && patch.text != null) {
-              local.text = patch.text;
-            }
-            if ("emphasized" in patch) {
-              local.emphasized = patch.emphasized ? true : undefined;
-            }
-          }),
-        },
-        { live },
-      );
+      const nextTranscripts = produce(transcriptsByAssetId, (draft) => {
+        for (const globalIndex of globalIndices) {
+          const word = words[globalIndex];
+          if (!word) continue;
+          const local = draft[word.assetId]?.[word.localIndex];
+          if (!local) continue;
+          if ("text" in patch && patch.text != null) {
+            local.text = patch.text;
+          }
+          if ("emphasized" in patch) {
+            local.emphasized = patch.emphasized ? true : undefined;
+          }
+        }
+      });
+      if (nextTranscripts === transcriptsByAssetId) return;
+
+      commit({ config, transcriptsByAssetId: nextTranscripts }, { live });
     },
 
     placeEditOnRange: (seed, range) => {
@@ -837,7 +849,10 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
             originalFilename: a.originalFilename,
           })),
       });
-      if (!result) return;
+      if (!result.ok) {
+        fail(placeFailureMessage(result.reason));
+        return;
+      }
       commit({ config: result.config, transcriptsByAssetId });
       useSelection.getState().select("edit", result.placed.id);
     },

@@ -1,6 +1,7 @@
 import { arrayMove } from "@dnd-kit/sortable";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { toast } from "sonner";
 
 import {
   fileKey,
@@ -14,7 +15,10 @@ import {
 import { probeVideoFile } from "~/editor/lib/probe-media";
 
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import type { ClipItem } from "~/components/projects/create-project/types";
+import type {
+  ClipItem,
+  CreateUploader,
+} from "~/components/projects/create-project/types";
 import type { CreateLimitCode, CreateMediaInput } from "~/domain/create-limits";
 
 function revokeAll(items: ClipItem[]) {
@@ -34,12 +38,15 @@ function toCreateMedia(clip: ClipItem): CreateMediaInput | null {
   };
 }
 
-export function useCreateClips(open: boolean, busy = false) {
+export function useCreateClips(
+  open: boolean,
+  busy = false,
+  uploader?: CreateUploader,
+) {
   const [clips, setClips] = useState<ClipItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [status, setStatus] = useState("Drop videos to start a sequence.");
-  const [limitError, setLimitError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const clipsRef = useRef(clips);
   clipsRef.current = clips;
@@ -57,7 +64,6 @@ export function useCreateClips(open: boolean, busy = false) {
     });
     setActiveId(null);
     setDraggingId(null);
-    setLimitError(null);
     setChecking(false);
     setStatus("Drop videos to start a sequence.");
   }, [open]);
@@ -70,7 +76,6 @@ export function useCreateClips(open: boolean, busy = false) {
 
       void (async () => {
         setChecking(true);
-        setLimitError(null);
         try {
           const prev = clipsRef.current;
           const seen = new Set(prev.map((clip) => fileKey(clip.file)));
@@ -81,11 +86,15 @@ export function useCreateClips(open: boolean, busy = false) {
           const additions: ClipItem[] = [];
           const rejected: Array<{ filename: string; code: CreateLimitCode }> =
             [];
+          const duplicates: string[] = [];
           let unreadable = 0;
 
           for (const file of incoming) {
             const key = fileKey(file);
-            if (seen.has(key)) continue;
+            if (seen.has(key)) {
+              duplicates.push(file.name);
+              continue;
+            }
             seen.add(key);
 
             let meta: Awaited<ReturnType<typeof probeVideoFile>>;
@@ -124,6 +133,10 @@ export function useCreateClips(open: boolean, busy = false) {
               width: meta.width,
               height: meta.height,
               format: formatFromName(file),
+              assetId: null,
+              uploadStatus: "queued",
+              uploadProgress: 0,
+              uploadError: null,
             });
           }
 
@@ -135,26 +148,40 @@ export function useCreateClips(open: boolean, busy = false) {
             setStatus(
               `${additions.length} video${additions.length === 1 ? "" : "s"} added to the end of the sequence.`,
             );
+            uploader?.uploadClips(additions, (id, patch) => {
+              setClips((current) => {
+                const updated = current.map((clip) =>
+                  clip.id === id ? { ...clip, ...patch } : clip,
+                );
+                clipsRef.current = updated;
+                return updated;
+              });
+            });
           }
 
-          const parts: string[] = [];
           if (rejected.length > 0) {
-            parts.push(summarizeCreateRejections(rejected));
+            toast.error(summarizeCreateRejections(rejected));
           }
           if (unreadable > 0) {
-            parts.push(
+            toast.error(
               unreadable === 1
                 ? "Couldn’t read one video."
                 : `Couldn’t read ${unreadable} videos.`,
             );
           }
-          setLimitError(parts.length > 0 ? parts.join(" ") : null);
+          if (duplicates.length > 0) {
+            toast.error(
+              duplicates.length === 1
+                ? `${duplicates[0]} is already in the sequence.`
+                : `${duplicates.length} videos are already in the sequence.`,
+            );
+          }
         } finally {
           setChecking(false);
         }
       })();
     },
-    [checking],
+    [checking, uploader],
   );
 
   const onDrop = useCallback(
@@ -203,8 +230,12 @@ export function useCreateClips(open: boolean, busy = false) {
     setClips((prev) => {
       const removedIndex = prev.findIndex((clip) => clip.id === id);
       const removed = prev[removedIndex];
-      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      if (removed) {
+        URL.revokeObjectURL(removed.previewUrl);
+        uploader?.removeClipAsset(removed);
+      }
       const next = prev.filter((clip) => clip.id !== id);
+      clipsRef.current = next;
       setActiveId((current) => {
         if (current !== id) return current;
         return next[Math.min(removedIndex, next.length - 1)]?.id ?? null;
@@ -243,7 +274,6 @@ export function useCreateClips(open: boolean, busy = false) {
     draggingClip,
     status,
     setStatus,
-    limitError,
     checking,
     dropzone,
     moveClip,

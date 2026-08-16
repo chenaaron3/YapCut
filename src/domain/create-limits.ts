@@ -1,4 +1,4 @@
-/** Caps for A-roll project create (drop + `createStart` + upload verify). */
+/** Caps for A-roll project create (drop upload + `createStart` / `createAddFiles` + verify). */
 
 export const CREATE_MAX_CLIPS = 12;
 export const CREATE_MAX_DURATION_SEC = 20 * 60;
