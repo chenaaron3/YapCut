@@ -1,12 +1,8 @@
-import {
-  buildArollLayout,
-  type ArollLayoutCell,
-} from "~/domain/arolls";
+import { buildArollLayout } from "~/domain/arolls";
+
+import type { ArollLayoutCell } from "~/domain/arolls";
 import type { ArollKeep } from "~/domain/project-config";
-import type {
-  GlobalTranscriptWord,
-  TranscriptWord,
-} from "~/domain/transcript";
+import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 
 /**
  * Project local asset words onto the expanded timeline (gaps count).
@@ -103,6 +99,15 @@ export function projectOutputWords(
   }
 
   return result;
+}
+
+/** Spoken words only, reindexed so `globalIndex` matches array order. */
+export function keptTimelineWords(
+  words: readonly GlobalTranscriptWord[],
+): GlobalTranscriptWord[] {
+  return words
+    .filter((w) => !w.inGap)
+    .map((w, globalIndex) => ({ ...w, globalIndex }));
 }
 
 /** Numbered transcript lines for OpenAI prompts that return word indices. */

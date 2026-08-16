@@ -4,7 +4,7 @@ import {
   layoutTimelineDuration,
 } from "~/domain/layout-time";
 import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project-config";
-import { projectTimelineWords } from "~/domain/projection";
+import { keptTimelineWords, projectTimelineWords } from "~/domain/projection";
 import { snapWordBoundsToKeepEdges } from "~/domain/snap";
 import { seedTitleTextVfx } from "~/domain/vfx";
 import { generateCompanionSfxEdits } from "~/server/ai/companion-sfx";
@@ -13,6 +13,7 @@ import { generateEmphasisSfxEdits } from "~/server/ai/emphasis-sfx";
 import { generateListicleEdits } from "~/server/ai/listicles";
 import { generatePacingReconcileZooms } from "~/server/ai/pacing-reconcile";
 import { generateQuoteEdits } from "~/server/ai/quotes";
+import { generateSpeechCleanupArolls } from "~/server/ai/speech-cleanup";
 import { generateTitle } from "~/server/ai/title";
 import { generateTransitionEdits } from "~/server/ai/transitions";
 import { generateZoomEdits } from "~/server/ai/zooms";
@@ -41,6 +42,8 @@ export type AiAssistInput = {
   listicleStyle?: TemplateStyle;
   /** Companion cue map (create uses shipped defaults). */
   companionSfx?: CompanionSfxMap;
+  /** Create only: cut vocalized pauses + retakes before visual AI. */
+  trimSpeech?: boolean;
   onProgress?: AiAssistProgress;
 };
 
@@ -49,6 +52,7 @@ export type AiAssistResult = {
   edits: Edit[];
   /** Per-asset words with emphasis applied (only changed assets may differ). */
   wordsByAssetId: Map<string, TranscriptWord[]>;
+  arolls: ArollKeep[];
 };
 
 function clearEmphasis(
@@ -68,17 +72,44 @@ function clearEmphasis(
   return out;
 }
 
+function projectAssistWords(
+  arolls: ArollKeep[],
+  wordsByAssetId: Map<string, TranscriptWord[]>,
+  durationByAssetId: Map<string, number>,
+) {
+  const layout = buildArollLayout(arolls, durationByAssetId);
+  const keepRanges = layout
+    .filter((c) => c.kind === "keep")
+    .map((c) => c.timeline);
+  const timelineWords = snapWordBoundsToKeepEdges(
+    keptTimelineWords(
+      projectTimelineWords(arolls, wordsByAssetId, durationByAssetId),
+    ),
+    keepRanges,
+  );
+  return {
+    layout,
+    keepRanges,
+    timelineWords,
+    timelineDuration: layoutTimelineDuration(layout),
+    titleStartSec: firstKeepTimelineSec(layout),
+  };
+}
+
 /**
- * Shared create / editor AI assist: punch-ins → listicles → transitions →
- * quotes → emphasis → pacing slow zooms → companion SFX → emphasis pings.
+ * Shared create / editor AI assist: optional speech cleanup (create) →
+ * punch-ins → listicles → transitions → quotes → emphasis → pacing slow
+ * zooms → companion SFX → emphasis pings.
  */
 export async function runAiAssist(
   input: AiAssistInput,
 ): Promise<AiAssistResult> {
   const wordsByAssetId = clearEmphasis(input.wordsByAssetId);
-  const { arolls, durationByAssetId, onProgress } = input;
+  const { durationByAssetId, onProgress } = input;
+  let arolls = input.arolls;
   const includeTitle = !input.title.trim() && input.generateTitleIfEmpty;
-  const total = (includeTitle ? 1 : 0) + 8;
+  const includeTrim = Boolean(input.trimSpeech);
+  const total = (includeTrim ? 1 : 0) + (includeTitle ? 1 : 0) + 8;
   let completed = 0;
   const tick = async (label: string) => {
     await onProgress?.(completed, total, label);
@@ -88,16 +119,25 @@ export async function runAiAssist(
     await onProgress?.(completed, total, label);
   };
 
-  const layout = buildArollLayout(arolls, durationByAssetId);
-  const keepRanges = layout
-    .filter((c) => c.kind === "keep")
-    .map((c) => c.timeline);
-  const timelineWords = snapWordBoundsToKeepEdges(
-    projectTimelineWords(arolls, wordsByAssetId, durationByAssetId),
-    keepRanges,
-  );
-  const timelineDuration = layoutTimelineDuration(layout);
-  const titleStartSec = firstKeepTimelineSec(layout);
+  if (includeTrim) {
+    await tick("Cutting fillers…");
+    try {
+      arolls = await generateSpeechCleanupArolls({
+        arolls,
+        wordsByAssetId,
+        durationByAssetId,
+      });
+    } catch (error) {
+      console.warn(
+        "[ai-assist] speech cleanup soft-failed:",
+        error instanceof Error ? error.message : error,
+      );
+    }
+    await done("Cutting fillers…");
+  }
+
+  const { layout, keepRanges, timelineWords, timelineDuration, titleStartSec } =
+    projectAssistWords(arolls, wordsByAssetId, durationByAssetId);
 
   let title = input.title.trim();
   let edits: Edit[] = [...(input.baseEdits ?? [])];
@@ -205,7 +245,9 @@ export async function runAiAssist(
   await done("Marking emphasis…");
 
   const timelineWordsAfterEmphasis = snapWordBoundsToKeepEdges(
-    projectTimelineWords(arolls, wordsByAssetId, durationByAssetId),
+    keptTimelineWords(
+      projectTimelineWords(arolls, wordsByAssetId, durationByAssetId),
+    ),
     keepRanges,
   );
 
@@ -256,5 +298,5 @@ export async function runAiAssist(
   }
   await done("Placing emphasis SFX…");
 
-  return { title, edits, wordsByAssetId };
+  return { title, edits, wordsByAssetId, arolls };
 }

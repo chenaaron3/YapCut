@@ -1,33 +1,12 @@
+import { isVocalizedPause } from "~/domain/filler";
 import {
   CAPTION_GROUP_GAP_SEC,
   CAPTION_LAST_WORD_PAD_SEC,
 } from "~/remotion/helpers/constants";
+
 import type { CaptionWordProp } from "~/remotion/helpers/types";
 
-const FILLER_WORDS = [
-  "um",
-  "uh",
-  "uhm",
-  "uhh",
-  "er",
-  "ah",
-  "hmm",
-  "mm",
-  "mhm",
-] as const;
-
-function normalizeToken(word: string): string {
-  return word
-    .toLowerCase()
-    .replace(/^[^a-z0-9']+|[^a-z0-9']+$/gi, "")
-    .trim();
-}
-
-export function isFiller(word: string): boolean {
-  const token = normalizeToken(word);
-  if (!token) return false;
-  return (FILLER_WORDS as readonly string[]).includes(token);
-}
+export const isFiller = isVocalizedPause;
 
 function endsWithSentencePunctuation(text: string): boolean {
   return /[.?!]+$/.test(text.trim());

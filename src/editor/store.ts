@@ -7,13 +7,19 @@ import {
   setArollKeepEdge as applyArollKeepEdge,
   buildArollLayout,
   buildArollLayoutFromAssets,
-  deleteTimelineRange,
+  deleteWordSpan,
   durationMapFromAssets,
   keepCellIdForArollIndex,
   keepCells,
   reorderArollAssets,
 } from "~/domain/arolls";
-import { expandWordDeleteRange } from "~/domain/keeps";
+import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
+import {
+  patchEdit as applyPatchEdit,
+  patchEditRange as applyPatchEditRange,
+  placeEdit,
+  removeEdit,
+} from "~/domain/edits";
 import {
   clampTimelineSec,
   layoutTimelineDuration,
@@ -21,21 +27,14 @@ import {
   snapTimelineSec,
   timelineToOutputSec,
 } from "~/domain/layout-time";
-import {
-  patchEdit as applyPatchEdit,
-  patchEditRange as applyPatchEditRange,
-  placeEdit,
-  removeEdit,
-  type RangeEdge,
-} from "~/domain/edits";
-import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
-import {
-  clampTimelineRangeToMedia,
-  withMediaRefPatch,
-  type MediaRefPatch,
-} from "~/domain/media";
+import { isListicleEdit } from "~/domain/listicle";
+import { clampTimelineRangeToMedia, withMediaRefPatch } from "~/domain/media";
 import { musicFromAsset } from "~/domain/music";
-import { PROJECT_FPS } from "~/domain/project-config";
+import {
+  applyTemplateStylePatch,
+  cloneTemplateStyle,
+  PROJECT_FPS,
+} from "~/domain/project-config";
 import {
   adjacentKeptWordIndex,
   projectTimelineWords,
@@ -43,7 +42,7 @@ import {
 } from "~/domain/projection";
 import { primaryId } from "~/editor/lib/selection";
 import { snapWordActionRangeToKeeps } from "~/editor/lib/snap";
-import { wordActionRange, wordDeleteRange } from "~/editor/lib/word-selection";
+import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
 import { buildProjectProps } from "~/remotion/helpers/build-props";
 import {
@@ -52,19 +51,21 @@ import {
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
 
-import type { SerializedWaveform } from "~/domain/audio/waveform";
 import type { ArollLayoutCell } from "~/domain/arolls";
+import type { SerializedWaveform } from "~/domain/audio/waveform";
+import type {
+  CompanionSfxCueId,
+  CompanionSfxSource,
+} from "~/domain/companion-sfx-map";
+import type { RangeEdge } from "~/domain/edits";
 import type { EditPatch, EditSeed } from "~/domain/edits";
-import { isListicleEdit } from "~/domain/listicle";
-import {
-  applyTemplateStylePatch,
-  cloneTemplateStyle,
-  type EditId,
-  type ProjectConfig,
-  type TemplateStyle,
-} from "~/domain/project-config";
-import type { CompanionSfxCueId, CompanionSfxSource } from "~/domain/companion-sfx-map";
 import type { EmphasisStyle } from "~/domain/emphasis-style";
+import type { MediaRefPatch } from "~/domain/media";
+import type {
+  EditId,
+  ProjectConfig,
+  TemplateStyle,
+} from "~/domain/project-config";
 import type { TimelineTime } from "~/domain/time";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 import type { ProjectProps } from "~/remotion/helpers/types";
@@ -611,7 +612,8 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const nextFrame = Math.round(outputSec * fps);
       const timelineSec = outputToTimelineSec(layout, outputSec);
       // Re-write timelineSec even when frame is unchanged — recovers gap/desync.
-      if (nextFrame === get().frame && timelineSec === get().timelineSec) return;
+      if (nextFrame === get().frame && timelineSec === get().timelineSec)
+        return;
       set({ frame: nextFrame, timelineSec });
     },
 
@@ -762,13 +764,14 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         if (selected.length === 0) return false;
         const start = Math.min(...selected.map((w) => w.start));
         const end = Math.max(...selected.map((w) => w.end));
-        const range = expandWordDeleteRange(
-          { start, end },
-          words,
-          keepCells(layoutFor(config, assets)).map((c) => c.timeline),
-        );
         commit({
-          config: deleteTimelineRange(config, range, durations),
+          config: deleteWordSpan(
+            config,
+            { start, end },
+            words,
+            keepCells(layoutFor(config, assets)).map((c) => c.timeline),
+            durations,
+          ),
           transcriptsByAssetId,
         });
         clearSelection();
@@ -821,7 +824,9 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     placeEditOnRange: (seed, range) => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config) return;
-      const timelineDuration = layoutTimelineDuration(layoutFor(config, assets));
+      const timelineDuration = layoutTimelineDuration(
+        layoutFor(config, assets),
+      );
       const result = placeEdit(config, range, timelineDuration, seed, {
         srcDurationSec: (assetId) =>
           assets.find((a) => a.id === assetId)?.durationSec ?? null,
@@ -920,14 +925,14 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const word = words[globalIndex];
       if (!word) return;
       const { selection, clearSelection } = useSelection.getState();
-      const range = wordDeleteRange(
-        selection,
-        word,
-        words,
-        keepCells(get().getLayout()).map((c) => c.timeline),
-      );
       commit({
-        config: deleteTimelineRange(config, range, durationMapFromAssets(assets)),
+        config: deleteWordSpan(
+          config,
+          wordActionRange(selection, word, words),
+          words,
+          keepCells(get().getLayout()).map((c) => c.timeline),
+          durationMapFromAssets(assets),
+        ),
         transcriptsByAssetId,
       });
       clearSelection();
@@ -1079,8 +1084,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { config, transcriptsByAssetId, assets } = get();
       if (!config?.music) return;
       const srcDur =
-        assets.find((a) => a.id === config.music!.assetId)?.durationSec ??
-        null;
+        assets.find((a) => a.id === config.music!.assetId)?.durationSec ?? null;
       const next = produce(config, (draft) => {
         draft.music = withMediaRefPatch(
           draft.music!,

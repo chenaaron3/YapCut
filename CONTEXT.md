@@ -36,6 +36,10 @@ _Avoid_: normalized word rows, global persisted transcript copy, positive/negati
 One segment to keep from an A-roll asset: `{ id, assetId, start, end }` in **local** asset time. `id` is a monotonic integer (`max(ids)+1`, never reused, never renumbered on insert) — identity for transitions. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the timeline / output. Keeps for the same asset are **contiguous** in that list (no interleaving another asset between two keeps of one asset — you cannot cut part of a clip and place it after a different asset). Keep surgery emits generic `ArollKeepOp` (`split` / `merge` / `remove`); edit kinds that bind to keep ids register an `ArollEditPostprocessor` (transitions today) — arolls do not import those kinds.
 _Avoid_: Cut (prototype delete-range), storing keep lists grouped by asset as source of truth, parallel delete array, A→B→A stitch order, using array index or layout-cell index as keep identity
 
+**Speech cleanup**:
+Create-only AI pass after the keep builder: cut vocalized pauses (`um` / `uh` / `er` / `ah` / …) and retakes (false starts, restated takes — keep the successful take). Same keep surgery as a manual word delete (gap cells remain). Soft-fail. Editor **AI** re-run does not re-cut.
+_Avoid_: deterministic filler cuts in the keep builder; cutting discourse “like” / “you know” unless empty; running on editor re-run
+
 **Deleted / gap cell**:
 Timeline View chrome for media not in `arolls` (between keeps or trimmed ends). Derived in the View — never stored as topology.
 _Avoid_: Cut as persisted model type
@@ -212,15 +216,16 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 2. WhisperX per A-roll video (language autodetect, diarization off) → Transcript rows
 3. Measure A-roll LUFS + true peak + waveform via fal ffmpeg-api (enqueue, then poll with workflow `sleep()`; create fails if measure fails)
 4. Keep builder (long gaps) → `arolls`
-5. AI assist (create + editor **AI** button), on **timeline projected** transcript:
-   1. title if empty → `Project.title` + seed `vfx/text`
-   2. punch-in zooms
-   3. listicles
-   4. transitions — code seeds opening+closing as a mirrored **flash** pair (same duration); code seeds a transition on any listicle heading whose start sits on a valid drop word (keep-edge punctuated sentence; mid-keep listicles get none); LLM yes/no on remaining interior valid junctions (soft-fail). No companion SFX role for transitions (existing reveal SFX on title/listicle unchanged).
-   5. quotes (key phrases ~3–10 words; first starts at word 0 / hook end by LLM; ≥5 words between; no overlap with listicle; may overlap text/zoom)
-   6. emphasis — two LLM passes unioned: sparse over whole script, then denser inside quote ranges
-   7. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
-   8. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
+5. AI assist (create + editor **AI** button), on **timeline projected** transcript (kept words only):
+   1. **speech cleanup** (create only) — vocalized-pause sweep + LLM retakes/false starts; keep surgery like a manual word delete (gap cells remain). Soft-fail. Editor re-run skips this.
+   2. title if empty → `Project.title` + seed `vfx/text`
+   3. punch-in zooms
+   4. listicles
+   5. transitions — code seeds opening+closing as a mirrored **flash** pair (same duration); code seeds a transition on any listicle heading whose start sits on a valid drop word (keep-edge punctuated sentence; mid-keep listicles get none); LLM yes/no on remaining interior valid junctions (soft-fail). No companion SFX role for transitions (existing reveal SFX on title/listicle unchanged).
+   6. quotes (key phrases ~3–10 words; first starts at word 0 / hook end by LLM; ≥5 words between; no overlap with listicle; may overlap text/zoom)
+   7. emphasis — two LLM passes unioned: sparse over whole script, then denser inside quote ranges
+   8. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
+   9. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
       Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
 6. Seed default `captions` TemplateStyle → `ready` (create only)
 

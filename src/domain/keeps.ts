@@ -3,8 +3,8 @@ import {
   WORD_MARGIN_SEC,
 } from "~/domain/editing-constants";
 import { PROJECT_FPS } from "~/domain/project-config";
-import type { LocalTime, TimelineTime } from "~/domain/time";
 
+import type { LocalTime, TimelineTime } from "~/domain/time";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 
 const EPS = 0.001;

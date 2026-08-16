@@ -310,7 +310,7 @@ export async function measureCreateAssets(projectId: string): Promise<void> {
 }
 
 /**
- * After all transcripts are ready: keeps → AI seed → project ready.
+ * After all transcripts are ready: keeps → speech cleanup → AI seed → ready.
  */
 export async function finalizeCreateProject(projectId: string): Promise<void> {
   const [project] = await db
@@ -371,6 +371,7 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
     durationByAssetId,
     title: project.title?.trim() ?? "",
     generateTitleIfEmpty: true,
+    trimSpeech: true,
     onProgress: async (completed, total, label) => {
       await publishCreateProgress(
         projectId,
@@ -392,7 +393,7 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
 
   const config: ProjectConfig = {
     ...emptyProjectConfig(),
-    arolls,
+    arolls: assist.arolls,
     edits: assist.edits,
     captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
   };

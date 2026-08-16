@@ -1,14 +1,16 @@
 import { produce } from "immer";
 
-import {
-  nextKeepId,
-  type ArollKeep,
-  type Edit,
-  type KeepId,
-  type ProjectConfig,
-  isTextBaseEdit,
+import { expandWordDeleteRange } from "~/domain/keeps";
+import { isTextBaseEdit, nextKeepId } from "~/domain/project-config";
+
+import type {
+  ArollKeep,
+  Edit,
+  KeepId,
+  ProjectConfig,
 } from "~/domain/project-config";
 import type { LocalTime, OutputTime, TimelineTime } from "~/domain/time";
+import type { GlobalTranscriptWord } from "~/domain/transcript";
 
 const EPS = 0.001;
 const MIN_KEEP_SEC = 0.05;
@@ -116,9 +118,10 @@ function commitKeepSurgery(
 }
 
 /** Normalize keeps: drop empties, merge consecutive same-asset overlaps/abutments. */
-export function normalizeArolls(
-  arolls: readonly ArollKeep[],
-): { keeps: ArollKeep[]; ops: ArollKeepOp[] } {
+export function normalizeArolls(arolls: readonly ArollKeep[]): {
+  keeps: ArollKeep[];
+  ops: ArollKeepOp[];
+} {
   const sorted = [...arolls]
     .filter((k) => k.end > k.start + EPS)
     .map((k) => ({
@@ -133,10 +136,7 @@ export function normalizeArolls(
   const ops: ArollKeepOp[] = [];
   for (const keep of sorted) {
     const last = merged[merged.length - 1];
-    if (
-      last?.assetId === keep.assetId &&
-      keep.start <= last.end + EPS
-    ) {
+    if (last?.assetId === keep.assetId && keep.start <= last.end + EPS) {
       if (keep.id !== last.id) {
         ops.push({
           type: "merge",
@@ -198,11 +198,7 @@ export function buildArollLayout(
   let localCursor = 0;
   let gapSerial = 0;
 
-  const push = (
-    kind: "keep" | "gap",
-    local: LocalTime,
-    keepId?: number,
-  ) => {
+  const push = (kind: "keep" | "gap", local: LocalTime, keepId?: number) => {
     const dur = Math.max(0, local.end - local.start);
     if (kind === "gap" && dur <= EPS) return;
 
@@ -214,7 +210,7 @@ export function buildArollLayout(
 
     cells.push({
       kind,
-      id: kind === "keep" ? keepId! : -(++gapSerial),
+      id: kind === "keep" ? keepId! : -++gapSerial,
       local,
       timeline,
       output,
@@ -420,6 +416,24 @@ export function deleteTimelineRange(
 }
 
 /**
+ * Delete a spoken span the same way the editor does: expand to the
+ * auto-trim margin, then keep-surgery the timeline range.
+ */
+export function deleteWordSpan(
+  config: ProjectConfig,
+  span: TimelineTime,
+  words: readonly GlobalTranscriptWord[],
+  keepRanges: readonly TimelineTime[],
+  assetDurationSec: ReadonlyMap<string, number>,
+): ProjectConfig {
+  return deleteTimelineRange(
+    config,
+    expandWordDeleteRange(span, words, keepRanges),
+    assetDurationSec,
+  );
+}
+
+/**
  * Delete key on an A-roll layout cell: remove a keep, or restore a gap.
  */
 export function applyArollCellAction(
@@ -430,7 +444,7 @@ export function applyArollCellAction(
   if (cell.kind === "keep") {
     return deleteTimelineRange(config, cell.timeline, assetDurationSec);
   }
-    return restoreGap(config, cell.local, assetDurationSec);
+  return restoreGap(config, cell.local, assetDurationSec);
 }
 
 /** Restore a gap layout cell back into arolls (insert keep). No ripple. */
@@ -548,10 +562,7 @@ export function setArollKeepEdge(
       const delta = targetTimelineSec - cell.timeline.end;
       const minEnd = target.start + MIN_KEEP_SEC;
       const maxEnd = nextSame ? nextSame.start : assetDur;
-      const nextEnd = Math.max(
-        minEnd,
-        Math.min(maxEnd, target.end + delta),
-      );
+      const nextEnd = Math.max(minEnd, Math.min(maxEnd, target.end + delta));
       if (Math.abs(nextEnd - target.end) < EPS) return;
       target.end = nextEnd;
     }
