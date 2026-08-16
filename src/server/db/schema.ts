@@ -6,12 +6,13 @@ import {
   primaryKey,
   unique,
 } from "drizzle-orm/pg-core";
-import type { AdapterAccount } from "next-auth/adapters";
 
+import type { CreateProgressEvent } from "~/domain/create-progress";
 import type { ProjectConfig } from "~/domain/project-config";
 import type { ProjectStatus } from "~/domain/project-status";
 import type { PlatformPublishStatus } from "~/domain/schedule";
 import type { TranscriptStatus, TranscriptWord } from "~/domain/transcript";
+import type { AdapterAccount } from "next-auth/adapters";
 
 /**
  * Multi-project schema prefix for shared databases.
@@ -127,6 +128,10 @@ export const projects = createTable(
       .notNull()
       .default("processing"),
     failureReason: d.text(),
+    /** Vercel Workflow run id while create is in flight (stream reconnect). */
+    workflowRunId: d.varchar({ length: 255 }),
+    /** Latest create-pipeline progress (poll fallback + initial UI). */
+    createProgress: d.jsonb().$type<CreateProgressEvent | null>(),
     config: d
       .jsonb()
       .$type<ProjectConfig | Record<string, never>>()

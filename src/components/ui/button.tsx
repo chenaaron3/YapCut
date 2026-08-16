@@ -18,6 +18,14 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        ember:
+          "rounded-[16px] border-2 border-[#450E16] bg-[#FFA102] text-[#450E16] shadow-[4px_4px_0_#450E16] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-[#FFA102] hover:shadow-none",
+        "ember-cream":
+          "rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[6px_6px_0_#FFA102] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-[#F5F9CE] hover:shadow-[3px_3px_0_#FFA102]",
+        "ember-ghost":
+          "rounded-[24px] border-2 border-[#F5F9CE]/55 bg-transparent text-[#F5F9CE] hover:border-[#FFA102] hover:bg-transparent hover:text-[#FFA102]",
+        "ember-ink":
+          "rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[6px_7px_0_#450E16] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-[#F5F9CE] hover:shadow-[3px_3px_0_#450E16]",
       },
       size: {
         default:

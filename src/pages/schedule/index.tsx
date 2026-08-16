@@ -60,38 +60,47 @@ export default function SchedulePage() {
       title="Schedule · Talking Head"
       description="Publish queue and cadence settings."
     >
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          Schedule
-        </h1>
+      <div className="flex flex-col gap-2 pt-10 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="ember-mono text-[10px] font-semibold tracking-[.2em] text-[#DD5533] uppercase">
+            Cadence
+          </p>
+          <h1 className="ember-display mt-2 text-5xl leading-[.82] sm:text-7xl">
+            Schedule
+          </h1>
+        </div>
         <Link
           href="/projects"
-          className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+          className="text-sm text-[#432E6F] underline-offset-4 hover:underline"
         >
           ← Projects
         </Link>
       </div>
 
       {message ? (
-        <p className="mt-4 text-sm text-muted-foreground">{message}</p>
+        <p className="mt-4 text-sm text-[#432E6F]">{message}</p>
       ) : null}
 
-      <section className="mt-10 space-y-4">
-        <h2 className="text-lg font-medium">Settings</h2>
+      <section className="ember-card-shadow mt-10 space-y-4 rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] p-6">
+        <h2 className="ember-display text-3xl leading-none">Settings</h2>
         <div className="flex flex-wrap gap-4">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground">Daily time</span>
+            <span className="ember-mono text-[10px] tracking-[.14em] text-[#75677F] uppercase">
+              Daily time
+            </span>
             <input
-              className="rounded-md border border-border bg-background px-3 py-2"
+              className="rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2"
               value={timeValue}
               onChange={(e) => setTime(e.target.value)}
               placeholder="17:00"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground">Timezone</span>
+            <span className="ember-mono text-[10px] tracking-[.14em] text-[#75677F] uppercase">
+              Timezone
+            </span>
             <input
-              className="rounded-md border border-border bg-background px-3 py-2"
+              className="rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2"
               value={timezoneValue}
               onChange={(e) => setTimezone(e.target.value)}
               placeholder="America/New_York"
@@ -112,6 +121,7 @@ export default function SchedulePage() {
         </div>
         <Button
           disabled={updateSettings.isPending}
+          className="h-auto rounded-[16px] border-2 border-[#450E16] bg-[#FFA102] px-4 py-2.5 text-[#450E16] shadow-[4px_4px_0_#450E16] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-[#FFA102] hover:shadow-none"
           onClick={() => {
             setMessage(null);
             updateSettings.mutate({
@@ -126,12 +136,12 @@ export default function SchedulePage() {
       </section>
 
       <section className="mt-14 space-y-4">
-        <h2 className="text-lg font-medium">Queue</h2>
+        <h2 className="ember-display text-3xl leading-none">Queue</h2>
         {queueQuery.isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-[#432E6F]">Loading…</p>
         ) : null}
         {queueQuery.data?.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-[#432E6F]">
             Nothing queued. Export a project, then use Add to schedule.
           </p>
         ) : null}
@@ -140,17 +150,17 @@ export default function SchedulePage() {
             return (
               <li
                 key={entry.id}
-                className="border-b border-border pb-4 last:border-0"
+                className="rounded-[16px] border-2 border-[#450E16] bg-[#F5F9CE] p-4 shadow-[4px_4px_0_#450E16]"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <div>
                     <Link
                       href={`/projects/${entry.projectId}`}
-                      className="font-medium underline-offset-4 hover:underline"
+                      className="ember-display text-xl underline-offset-4 hover:underline"
                     >
                       {entry.project.title ?? "Untitled"}
                     </Link>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="ember-mono mt-1 text-[10px] tracking-[.12em] text-[#75677F] uppercase">
                       {formatSlot(entry.scheduledAt)}
                     </p>
                   </div>
@@ -158,7 +168,7 @@ export default function SchedulePage() {
                 <ul className="mt-2 flex flex-wrap gap-3 text-xs">
                   {entry.platformPublishes.map((p) => (
                     <li key={p.platform} className="capitalize">
-                      <span className="text-muted-foreground">{p.platform}:</span>{" "}
+                      <span className="text-[#75677F]">{p.platform}:</span>{" "}
                       {p.status}
                       {p.postUrl ? (
                         <>
@@ -174,7 +184,7 @@ export default function SchedulePage() {
                         </>
                       ) : null}
                       {p.lastError ? (
-                        <span className="text-destructive"> — {p.lastError}</span>
+                        <span className="text-[#BC2D29]"> — {p.lastError}</span>
                       ) : null}
                     </li>
                   ))}

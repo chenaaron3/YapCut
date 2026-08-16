@@ -18,16 +18,25 @@ import {
   markCreateFailed,
   saveAssetTranscript,
   startAssetWhisperX,
-  type CreateAssetRef,
 } from "~/server/create/create-pipeline";
-import { FalMeasureError } from "~/server/media/measure-audio";
+import {
+  falJobProgress,
+  measureStageEvent,
+  transcribeStageEvent,
+  whisperJobProgress,
+} from "~/server/create/progress-estimate";
+import { publishCreateProgress } from "~/server/create/publish-progress";
 import {
   finishMeasureAssetJobs,
   pollMeasureAssetJobs,
   startMeasureAssetJobs,
-  type MeasureJobSet,
 } from "~/server/media/measure-asset";
+import { FalMeasureError } from "~/server/media/measure-audio";
 import { getWhisperXPrediction } from "~/server/transcribe/whisperx";
+
+import type { CreateProgressEvent } from "~/domain/create-progress";
+import type { CreateAssetRef } from "~/server/create/create-pipeline";
+import type { MeasureJobSet } from "~/server/media/measure-asset";
 
 /** Suspend between Replicate polls (no compute while sleeping). */
 const WHISPERX_POLL_SLEEP = "15s";
@@ -43,17 +52,38 @@ export async function createProjectWorkflow(projectId: string) {
 
   try {
     const assets = await loadAssetsStep(projectId);
+    const transcribeProgress = assets.map(() => 0);
+    await emitProgressStep(projectId, transcribeStageEvent(transcribeProgress));
 
-    for (const asset of assets) {
+    for (let i = 0; i < assets.length; i++) {
+      const asset = assets[i]!;
       const started = await startWhisperXStep(asset);
-      if (started.alreadyReady) continue;
+      if (started.alreadyReady) {
+        transcribeProgress[i] = 1;
+        await emitProgressStep(
+          projectId,
+          transcribeStageEvent(transcribeProgress),
+        );
+        continue;
+      }
 
       let saved = false;
-      for (let i = 0; i < WHISPERX_MAX_POLLS; i++) {
-        const poll = await pollWhisperXStep(started.predictionId);
-
+      for (let p = 0; p < WHISPERX_MAX_POLLS; p++) {
+        const poll = await pollWhisperXStep({
+          projectId,
+          predictionId: started.predictionId,
+          startedAtMs: started.startedAtMs,
+          assetIndex: i,
+          transcribeProgress,
+        });
+        transcribeProgress[i] = poll.assetProgress;
         if (poll.status === "succeeded") {
           await saveTranscriptStep(asset, started.predictionId);
+          transcribeProgress[i] = 1;
+          await emitProgressStep(
+            projectId,
+            transcribeStageEvent(transcribeProgress),
+          );
           saved = true;
           break;
         }
@@ -82,13 +112,26 @@ export async function createProjectWorkflow(projectId: string) {
       }
     }
 
-    for (const asset of assets) {
-      const jobs = await startMeasureStep(asset);
+    const measureProgress = assets.map(() => 0);
+    await emitProgressStep(projectId, measureStageEvent(measureProgress));
+
+    for (let i = 0; i < assets.length; i++) {
+      const asset = assets[i]!;
+      const started = await startMeasureStep(asset);
       let saved = false;
-      for (let i = 0; i < FAL_MAX_POLLS; i++) {
-        const poll = await pollMeasureStep(jobs);
+      for (let p = 0; p < FAL_MAX_POLLS; p++) {
+        const poll = await pollMeasureStep({
+          projectId,
+          jobs: started.jobs,
+          startedAtMs: started.startedAtMs,
+          assetIndex: i,
+          measureProgress,
+        });
+        measureProgress[i] = poll.assetProgress;
         if (poll.done) {
-          await finishMeasureStep(jobs);
+          await finishMeasureStep(started.jobs);
+          measureProgress[i] = 1;
+          await emitProgressStep(projectId, measureStageEvent(measureProgress));
           saved = true;
           break;
         }
@@ -114,6 +157,14 @@ export async function createProjectWorkflow(projectId: string) {
   }
 }
 
+async function emitProgressStep(
+  projectId: string,
+  event: CreateProgressEvent,
+): Promise<void> {
+  "use step";
+  await publishCreateProgress(projectId, event);
+}
+
 async function loadAssetsStep(projectId: string): Promise<CreateAssetRef[]> {
   "use step";
   return loadCreateAssets(projectId);
@@ -122,21 +173,38 @@ async function loadAssetsStep(projectId: string): Promise<CreateAssetRef[]> {
 async function startWhisperXStep(asset: CreateAssetRef): Promise<{
   predictionId: string;
   alreadyReady: boolean;
+  startedAtMs: number;
 }> {
   "use step";
-  return startAssetWhisperX(asset);
+  const started = await startAssetWhisperX(asset);
+  return { ...started, startedAtMs: Date.now() };
 }
 
-async function pollWhisperXStep(predictionId: string): Promise<{
+async function pollWhisperXStep(input: {
+  projectId: string;
+  predictionId: string;
+  startedAtMs: number;
+  assetIndex: number;
+  transcribeProgress: number[];
+}): Promise<{
   status: string;
   error: string | null;
+  assetProgress: number;
 }> {
   "use step";
-  const poll = await getWhisperXPrediction(predictionId);
+  const poll = await getWhisperXPrediction(input.predictionId);
   console.log(
-    `[create] whisperx poll prediction=${predictionId} status=${poll.status}`,
+    `[create] whisperx poll prediction=${input.predictionId} status=${poll.status}`,
   );
-  return { status: poll.status, error: poll.error };
+  const parts = [...input.transcribeProgress];
+  const assetProgress = whisperJobProgress(
+    poll.status,
+    input.startedAtMs,
+    Date.now(),
+  );
+  parts[input.assetIndex] = assetProgress;
+  await publishCreateProgress(input.projectId, transcribeStageEvent(parts));
+  return { status: poll.status, error: poll.error, assetProgress };
 }
 
 async function saveTranscriptStep(
@@ -155,10 +223,14 @@ async function markTranscriptFailedStep(
   await markAssetTranscriptFailed(assetId, reason);
 }
 
-async function startMeasureStep(asset: CreateAssetRef): Promise<MeasureJobSet> {
+async function startMeasureStep(asset: CreateAssetRef): Promise<{
+  jobs: MeasureJobSet;
+  startedAtMs: number;
+}> {
   "use step";
   try {
-    return await startMeasureAssetJobs(asset);
+    const jobs = await startMeasureAssetJobs(asset);
+    return { jobs, startedAtMs: Date.now() };
   } catch (error) {
     if (error instanceof FalMeasureError && error.fatal) {
       throw new FatalError(error.message);
@@ -167,12 +239,24 @@ async function startMeasureStep(asset: CreateAssetRef): Promise<MeasureJobSet> {
   }
 }
 
-async function pollMeasureStep(
-  jobs: MeasureJobSet,
-): Promise<{ done: boolean }> {
+async function pollMeasureStep(input: {
+  projectId: string;
+  jobs: MeasureJobSet;
+  startedAtMs: number;
+  assetIndex: number;
+  measureProgress: number[];
+}): Promise<{ done: boolean; assetProgress: number }> {
   "use step";
   try {
-    return await pollMeasureAssetJobs(jobs);
+    const poll = await pollMeasureAssetJobs(input.jobs);
+    const assetProgress =
+      (falJobProgress(poll.loudnorm, input.startedAtMs, Date.now()) +
+        falJobProgress(poll.waveform, input.startedAtMs, Date.now())) /
+      2;
+    const parts = [...input.measureProgress];
+    parts[input.assetIndex] = assetProgress;
+    await publishCreateProgress(input.projectId, measureStageEvent(parts));
+    return { done: poll.done, assetProgress };
   } catch (error) {
     if (error instanceof FalMeasureError && error.fatal) {
       throw new FatalError(error.message);
@@ -198,7 +282,10 @@ async function finalizeStep(projectId: string): Promise<void> {
   await finalizeCreateProject(projectId);
 }
 
-async function markFailedStep(projectId: string, reason: string): Promise<void> {
+async function markFailedStep(
+  projectId: string,
+  reason: string,
+): Promise<void> {
   "use step";
   await markCreateFailed(projectId, reason);
 }

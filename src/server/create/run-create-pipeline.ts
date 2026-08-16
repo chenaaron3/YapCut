@@ -7,6 +7,11 @@ import {
   saveAssetTranscript,
   startAssetWhisperX,
 } from "~/server/create/create-pipeline";
+import {
+  transcribeStageEvent,
+  whisperJobProgress,
+} from "~/server/create/progress-estimate";
+import { publishCreateProgress } from "~/server/create/publish-progress";
 import { getWhisperXPrediction } from "~/server/transcribe/whisperx";
 
 const IN_PROCESS_POLL_MS = 5_000;
@@ -28,16 +33,41 @@ export async function runCreatePipeline(projectId: string): Promise<void> {
 
 async function runCreatePipelineInner(projectId: string): Promise<void> {
   const projectAssets = await loadCreateAssets(projectId);
+  const assetProgress = projectAssets.map(() => 0);
+  await publishCreateProgress(projectId, transcribeStageEvent(assetProgress));
 
-  for (const asset of projectAssets) {
+  for (let i = 0; i < projectAssets.length; i++) {
+    const asset = projectAssets[i]!;
     const started = await startAssetWhisperX(asset);
-    if (started.alreadyReady) continue;
+    if (started.alreadyReady) {
+      assetProgress[i] = 1;
+      await publishCreateProgress(
+        projectId,
+        transcribeStageEvent(assetProgress),
+      );
+      continue;
+    }
 
+    const startedAtMs = Date.now();
     let succeeded = false;
-    for (let i = 0; i < IN_PROCESS_MAX_POLLS; i++) {
+    for (let p = 0; p < IN_PROCESS_MAX_POLLS; p++) {
       const poll = await getWhisperXPrediction(started.predictionId);
+      assetProgress[i] = whisperJobProgress(
+        poll.status,
+        startedAtMs,
+        Date.now(),
+      );
+      await publishCreateProgress(
+        projectId,
+        transcribeStageEvent(assetProgress),
+      );
       if (poll.status === "succeeded") {
         await saveAssetTranscript(asset, started.predictionId);
+        assetProgress[i] = 1;
+        await publishCreateProgress(
+          projectId,
+          transcribeStageEvent(assetProgress),
+        );
         succeeded = true;
         break;
       }

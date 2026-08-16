@@ -1,5 +1,9 @@
+import { eq } from "drizzle-orm";
+
 import { env } from "~/env";
 import { runCreatePipeline } from "~/server/create/run-create-pipeline";
+import { db } from "~/server/db";
+import { projects } from "~/server/db/schema";
 
 /**
  * Kick off create processing without blocking the tRPC response.
@@ -11,11 +15,16 @@ export async function startCreatePipeline(projectId: string): Promise<void> {
   if (env.USE_VERCEL_WORKFLOW) {
     try {
       const { start } = await import("workflow/api");
-      const { createProjectWorkflow } = await import(
-        "~/workflows/create-project"
+      const { createProjectWorkflow } =
+        await import("~/workflows/create-project");
+      const run = await start(createProjectWorkflow, [projectId]);
+      await db
+        .update(projects)
+        .set({ workflowRunId: run.runId, updatedAt: new Date() })
+        .where(eq(projects.id, projectId));
+      console.log(
+        `[create] started Vercel Workflow for ${projectId} run=${run.runId}`,
       );
-      await start(createProjectWorkflow, [projectId]);
-      console.log(`[create] started Vercel Workflow for ${projectId}`);
       return;
     } catch (error) {
       console.warn(

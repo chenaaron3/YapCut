@@ -17,9 +17,15 @@ export function AppLayout({ title, description, children }: Props) {
         {description ? <meta name="description" content={description} /> : null}
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <div className="min-h-screen bg-background text-foreground">
+      <div className="ember-shell relative min-h-screen overflow-x-hidden selection:bg-[#FFA102] selection:text-[#450E16]">
+        <div
+          aria-hidden
+          className="ember-grain pointer-events-none fixed inset-0 z-0 opacity-30"
+        />
         <Navbar />
-        <main className="mx-auto max-w-5xl px-6 pb-16">{children}</main>
+        <main className="relative z-10 mx-auto max-w-[1280px] px-6 pb-16 sm:px-10 lg:px-14">
+          {children}
+        </main>
       </div>
     </>
   );

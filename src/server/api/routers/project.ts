@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
@@ -7,8 +8,10 @@ import {
   parseProjectConfig,
   projectConfigSchema,
 } from "~/domain/project-config";
+import { projectListBadge } from "~/domain/project-list-badge";
 import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { parseCreateProgress } from "~/server/create/publish-progress";
 import { startCreatePipeline } from "~/server/create/start-create-pipeline";
 import { assets, projects, transcripts } from "~/server/db/schema";
 import { exportDownloadUrl } from "~/server/export/download-url";
@@ -20,22 +23,8 @@ import {
   nextAssetSortOrder,
 } from "~/server/media/asset-upload";
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";
+import { isGlobalMusicKey, isGlobalSfxKey } from "~/server/media/keys";
 import { measureAsset } from "~/server/media/measure-asset";
-import {
-  isGlobalMusicKey,
-  isGlobalSfxKey,
-} from "~/server/media/keys";
-
-import { TRPCError } from "@trpc/server";
-
-const projectListColumns = {
-  id: projects.id,
-  title: projects.title,
-  status: projects.status,
-  failureReason: projects.failureReason,
-  updatedAt: projects.updatedAt,
-  createdAt: projects.createdAt,
-} as const;
 
 const createFileSchema = z.object({
   filename: z.string().min(1).max(512),
@@ -96,11 +85,78 @@ function toClientAsset<
 
 export const projectRouter = createTRPCRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db
-      .select(projectListColumns)
-      .from(projects)
-      .where(eq(projects.userId, ctx.session.user.id))
-      .orderBy(desc(projects.updatedAt));
+    const rows = await ctx.db.query.projects.findMany({
+      where: eq(projects.userId, ctx.session.user.id),
+      orderBy: [desc(projects.updatedAt)],
+      columns: {
+        id: true,
+        title: true,
+        status: true,
+        failureReason: true,
+        createProgress: true,
+        updatedAt: true,
+        createdAt: true,
+        coverS3Key: true,
+        exportBucketName: true,
+      },
+      with: {
+        assets: {
+          orderBy: [asc(assets.sortOrder)],
+          columns: { kind: true, s3Key: true },
+        },
+        scheduleEntry: {
+          columns: { scheduledAt: true },
+          with: {
+            platformPublishes: {
+              columns: { status: true },
+            },
+          },
+        },
+      },
+    });
+
+    return Promise.all(
+      rows.map(async (row) => {
+        const firstVideo = row.assets.find((a) => a.kind === "video");
+        const coverUrl =
+          row.coverS3Key && row.exportBucketName
+            ? await exportDownloadUrl({
+                bucketName: row.exportBucketName,
+                objectKey: row.coverS3Key,
+              })
+            : null;
+        const previewUrl =
+          coverUrl ??
+          (firstVideo
+            ? signedCloudFrontUrl(firstVideo.s3Key, {
+                expiresInSec: 60 * 60 * 6,
+              })
+            : null);
+        const publishStatuses =
+          row.scheduleEntry?.platformPublishes.map((p) => p.status) ?? null;
+        return {
+          id: row.id,
+          title: row.title,
+          status: row.status,
+          failureReason: row.failureReason,
+          createProgress: parseCreateProgress(row.createProgress),
+          updatedAt: row.updatedAt,
+          createdAt: row.createdAt,
+          previewUrl,
+          previewKind: coverUrl
+            ? ("image" as const)
+            : previewUrl
+              ? ("video" as const)
+              : null,
+          scheduledAt: row.scheduleEntry?.scheduledAt ?? null,
+          badge: projectListBadge({
+            status: row.status,
+            scheduledAt: row.scheduleEntry?.scheduledAt ?? null,
+            publishStatuses,
+          }),
+        };
+      }),
+    );
   }),
 
   /** Global SFX + music libraries (`projectId` null). */
@@ -138,6 +194,8 @@ export const projectRouter = createTRPCRouter({
           title: true,
           status: true,
           failureReason: true,
+          workflowRunId: true,
+          createProgress: true,
           config: true,
           configUpdatedAt: true,
           exportS3Key: true,
@@ -196,6 +254,7 @@ export const projectRouter = createTRPCRouter({
 
       return {
         ...project,
+        createProgress: parseCreateProgress(project.createProgress),
         downloadUrl,
         coverDownloadUrl,
         config: isEmptyConfig(project.config)
@@ -284,7 +343,10 @@ export const projectRouter = createTRPCRouter({
         .limit(1);
 
       if (!project) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       if (project.status !== "ready" && project.status !== "exporting") {
@@ -327,7 +389,10 @@ export const projectRouter = createTRPCRouter({
         .limit(1);
 
       if (!project) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       if (project.status !== "ready" && project.status !== "exporting") {
@@ -353,9 +418,7 @@ export const projectRouter = createTRPCRouter({
         await ctx.db
           .update(assets)
           .set({ sortOrder: i, updatedAt: now })
-          .where(
-            and(eq(assets.id, order[i]!), eq(assets.projectId, input.id)),
-          );
+          .where(and(eq(assets.id, order[i]!), eq(assets.projectId, input.id)));
       }
 
       return { configUpdatedAt: now.toISOString() };
@@ -395,7 +458,10 @@ export const projectRouter = createTRPCRouter({
         .limit(1);
 
       if (!project) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       const now = new Date();
@@ -439,9 +505,7 @@ export const projectRouter = createTRPCRouter({
 
       const trimmedTitle = input.title?.trim();
       const title =
-        trimmedTitle !== undefined && trimmedTitle !== ""
-          ? trimmedTitle
-          : null;
+        trimmedTitle !== undefined && trimmedTitle !== "" ? trimmedTitle : null;
       const projectId = crypto.randomUUID();
 
       await ctx.db.insert(projects).values({
@@ -488,7 +552,10 @@ export const projectRouter = createTRPCRouter({
         .limit(1);
 
       if (!project) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       if (project.status !== "processing") {
@@ -580,7 +647,10 @@ export const projectRouter = createTRPCRouter({
         .limit(1);
 
       if (!project) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
       if (project.status !== "ready" && project.status !== "exporting") {
         throw new TRPCError({
@@ -606,7 +676,10 @@ export const projectRouter = createTRPCRouter({
             message: `${isAudio ? "Audio" : "Video"} ${file.filename} requires durationSec`,
           });
         }
-        if ((isVideo || isImage) && (file.width == null || file.height == null)) {
+        if (
+          (isVideo || isImage) &&
+          (file.width == null || file.height == null)
+        ) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: `${file.filename} requires width and height`,
@@ -662,7 +735,10 @@ export const projectRouter = createTRPCRouter({
         .limit(1);
 
       if (!project) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Project not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
       }
 
       const matched = await ctx.db

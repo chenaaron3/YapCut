@@ -152,9 +152,9 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
         if (!next && !busy) onClose();
       }}
     >
-      <DialogContent className="sm:max-w-lg" showCloseButton={!busy}>
+      <DialogContent className="ember-shell sm:max-w-lg rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[8px_9px_0_#450E16]" showCloseButton={!busy}>
         <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold tracking-tight">
+          <DialogTitle className="ember-display text-3xl leading-none">
             New project
           </DialogTitle>
           <DialogDescription>
@@ -168,8 +168,8 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
           className={cn(
             "flex min-h-44 flex-col items-center justify-center rounded-lg border border-dashed px-4 py-10 text-center transition-colors",
             isDragActive
-              ? "border-primary bg-primary/5"
-              : "border-border bg-muted/40",
+              ? "border-[#FFA102] bg-[#FFA102]/15"
+              : "border-[#450E16] bg-[#F5F9CE]",
             busy && "pointer-events-none opacity-60",
           )}
         >
@@ -183,7 +183,7 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
           <Button
             type="button"
             size="sm"
-            className="mt-5"
+            className="mt-5 h-auto rounded-[16px] border-2 border-[#450E16] bg-[#FFA102] px-4 py-2 text-[#450E16] shadow-[4px_4px_0_#450E16] hover:bg-[#FFA102]"
             onClick={openFilePicker}
             disabled={busy}
           >
@@ -196,7 +196,7 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
             {files.map((file, index) => (
               <li
                 key={`${file.name}-${file.size}-${file.lastModified}`}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
+                className="flex items-center gap-3 rounded-[12px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2"
               >
                 <FileVideo className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1 text-left">
@@ -232,6 +232,7 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
           <Button
             type="button"
             disabled={files.length === 0 || busy}
+            className="h-auto rounded-[16px] border-2 border-[#450E16] bg-[#FFA102] px-4 py-2.5 text-[#450E16] shadow-[4px_4px_0_#450E16] hover:bg-[#FFA102]"
             onClick={() => {
               void handleCreate();
             }}

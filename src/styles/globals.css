@@ -93,6 +93,93 @@
   display: none;
 }
 
+/* Ember marketing / app chrome — not used by the editor */
+.ember-shell {
+  --ember-cream: #f5f9ce;
+  --ember-ink: #450e16;
+  --ember-purple: #432e6f;
+  --ember-orange: #ffa102;
+  --ember-tomato: #dd5533;
+  --ember-crimson: #bc2d29;
+  --ember-muted: #75677f;
+  --ember-teal: #2dd4bf;
+  --background: #f5f9ce;
+  --foreground: #450e16;
+  --card: #f5f9ce;
+  --card-foreground: #450e16;
+  --popover: #f5f9ce;
+  --popover-foreground: #450e16;
+  --primary: #ffa102;
+  --primary-foreground: #450e16;
+  --secondary: #bc2d29;
+  --secondary-foreground: #f5f9ce;
+  --muted: #ecefc0;
+  --muted-foreground: #75677f;
+  --accent: #dd5533;
+  --accent-foreground: #f5f9ce;
+  --destructive: #bc2d29;
+  --border: #450e16;
+  --input: #450e16;
+  --ring: #ffa102;
+  background: var(--ember-cream);
+  color: var(--ember-ink);
+  font-family: var(--font-display), Georgia, serif;
+}
+
+.ember-mono {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.ember-display {
+  font-family: var(--font-display), Georgia, serif;
+  font-weight: 700;
+  letter-spacing: -0.065em;
+}
+
+.ember-grain {
+  background-image: radial-gradient(
+    rgba(245, 249, 206, 0.17) 0.65px,
+    transparent 0.65px
+  );
+  background-size: 8px 8px;
+}
+
+.ember-diagonal {
+  background: linear-gradient(
+    124deg,
+    rgba(255, 161, 2, 0.95) 0%,
+    rgba(221, 85, 51, 0.74) 42%,
+    rgba(67, 46, 111, 0.96) 100%
+  );
+}
+
+.ember-card-shadow {
+  box-shadow:
+    8px 9px 0 rgba(69, 14, 22, 0.92),
+    0 20px 48px rgba(69, 14, 22, 0.2);
+}
+
+.ember-hard-shadow {
+  box-shadow: 4px 4px 0 #450e16;
+}
+
+.ember-hard-shadow-lg {
+  box-shadow: 6px 7px 0 #450e16;
+}
+
+@keyframes ember-orbit {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-2deg);
+  }
+  to {
+    transform: translate3d(0, -14px, 0) rotate(3deg);
+  }
+}
+
+.ember-orbit {
+  animation: ember-orbit 8s ease-in-out infinite alternate;
+}
+
 @keyframes rise {
   from {
     opacity: 0;
@@ -143,6 +230,53 @@
   animation: pulse-line 3.2s ease-in-out infinite;
 }
 
+@keyframes create-step-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(91 140 255 / 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgb(91 140 255 / 0);
+  }
+}
+
+@keyframes create-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes create-check-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-create-step-pulse {
+  animation: create-step-pulse 1.8s ease-out infinite;
+}
+
+.animate-create-shimmer {
+  background-size: 200% 100%;
+  animation: create-shimmer 1.6s linear infinite;
+}
+
+.animate-create-check-pop {
+  animation: create-check-pop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 @keyframes transition-drop-glow {
   0%,
   100% {
@@ -165,6 +299,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .animate-create-step-pulse,
+  .animate-create-shimmer,
+  .animate-create-check-pop {
+    animation: none;
+  }
+
   .animate-transition-drop-glow {
     animation: none;
     box-shadow:

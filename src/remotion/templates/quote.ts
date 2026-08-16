@@ -2,11 +2,7 @@ import { QUOTE_CAPTION_Y } from "~/remotion/captions/style";
 
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
-export const QUOTE_TEMPLATE_IDS = [
-  "bold-white",
-  "typewriter",
-  "pop",
-] as const;
+export const QUOTE_TEMPLATE_IDS = ["bold-white", "typewriter", "pop"] as const;
 
 export type QuoteTemplateId = (typeof QUOTE_TEMPLATE_IDS)[number];
 
@@ -42,7 +38,7 @@ const QUOTE_TYPEWRITER_WORD = {
 } as const;
 
 const BOLD_WHITE_BASE: CaptionGroupStyle = {
-  fontFamily: "clash-display",
+  fontFamily: "chillax",
   fontSize: 125,
   y: 0,
   groupAnimation: "none",

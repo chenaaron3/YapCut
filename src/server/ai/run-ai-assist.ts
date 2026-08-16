@@ -1,19 +1,12 @@
 import { buildArollLayout } from "~/domain/arolls";
-import type { CompanionSfxMap } from "~/domain/companion-sfx-map";
 import {
   firstKeepTimelineSec,
   layoutTimelineDuration,
 } from "~/domain/layout-time";
+import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project-config";
 import { projectTimelineWords } from "~/domain/projection";
-import {
-  DEFAULT_LISTICLE_TEMPLATE_ID,
-  type ArollKeep,
-  type Edit,
-  type TemplateStyle,
-} from "~/domain/project-config";
-import { seedTitleTextVfx } from "~/domain/vfx";
 import { snapWordBoundsToKeepEdges } from "~/domain/snap";
-import type { TranscriptWord } from "~/domain/transcript";
+import { seedTitleTextVfx } from "~/domain/vfx";
 import { generateCompanionSfxEdits } from "~/server/ai/companion-sfx";
 import { generateEmphasisUpdates } from "~/server/ai/emphasis";
 import { generateEmphasisSfxEdits } from "~/server/ai/emphasis-sfx";
@@ -23,6 +16,16 @@ import { generateQuoteEdits } from "~/server/ai/quotes";
 import { generateTitle } from "~/server/ai/title";
 import { generateTransitionEdits } from "~/server/ai/transitions";
 import { generateZoomEdits } from "~/server/ai/zooms";
+
+import type { CompanionSfxMap } from "~/domain/companion-sfx-map";
+import type { ArollKeep, Edit, TemplateStyle } from "~/domain/project-config";
+import type { TranscriptWord } from "~/domain/transcript";
+
+export type AiAssistProgress = (
+  completed: number,
+  total: number,
+  label: string,
+) => void | Promise<void>;
 
 export type AiAssistInput = {
   arolls: ArollKeep[];
@@ -38,6 +41,7 @@ export type AiAssistInput = {
   listicleStyle?: TemplateStyle;
   /** Companion cue map (create uses shipped defaults). */
   companionSfx?: CompanionSfxMap;
+  onProgress?: AiAssistProgress;
 };
 
 export type AiAssistResult = {
@@ -72,7 +76,17 @@ export async function runAiAssist(
   input: AiAssistInput,
 ): Promise<AiAssistResult> {
   const wordsByAssetId = clearEmphasis(input.wordsByAssetId);
-  const { arolls, durationByAssetId } = input;
+  const { arolls, durationByAssetId, onProgress } = input;
+  const includeTitle = !input.title.trim() && input.generateTitleIfEmpty;
+  const total = (includeTitle ? 1 : 0) + 8;
+  let completed = 0;
+  const tick = async (label: string) => {
+    await onProgress?.(completed, total, label);
+  };
+  const done = async (label: string) => {
+    completed += 1;
+    await onProgress?.(completed, total, label);
+  };
 
   const layout = buildArollLayout(arolls, durationByAssetId);
   const keepRanges = layout
@@ -88,7 +102,8 @@ export async function runAiAssist(
   let title = input.title.trim();
   let edits: Edit[] = [...(input.baseEdits ?? [])];
 
-  if (!title && input.generateTitleIfEmpty) {
+  if (includeTitle) {
+    await tick("Writing title…");
     try {
       title = await generateTitle(timelineWords);
       console.log(`[ai-assist] title="${title}"`);
@@ -98,6 +113,7 @@ export async function runAiAssist(
         error instanceof Error ? error.message : error,
       );
     }
+    await done("Writing title…");
   }
 
   if (title) {
@@ -112,6 +128,7 @@ export async function runAiAssist(
     ];
   }
 
+  await tick("Finding punch-ins…");
   try {
     const zooms = await generateZoomEdits(timelineWords, edits);
     edits = [...edits, ...zooms];
@@ -122,7 +139,9 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
+  await done("Finding punch-ins…");
 
+  await tick("Finding listicles…");
   try {
     const listicles = await generateListicleEdits(
       timelineWords,
@@ -137,7 +156,9 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
+  await done("Finding listicles…");
 
+  await tick("Placing transitions…");
   try {
     edits = await generateTransitionEdits(timelineWords, edits, layout);
     console.log(
@@ -149,7 +170,9 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
+  await done("Placing transitions…");
 
+  await tick("Finding quotes…");
   try {
     const quotes = await generateQuoteEdits(timelineWords, edits);
     edits = [...edits, ...quotes];
@@ -160,7 +183,9 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
+  await done("Finding quotes…");
 
+  await tick("Marking emphasis…");
   try {
     const updates = await generateEmphasisUpdates(
       timelineWords,
@@ -177,12 +202,14 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
+  await done("Marking emphasis…");
 
   const timelineWordsAfterEmphasis = snapWordBoundsToKeepEdges(
     projectTimelineWords(arolls, wordsByAssetId, durationByAssetId),
     keepRanges,
   );
 
+  await tick("Adding slow zooms…");
   try {
     const slowZooms = await generatePacingReconcileZooms(
       timelineWordsAfterEmphasis,
@@ -196,7 +223,9 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
+  await done("Adding slow zooms…");
 
+  await tick("Placing companion SFX…");
   try {
     edits = await generateCompanionSfxEdits({
       edits,
@@ -209,7 +238,9 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
+  await done("Placing companion SFX…");
 
+  await tick("Placing emphasis SFX…");
   try {
     const sfxEdits = await generateEmphasisSfxEdits({
       words: timelineWordsAfterEmphasis,
@@ -223,6 +254,7 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
+  await done("Placing emphasis SFX…");
 
   return { title, edits, wordsByAssetId };
 }

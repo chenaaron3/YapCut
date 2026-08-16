@@ -1,7 +1,7 @@
 import "~/styles/globals.css";
 
 import { SessionProvider } from "next-auth/react";
-import { IBM_Plex_Sans } from "next/font/google";
+import { Cormorant_Garamond, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import { api } from "~/utils/api";
 
 import type { Session } from "next-auth";
@@ -13,13 +13,27 @@ const body = IBM_Plex_Sans({
   variable: "--font-body",
 });
 
+const display = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-display",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
+});
+
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
   return (
     <SessionProvider session={session}>
-      <div className={`${body.variable} font-sans antialiased`}>
+      <div
+        className={`${body.variable} ${display.variable} ${mono.variable} font-sans antialiased`}
+      >
         <Component {...pageProps} session={session} />
       </div>
     </SessionProvider>

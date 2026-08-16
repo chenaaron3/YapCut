@@ -4,12 +4,9 @@ import { serializeWaveform } from "~/domain/audio/waveform";
 import { db } from "~/server/db";
 import { assets } from "~/server/db/schema";
 import {
-  FalMeasureError,
-  type FalJobRef,
-  type LoudnormResult,
-  type WaveformResult,
   buildWaveformFromMedia,
   falLoudnormInput,
+  FalMeasureError,
   falWaveformInput,
   loudnessFromFal,
   measureMediaUrl,
@@ -19,6 +16,13 @@ import {
   roundLoudness,
   submitFalJob,
   waveformFromFal,
+} from "~/server/media/measure-audio";
+
+import type {
+  FalJobRef,
+  FalJobStatus,
+  LoudnormResult,
+  WaveformResult,
 } from "~/server/media/measure-audio";
 
 export type MeasureAssetOptions = {
@@ -125,9 +129,11 @@ export async function startMeasureAssetJobs(asset: {
   return { assetId: asset.id, loudnorm, waveform };
 }
 
-export async function pollMeasureAssetJobs(
-  jobs: MeasureJobSet,
-): Promise<{ done: boolean }> {
+export async function pollMeasureAssetJobs(jobs: MeasureJobSet): Promise<{
+  done: boolean;
+  loudnorm: FalJobStatus;
+  waveform: FalJobStatus;
+}> {
   const [loudnorm, waveform] = await Promise.all([
     pollFalJob(jobs.loudnorm),
     pollFalJob(jobs.waveform),
@@ -135,7 +141,11 @@ export async function pollMeasureAssetJobs(
   console.log(
     `[create] fal poll asset=${jobs.assetId} loudnorm=${loudnorm} waveform=${waveform}`,
   );
-  return { done: loudnorm === "COMPLETED" && waveform === "COMPLETED" };
+  return {
+    done: loudnorm === "COMPLETED" && waveform === "COMPLETED",
+    loudnorm,
+    waveform,
+  };
 }
 
 export async function finishMeasureAssetJobs(

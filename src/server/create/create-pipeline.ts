@@ -1,14 +1,21 @@
 import { asc, eq } from "drizzle-orm";
 
+import {
+  createProgressEvent,
+  overallCreateProgress,
+} from "~/domain/create-progress";
 import { buildArollKeepsFromWords } from "~/domain/keeps";
 import {
+  assignKeepIds,
   DEFAULT_CAPTION_TEMPLATE_ID,
   emptyProjectConfig,
-  assignKeepIds,
-  type ProjectConfig,
 } from "~/domain/project-config";
-import type { TranscriptWord } from "~/domain/transcript";
 import { runAiAssist } from "~/server/ai/run-ai-assist";
+import { measureStageEvent } from "~/server/create/progress-estimate";
+import {
+  parseCreateProgress,
+  publishCreateProgress,
+} from "~/server/create/publish-progress";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
 import { measureAsset } from "~/server/media/measure-asset";
@@ -17,6 +24,9 @@ import {
   getWhisperXPrediction,
   startWhisperXPrediction,
 } from "~/server/transcribe/whisperx";
+
+import type { ProjectConfig } from "~/domain/project-config";
+import type { TranscriptWord } from "~/domain/transcript";
 
 const FAILURE_REASON_MAX = 2000;
 
@@ -37,11 +47,26 @@ export async function markCreateFailed(
   reason: string,
 ): Promise<void> {
   console.error(`[create] project ${projectId} failed:`, reason);
+  const truncated = truncateReason(reason);
+  const [row] = await db
+    .select({ createProgress: projects.createProgress })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+  const prev = parseCreateProgress(row?.createProgress);
+  await publishCreateProgress(
+    projectId,
+    createProgressEvent(
+      "failed",
+      prev ? overallCreateProgress(prev) : 0,
+      truncated,
+    ),
+  );
   await db
     .update(projects)
     .set({
       status: "failed",
-      failureReason: truncateReason(reason),
+      failureReason: truncated,
       updatedAt: new Date(),
     })
     .where(eq(projects.id, projectId));
@@ -183,9 +208,7 @@ export async function saveAssetTranscript(
 ): Promise<void> {
   const poll = await getWhisperXPrediction(predictionId);
   if (poll.status !== "succeeded" || !poll.result) {
-    throw new Error(
-      poll.error ?? `WhisperX not ready (status=${poll.status})`,
-    );
+    throw new Error(poll.error ?? `WhisperX not ready (status=${poll.status})`);
   }
 
   const { words, language, raw } = poll.result;
@@ -277,9 +300,13 @@ export async function measureCreateAssets(projectId: string): Promise<void> {
     .from(assets)
     .where(eq(assets.projectId, projectId));
 
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+    const parts = rows.map((_, j) => (j < i ? 1 : j === i ? 0.5 : 0));
+    await publishCreateProgress(projectId, measureStageEvent(parts));
     await measureCreateAsset(row);
   }
+  await publishCreateProgress(projectId, measureStageEvent(rows.map(() => 1)));
 }
 
 /**
@@ -337,12 +364,23 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
     throw new Error("Keep builder produced empty arolls");
   }
 
+  await publishCreateProgress(projectId, createProgressEvent("ai_analysis", 0));
   const assist = await runAiAssist({
     arolls,
     wordsByAssetId,
     durationByAssetId,
     title: project.title?.trim() ?? "",
     generateTitleIfEmpty: true,
+    onProgress: async (completed, total, label) => {
+      await publishCreateProgress(
+        projectId,
+        createProgressEvent(
+          "ai_analysis",
+          total > 0 ? completed / total : 0,
+          label,
+        ),
+      );
+    },
   });
 
   for (const [assetId, words] of assist.wordsByAssetId) {
@@ -368,9 +406,12 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
       configUpdatedAt: now,
       status: "ready",
       failureReason: null,
+      createProgress: createProgressEvent("ready", 1),
       updatedAt: now,
     })
     .where(eq(projects.id, projectId));
+
+  await publishCreateProgress(projectId, createProgressEvent("ready", 1));
 
   console.log(`[create] project ${projectId} → ready`);
 }
