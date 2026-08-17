@@ -1,6 +1,5 @@
 export const CREATE_PROGRESS_STAGES = [
-  "transcribe",
-  "measure",
+  "media",
   "ai_analysis",
   "ready",
   "failed",
@@ -16,8 +15,7 @@ export type CreateProgressEvent = {
 };
 
 export const CREATE_STAGE_LABEL: Record<CreateProgressStage, string> = {
-  transcribe: "Transcribing audio…",
-  measure: "Measuring loudness…",
+  media: "Transcribing audio…",
   ai_analysis: "Analyzing with AI…",
   ready: "Ready",
   failed: "Create failed",
@@ -25,10 +23,13 @@ export const CREATE_STAGE_LABEL: Record<CreateProgressStage, string> = {
 
 /** Share of the overall bar before/at each non-terminal stage. */
 export const CREATE_STAGE_WEIGHT = {
-  transcribe: 0.45,
-  measure: 0.15,
+  media: 0.6,
   ai_analysis: 0.4,
 } as const;
+
+/** WhisperX vs fal within the media stage (WhisperX is slower). */
+const MEDIA_TRANSCRIBE_SHARE = 0.75;
+const MEDIA_MEASURE_SHARE = 0.25;
 
 export const TRANSCRIBE_PROGRESS_TAU_SEC = 45;
 export const MEASURE_PROGRESS_TAU_SEC = 15;
@@ -85,16 +86,21 @@ export function overallCreateProgress(event: CreateProgressEvent): number {
     return clampProgress(event.progress);
   }
   const local = clampProgress(event.progress);
-  if (event.stage === "transcribe") {
-    return local * CREATE_STAGE_WEIGHT.transcribe;
+  if (event.stage === "media") {
+    return local * CREATE_STAGE_WEIGHT.media;
   }
-  if (event.stage === "measure") {
-    return CREATE_STAGE_WEIGHT.transcribe + local * CREATE_STAGE_WEIGHT.measure;
-  }
-  return (
-    CREATE_STAGE_WEIGHT.transcribe +
-    CREATE_STAGE_WEIGHT.measure +
-    local * CREATE_STAGE_WEIGHT.ai_analysis
+  return CREATE_STAGE_WEIGHT.media + local * CREATE_STAGE_WEIGHT.ai_analysis;
+}
+
+/** Combine parallel WhisperX + fal progress into the media stage. */
+export function mediaProgressEvent(
+  transcribe: number,
+  measure: number,
+): CreateProgressEvent {
+  return createProgressEvent(
+    "media",
+    clampProgress(transcribe) * MEDIA_TRANSCRIBE_SHARE +
+      clampProgress(measure) * MEDIA_MEASURE_SHARE,
   );
 }
 

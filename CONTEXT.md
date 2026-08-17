@@ -214,10 +214,9 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 **Create workflow** (Vercel Workflows):
 
 1. Presigned upload → Project + Assets (`processing`)
-2. WhisperX per A-roll video (language autodetect, diarization off) → Transcript rows
-3. Measure A-roll LUFS + true peak + waveform via fal ffmpeg-api (enqueue, then poll with workflow `sleep()`; create fails if measure fails)
-4. Keep builder (long gaps) → `arolls`
-5. AI assist (create + editor **AI** button), on **timeline projected** transcript (kept words only):
+2. WhisperX and fal measure in parallel per A-roll (enqueue all, poll; create fails if either fails). WhisperX: language autodetect, diarization off → Transcript rows. Measure: LUFS + true peak + waveform via fal ffmpeg-api.
+3. Keep builder (long gaps) → `arolls`
+4. AI assist (create + editor **AI** button), on **timeline projected** transcript (kept words only):
    1. **speech cleanup** (create only) — vocalized-pause sweep + LLM retakes/false starts; keep surgery like a manual word delete (gap cells remain). Soft-fail. Editor re-run skips this.
    2. title if empty → `Project.title` + seed `vfx/text`
    3. punch-in zooms
@@ -228,7 +227,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    8. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
    9. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
       Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
-6. Seed default `captions` TemplateStyle → `ready` (create only)
+5. Seed default `captions` TemplateStyle → `ready` (create only)
 
 **Export workflow**:
 Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920 @ 30fps. On success writes video export key and **Cover** key on the Project.

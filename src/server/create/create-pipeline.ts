@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 
 import {
   createProgressEvent,
+  meanProgress,
   overallCreateProgress,
 } from "~/domain/create-progress";
 import { buildArollKeepsFromWords } from "~/domain/keeps";
@@ -11,7 +12,6 @@ import {
   emptyProjectConfig,
 } from "~/domain/project-config";
 import { runAiAssist } from "~/server/ai/run-ai-assist";
-import { measureStageEvent } from "~/server/create/progress-estimate";
 import {
   parseCreateProgress,
   publishCreateProgress,
@@ -303,10 +303,13 @@ export async function measureCreateAssets(projectId: string): Promise<void> {
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]!;
     const parts = rows.map((_, j) => (j < i ? 1 : j === i ? 0.5 : 0));
-    await publishCreateProgress(projectId, measureStageEvent(parts));
+    await publishCreateProgress(
+      projectId,
+      createProgressEvent("media", meanProgress(parts)),
+    );
     await measureCreateAsset(row);
   }
-  await publishCreateProgress(projectId, measureStageEvent(rows.map(() => 1)));
+  await publishCreateProgress(projectId, createProgressEvent("media", 1));
 }
 
 /**

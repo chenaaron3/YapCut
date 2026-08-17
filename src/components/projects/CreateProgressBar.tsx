@@ -1,4 +1,4 @@
-import { AudioLines, Check, CircleAlert, Gauge, Sparkles } from "lucide-react";
+import { AudioLines, Check, CircleAlert, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -14,25 +14,22 @@ import type {
   CreateProgressStage,
 } from "~/domain/create-progress";
 
-const PIPELINE_STEPS = ["transcribe", "measure", "ai_analysis"] as const;
+const PIPELINE_STEPS = ["media", "ai_analysis"] as const;
 type PipelineStep = (typeof PIPELINE_STEPS)[number];
 
 const STEP_META: Record<
   PipelineStep,
   { title: string; Icon: typeof AudioLines }
 > = {
-  transcribe: { title: "Transcribe", Icon: AudioLines },
-  measure: { title: "Measure", Icon: Gauge },
+  media: { title: "Transcribe", Icon: AudioLines },
   ai_analysis: { title: "AI analysis", Icon: Sparkles },
 };
 
 type StepVisual = "pending" | "active" | "done" | "error";
 
-function failedStep(overall: number): PipelineStep {
-  if (overall < CREATE_STAGE_WEIGHT.transcribe) return "transcribe";
-  if (overall < CREATE_STAGE_WEIGHT.transcribe + CREATE_STAGE_WEIGHT.measure) {
-    return "measure";
-  }
+function failedStep(event: CreateProgressEvent): PipelineStep {
+  const overall = overallCreateProgress(event);
+  if (overall < CREATE_STAGE_WEIGHT.media) return "media";
   return "ai_analysis";
 }
 
@@ -40,9 +37,9 @@ function stepVisual(
   step: PipelineStep,
   event: CreateProgressEvent | null,
 ): StepVisual {
-  const stage: CreateProgressStage = event?.stage ?? "transcribe";
-  if (stage === "failed") {
-    const failed = failedStep(event ? overallCreateProgress(event) : 0);
+  const stage: CreateProgressStage = event?.stage ?? "media";
+  if (event?.stage === "failed") {
+    const failed = failedStep(event);
     const order = PIPELINE_STEPS.indexOf(step);
     const failAt = PIPELINE_STEPS.indexOf(failed);
     if (order < failAt) return "done";
@@ -51,9 +48,7 @@ function stepVisual(
   }
   if (stage === "ready") return "done";
   const current = PIPELINE_STEPS.indexOf(
-    stage === "transcribe" || stage === "measure" || stage === "ai_analysis"
-      ? stage
-      : "transcribe",
+    stage === "media" || stage === "ai_analysis" ? stage : "media",
   );
   const order = PIPELINE_STEPS.indexOf(step);
   if (order < current) return "done";
@@ -152,7 +147,7 @@ export function CreateProgressBar({ event, failed, failureReason }: Props) {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={failed ? undefined : pct}
-          aria-label={event?.label ?? CREATE_STAGE_LABEL.transcribe}
+          aria-label={event?.label ?? CREATE_STAGE_LABEL.media}
         >
           <div
             className={cn(
@@ -170,7 +165,7 @@ export function CreateProgressBar({ event, failed, failureReason }: Props) {
           </p>
         ) : (
           <p className="mt-3 text-sm text-[#432E6F]">
-            {event?.label ?? CREATE_STAGE_LABEL.transcribe}
+            {event?.label ?? CREATE_STAGE_LABEL.media}
           </p>
         )}
       </div>

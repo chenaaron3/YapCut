@@ -18,8 +18,7 @@ export function ProjectsEmptyLibrary({ onCreate }: Props) {
         Create your first edit
       </span>
       <span className="mt-2 max-w-sm text-sm leading-relaxed text-[#432E6F]">
-        Drop in A-roll. We’ll transcribe, measure, and seed AI so you can cut
-        from the transcript.
+        Drop in A-roll. We’ll transcribe and edit the video with AI.
       </span>
     </button>
   );

@@ -1,12 +1,9 @@
 import {
-  createProgressEvent,
   estimateJobProgress,
-  meanProgress,
   MEASURE_PROGRESS_TAU_SEC,
   TRANSCRIBE_PROGRESS_TAU_SEC,
 } from "~/domain/create-progress";
 
-import type { CreateProgressEvent } from "~/domain/create-progress";
 import type { FalJobStatus } from "~/server/media/measure-audio";
 
 export function whisperJobProgress(
@@ -51,16 +48,4 @@ export function falJobProgress(
     nowMs,
     tauSec: MEASURE_PROGRESS_TAU_SEC,
   });
-}
-
-export function transcribeStageEvent(
-  assetProgress: readonly number[],
-): CreateProgressEvent {
-  return createProgressEvent("transcribe", meanProgress(assetProgress));
-}
-
-export function measureStageEvent(
-  assetProgress: readonly number[],
-): CreateProgressEvent {
-  return createProgressEvent("measure", meanProgress(assetProgress));
 }

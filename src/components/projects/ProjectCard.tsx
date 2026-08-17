@@ -174,7 +174,7 @@ export function ProjectCard({
               <div className="mb-1.5 flex items-center gap-1.5">
                 <LoaderCircle className="size-3 animate-spin text-[#DD5533]" />
                 <p className="text-muted-foreground truncate text-xs">
-                  {createProgress?.label ?? CREATE_STAGE_LABEL.transcribe}
+                  {createProgress?.label ?? CREATE_STAGE_LABEL.media}
                 </p>
               </div>
               <div className="h-1 overflow-hidden rounded-full bg-[#450E16]/15">
