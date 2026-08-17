@@ -58,7 +58,6 @@ yarn-error.log*
 # Local SFX / music packs (seeded to S3; not committed)
 /public/sfx/
 /public/music/
-/public/landing/
 
 # Schedule CLI secrets + browser profile
 /secrets/
