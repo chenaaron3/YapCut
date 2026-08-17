@@ -1,11 +1,5 @@
-import type { CSSProperties } from "react";
 import { Video } from "@remotion/media";
-import {
-  AbsoluteFill,
-  Freeze,
-  Sequence,
-  useVideoConfig,
-} from "remotion";
+import { AbsoluteFill, Freeze, Sequence, useVideoConfig } from "remotion";
 
 import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
 
@@ -13,6 +7,7 @@ import type {
   TransitionClipProp,
   TransitionPictureProp,
 } from "~/remotion/helpers/types";
+import type { CSSProperties } from "react";
 
 const VIDEO_FILL: CSSProperties = { width: "100%", height: "100%" };
 
@@ -125,4 +120,3 @@ export function StitchOverlay({
     </AbsoluteFill>
   );
 }
-

@@ -41,8 +41,8 @@ import {
   projectTimelineWords,
   wordIndexAtTimelineSec,
 } from "~/domain/projection";
-import { primaryId } from "~/editor/lib/selection";
 import { placeFailureMessage } from "~/editor/lib/place-failure";
+import { primaryId } from "~/editor/lib/selection";
 import { snapWordActionRangeToKeeps } from "~/editor/lib/snap";
 import { wordActionRange } from "~/editor/lib/word-selection";
 import { useSelection } from "~/editor/selection-store";
@@ -59,8 +59,7 @@ import type {
   CompanionSfxCueId,
   CompanionSfxSource,
 } from "~/domain/companion-sfx-map";
-import type { RangeEdge } from "~/domain/edits";
-import type { EditPatch, EditSeed } from "~/domain/edits";
+import type { EditPatch, EditSeed, RangeEdge } from "~/domain/edits";
 import type { EmphasisStyle } from "~/domain/emphasis-style";
 import type { MediaRefPatch } from "~/domain/media";
 import type {

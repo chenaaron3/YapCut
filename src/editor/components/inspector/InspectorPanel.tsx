@@ -1,10 +1,8 @@
-import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
-import type { Edit } from "~/domain/project-config";
 import { BRollInspector } from "~/editor/components/inspector/BRollInspector";
-import { CompanionSfxFields } from "~/editor/components/inspector/field";
 import { CaptionsInspector } from "~/editor/components/inspector/CaptionsInspector";
+import { CompanionSfxFields } from "~/editor/components/inspector/field";
 import { ListicleVfxInspector } from "~/editor/components/inspector/ListicleVfxInspector";
 import { MusicInspector } from "~/editor/components/inspector/MusicInspector";
 import { ProjectSettingsInspector } from "~/editor/components/inspector/ProjectSettingsInspector";
@@ -17,6 +15,9 @@ import { ZoomInspector } from "~/editor/components/inspector/ZoomInspector";
 import { primaryId } from "~/editor/lib/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
+
+import type { Edit } from "~/domain/project-config";
+import type { ReactNode } from "react";
 
 /**
  * Selection inspector column. Always reserves ~25% of the transcript row
@@ -48,8 +49,7 @@ export function InspectorPanel() {
     }
   } else if (selection?.kind === "edit" && config) {
     const id = primaryId(selection);
-    const edit =
-      id != null ? config.edits.find((e) => e.id === id) : undefined;
+    const edit = id != null ? config.edits.find((e) => e.id === id) : undefined;
     if (edit?.kind === "vfx" && edit.type === "text") {
       title = "Title";
       body = <TextVfxInspector edit={edit} />;
@@ -80,26 +80,26 @@ export function InspectorPanel() {
 
   return (
     <aside
-      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-l border-border bg-panel"
+      className="border-border bg-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-l"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
       {title && body ? (
         <>
-          <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-            <h2 className="ember-mono text-[10px] font-medium tracking-[.12em] text-foreground uppercase">
+          <div className="border-border flex shrink-0 items-center justify-between border-b px-3 py-2">
+            <h2 className="ember-mono text-foreground text-[10px] font-medium tracking-[.12em] uppercase">
               {title}
             </h2>
             <button
               type="button"
-              className="rounded p-0.5 text-muted-foreground hover:bg-panel-2 hover:text-foreground"
+              className="text-muted-foreground hover:bg-panel-2 hover:text-foreground rounded p-0.5"
               aria-label="Close inspector"
               onClick={() => clearSelection()}
             >
               <X className="size-3.5" />
             </button>
           </div>
-          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-3">
+          <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-3">
             {body}
             {companionEdit ? (
               <div className="mt-4">

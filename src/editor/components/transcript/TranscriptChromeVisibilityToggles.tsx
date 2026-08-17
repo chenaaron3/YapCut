@@ -136,7 +136,7 @@ export function TranscriptChromeVisibilityToggles() {
                 className={cn("size-2 shrink-0 rounded-full", spec.dotClass)}
               />
               <span className="pr-4 whitespace-nowrap">{label}</span>
-              <span className="ml-auto text-[11px] tabular-nums text-[#C4B8A8]">
+              <span className="ml-auto text-[11px] text-[#C4B8A8] tabular-nums">
                 {count}
               </span>
               <RowIcon className="size-3.5 text-[#C4B8A8]" />

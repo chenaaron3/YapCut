@@ -3,16 +3,13 @@ import { produce } from "immer";
 import { buildArollLayout, durationMapFromArolls } from "~/domain/arolls";
 import { SFX_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import { withBrollKenBurns } from "~/domain/broll";
+import { withCompanionSfx } from "~/domain/companion-sfx";
 import {
   clampTimelineRangeToMedia,
   isDurationLimitedMedia,
   withMediaOffset,
   withVolume,
 } from "~/domain/media";
-import {
-  withCompanionSfx,
-  type CompanionSfxAsset,
-} from "~/domain/companion-sfx";
 import { nextEditId } from "~/domain/project-config";
 import { quoteRangeConflict, quoteRangeConflicts } from "~/domain/quote";
 import { isShakeEdit, withShakeIntensity } from "~/domain/shake";
@@ -24,6 +21,7 @@ import {
 } from "~/domain/transition";
 
 import type { ArollLayoutCell } from "~/domain/arolls";
+import type { CompanionSfxAsset } from "~/domain/companion-sfx";
 import type {
   Edit,
   EditBase,

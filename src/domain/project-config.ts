@@ -4,19 +4,24 @@ import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import {
   companionSfxMapSchema,
   defaultCompanionSfxMap,
-  type CompanionSfxMap,
 } from "~/domain/companion-sfx-map";
 import {
   DEFAULT_EMPHASIS_FONT_FAMILY,
   DEFAULT_EMPHASIS_SCALE,
   emphasisStyleSchema,
   optionalEmphasisStyleSchema,
-  type EmphasisStyle,
 } from "~/domain/emphasis-style";
+
+import type { CompanionSfxMap } from "~/domain/companion-sfx-map";
+import type { EmphasisStyle } from "~/domain/emphasis-style";
 import type { LocalTime, TimelineTime } from "~/domain/time";
 
 export type { EmphasisStyle };
-export type { CompanionSfxCueId, CompanionSfxMap, CompanionSfxSource } from "~/domain/companion-sfx-map";
+export type {
+  CompanionSfxCueId,
+  CompanionSfxMap,
+  CompanionSfxSource,
+} from "~/domain/companion-sfx-map";
 
 /** Catalog base + sparse user overrides. Overlay adds a subheading bag. */
 export type TemplateStyle = {
@@ -88,8 +93,7 @@ export function editHidesCaptions(
   edit: EditBase,
 ): edit is EditBase & CanHideCaptions {
   return (
-    "hideCaptions" in edit &&
-    (edit as CanHideCaptions).hideCaptions === true
+    "hideCaptions" in edit && (edit as CanHideCaptions).hideCaptions === true
   );
 }
 
@@ -214,10 +218,7 @@ export type TransitionEdit = EditBase & {
 };
 
 export type VfxEdit =
-  | VfxTextEdit
-  | VfxQuoteEdit
-  | VfxListicleEdit
-  | VfxShakeEdit;
+  VfxTextEdit | VfxQuoteEdit | VfxListicleEdit | VfxShakeEdit;
 
 export type Edit = BrollEdit | SfxEdit | ZoomEdit | VfxEdit | TransitionEdit;
 
@@ -383,11 +384,9 @@ const brollEditSchema = editBaseSchema
     kenBurns: z.number().optional(),
   });
 
-const sfxEditSchema = editBaseSchema
-  .merge(mediaRefSchema)
-  .extend({
-    kind: z.literal("sfx"),
-  });
+const sfxEditSchema = editBaseSchema.merge(mediaRefSchema).extend({
+  kind: z.literal("sfx"),
+});
 
 const transitionStitchSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("opening") }),
@@ -437,9 +436,7 @@ export const projectConfigSchema = z.object({
     .default(null),
 });
 
-export function nextKeepId(
-  arolls: readonly Pick<ArollKeep, "id">[],
-): KeepId {
+export function nextKeepId(arolls: readonly Pick<ArollKeep, "id">[]): KeepId {
   let max = 0;
   for (const keep of arolls) {
     if (keep.id > max) max = keep.id;
@@ -448,9 +445,7 @@ export function nextKeepId(
 }
 
 /** Mint 1..n ids for a new keep list (create pipeline). */
-export function assignKeepIds(
-  arolls: readonly LocalTime[],
-): ArollKeep[] {
+export function assignKeepIds(arolls: readonly LocalTime[]): ArollKeep[] {
   return arolls.map((keep, i) => ({
     id: i + 1,
     assetId: keep.assetId,

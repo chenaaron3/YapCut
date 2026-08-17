@@ -1,15 +1,15 @@
-import { buildArollLayout, type ArollLayoutCell } from "~/domain/arolls";
+import { buildArollLayout } from "~/domain/arolls";
+import {
+  arollPlaybackGain,
+  mixPlaybackVolume,
+  MUSIC_VOLUME_DEFAULT,
+  sfxPlaybackVolume,
+} from "~/domain/audio/mix-levels";
+import { pickEmphasisStyle } from "~/domain/emphasis-style";
 import {
   outputDurationFromArolls,
   timelineRangeToOutput,
 } from "~/domain/layout-time";
-import {
-  MUSIC_VOLUME_DEFAULT,
-  arollPlaybackGain,
-  mixPlaybackVolume,
-  sfxPlaybackVolume,
-} from "~/domain/audio/mix-levels";
-import { pickEmphasisStyle } from "~/domain/emphasis-style";
 import {
   editHidesCaptions,
   isTextBaseEdit,
@@ -18,8 +18,8 @@ import {
 import { projectOutputWords } from "~/domain/projection";
 import { resolveShakeIntensity } from "~/domain/shake";
 import { resolveTransform } from "~/domain/transform";
-import { editMiddleSec } from "~/domain/vfx";
 import { keepsForStitch } from "~/domain/transition";
+import { editMiddleSec } from "~/domain/vfx";
 import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/zoom";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
@@ -47,6 +47,7 @@ import {
 } from "~/remotion/templates/quote";
 import { resolveTemplateStyle } from "~/remotion/templates/style";
 
+import type { ArollLayoutCell } from "~/domain/arolls";
 import type {
   EmphasisStyle,
   ResolvedEmphasisStyle,

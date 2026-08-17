@@ -4,9 +4,9 @@ import { listicleSeedFromWords } from "~/domain/listicle";
 import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project-config";
 import { SFX_DRAG_MIME, sfxSeed } from "~/domain/sfx";
 import {
-  TRANSITION_DRAG_MIME,
   isTransitionTemplateId,
   rangeForStitch,
+  TRANSITION_DRAG_MIME,
   transitionAtStitch,
   transitionSeedFromWord,
 } from "~/domain/transition";
@@ -97,11 +97,7 @@ function placeListicleFromDrop(
   const words = useEditor.getState().getGlobalWords();
   const word = words[globalIndex];
   if (!word) return;
-  const range = wordActionRange(
-    useSelection.getState().selection,
-    word,
-    words,
-  );
+  const range = wordActionRange(useSelection.getState().selection, word, words);
   placeEditOnWord(
     globalIndex,
     listicleSeedFromWords(

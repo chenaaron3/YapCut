@@ -1,15 +1,15 @@
-import type { EditSeed } from "~/domain/edits";
 import {
   DEFAULT_TEXT_TEMPLATE_ID,
   isTextBaseEdit,
   nextEditId,
   overlayMidpointSec,
-  type Edit,
-  type VfxTextEdit,
 } from "~/domain/project-config";
-import { OVERLAY_TRANSFORM_DEFAULTS } from "~/domain/transform";
 import { quoteSeed } from "~/domain/quote";
 import { shakeSeed } from "~/domain/shake";
+import { OVERLAY_TRANSFORM_DEFAULTS } from "~/domain/transform";
+
+import type { EditSeed } from "~/domain/edits";
+import type { Edit, VfxTextEdit } from "~/domain/project-config";
 
 /** Default timeline span for a seeded title text VFX. */
 export const DEFAULT_TEXT_VFX_DURATION_SEC = 5;
@@ -34,10 +34,7 @@ export const VFX_PRESETS: readonly VfxDragPayload[] = [
 ] as const;
 
 /** Place-time defaults for a text VFX (range filled by `placeEdit`). */
-export function textSeed(): Extract<
-  EditSeed,
-  { kind: "vfx"; type: "text" }
-> {
+export function textSeed(): Extract<EditSeed, { kind: "vfx"; type: "text" }> {
   return {
     kind: "vfx",
     type: "text",

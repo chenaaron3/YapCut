@@ -2,15 +2,15 @@ import { pathToFileURL } from "node:url";
 
 import { eq } from "drizzle-orm";
 
-import type { PlatformId } from "~/domain/schedule";
+import { SCHEDULE_OPERATOR_EMAIL, type PlatformId } from "~/domain/schedule";
 import { db } from "~/server/db";
 import { users } from "~/server/db/schema";
 import { executeScheduleRun } from "~/schedule/execute-run";
 import { createLocalPublishers } from "~/schedule/local";
 
 function parseArgs(argv: string[]) {
-  let userEmail: string | undefined =
-    process.env.SCHEDULE_USER_EMAIL ?? undefined;
+  let userEmail: string =
+    process.env.SCHEDULE_USER_EMAIL ?? SCHEDULE_OPERATOR_EMAIL;
   let projectId: string | undefined;
   let platformsOverride: PlatformId[] | undefined;
 
@@ -44,12 +44,6 @@ function parseArgs(argv: string[]) {
     throw new Error(
       `Unknown args: ${rest.join(" ")}\n` +
         "Usage: npm run schedule -- [--user email] [--project id] [--platforms youtube instagram tiktok]",
-    );
-  }
-
-  if (!userEmail) {
-    throw new Error(
-      "Pass --user you@example.com or set SCHEDULE_USER_EMAIL",
     );
   }
 
