@@ -1,9 +1,18 @@
+"use client";
+
 import { Check, Share2, Upload } from "lucide-react";
+import { useRef } from "react";
 
 import { StoryCursor } from "~/components/landing/StoryCursor";
-import { lerp, spanProgress } from "~/components/landing/use-story-progress";
+import {
+  lerp,
+  spanProgress,
+  useElementPercent,
+} from "~/components/landing/use-story-progress";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
+
+import type { Ref } from "react";
 
 const TRANSCRIPT_WORDS = [
   { word: "The" },
@@ -169,16 +178,19 @@ function HighlightedWord({
   mark,
   appear,
   amount,
+  wordRef,
 }: {
   word: string;
   mark?: MarkId;
   appear: number;
   amount: number;
+  wordRef?: Ref<HTMLSpanElement>;
 }) {
   const style = mark ? MARKS.find((item) => item.id === mark) : undefined;
 
   return (
     <span
+      ref={wordRef}
       className="inline-block rounded-[8px] px-1"
       style={{
         opacity: appear,
@@ -217,11 +229,13 @@ function TranscriptCard({
   zoomAlready,
   zoomThere,
   animateWords,
+  wordRefs,
 }: {
   progress: number;
   zoomAlready: number;
   zoomThere: number;
   animateWords: boolean;
+  wordRefs?: Partial<Record<"already" | "there.", Ref<HTMLSpanElement>>>;
 }) {
   const amounts = {
     zoom: markAmount(progress, "zoom"),
@@ -257,6 +271,11 @@ function TranscriptCard({
               mark={treatment.mark}
               appear={appear}
               amount={treatment.amount}
+              wordRef={
+                item.word === "already" || item.word === "there."
+                  ? wordRefs?.[item.word]
+                  : undefined
+              }
             />
           );
         })}
@@ -390,6 +409,12 @@ const SHARE_ICONS = [
 ] as const;
 
 export function StoryUpload({ progress }: { progress: number }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const fromRef = useRef<HTMLDivElement>(null);
+  const toRef = useRef<HTMLDivElement>(null);
+  const from = useElementPercent(rootRef, fromRef);
+  const to = useElementPercent(rootRef, toRef);
+
   const grab = spanProgress(progress, 0.04, 0.12);
   const drag = spanProgress(progress, 0.12, 0.45);
   const drop = spanProgress(progress, 0.45, 0.56);
@@ -398,30 +423,34 @@ export function StoryUpload({ progress }: { progress: number }) {
   const overZone = spanProgress(drag, 0.55, 1);
   const pressed = grab > 0.25 && grab < 1 && drag < 0.08;
   const flying = travel > 0.02 && confirm < 0.92;
+  const x = lerp(from.x, to.x, travel);
+  const y = lerp(from.y, to.y, travel);
 
   return (
-    <div className="relative flex h-full flex-col gap-3">
+    <div ref={rootRef} className="relative flex h-full flex-col gap-2 sm:gap-3">
       <PanelHeader
         label="01 / drop it in"
         badge="Upload clip"
         tone="gold"
         badgeTone="teal"
       />
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_2fr] gap-3">
-        <div className="flex min-h-0 flex-col rounded-[16px] border border-[#F5F9CE]/25 bg-[#BC2D29] p-2.5 shadow-[6px_6px_0_rgba(69,14,22,.75)]">
-          <div className="ember-mono mb-2 flex shrink-0 items-center justify-between text-[9px] tracking-[.13em] text-[#F5F9CE]/65 uppercase">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_minmax(0,1.1fr)] gap-2 lg:grid-cols-[1fr_2fr] lg:grid-rows-none lg:gap-3">
+        <div className="flex min-h-0 flex-col rounded-[16px] border border-[#F5F9CE]/25 bg-[#BC2D29] p-2 shadow-[6px_6px_0_rgba(69,14,22,.75)] sm:p-2.5">
+          <div className="ember-mono mb-1.5 flex shrink-0 items-center justify-between text-[9px] tracking-[.13em] text-[#F5F9CE]/65 uppercase">
             <span>Finder</span>
             <span>01 file</span>
           </div>
           <div
+            ref={fromRef}
             className="flex min-h-0 flex-1 items-center justify-center"
             style={{ opacity: flying ? 0.28 : 1 - confirm * 0.35 }}
           >
-            <RawClip className="h-full max-h-[210px] w-auto max-w-full" />
+            <RawClip className="h-full max-h-[88px] w-auto max-w-full lg:max-h-[210px]" />
           </div>
         </div>
 
         <div
+          ref={toRef}
           className="relative flex min-h-0 items-center justify-center rounded-[16px] border-2 border-dashed"
           style={{
             borderColor: `color-mix(in srgb, #2DD4BF ${30 + overZone * 50 + confirm * 20}%, transparent)`,
@@ -429,13 +458,13 @@ export function StoryUpload({ progress }: { progress: number }) {
           }}
         >
           <div
-            className="grid size-12 place-items-center rounded-full border border-[#2DD4BF] text-[#2DD4BF]"
+            className="grid size-10 place-items-center rounded-full border border-[#2DD4BF] text-[#2DD4BF] sm:size-12"
             style={{ opacity: 1 - confirm }}
           >
             <Upload className="size-5" />
           </div>
           <div
-            className="absolute top-1/2 left-1/2 grid size-14 place-items-center rounded-full bg-[#2DD4BF] text-[#450E16] shadow-[0_0_0_8px_rgb(45_212_191/0.22)]"
+            className="absolute top-1/2 left-1/2 grid size-12 place-items-center rounded-full bg-[#2DD4BF] text-[#450E16] shadow-[0_0_0_8px_rgb(45_212_191/0.22)] sm:size-14"
             style={{
               opacity: confirm,
               transform: `translate(-50%, -50%) scale(${0.4 + confirm * 0.6})`,
@@ -450,19 +479,19 @@ export function StoryUpload({ progress }: { progress: number }) {
         <div
           className="pointer-events-none absolute z-20"
           style={{
-            left: `${lerp(16, 66, travel)}%`,
-            top: `${lerp(54, 54, travel)}%`,
+            left: `${x}%`,
+            top: `${y}%`,
             opacity: 1 - confirm,
             transform: `translate(-50%, -50%) scale(${pressed ? 0.96 : 1})`,
           }}
         >
-          <RawClip className="w-[76px] shadow-[5px_6px_0_rgba(69,14,22,.75)]" />
+          <RawClip className="w-[52px] shadow-[5px_6px_0_rgba(69,14,22,.75)] lg:w-[76px]" />
         </div>
       ) : null}
 
       <StoryCursor
-        x={lerp(16, 66, travel)}
-        y={lerp(54, 54, travel)}
+        x={x}
+        y={y}
         pressed={pressed || (drop > 0 && drop < 0.55)}
         visible={confirm < 0.85}
       />
@@ -488,6 +517,12 @@ export function StoryTranscript({ progress }: { progress: number }) {
 }
 
 export function StoryEdit({ progress }: { progress: number }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const alreadyRef = useRef<HTMLSpanElement>(null);
+  const thereRef = useRef<HTMLSpanElement>(null);
+  const already = useElementPercent(rootRef, alreadyRef);
+  const there = useElementPercent(rootRef, thereRef);
+
   const toAlready = spanProgress(progress, 0.16, 0.34);
   const clickAlready = spanProgress(progress, 0.34, 0.48);
   const removeZoom = spanProgress(progress, 0.4, 0.54);
@@ -495,14 +530,17 @@ export function StoryEdit({ progress }: { progress: number }) {
   const clickThere = spanProgress(progress, 0.74, 0.86);
   const addThere = spanProgress(progress, 0.8, 0.94);
 
-  const cursorX = lerp(40, 56, toThere);
-  const cursorY = lerp(46, 46, toThere);
-  const movingToAlready = toAlready;
-  const x = lerp(28, 40, movingToAlready) + (cursorX - 40) * toThere;
-  const y = lerp(38, 46, movingToAlready);
+  const x =
+    toThere > 0
+      ? lerp(already.x, there.x, toThere)
+      : lerp(already.x - 10, already.x, toAlready);
+  const y =
+    toThere > 0
+      ? lerp(already.y, there.y, toThere)
+      : lerp(already.y - 6, already.y, toAlready);
 
   return (
-    <div className="relative flex h-full flex-col gap-4">
+    <div ref={rootRef} className="relative flex h-full flex-col gap-3 sm:gap-4">
       <PanelHeader label="03 / make it yours" badge="your call" tone="orange" />
       <div className="flex min-h-0 flex-1 items-center">
         <TranscriptCard
@@ -510,6 +548,7 @@ export function StoryEdit({ progress }: { progress: number }) {
           zoomAlready={1 - removeZoom}
           zoomThere={addThere}
           animateWords={false}
+          wordRefs={{ already: alreadyRef, "there.": thereRef }}
         />
       </div>
       <PanelFooter>choose the treatment. keep the say.</PanelFooter>
@@ -526,15 +565,24 @@ export function StoryEdit({ progress }: { progress: number }) {
 }
 
 export function StoryShare({ progress }: { progress: number }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLDivElement>(null);
+  const shareRef = useRef<HTMLButtonElement>(null);
+  const video = useElementPercent(rootRef, videoRef);
+  const share = useElementPercent(rootRef, shareRef);
+
   const move = spanProgress(progress, 0.1, 0.34);
   const click = spanProgress(progress, 0.34, 0.48);
 
   return (
-    <div className="relative flex h-full flex-col gap-4">
+    <div ref={rootRef} className="relative flex h-full flex-col gap-2 sm:gap-4">
       <PanelHeader label="04 / share it" badge="go viral" tone="purple" />
-      <div className="flex min-h-0 flex-1 items-center justify-center">
-        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
-          <div className="relative w-[108px] rotate-[-3deg] rounded-[18px] border-2 border-[#FFA102] bg-[#BC2D29] p-1.5 shadow-[6px_7px_0_rgba(69,14,22,.76)] sm:w-[140px]">
+      <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+        <div className="flex max-h-full flex-col items-center justify-center gap-2 sm:flex-row sm:gap-6">
+          <div
+            ref={videoRef}
+            className="relative w-[84px] shrink-0 rotate-[-3deg] rounded-[18px] border-2 border-[#FFA102] bg-[#BC2D29] p-1.5 shadow-[6px_7px_0_rgba(69,14,22,.76)] sm:w-[140px]"
+          >
             <div className="relative aspect-9/16 overflow-hidden rounded-[12px] bg-[#432E6F]">
               <video
                 aria-hidden
@@ -556,7 +604,7 @@ export function StoryShare({ progress }: { progress: number }) {
                     key={platform.id}
                     aria-label={platform.label}
                     className={cn(
-                      "absolute z-10 grid size-9 place-items-center rounded-[10px] border border-[#450E16]/15 bg-white shadow-[3px_4px_0_rgba(69,14,22,.45)] sm:size-10",
+                      "absolute z-10 grid size-7 place-items-center rounded-[10px] border border-[#450E16]/15 bg-white shadow-[3px_4px_0_rgba(69,14,22,.45)] sm:size-10",
                       platform.className,
                     )}
                     style={{
@@ -564,34 +612,36 @@ export function StoryShare({ progress }: { progress: number }) {
                       transform: `translateX(${platform.origin}) rotate(${platform.rotate}deg) scale(${0.55 + amount * 0.45})`,
                     }}
                   >
-                    <platform.Icon className="size-5 sm:size-6" />
+                    <platform.Icon className="size-4 sm:size-6" />
                   </span>
                 );
               })}
             </div>
           </div>
-          <div className="w-fit rounded-[16px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-3 text-[#450E16] shadow-[6px_7px_0_rgba(0,0,0,.18)] sm:px-4 sm:py-4">
+          <div className="w-fit shrink-0 rounded-[16px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-2 text-[#450E16] shadow-[6px_7px_0_rgba(0,0,0,.18)] sm:px-4 sm:py-4">
             <p className="ember-mono m-0 text-[9px] tracking-[.15em] text-[#432E6F] uppercase">
               share your short
             </p>
-            <Button
-              variant="ember"
-              size="lg"
-              className="mt-4 h-auto px-4 py-2.5"
-              style={{
-                transform: `scale(${click > 0.2 && click < 0.7 ? 0.94 : 1})`,
-              }}
-            >
-              <Share2 data-icon="inline-start" className="size-4" />
-              Share short
-            </Button>
+            <span ref={shareRef} className="mt-2 inline-flex sm:mt-4">
+              <Button
+                variant="ember"
+                size="lg"
+                className="h-auto px-4 py-2 sm:py-2.5"
+                style={{
+                  transform: `scale(${click > 0.2 && click < 0.7 ? 0.94 : 1})`,
+                }}
+              >
+                <Share2 data-icon="inline-start" className="size-4" />
+                Share short
+              </Button>
+            </span>
           </div>
         </div>
       </div>
       <PanelFooter>captions on · 9:16 · ready to share</PanelFooter>
       <StoryCursor
-        x={lerp(56, 67, move)}
-        y={lerp(46, 53, move)}
+        x={lerp(video.x, share.x, move)}
+        y={lerp(video.y, share.y, move)}
         pressed={click > 0.2 && click < 0.85}
         visible={click < 0.95}
       />

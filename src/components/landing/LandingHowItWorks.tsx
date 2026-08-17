@@ -47,74 +47,57 @@ export function LandingHowItWorks() {
           </h2>
         </div>
 
-        <div className="mt-8 flex flex-col gap-4 lg:hidden">
-          {PANELS.map((Panel, i) => {
-            const step = STEPS[i];
-            if (!step) return null;
-            return (
-              <div
-                key={step.n}
-                className="h-[340px] overflow-hidden rounded-[20px] border-2 border-[#FFA102] bg-[#450E16] p-3.5 text-[#F5F9CE] shadow-[6px_7px_0_rgba(69,14,22,.9)] sm:h-[380px] sm:p-4"
-              >
-                <Panel progress={1} />
-              </div>
-            );
-          })}
-        </div>
-
         <div
           ref={trackRef}
-          className="relative mt-10 hidden min-h-[480vh] lg:block lg:min-h-[520vh]"
+          className="relative mt-8 min-h-[420vh] sm:mt-10 lg:min-h-[520vh]"
         >
-          <div className="sticky top-0 z-10 flex min-h-[100dvh] items-center">
-            <div className="grid w-full items-center gap-6 py-6 lg:grid-cols-[160px_minmax(0,1fr)] lg:gap-10">
-              <aside
-                aria-label="How it works steps"
-                className="flex flex-col justify-center gap-6"
-              >
-                {STEPS.map((step, i) => (
-                  <button
-                    key={step.n}
-                    type="button"
-                    aria-current={active === i ? "step" : undefined}
-                    onClick={() => scrollToStep(i)}
-                    className={cn(
-                      "ember-nav-item shrink-0 border-0 bg-transparent p-0 text-base font-semibold",
-                      active === i && "is-active",
-                    )}
-                  >
-                    <span className="ember-nav-dot">{step.n}</span>
-                    <span>{step.label}</span>
-                  </button>
-                ))}
-              </aside>
+          <div className="sticky top-0 z-10 flex min-h-dvh flex-col gap-4 py-4 lg:grid lg:grid-cols-[160px_minmax(0,1fr)] lg:items-center lg:gap-10 lg:py-6">
+            <aside
+              aria-label="How it works steps"
+              className="flex shrink-0 flex-row justify-between gap-1 overflow-x-auto bg-[#F5F9CE]/90 py-2 backdrop-blur-sm lg:flex-col lg:justify-center lg:gap-6 lg:overflow-visible lg:bg-transparent lg:py-0 lg:backdrop-blur-none"
+            >
+              {STEPS.map((step, i) => (
+                <button
+                  key={step.n}
+                  type="button"
+                  aria-current={active === i ? "step" : undefined}
+                  onClick={() => scrollToStep(i)}
+                  className={cn(
+                    "ember-nav-item shrink-0 !flex-col border-0 bg-transparent p-0 text-[10px] font-semibold sm:text-xs lg:!flex-row lg:text-base",
+                    active === i && "is-active",
+                  )}
+                >
+                  <span className="ember-nav-dot">{step.n}</span>
+                  <span>{step.label}</span>
+                </button>
+              ))}
+            </aside>
 
-              <div className="relative mx-auto h-[400px] w-full max-w-[42rem] overflow-hidden rounded-[20px] border-2 border-[#FFA102] bg-[#450E16] text-[#F5F9CE] shadow-[6px_7px_0_rgba(69,14,22,.9)]">
-                {PANELS.map((Panel, i) => {
-                  const step = STEPS[i];
-                  if (!step) return null;
-                  const local = spanProgress(
-                    progress,
-                    i / STEPS.length,
-                    (i + 1) / STEPS.length,
-                  );
-                  const visible = active === i;
-                  return (
-                    <div
-                      key={step.n}
-                      className={cn(
-                        "absolute inset-0 p-4 transition-opacity duration-300",
-                        visible
-                          ? "opacity-100"
-                          : "pointer-events-none opacity-0",
-                      )}
-                      aria-hidden={!visible}
-                    >
-                      <Panel progress={local} />
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="relative mx-auto h-[min(380px,62dvh)] w-full max-w-[42rem] overflow-hidden rounded-[20px] border-2 border-[#FFA102] bg-[#450E16] text-[#F5F9CE] shadow-[6px_7px_0_rgba(69,14,22,.9)] sm:h-[380px] lg:h-[400px]">
+              {PANELS.map((Panel, i) => {
+                const step = STEPS[i];
+                if (!step) return null;
+                const local = spanProgress(
+                  progress,
+                  i / STEPS.length,
+                  (i + 1) / STEPS.length,
+                );
+                const visible = active === i;
+                return (
+                  <div
+                    key={step.n}
+                    className={cn(
+                      "absolute inset-0 p-3.5 transition-opacity duration-300 sm:p-4",
+                      visible
+                        ? "opacity-100"
+                        : "pointer-events-none opacity-0",
+                    )}
+                    aria-hidden={!visible}
+                  >
+                    <Panel progress={local} />
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

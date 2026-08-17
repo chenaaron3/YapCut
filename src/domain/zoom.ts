@@ -1,4 +1,5 @@
 import type { EditSeed } from "~/domain/edits";
+import type { Edit } from "~/domain/project-config";
 import { TRANSFORM_DEFAULTS } from "~/domain/transform";
 
 /** AI / inspector strength → end scale. */
@@ -19,6 +20,17 @@ export const ZOOM_EASE_MAX_DURATION_SEC = 5;
 
 export function resolveZoomEase(ease: boolean | undefined): boolean {
   return ease ?? DEFAULT_ZOOM_EASE;
+}
+
+/**
+ * Place-time: a range longer than `ZOOM_EASE_MAX_DURATION_SEC` defaults to
+ * slow zoom. An explicit `ease` on the seed wins.
+ */
+export function withPlacedZoomEase<T extends Edit>(edit: T): T {
+  if (edit.kind !== "zoom") return edit;
+  if (edit.ease != null) return edit;
+  if (edit.end - edit.start <= ZOOM_EASE_MAX_DURATION_SEC) return edit;
+  return { ...edit, ease: true };
 }
 
 export function isZoomActiveAt(

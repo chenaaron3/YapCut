@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+
+import type { RefObject } from "react";
 
 export function usePinnedStory(stepCount: number) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -59,4 +61,39 @@ export function lerp(from: number, to: number, t: number) {
 export function spanProgress(p: number, start: number, end: number) {
   if (end <= start) return p >= start ? 1 : 0;
   return Math.min(1, Math.max(0, (p - start) / (end - start)));
+}
+
+/** Center of `target` as a % of `container` — used to pin the story cursor. */
+export function useElementPercent(
+  containerRef: RefObject<HTMLElement | null>,
+  targetRef: RefObject<HTMLElement | null>,
+) {
+  const [point, setPoint] = useState({ x: 50, y: 50 });
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const container = containerRef.current;
+      const target = targetRef.current;
+      if (!container || !target) return;
+      const cr = container.getBoundingClientRect();
+      const tr = target.getBoundingClientRect();
+      if (cr.width === 0 || cr.height === 0) return;
+      setPoint({
+        x: ((tr.left + tr.width / 2 - cr.left) / cr.width) * 100,
+        y: ((tr.top + tr.height / 2 - cr.top) / cr.height) * 100,
+      });
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (containerRef.current) observer.observe(containerRef.current);
+    if (targetRef.current) observer.observe(targetRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [containerRef, targetRef]);
+
+  return point;
 }

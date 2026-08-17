@@ -55,7 +55,7 @@ export function LandingFeatures() {
       aria-labelledby="features-title"
       className="bg-[#F5F9CE] px-5 pb-16 sm:px-10 sm:pb-24 lg:px-14 lg:pb-28"
     >
-      <div className="mx-auto max-w-[1120px]">
+      <div className="mx-auto max-w-[1280px]">
         <div className="border-t-2 border-[#450E16]/20 pt-12 sm:pt-16">
           <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
@@ -72,7 +72,7 @@ export function LandingFeatures() {
             </div>
           </div>
         </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-2">
+        <div className="mt-10 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((feature) => (
             <article
               key={feature.n}
@@ -84,17 +84,17 @@ export function LandingFeatures() {
               <div className="flex flex-1 items-center justify-center">
                 <feature.Visual />
               </div>
-              <div className="flex items-start justify-between gap-3 border-t-2 border-[#450E16] bg-[#F5F9CE] px-4 py-3.5 text-[#450E16]">
+              <div className="flex items-start justify-between gap-3 border-t-2 border-[#450E16] bg-[#F5F9CE] px-3.5 py-3.5 text-[#450E16]">
                 <div className="flex min-w-0 flex-col gap-1.5">
-                  <div className="flex items-baseline gap-2.5">
+                  <div className="flex items-baseline gap-2">
                     <span className="ember-mono text-[10px] font-semibold text-[#DD5533]">
                       {feature.n}
                     </span>
-                    <h3 className="ember-display m-0 text-2xl leading-none sm:text-3xl">
+                    <h3 className="ember-display m-0 text-xl leading-none sm:text-2xl">
                       {feature.title}
                     </h3>
                   </div>
-                  <p className="m-0 max-w-[38ch] text-sm leading-snug text-[#432E6F]">
+                  <p className="m-0 text-sm leading-snug text-[#432E6F]">
                     {feature.body}
                   </p>
                 </div>

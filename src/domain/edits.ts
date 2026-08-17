@@ -4,6 +4,7 @@ import { buildArollLayout, durationMapFromArolls } from "~/domain/arolls";
 import { SFX_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import { withBrollKenBurns } from "~/domain/broll";
 import { withCompanionSfx } from "~/domain/companion-sfx";
+import { withPlacedZoomEase } from "~/domain/zoom";
 import {
   clampTimelineRangeToMedia,
   isDurationLimitedMedia,
@@ -278,12 +279,12 @@ function appendEdit(
     return { ok: false, reason: "transition-conflict" };
   }
   const placed = withCompanionSfx(
-    {
+    withPlacedZoomEase({
       ...seed,
       id: nextEditId(config.edits),
       start: clamped.start,
       end: clamped.end,
-    } as Edit,
+    } as Edit),
     config.companionSfx,
     ctx?.sfxAssets ?? [],
   );
