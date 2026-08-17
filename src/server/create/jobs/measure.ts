@@ -5,14 +5,14 @@ import {
   startMeasureAssetJobs,
 } from "~/server/media/measure-asset";
 
-import type { CreateAssetRef } from "~/server/create/create-pipeline";
-import type { CreateJob, JobPollResult } from "~/server/create/jobs/create-job";
-import type { MeasureJobSet } from "~/server/media/measure-asset";
+import type {
+  CreateAssetRef,
+  CreateJob,
+  JobPollResult,
+  MeasureHandle,
+} from "~/server/create/jobs/create-job";
 
-export type MeasureHandle = {
-  jobSet: MeasureJobSet;
-  startedAtMs: number;
-};
+export type { MeasureHandle };
 
 export class MeasureJob implements CreateJob<MeasureHandle> {
   readonly name = "fal measure";

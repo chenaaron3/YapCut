@@ -1,7 +1,30 @@
 import { meanProgress, mediaProgressEvent } from "~/domain/create-progress";
 
 import type { CreateProgressEvent } from "~/domain/create-progress";
-import type { CreateAssetRef } from "~/server/create/create-pipeline";
+
+/** Serializable A-roll ref passed across workflow `sleep()` / steps. */
+export type CreateAssetRef = {
+  id: string;
+  s3Key: string;
+  originalFilename: string | null;
+  durationSec: number;
+};
+
+export type WhisperXHandle = {
+  predictionId: string;
+  startedAtMs: number;
+};
+
+export type MeasureJobSetRef = {
+  assetId: string;
+  loudnorm: { endpoint: string; requestId: string; what: string };
+  waveform: { endpoint: string; requestId: string; what: string };
+};
+
+export type MeasureHandle = {
+  jobSet: MeasureJobSetRef;
+  startedAtMs: number;
+};
 
 export type PendingJob<Handle> = {
   asset: CreateAssetRef;
@@ -19,9 +42,9 @@ export type JobPollResult = {
 /**
  * One remote create job type (WhisperX, fal measure, …).
  *
- * `start` / `poll` / `finish` / `fail` do I/O. Workflow callers wrap those
- * in `"use step"` via `withJobIO` so handles stay serializable across `sleep()`.
- * `start` returns `null` when the asset is already done.
+ * `start` / `poll` / `finish` / `fail` do I/O. The workflow binds those
+ * through `"use step"` via `withJobIO` so Node I/O never loads in the
+ * workflow isolate. `start` returns `null` when the asset is already done.
  */
 export type CreateJob<Handle> = {
   name: string;
@@ -47,18 +70,12 @@ function pendingLabels<Handle>(pending: PendingJob<Handle>[]): string {
   return pending.map((item) => createAssetLabel(item.asset)).join(", ");
 }
 
-/** Swap I/O for durable workflow steps; keep `name` on `job`. */
+/** Bind step I/O under a job name without importing the Node job module. */
 export function withJobIO<Handle>(
-  job: CreateJob<Handle>,
+  name: string,
   io: CreateJobIO<Handle>,
 ): CreateJob<Handle> {
-  return {
-    name: job.name,
-    start: (asset) => io.start(asset),
-    poll: (jobs) => io.poll(jobs),
-    finish: (asset, handle) => io.finish(asset, handle),
-    fail: io.fail ?? job.fail,
-  };
+  return { name, ...io };
 }
 
 export type CreateJobCancel = {

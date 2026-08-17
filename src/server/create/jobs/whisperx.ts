@@ -6,13 +6,14 @@ import {
 import { whisperJobProgress } from "~/server/create/progress-estimate";
 import { getWhisperXPrediction } from "~/server/transcribe/whisperx";
 
-import type { CreateAssetRef } from "~/server/create/create-pipeline";
-import type { CreateJob, JobPollResult } from "~/server/create/jobs/create-job";
+import type {
+  CreateAssetRef,
+  CreateJob,
+  JobPollResult,
+  WhisperXHandle,
+} from "~/server/create/jobs/create-job";
 
-export type WhisperXHandle = {
-  predictionId: string;
-  startedAtMs: number;
-};
+export type { WhisperXHandle };
 
 export class WhisperXJob implements CreateJob<WhisperXHandle> {
   readonly name = "WhisperX";

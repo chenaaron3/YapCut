@@ -27,15 +27,11 @@ import {
 
 import type { ProjectConfig } from "~/domain/project-config";
 import type { TranscriptWord } from "~/domain/transcript";
+import type { CreateAssetRef } from "~/server/create/jobs/create-job";
+
+export type { CreateAssetRef };
 
 const FAILURE_REASON_MAX = 2000;
-
-export type CreateAssetRef = {
-  id: string;
-  s3Key: string;
-  originalFilename: string | null;
-  durationSec: number;
-};
 
 function truncateReason(reason: string): string {
   if (reason.length <= FAILURE_REASON_MAX) return reason;

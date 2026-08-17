@@ -11,7 +11,7 @@ export const TIMEOUTS = {
   pageLoad: 15_000,
 
   /** Clicking primary CTAs (frontend updates) */
-  action: 5_000,
+  action: 15_000,
 
   /** Short UI settle after a click */
   settle: 500,

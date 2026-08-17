@@ -5,31 +5,27 @@
  * WhisperX and fal measure enqueue in parallel, then the shared runner polls
  * each job type across short steps with `sleep()`.
  *
+ * Node I/O (postgres, fal, Replicate) is loaded only inside `"use step"`
+ * functions so the workflow isolate stays sandbox-safe.
+ *
  * @see https://workflow-sdk.dev/docs/getting-started/next
  */
 import { FatalError, sleep } from "workflow";
 
-import {
-  finalizeCreateProject,
-  loadCreateAssets,
-  markCreateFailed,
-} from "~/server/create/create-pipeline";
 import {
   createMediaProgressGate,
   runCreateJobs,
   settleMediaJobs,
   withJobIO,
 } from "~/server/create/jobs/create-job";
-import { measureJob } from "~/server/create/jobs/measure";
-import { whisperXJob } from "~/server/create/jobs/whisperx";
-import { publishCreateProgress } from "~/server/create/publish-progress";
-import { FalMeasureError } from "~/server/media/measure-audio";
 
 import type { CreateProgressEvent } from "~/domain/create-progress";
-import type { CreateAssetRef } from "~/server/create/create-pipeline";
-import type { CreateJobIO } from "~/server/create/jobs/create-job";
-import type { MeasureHandle } from "~/server/create/jobs/measure";
-import type { WhisperXHandle } from "~/server/create/jobs/whisperx";
+import type {
+  CreateAssetRef,
+  CreateJobIO,
+  MeasureHandle,
+  WhisperXHandle,
+} from "~/server/create/jobs/create-job";
 
 /** Suspend between Replicate polls (no compute while sleeping). */
 const WHISPERX_POLL_SLEEP = "15s";
@@ -52,7 +48,7 @@ export async function createProjectWorkflow(projectId: string) {
     });
     await settleMediaJobs(
       runCreateJobs({
-        job: withJobIO(whisperXJob, whisperXSteps),
+        job: withJobIO("WhisperX", whisperXSteps),
         assets,
         maxPolls: WHISPERX_MAX_POLLS,
         sleep: () => sleep(WHISPERX_POLL_SLEEP),
@@ -60,7 +56,7 @@ export async function createProjectWorkflow(projectId: string) {
         cancel,
       }),
       runCreateJobs({
-        job: withJobIO(measureJob, measureSteps),
+        job: withJobIO("fal measure", measureSteps),
         assets,
         maxPolls: FAL_MAX_POLLS,
         sleep: () => sleep(FAL_POLL_SLEEP),
@@ -100,16 +96,21 @@ async function emitProgressStep(
   event: CreateProgressEvent,
 ): Promise<void> {
   "use step";
+  const { publishCreateProgress } = await import(
+    "~/server/create/publish-progress"
+  );
   await publishCreateProgress(projectId, event);
 }
 
 async function loadAssetsStep(projectId: string): Promise<CreateAssetRef[]> {
   "use step";
+  const { loadCreateAssets } = await import("~/server/create/create-pipeline");
   return loadCreateAssets(projectId);
 }
 
 async function startWhisperXStep(asset: CreateAssetRef) {
   "use step";
+  const { whisperXJob } = await import("~/server/create/jobs/whisperx");
   return whisperXJob.start(asset);
 }
 
@@ -117,6 +118,7 @@ async function pollWhisperXBatchStep(
   jobs: Array<{ index: number; handle: WhisperXHandle }>,
 ) {
   "use step";
+  const { whisperXJob } = await import("~/server/create/jobs/whisperx");
   return whisperXJob.poll(jobs);
 }
 
@@ -125,16 +127,19 @@ async function finishWhisperXStep(
   handle: WhisperXHandle,
 ) {
   "use step";
+  const { whisperXJob } = await import("~/server/create/jobs/whisperx");
   await whisperXJob.finish(asset, handle);
 }
 
 async function failWhisperXStep(asset: CreateAssetRef, reason: string) {
   "use step";
+  const { whisperXJob } = await import("~/server/create/jobs/whisperx");
   await whisperXJob.fail(asset, reason);
 }
 
 async function startMeasureStep(asset: CreateAssetRef) {
   "use step";
+  const { measureJob } = await import("~/server/create/jobs/measure");
   try {
     return await measureJob.start(asset);
   } catch (error) {
@@ -146,6 +151,7 @@ async function pollMeasureBatchStep(
   jobs: Array<{ index: number; handle: MeasureHandle }>,
 ) {
   "use step";
+  const { measureJob } = await import("~/server/create/jobs/measure");
   try {
     return await measureJob.poll(jobs);
   } catch (error) {
@@ -155,6 +161,7 @@ async function pollMeasureBatchStep(
 
 async function finishMeasureStep(asset: CreateAssetRef, handle: MeasureHandle) {
   "use step";
+  const { measureJob } = await import("~/server/create/jobs/measure");
   try {
     await measureJob.finish(asset, handle);
   } catch (error) {
@@ -164,6 +171,9 @@ async function finishMeasureStep(asset: CreateAssetRef, handle: MeasureHandle) {
 
 async function finalizeStep(projectId: string): Promise<void> {
   "use step";
+  const { finalizeCreateProject } = await import(
+    "~/server/create/create-pipeline"
+  );
   await finalizeCreateProject(projectId);
 }
 
@@ -172,11 +182,17 @@ async function markFailedStep(
   reason: string,
 ): Promise<void> {
   "use step";
+  const { markCreateFailed } = await import("~/server/create/create-pipeline");
   await markCreateFailed(projectId, reason);
 }
 
 function rethrowFatalFal(error: unknown): never {
-  if (error instanceof FalMeasureError && error.fatal) {
+  if (
+    error instanceof Error &&
+    error.name === "FalMeasureError" &&
+    "fatal" in error &&
+    error.fatal === true
+  ) {
     throw new FatalError(error.message);
   }
   throw error;
