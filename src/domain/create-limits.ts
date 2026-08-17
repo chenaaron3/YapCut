@@ -1,11 +1,9 @@
 /** Caps for A-roll project create (drop upload + `createStart` / `createAddFiles` + verify). */
 
-export const CREATE_MAX_CLIPS = 12;
-export const CREATE_MAX_DURATION_SEC = 20 * 60;
+export const CREATE_MAX_DURATION_SEC = 15 * 60;
 export const CREATE_MAX_BYTES = 4 * 1024 * 1024 * 1024;
-export const CREATE_MAX_LONG_EDGE_PX = 1920;
 
-export const CREATE_LIMITS_HINT = `Up to ${CREATE_MAX_CLIPS} clips · ${CREATE_MAX_DURATION_SEC / 60} min · 4 GB · 1080p`;
+export const CREATE_LIMITS_HINT = `${CREATE_MAX_DURATION_SEC / 60} min · 4 GB`;
 
 export type CreateMediaInput = {
   filename: string;
@@ -15,8 +13,7 @@ export type CreateMediaInput = {
   height: number;
 };
 
-export type CreateLimitCode =
-  "count" | "file-size" | "total-size" | "duration" | "resolution";
+export type CreateLimitCode = "file-size" | "total-size" | "duration";
 
 export type CreateUsed = {
   count: number;
@@ -24,26 +21,18 @@ export type CreateUsed = {
   durationSec: number;
 };
 
-export function longEdgePx(width: number, height: number): number {
-  return Math.max(width, height);
-}
-
 export function createLimitMessage(
   code: CreateLimitCode,
   filename?: string,
 ): string {
   const named = filename ? ` (${filename})` : "";
   switch (code) {
-    case "count":
-      return `Projects can have up to ${CREATE_MAX_CLIPS} clips.`;
     case "file-size":
       return `Each clip must be 4 GB or smaller${named}.`;
     case "total-size":
       return `Project footage can be up to 4 GB total${named}.`;
     case "duration":
       return `Project footage can be up to ${CREATE_MAX_DURATION_SEC / 60} minutes${named}.`;
-    case "resolution":
-      return `Clips must be 1080p or smaller (${CREATE_MAX_LONG_EDGE_PX}px on the long edge)${named}.`;
   }
 }
 
@@ -51,12 +40,8 @@ export function createFileLimit(
   file: CreateMediaInput,
   used: CreateUsed,
 ): CreateLimitCode | null {
-  if (used.count >= CREATE_MAX_CLIPS) return "count";
   if (file.size > CREATE_MAX_BYTES) return "file-size";
   if (used.bytes + file.size > CREATE_MAX_BYTES) return "total-size";
-  if (longEdgePx(file.width, file.height) > CREATE_MAX_LONG_EDGE_PX) {
-    return "resolution";
-  }
   if (file.durationSec > CREATE_MAX_DURATION_SEC) return "duration";
   if (used.durationSec + file.durationSec > CREATE_MAX_DURATION_SEC) {
     return "duration";

@@ -7,7 +7,6 @@ import {
   assertCreateBatch,
   assertCreateUploadBytes,
   CREATE_MAX_BYTES,
-  CREATE_MAX_CLIPS,
 } from "~/domain/create-limits";
 import {
   emptyProjectConfig,
@@ -549,7 +548,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         title: z.string().max(512).optional(),
-        files: z.array(createFileSchema).min(1).max(CREATE_MAX_CLIPS),
+        files: z.array(createFileSchema).min(1),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -607,7 +606,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().min(1),
-        files: z.array(createFileSchema).min(1).max(CREATE_MAX_CLIPS),
+        files: z.array(createFileSchema).min(1),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -723,11 +722,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().min(1),
-        assetIds: z
-          .array(z.string().min(1))
-          .min(1)
-          .max(CREATE_MAX_CLIPS)
-          .optional(),
+        assetIds: z.array(z.string().min(1)).min(1).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
