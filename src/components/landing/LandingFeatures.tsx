@@ -53,7 +53,7 @@ export function LandingFeatures() {
     <section
       id="features"
       aria-labelledby="features-title"
-      className="bg-[#F5F9CE] px-6 pb-24 sm:px-10 lg:px-14 lg:pb-28"
+      className="bg-[#F5F9CE] px-5 pb-16 sm:px-10 sm:pb-24 lg:px-14 lg:pb-28"
     >
       <div className="mx-auto max-w-[1120px]">
         <div className="border-t-2 border-[#450E16]/20 pt-12 sm:pt-16">
@@ -64,7 +64,7 @@ export function LandingFeatures() {
               </p>
               <h2
                 id="features-title"
-                className="ember-display m-0 max-w-[720px] text-[clamp(3.4rem,6.5vw,6.6rem)] leading-[.8]"
+                className="ember-display m-0 max-w-[720px] text-[clamp(2.6rem,12vw,6.6rem)] leading-[.8] lg:text-[clamp(3.4rem,6.5vw,6.6rem)]"
               >
                 Your words are{" "}
                 <span className="text-[#DD5533]">the timeline.</span>

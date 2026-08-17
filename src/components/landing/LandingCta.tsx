@@ -10,7 +10,7 @@ export function LandingCta() {
     <section
       id="cta"
       aria-labelledby="cta-title"
-      className="relative overflow-hidden bg-[#DD5533] px-6 py-24 text-[#450E16] sm:px-10 lg:px-14 lg:py-36"
+      className="relative overflow-hidden bg-[#DD5533] px-5 py-16 text-[#450E16] sm:px-10 sm:py-24 lg:px-14 lg:py-36"
     >
       <div
         aria-hidden
@@ -22,7 +22,7 @@ export function LandingCta() {
         </p>
         <h2
           id="cta-title"
-          className="ember-display mx-auto mt-5 max-w-[900px] text-[clamp(3.6rem,8vw,8.4rem)] leading-[.78]"
+          className="ember-display mx-auto mt-5 max-w-[900px] text-[clamp(2.6rem,12vw,8.4rem)] leading-[.78] lg:text-[clamp(3.6rem,8vw,8.4rem)]"
         >
           Your next Short is already in the transcript.
         </h2>
@@ -45,7 +45,7 @@ export function LandingCta() {
 
 export function LandingFooter() {
   return (
-    <footer className="border-t-2 border-[#F5F9CE]/20 bg-[#450E16] px-6 py-7 text-[#F5F9CE] sm:px-10 lg:px-14">
+    <footer className="border-t-2 border-[#F5F9CE]/20 bg-[#450E16] px-5 py-7 text-[#F5F9CE] sm:px-10 lg:px-14">
       <div className="mx-auto flex max-w-[1280px] flex-col justify-between gap-4 text-sm sm:flex-row sm:items-center">
         <span className="font-semibold">YapCut</span>
         <span className="ember-mono text-[9px] tracking-[.14em] text-[#F5F9CE]/50 uppercase">

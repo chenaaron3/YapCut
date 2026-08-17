@@ -88,7 +88,7 @@ function PanelHeader({
   } as const;
 
   return (
-    <div className="flex shrink-0 items-center justify-between gap-4">
+    <div className="flex shrink-0 items-center justify-between gap-2 sm:gap-4">
       <p
         className={cn(
           "ember-mono m-0 text-[10px] tracking-[.18em] uppercase",
@@ -230,7 +230,7 @@ function TranscriptCard({
   };
 
   return (
-    <div className="w-full rounded-[14px] border-2 border-[#450E16] bg-[#F5F9CE] p-5 text-[#450E16] shadow-[6px_7px_0_rgba(0,0,0,.18)]">
+    <div className="w-full rounded-[14px] border-2 border-[#450E16] bg-[#F5F9CE] p-3.5 text-[#450E16] shadow-[6px_7px_0_rgba(0,0,0,.18)] sm:p-5">
       <div className="ember-mono mb-5 flex items-center justify-between text-[8px] tracking-[.14em] text-[#DD5533] uppercase">
         <span>transcript</span>
         <span className="text-[#450E16]/40">00:08</span>
@@ -533,8 +533,8 @@ export function StoryShare({ progress }: { progress: number }) {
     <div className="relative flex h-full flex-col gap-4">
       <PanelHeader label="04 / share it" badge="go viral" tone="purple" />
       <div className="flex min-h-0 flex-1 items-center justify-center">
-        <div className="flex items-center justify-center gap-5 sm:gap-6">
-          <div className="relative w-[128px] rotate-[-3deg] rounded-[18px] border-2 border-[#FFA102] bg-[#BC2D29] p-1.5 shadow-[6px_7px_0_rgba(69,14,22,.76)] sm:w-[140px]">
+        <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
+          <div className="relative w-[108px] rotate-[-3deg] rounded-[18px] border-2 border-[#FFA102] bg-[#BC2D29] p-1.5 shadow-[6px_7px_0_rgba(69,14,22,.76)] sm:w-[140px]">
             <div className="relative aspect-9/16 overflow-hidden rounded-[12px] bg-[#432E6F]">
               <video
                 aria-hidden
@@ -570,7 +570,7 @@ export function StoryShare({ progress }: { progress: number }) {
               })}
             </div>
           </div>
-          <div className="w-fit rounded-[16px] border-2 border-[#450E16] bg-[#F5F9CE] px-4 py-4 text-[#450E16] shadow-[6px_7px_0_rgba(0,0,0,.18)]">
+          <div className="w-fit rounded-[16px] border-2 border-[#450E16] bg-[#F5F9CE] px-3 py-3 text-[#450E16] shadow-[6px_7px_0_rgba(0,0,0,.18)] sm:px-4 sm:py-4">
             <p className="ember-mono m-0 text-[9px] tracking-[.15em] text-[#432E6F] uppercase">
               share your short
             </p>

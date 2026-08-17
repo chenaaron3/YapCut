@@ -58,8 +58,8 @@ export function LandingHeroCompare() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative h-[420px] w-[300px] sm:h-[460px] sm:w-[340px]">
+    <div className="flex w-full max-w-[260px] flex-col items-center gap-2 sm:max-w-none sm:w-auto">
+      <div className="relative h-[300px] w-full sm:h-[460px] sm:w-[340px]">
         <PhoneFrame
           side="before"
           front={shown === "before"}
@@ -70,7 +70,7 @@ export function LandingHeroCompare() {
           onEnded={() => {
             if (shown === "before") setPlaying(false);
           }}
-          className="absolute top-10 left-0 w-[200px] sm:w-[220px]"
+          className="absolute top-8 left-0 w-[58%] sm:top-10 sm:w-[220px]"
           tilt="-rotate-6"
         />
         <PhoneFrame
@@ -83,7 +83,7 @@ export function LandingHeroCompare() {
           onEnded={() => {
             if (shown === "after") setPlaying(false);
           }}
-          className="absolute top-0 right-0 w-[200px] sm:w-[220px]"
+          className="absolute top-0 right-0 w-[58%] sm:w-[220px]"
           tilt="rotate-3"
           sparkles={shown === "after"}
         />

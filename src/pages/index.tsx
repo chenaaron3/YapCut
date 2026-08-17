@@ -11,6 +11,10 @@ export default function LandingPage() {
       <Head>
         <title>YapCut</title>
         <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1"
+        />
+        <meta
           name="description"
           content="Vertical talking-head edits, from words to ready-to-post."
         />
