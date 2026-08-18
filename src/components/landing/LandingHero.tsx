@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { emberEyebrow } from "~/components/landing/landing-ui";
 import { LandingDropZone } from "~/components/landing/LandingDropZone";
 import { LandingTrialStage } from "~/components/landing/LandingTrialStage";
@@ -11,6 +13,7 @@ import type { useLandingTrial } from "~/components/landing/use-landing-trial";
 type Trial = ReturnType<typeof useLandingTrial>;
 
 export function LandingHero({ trial }: { trial: Trial }) {
+  const sectionRef = useRef<HTMLElement>(null);
   const showDrop = trial.phase === "idle" || trial.phase === "failed";
   const progress = useCreateProgressStream({
     projectId: trial.projectId ?? "",
@@ -21,8 +24,14 @@ export function LandingHero({ trial }: { trial: Trial }) {
     onTerminal: trial.onTerminal,
   });
 
+  useEffect(() => {
+    if (trial.phase !== "uploading") return;
+    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [trial.phase]);
+
   return (
     <section
+      ref={sectionRef}
       id="product"
       aria-labelledby="hero-title"
       className="relative min-h-[100dvh] overflow-x-clip bg-[#450E16] text-[#F5F9CE] lg:h-screen lg:min-h-0"

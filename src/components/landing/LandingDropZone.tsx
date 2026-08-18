@@ -14,14 +14,12 @@ export function LandingDropZone({
   phase,
   disabled,
   acceptFiles,
-  onAccepted,
   tone = "hero",
   className,
 }: {
   phase: LandingTrialPhase;
   disabled: boolean;
   acceptFiles: (files: File[]) => void;
-  onAccepted?: () => void;
   tone?: "hero" | "cta";
   className?: string;
 }) {
@@ -29,7 +27,6 @@ export function LandingDropZone({
     useDropzone({
       onDrop: (files) => {
         if (files.length === 0) return;
-        onAccepted?.();
         acceptFiles(files);
       },
       accept: { "video/*": [".mp4", ".mov", ".webm", ".m4v"] },

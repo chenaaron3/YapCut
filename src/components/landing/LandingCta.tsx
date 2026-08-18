@@ -6,10 +6,6 @@ import type { useLandingTrial } from "~/components/landing/use-landing-trial";
 
 type Trial = ReturnType<typeof useLandingTrial>;
 
-function scrollToHero() {
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
 export function LandingCta({ trial }: { trial: Trial }) {
   return (
     <section
@@ -37,7 +33,6 @@ export function LandingCta({ trial }: { trial: Trial }) {
           phase={trial.phase}
           disabled={trial.locked}
           acceptFiles={trial.acceptFiles}
-          onAccepted={scrollToHero}
         />
         <p className="mt-6 text-lg text-[#450E16]/65">
           Designed for Vertical talking-head Shorts.
