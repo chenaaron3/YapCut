@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { readUnclaimedProjectId } from "~/components/landing/unclaimed-project";
 import { AppLayout } from "~/components/layout/AppLayout";
-import { EmberLoading } from "~/components/layout/EmberLoading";
+import { RequireUser } from "~/components/layout/RequireUser";
 import { CreateProjectModal } from "~/components/projects/CreateProjectModal";
 import { ProjectsEmptyLibrary } from "~/components/projects/project-list/ProjectsEmptyLibrary";
 import { ProjectsGrid } from "~/components/projects/project-list/ProjectsGrid";
@@ -12,37 +12,24 @@ import { ProjectsLoadingGrid } from "~/components/projects/project-list/Projects
 import { ProjectsNoMatches } from "~/components/projects/project-list/ProjectsNoMatches";
 import { ProjectsPagination } from "~/components/projects/project-list/ProjectsPagination";
 import { useProjectList } from "~/components/projects/project-list/use-project-list";
-import { requireUser } from "~/server/auth/session";
-
-import type { GetServerSideProps } from "next";
-import type { Session } from "next-auth";
-
-type Props = {
-  session: Session | null;
-};
 
 export default function ProjectsPage() {
+  return (
+    <RequireUser>
+      <ProjectsPageInner />
+    </RequireUser>
+  );
+}
+
+function ProjectsPageInner() {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
-  const [ready, setReady] = useState(false);
   const list = useProjectList();
 
   useEffect(() => {
     const id = readUnclaimedProjectId();
-    if (id) {
-      void router.replace(`/projects/${id}`);
-      return;
-    }
-    setReady(true);
+    if (id) void router.replace(`/projects/${id}`);
   }, [router]);
-
-  if (!ready) {
-    return (
-      <AppLayout title="Projects · YapCut" description="Your YapCut projects.">
-        <EmberLoading />
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout title="Projects · YapCut" description="Your YapCut projects.">
@@ -95,6 +82,3 @@ export default function ProjectsPage() {
     </AppLayout>
   );
 }
-
-export const getServerSideProps: GetServerSideProps<Props> = (ctx) =>
-  requireUser(ctx);

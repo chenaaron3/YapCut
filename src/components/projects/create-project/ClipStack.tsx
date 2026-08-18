@@ -73,7 +73,7 @@ export function ClipStack({
         type="button"
         disabled={busy || checking}
         className={cn(
-          "mt-5 flex min-h-14 w-[calc(100%-0.5rem)] cursor-pointer items-center gap-2 rounded-2xl border-[1.5px] border-dashed border-[#450E16] bg-[#F5F9CE]/55 px-3.5 py-2.5 text-left text-[17px] leading-none text-[#432E6F] disabled:pointer-events-none disabled:opacity-50",
+          "mt-4 flex min-h-14 w-[calc(100%-0.5rem)] cursor-pointer items-center gap-2 rounded-2xl border-[1.5px] border-dashed border-[#450E16] bg-[#F5F9CE]/55 px-3.5 py-2.5 text-left text-[17px] leading-none text-[#432E6F] disabled:pointer-events-none disabled:opacity-50 lg:mt-5",
           isDragAccept && "border-[#FFA102] bg-[#FFA102]/15",
         )}
         onClick={openFilePicker}
@@ -88,7 +88,7 @@ export function ClipStack({
       </button>
 
       <div
-        className="mt-4 min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto overscroll-contain py-1 pr-2"
+        className="mt-3 min-h-0 min-w-0 overflow-x-clip overflow-y-auto overscroll-contain py-1 pr-2 lg:mt-4 lg:flex-1"
         onKeyDown={(event) => {
           if (!event.altKey || busy) return;
           if (!(event.target instanceof HTMLElement)) return;

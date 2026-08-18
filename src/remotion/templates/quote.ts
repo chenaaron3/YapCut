@@ -40,7 +40,7 @@ const QUOTE_TYPEWRITER_WORD = {
 const BOLD_WHITE_BASE: CaptionGroupStyle = {
   fontFamily: "chillax",
   fontSize: 125,
-  y: 1,
+  y: QUOTE_CAPTION_Y,
   groupAnimation: "none",
   wordAnimation: "none",
   wordReveal: "none",
@@ -83,7 +83,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplate> = {
     style: {
       fontFamily: "clash-display",
       fontSize: 88,
-      y: 0,
+      y: QUOTE_CAPTION_Y,
       groupAnimation: "none",
       wordAnimation: "scale",
       wordReveal: "none",

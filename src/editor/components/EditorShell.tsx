@@ -1,14 +1,17 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useLayoutEffect } from "react";
+import { useEffect } from "react";
+
+import { EditorLoading, useEditorLock } from "~/components/layout/EditorLoading";
+import { ProjectsBackLink } from "~/components/layout/ProjectsBackLink";
 
 import {
   isEditorProjectStatus,
   isProjectStatus,
 } from "~/domain/project-status";
-import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
 import { ExportButton } from "~/editor/components/ExportButton";
+import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
 import { Timeline } from "~/editor/components/timeline/Timeline";
 import { TranscriptPanel } from "~/editor/components/transcript/TranscriptPanel";
 import { hydrateInputFromProject } from "~/editor/lib/hydrate-project";
@@ -26,7 +29,7 @@ function SaveStatusBadge() {
   const label = saving ? "Saving…" : dirty ? "Unsaved" : "Saved";
   return (
     <span
-      className="ember-mono inline-flex h-7 items-center gap-1.5 rounded-full border-2 border-[#450E16] bg-[#F5F9CE] px-2.5 text-[10px] font-medium tracking-[.08em] text-[#450E16] uppercase"
+      className="ember-mono hidden h-7 items-center gap-1.5 rounded-full border-2 border-[#450E16] bg-[#F5F9CE] px-2.5 text-[10px] font-medium tracking-[.08em] text-[#450E16] uppercase lg:inline-flex"
       title={label}
     >
       <span
@@ -150,6 +153,7 @@ type Props = {
 export function EditorShell({ projectId }: Props) {
   const hydrateFromServer = useEditor((s) => s.hydrateFromServer);
   const loadState = useEditor((s) => s.loadState);
+  const storeProjectId = useEditor((s) => s.projectId);
   const title = useEditor((s) => s.title);
   const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
 
@@ -224,18 +228,18 @@ export function EditorShell({ projectId }: Props) {
     document.title = `${dirty ? "● " : ""}${label} · YapCut`;
   }, [title, dirty]);
 
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    root.classList.add("editor-lock");
-    return () => root.classList.remove("editor-lock");
-  }, []);
+  useEditorLock();
 
-  if (projectQuery.isLoading || loadState === "loading") {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#12141A] text-sm text-[#C4B8A8]">
-        Loading editor…
-      </div>
-    );
+  const awaitingEditor =
+    projectId.length === 0 ||
+    projectQuery.isLoading ||
+    loadState === "loading" ||
+    (projectQuery.data != null &&
+      isEditorProjectStatus(projectQuery.data.status) &&
+      storeProjectId !== projectId);
+
+  if (awaitingEditor) {
+    return <EditorLoading />;
   }
 
   const project = projectQuery.data;
@@ -269,25 +273,20 @@ export function EditorShell({ projectId }: Props) {
         "selection:bg-[#FFA102] selection:text-[#450E16]",
       )}
     >
-      <header className="flex h-11 shrink-0 items-center justify-between border-b border-[#450E16]/25 bg-[#BC2D29] px-3 text-[#F5F9CE]">
+      <header className="relative flex h-11 shrink-0 items-center justify-between border-b border-[#450E16]/25 bg-[#BC2D29] px-3 text-[#F5F9CE]">
         <div className="flex min-w-0 items-center gap-3">
-          <Link
-            href="/projects"
-            className="ember-mono shrink-0 text-[10px] tracking-[.12em] text-[#F5F9CE]/80 uppercase hover:text-[#F5F9CE]"
-          >
-            ← Projects
-          </Link>
+          <ProjectsBackLink />
         </div>
+        <ProjectTitleField className="absolute left-1/2 hidden max-w-[min(40vw,320px)] -translate-x-1/2 lg:inline-grid" />
         <div className="flex items-center gap-2">
           <SaveStatusBadge />
-          <AiAssistButton />
           <ExportButton />
         </div>
       </header>
 
-      <div className="@container-size grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_auto]">
-        <div className="border-border grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] border-r">
-          <div className="grid min-h-0 min-w-0 grid-cols-[240px_minmax(0,1fr)]">
+      <div className="@container-size grid min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,3fr)_minmax(0,2fr)] lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-1">
+        <div className="border-border order-2 grid min-h-0 min-w-0 grid-rows-1 lg:order-1 lg:grid-rows-[minmax(0,1fr)_auto] lg:border-r">
+          <div className="grid min-h-0 min-w-0 grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)]">
             <AssetsPanel />
             <TranscriptPanel />
           </div>

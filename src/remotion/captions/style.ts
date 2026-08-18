@@ -269,8 +269,8 @@ export const DEFAULT_CAPTION_STYLE: CaptionGroupStyle = {
   futureWordStyle: { opacity: 0 },
 };
 
-/** Shared Y for aesthetic Quote templates — near the top of the safe area. */
-export const QUOTE_CAPTION_Y = -0.84;
+/** Shared Y for Quote templates — bottom of the safe area. */
+export const QUOTE_CAPTION_Y = 1;
 
 /** Bottom of safe area — default / caption templates. */
 export const TRENDING_CAPTION_Y = 1;

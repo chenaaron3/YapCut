@@ -1,6 +1,6 @@
 import type { ProjectStatus } from "~/domain/project-status";
 
-export const PROJECT_LIST_PAGE_SIZE = 9;
+export const PROJECT_LIST_PAGE_SIZE = 6;
 
 export function projectTitle(title: string | null): string {
   const trimmed = title?.trim() ?? "";

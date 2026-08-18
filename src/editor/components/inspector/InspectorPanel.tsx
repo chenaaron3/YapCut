@@ -80,7 +80,7 @@ export function InspectorPanel() {
 
   return (
     <aside
-      className="border-border bg-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-l"
+      className="border-border bg-panel hidden min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-l lg:flex"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >

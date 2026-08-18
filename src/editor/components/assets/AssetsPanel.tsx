@@ -91,7 +91,7 @@ export function AssetsPanel() {
   );
 
   return (
-    <aside className="border-border bg-panel flex h-full min-h-0 flex-col overflow-hidden border-r">
+    <aside className="border-border bg-panel hidden h-full min-h-0 flex-col overflow-hidden border-r lg:flex">
       <div className="border-border relative flex h-12 shrink-0 items-center border-b">
         <div
           ref={scrollerRef}

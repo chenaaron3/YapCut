@@ -120,7 +120,7 @@ export function PlayerPanel() {
   }, []);
 
   const shellClassName =
-    "relative z-20 flex h-full min-h-0 w-[min(50cqw,calc((100cqh-2.25rem-2rem)*9/16+2rem))] shrink-0 flex-col bg-[#0b0c10] fullscreen:w-full";
+    "relative z-20 order-1 flex h-full min-h-0 w-full shrink-0 flex-col bg-[#0b0c10] fullscreen:w-full lg:order-2 lg:w-[min(50cqw,calc((100cqh-2.25rem-2rem)*9/16+2rem))]";
 
   if (!inputProps) {
     return (
@@ -136,7 +136,7 @@ export function PlayerPanel() {
 
   return (
     <div ref={shellRef} className={shellClassName}>
-      <div className="relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-visible p-4 fullscreen:p-0">
+      <div className="relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-visible p-2 fullscreen:p-0 lg:p-4">
         <div
           className="relative h-full w-full overflow-visible bg-black"
           onPointerDownCapture={onPlayGesture}

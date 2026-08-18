@@ -17,7 +17,6 @@ export const OVERLAY_TEMPLATE_IDS = [
   "wipe",
   "pop",
   "slide",
-  "serial",
 ] as const;
 
 export type OverlayTemplateId = (typeof OVERLAY_TEMPLATE_IDS)[number];
@@ -292,31 +291,6 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       textTransform: "uppercase",
       background: { kind: "wrap", color: "#FFFFFF" },
       y: -0.15,
-      wordStyle: { fill: "#111111", opacity: 1 },
-    },
-  ),
-  serial: overlayTemplate(
-    "serial",
-    "Serial",
-    false,
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "clash-display",
-      fontSize: 75,
-      groupAnimation: "fade",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "wrap", color: "#111111" },
-      wordStyle: { fill: "#FFFFFF", opacity: 1 },
-    },
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "clash-display",
-      fontSize: 56,
-      groupAnimation: "fade",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "wrap", color: "#FFFFFF" },
       wordStyle: { fill: "#111111", opacity: 1 },
     },
   ),

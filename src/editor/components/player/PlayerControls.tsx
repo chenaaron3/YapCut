@@ -50,7 +50,7 @@ export function PlayerControls({
   }, []);
 
   return (
-    <div className="grid h-9 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-t border-white/10 px-2">
+    <div className="relative z-[2147483647] grid h-9 shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center border-t border-white/10 px-2">
       <div className="ember-mono justify-self-start overflow-hidden text-[11px] leading-none tabular-nums tracking-tight whitespace-nowrap">
         <span className="text-[#FFA102]">
           {formatTimecode(frame, COMPOSITION_FPS)}
@@ -65,7 +65,7 @@ export function PlayerControls({
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="justify-self-center text-[#F5F9CE] hover:bg-white/10 hover:text-[#F5F9CE]"
+        className="relative z-[2147483647] justify-self-center text-[#F5F9CE] hover:bg-white/10 hover:text-[#F5F9CE]"
         aria-label={playing ? "Pause" : "Play"}
         title={playing ? "Pause (Space)" : "Play (Space)"}
         onClick={(e) => togglePlayback(e)}

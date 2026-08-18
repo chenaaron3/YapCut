@@ -142,7 +142,7 @@ export function CreateProgressBar({
     : (event?.label ?? CREATE_STAGE_LABEL.media);
 
   return (
-    <div className="relative overflow-hidden rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] shadow-[8px_9px_0_#450E16]">
+    <div className="relative overflow-hidden rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[8px_9px_0_#450E16]">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,#ffa10233,transparent_70%)]"

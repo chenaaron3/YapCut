@@ -3,8 +3,8 @@ import { useMemo } from "react";
 
 import { buildArollLayoutFromAssets } from "~/domain/arolls";
 import { validTransitionDrops } from "~/domain/transition";
+import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { InspectorPanel } from "~/editor/components/inspector/InspectorPanel";
-import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
 import { useRangeResize } from "~/editor/components/transcript/hooks/useRangeResize";
 import { TranscriptChromeVisibilityToggles } from "~/editor/components/transcript/TranscriptChromeVisibilityToggles";
 import { WordCell } from "~/editor/components/transcript/WordCell";
@@ -104,9 +104,9 @@ export function TranscriptPanel() {
 
   return (
     <div className="border-border bg-panel flex min-h-0 min-w-0 flex-col overflow-hidden">
-      <div className="border-border flex h-12 shrink-0 items-center justify-between gap-3 border-b px-3">
-        <ProjectTitleField />
-        <div className="flex shrink-0 items-center gap-2">
+      <div className="border-border hidden h-12 shrink-0 items-center justify-between gap-3 border-b px-3 lg:flex">
+        <AiAssistButton />
+        <div className="hidden shrink-0 items-center gap-2 lg:flex">
           <TranscriptChromeVisibilityToggles />
           <button
             type="button"
@@ -146,13 +146,13 @@ export function TranscriptPanel() {
       </div>
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <div
-          className="min-h-0 min-w-0 flex-[3] overflow-auto"
+          className="min-h-0 min-w-0 flex-1 overflow-auto lg:flex-[3]"
           onClick={() => {
             if (consumeJustResized()) return;
             clearSelection();
           }}
         >
-          <div className="px-6 py-5 text-[18px] leading-[1.85] text-[#F5F9CE]">
+          <div className="px-4 py-3 text-[18px] leading-[1.85] text-[#F5F9CE] lg:px-6 lg:py-5">
             {visibleWords.length === 0 ? (
               <p className="text-muted-foreground text-sm">
                 No transcript words.

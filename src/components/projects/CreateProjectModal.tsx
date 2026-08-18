@@ -59,12 +59,12 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
     >
       <DialogContent
         showCloseButton={false}
-        className="ember-shell grid max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] p-0 text-[#450E16] shadow-[12px_13px_0_#450E16] ring-0 sm:max-w-[min(44rem,calc(100%-2rem))] lg:h-[min(40rem,calc(100dvh-2rem))] lg:grid-cols-2 lg:overflow-hidden"
+        className="ember-shell grid max-h-[calc(100dvh-2rem)] w-full gap-0 overflow-y-auto rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] p-0 text-[#450E16] shadow-[12px_13px_0_#450E16] ring-0 sm:max-w-[min(44rem,calc(100%-2rem))] lg:h-[min(40rem,calc(100dvh-2rem))] lg:grid-cols-2 lg:overflow-hidden"
       >
         <section
           {...getRootProps()}
           className={cn(
-            "relative flex min-h-0 min-w-0 flex-col overflow-x-hidden border-[#450E16]/20 px-6 pt-6 pb-6 outline-none lg:border-r-[1.5px] lg:px-7",
+            "relative flex min-h-0 min-w-0 flex-col overflow-x-hidden border-[#450E16]/20 px-5 pt-5 pb-3 outline-none lg:border-r-[1.5px] lg:px-7 lg:pt-6 lg:pb-6",
             isDragAccept && "bg-[#FFA102]/15",
           )}
         >
@@ -120,14 +120,16 @@ export function CreateProjectModal({ open, onClose, onCreated }: Props) {
           </p>
         </section>
 
-        <section className="flex min-h-0 min-w-0 flex-col bg-[#ECEFC0]/70 px-4 pt-5 pb-4 lg:h-full">
-          <StitchedPreview
-            clips={clips}
-            activeId={activeId}
-            onActiveChange={setActiveId}
-          />
+        <section className="flex min-h-0 min-w-0 shrink-0 flex-col px-5 pt-1 pb-5 lg:h-full lg:bg-[#ECEFC0]/70 lg:px-4 lg:pt-5 lg:pb-4">
+          <div className="hidden min-h-0 flex-1 lg:flex">
+            <StitchedPreview
+              clips={clips}
+              activeId={activeId}
+              onActiveChange={setActiveId}
+            />
+          </div>
 
-          <footer className="mt-3 flex shrink-0 justify-center">
+          <footer className="flex shrink-0 justify-center lg:mt-3">
             <Button
               type="button"
               variant="ember"

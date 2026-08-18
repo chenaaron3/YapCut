@@ -8,6 +8,7 @@ import {
 } from "~/domain/create-progress";
 import { PROJECT_LIST_BADGE_LABEL } from "~/domain/project-list-badge";
 import { cn } from "~/lib/utils";
+import { api } from "~/utils/api";
 
 import type { CreateProgressEvent } from "~/domain/create-progress";
 import type { ProjectListBadge } from "~/domain/project-list-badge";
@@ -109,6 +110,7 @@ export function ProjectCard({
   previewKind,
   index = 0,
 }: Props) {
+  const utils = api.useUtils();
   const trimmed = title?.trim() ?? "";
   const displayTitle = trimmed.length > 0 ? trimmed : "Untitled";
   const overall = createProgress ? overallCreateProgress(createProgress) : 0;
@@ -117,6 +119,9 @@ export function ProjectCard({
   return (
     <Link
       href={`/projects/${id}`}
+      onPointerEnter={() => {
+        void utils.project.byId.prefetch({ id });
+      }}
       style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}
       className="animate-rise group block rounded-[24px] outline-none focus-visible:ring-3 focus-visible:ring-[#FFA102]"
     >

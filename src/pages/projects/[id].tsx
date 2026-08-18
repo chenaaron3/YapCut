@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
 
@@ -8,28 +8,49 @@ import {
 } from "~/components/landing/unclaimed-project";
 import { AppLayout } from "~/components/layout/AppLayout";
 import { EmberLoading } from "~/components/layout/EmberLoading";
+import { RequireUser } from "~/components/layout/RequireUser";
 import { CreateProgressBar } from "~/components/projects/CreateProgressBar";
 import { useCreateProgressStream } from "~/components/projects/use-create-progress-stream";
-import { buttonVariants } from "~/components/ui/button";
-import { isEditorProjectStatus } from "~/domain/project-status";
+import { isEditorProjectStatus, isProjectStatus } from "~/domain/project-status";
 import { EditorShell } from "~/editor/components/EditorShell";
-import { cn } from "~/lib/utils";
-import { requireUser } from "~/server/auth/session";
-import { db } from "~/server/db";
-import { claimUnclaimedProject } from "~/server/project-access";
 import { api } from "~/utils/api";
 
-import type { GetServerSideProps } from "next";
-import type { Session } from "next-auth";
+import type { RouterOutputs } from "~/utils/api";
 
-type Props = {
-  session: Session | null;
-};
+type ListResult = RouterOutputs["project"]["list"];
+
+function useListedProject(id: string) {
+  const queryClient = useQueryClient();
+  if (id.length === 0) return undefined;
+  const matches = queryClient.getQueriesData<ListResult>({
+    predicate: (query) => {
+      const key = query.queryKey[0];
+      if (key === "project.list") return true;
+      return (
+        Array.isArray(key) && key[0] === "project" && key[1] === "list"
+      );
+    },
+  });
+  for (const [, data] of matches) {
+    const item = data?.items.find((row) => row.id === id);
+    if (item) return item;
+  }
+  return undefined;
+}
 
 export default function ProjectPage() {
+  return (
+    <RequireUser>
+      <ProjectPageInner />
+    </RequireUser>
+  );
+}
+
+function ProjectPageInner() {
   const router = useRouter();
   const id = typeof router.query.id === "string" ? router.query.id : "";
   const utils = api.useUtils();
+  const listed = useListedProject(id);
   const projectQuery = api.project.byId.useQuery(
     { id },
     { enabled: id.length > 0 },
@@ -39,21 +60,34 @@ export default function ProjectPage() {
     if (id && readUnclaimedProjectId() === id) clearUnclaimedProjectId();
   }, [id]);
 
-  const status = projectQuery.data?.status;
+  const project = projectQuery.data;
+  const status = project?.status ?? listed?.status;
   const progress = useCreateProgressStream({
     projectId: id,
     enabled: status === "processing",
-    fallback: projectQuery.data?.createProgress ?? null,
+    fallback: project?.createProgress ?? listed?.createProgress ?? null,
     onTerminal: () => {
       void utils.project.byId.invalidate({ id });
       void utils.project.list.invalidate();
     },
   });
 
-  const trimmedTitle = projectQuery.data?.title?.trim() ?? "";
+  const trimmedTitle =
+    project?.title?.trim() ?? listed?.title?.trim() ?? "";
   const title = trimmedTitle.length > 0 ? trimmedTitle : "Untitled";
 
-  if (status && isEditorProjectStatus(status)) {
+  if (
+    id.length === 0 ||
+    (projectQuery.isLoading && project == null && listed == null)
+  ) {
+    return (
+      <AppLayout title="YapCut">
+        <EmberLoading />
+      </AppLayout>
+    );
+  }
+
+  if (status && isProjectStatus(status) && isEditorProjectStatus(status)) {
     return <EditorShell projectId={id} />;
   }
 
@@ -61,22 +95,25 @@ export default function ProjectPage() {
     <AppLayout title={`${title} · YapCut`}>
       <div className="relative">
         <div className="relative">
-          {projectQuery.isLoading ? <EmberLoading /> : null}
-          {projectQuery.data === null ? (
+          {project === null && listed == null ? (
             <p className="text-sm text-[#432E6F]">Project not found.</p>
           ) : null}
-          {projectQuery.data ? (
+          {project ?? listed ? (
             <div className="mx-auto max-w-lg pt-10">
               {status === "processing" || status === "failed" ? (
                 <div className="animate-rise-delay-2 mt-10">
                   <CreateProgressBar
                     event={
                       status === "failed"
-                        ? (projectQuery.data.createProgress ?? progress)
+                        ? (project?.createProgress ??
+                          listed?.createProgress ??
+                          progress)
                         : progress
                     }
                     failed={status === "failed"}
-                    failureReason={projectQuery.data.failureReason}
+                    failureReason={
+                      project?.failureReason ?? listed?.failureReason ?? null
+                    }
                   />
                 </div>
               ) : null}
@@ -87,17 +124,3 @@ export default function ProjectPage() {
     </AppLayout>
   );
 }
-
-export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
-  const result = await requireUser(ctx);
-  if (!("props" in result)) return result;
-  const { session } = await Promise.resolve(result.props);
-  const id = ctx.params?.id;
-  if (typeof id === "string") {
-    await claimUnclaimedProject(db, {
-      projectId: id,
-      userId: session.user.id,
-    });
-  }
-  return { props: { session } };
-};

@@ -45,7 +45,7 @@ import {
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";
 import { isGlobalMusicKey, isGlobalSfxKey } from "~/server/media/keys";
 import { measureAsset } from "~/server/media/measure-asset";
-import { canAccessProject, sessionUserId } from "~/server/project-access";
+import { canAccessProject, claimUnclaimedProject, sessionUserId } from "~/server/project-access";
 import {
   projectListVisible,
   projectListWhere,
@@ -248,7 +248,7 @@ export const projectRouter = createTRPCRouter({
   byId: publicProcedure
     .input(z.object({ id: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
-      const project = await ctx.db.query.projects.findFirst({
+      let project = await ctx.db.query.projects.findFirst({
         where: eq(projects.id, input.id),
         columns: {
           id: true,
@@ -297,7 +297,17 @@ export const projectRouter = createTRPCRouter({
         },
       });
 
-      if (!project || !canAccessProject(project, ctx.session)) return null;
+      if (!project) return null;
+
+      if (project.userId == null && ctx.session?.user?.id) {
+        const claimed = await claimUnclaimedProject(ctx.db, {
+          projectId: project.id,
+          userId: ctx.session.user.id,
+        });
+        if (claimed) project = { ...project, userId: ctx.session.user.id };
+      }
+
+      if (!canAccessProject(project, ctx.session)) return null;
 
       const downloadUrl =
         project.exportS3Key && project.exportBucketName

@@ -53,7 +53,7 @@ export function AiAssistButton() {
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="hidden items-center gap-2 lg:flex">
       <Button
         type="button"
         variant="ember-ghost"
@@ -64,7 +64,7 @@ export function AiAssistButton() {
         className="h-7 rounded-[10px] px-2.5 text-xs"
       >
         <Sparkles className="size-3.5" />
-        {busy ? "Generating…" : "Generate edits"}
+        {busy ? "Generating…" : "AI Edit"}
       </Button>
     </div>
   );

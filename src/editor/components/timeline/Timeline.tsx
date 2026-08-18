@@ -140,7 +140,7 @@ export function Timeline() {
 
   return (
     <div
-      className="flex w-full min-w-0 shrink-0 flex-col overflow-hidden border-t border-border bg-panel"
+      className="border-border bg-panel hidden w-full min-w-0 shrink-0 flex-col overflow-hidden border-t lg:flex"
       style={{ maxHeight: TIMELINE_MAX_HEIGHT }}
     >
       <div
