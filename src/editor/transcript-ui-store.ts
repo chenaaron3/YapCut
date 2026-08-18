@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import { DEFAULT_TRANSCRIPT_CHROME_VISIBILITY } from "~/editor/lib/transcript-chrome-visibility";
 
+import type { AssetDropKind } from "~/editor/lib/place-asset-drop";
 import type {
   TranscriptChromeGroup,
   TranscriptChromeVisibility,
@@ -29,9 +30,9 @@ type State = {
   collapseCluster: () => void;
   toggleCluster: (clusterId: string) => void;
 
-  /** Transitions tab drag in flight — transcript shows all valid drop words. */
-  transitionDragActive: boolean;
-  setTransitionDragActive: (on: boolean) => void;
+  /** Asset-library drag in flight — transcript glows as the drop zone. */
+  assetDragKind: AssetDropKind | null;
+  setAssetDragKind: (kind: AssetDropKind | null) => void;
 
   /** Armed B-roll subset — next word click places it. */
   pendingBrollPlace: PendingBrollPlace | null;
@@ -66,8 +67,8 @@ export const useTranscriptUi = create<State>((set, get) => ({
         get().expandedClusterId === clusterId ? null : clusterId,
     }),
 
-  transitionDragActive: false,
-  setTransitionDragActive: (on) => set({ transitionDragActive: on }),
+  assetDragKind: null,
+  setAssetDragKind: (kind) => set({ assetDragKind: kind }),
 
   pendingBrollPlace: null,
   armBrollPlace: (place) => set({ pendingBrollPlace: place }),

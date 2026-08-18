@@ -1,14 +1,26 @@
 import { ListOrdered, Quote, Type, Vibrate } from "lucide-react";
 
 import { VFX_DRAG_MIME, VFX_PRESETS } from "~/domain/vfx";
+import {
+  beginAssetPlaceDrag,
+  endAssetPlaceDrag,
+} from "~/editor/lib/asset-place-drag";
 
 import type { VfxDragPayload, VfxPresetType } from "~/domain/vfx";
+import type { EditChromeKey } from "~/editor/lib/edit-chrome";
 
 const PRESET_ICON: Record<VfxPresetType, typeof Quote> = {
   quote: Quote,
   text: Type,
   listicle: ListOrdered,
   shake: Vibrate,
+};
+
+const PRESET_CHROME: Record<VfxPresetType, EditChromeKey> = {
+  quote: "vfx:quote",
+  text: "vfx:text",
+  listicle: "vfx:listicle",
+  shake: "vfx:shake",
 };
 
 function VfxPresetRow({ preset }: { preset: VfxDragPayload }) {
@@ -19,8 +31,9 @@ function VfxPresetRow({ preset }: { preset: VfxDragPayload }) {
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData(VFX_DRAG_MIME, JSON.stringify(preset));
-        e.dataTransfer.effectAllowed = "copy";
+        beginAssetPlaceDrag(e, "vfx", PRESET_CHROME[preset.type]);
       }}
+      onDragEnd={endAssetPlaceDrag}
       title={preset.label}
     >
       <span className="bg-vfx/25 text-vfx flex h-7 w-7 shrink-0 items-center justify-center rounded">

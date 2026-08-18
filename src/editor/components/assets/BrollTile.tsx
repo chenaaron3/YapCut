@@ -2,6 +2,10 @@ import { useRef } from "react";
 
 import { BROLL_DRAG_MIME } from "~/domain/broll";
 import { BrollThumb } from "~/editor/components/assets/BrollThumb";
+import {
+  beginAssetPlaceDrag,
+  endAssetPlaceDrag,
+} from "~/editor/lib/asset-place-drag";
 import { cn } from "~/lib/utils";
 
 import type { BrollDragPayload } from "~/domain/broll";
@@ -46,8 +50,9 @@ export function BrollTile({
           kind: asset.kind as "image" | "video",
         };
         e.dataTransfer.setData(BROLL_DRAG_MIME, JSON.stringify(payload));
-        e.dataTransfer.effectAllowed = "copy";
+        beginAssetPlaceDrag(e, "broll", "broll", asset);
       }}
+      onDragEnd={endAssetPlaceDrag}
       onClick={() => {
         if (draggedRef.current) return;
         if (asset.kind !== "video") return;

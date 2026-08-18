@@ -9,6 +9,7 @@ import {
   isEditorProjectStatus,
   isProjectStatus,
 } from "~/domain/project-status";
+import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
 import { ExportButton } from "~/editor/components/ExportButton";
 import { ProjectTitleField } from "~/editor/components/ProjectTitleField";
@@ -22,26 +23,6 @@ import { bindEditorSavers, useEditor } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
-
-function SaveStatusBadge() {
-  const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
-  const saving = useEditor((s) => s.saving);
-  const label = saving ? "Saving…" : dirty ? "Unsaved" : "Saved";
-  return (
-    <span
-      className="ember-mono hidden h-7 items-center gap-1.5 rounded-full border-2 border-[#450E16] bg-[#F5F9CE] px-2.5 text-[10px] font-medium tracking-[.08em] text-[#450E16] uppercase lg:inline-flex"
-      title={label}
-    >
-      <span
-        className={cn(
-          "size-1.5 rounded-full",
-          saving ? "bg-[#75677F]" : dirty ? "bg-[#FFA102]" : "bg-sfx",
-        )}
-      />
-      {label}
-    </span>
-  );
-}
 
 /** Client-only: `next/dynamic` with `ssr:false` steals refs, so load the panel
  *  (not the Remotion Player) dynamically and import Player normally inside. */
@@ -279,7 +260,7 @@ export function EditorShell({ projectId }: Props) {
         </div>
         <ProjectTitleField className="absolute left-1/2 hidden max-w-[min(40vw,320px)] -translate-x-1/2 lg:inline-grid" />
         <div className="flex items-center gap-2">
-          <SaveStatusBadge />
+          <AiAssistButton />
           <ExportButton />
         </div>
       </header>

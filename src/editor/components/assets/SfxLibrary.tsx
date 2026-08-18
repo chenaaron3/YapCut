@@ -11,6 +11,10 @@ import {
   sfxFolderOf,
 } from "~/domain/sfx";
 import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
+import {
+  beginAssetPlaceDrag,
+  endAssetPlaceDrag,
+} from "~/editor/lib/asset-place-drag";
 import { cn } from "~/lib/utils";
 
 import type { SfxDragPayload } from "~/domain/sfx";
@@ -79,8 +83,9 @@ function SfxRow({
           label,
         };
         e.dataTransfer.setData(SFX_DRAG_MIME, JSON.stringify(payload));
-        e.dataTransfer.effectAllowed = "copy";
+        beginAssetPlaceDrag(e, "sfx", "sfx");
       }}
+      onDragEnd={endAssetPlaceDrag}
       title={
         asset.durationSec != null
           ? `${label} (${asset.durationSec.toFixed(2)}s)`

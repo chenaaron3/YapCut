@@ -3,8 +3,8 @@ import { useMemo } from "react";
 
 import { buildArollLayoutFromAssets } from "~/domain/arolls";
 import { validTransitionDrops } from "~/domain/transition";
-import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { InspectorPanel } from "~/editor/components/inspector/InspectorPanel";
+import { SaveStatusBadge } from "~/editor/components/SaveStatusBadge";
 import { useRangeResize } from "~/editor/components/transcript/hooks/useRangeResize";
 import { TranscriptChromeVisibilityToggles } from "~/editor/components/transcript/TranscriptChromeVisibilityToggles";
 import { WordCell } from "~/editor/components/transcript/WordCell";
@@ -59,7 +59,8 @@ export function TranscriptPanel() {
   const openSettingsPanel = useSelection((s) => s.openSettingsPanel);
   const { onDragStart } = useWordDragSelect();
   const { beginResize, consumeJustResized } = useRangeResize();
-  const transitionDragActive = useTranscriptUi((s) => s.transitionDragActive);
+  const assetDragKind = useTranscriptUi((s) => s.assetDragKind);
+  const transitionDragActive = assetDragKind === "transition";
 
   const annotations = useMemo(
     () => buildWordAnnotations(visibleWords, edits ?? [], layout),
@@ -105,7 +106,7 @@ export function TranscriptPanel() {
   return (
     <div className="border-border bg-panel flex min-h-0 min-w-0 flex-col overflow-hidden">
       <div className="border-border hidden h-12 shrink-0 items-center justify-between gap-3 border-b px-3 lg:flex">
-        <AiAssistButton />
+        <SaveStatusBadge />
         <div className="hidden shrink-0 items-center gap-2 lg:flex">
           <TranscriptChromeVisibilityToggles />
           <button
@@ -146,7 +147,11 @@ export function TranscriptPanel() {
       </div>
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <div
-          className="min-h-0 min-w-0 flex-1 overflow-auto lg:flex-[3]"
+          className={cn(
+            "min-h-0 min-w-0 flex-1 overflow-auto lg:flex-[3]",
+            assetDragKind && "transcript-asset-drop-zone",
+          )}
+          data-asset-drop={assetDragKind ?? undefined}
           onClick={() => {
             if (consumeJustResized()) return;
             clearSelection();

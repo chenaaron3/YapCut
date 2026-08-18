@@ -231,7 +231,7 @@ export const WordCell = memo(function WordCell({
                 }
               }
               e.preventDefault();
-              e.dataTransfer.dropEffect = "copy";
+              e.dataTransfer.dropEffect = "move";
               setDropActive(kind);
             }}
             onDragLeave={() => setDropActive(null)}
