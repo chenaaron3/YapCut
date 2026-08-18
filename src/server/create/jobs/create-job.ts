@@ -43,8 +43,9 @@ export type JobPollResult = {
  * One remote create job type (WhisperX, fal measure, …).
  *
  * `start` / `poll` / `finish` / `fail` do I/O. The workflow binds those
- * through `"use step"` via `withJobIO` so Node I/O never loads in the
- * workflow isolate. `start` returns `null` when the asset is already done.
+ * through `"use step"` wrappers that *call* the step by name — assigning a
+ * step function onto an object is not callable in the workflow isolate.
+ * `start` returns `null` when the asset is already done.
  */
 export type CreateJob<Handle> = {
   name: string;
@@ -56,26 +57,12 @@ export type CreateJob<Handle> = {
   fail?(asset: CreateAssetRef, reason: string): Promise<void>;
 };
 
-export type CreateJobIO<Handle> = Pick<
-  CreateJob<Handle>,
-  "start" | "poll" | "finish"
-> &
-  Pick<Partial<CreateJob<Handle>>, "fail">;
-
 export function createAssetLabel(asset: CreateAssetRef): string {
   return asset.originalFilename ?? asset.id;
 }
 
 function pendingLabels<Handle>(pending: PendingJob<Handle>[]): string {
   return pending.map((item) => createAssetLabel(item.asset)).join(", ");
-}
-
-/** Bind step I/O under a job name without importing the Node job module. */
-export function withJobIO<Handle>(
-  name: string,
-  io: CreateJobIO<Handle>,
-): CreateJob<Handle> {
-  return { name, ...io };
 }
 
 export type CreateJobCancel = {
@@ -137,6 +124,7 @@ export async function runCreateJobs<Handle>(input: {
   cancel?: CreateJobCancel;
 }): Promise<void> {
   const { job, assets, maxPolls, sleep, onProgress, cancel } = input;
+  const { name, start, poll, finish, fail } = job;
   const stopped = () => cancel?.cancelled === true;
   const stop = () => {
     if (cancel) cancel.cancelled = true;
@@ -146,7 +134,9 @@ export async function runCreateJobs<Handle>(input: {
   await onProgress(meanProgress(progress));
   if (stopped()) return;
 
-  const starts = await Promise.all(assets.map((asset) => job.start(asset)));
+  // Free-function calls so a workflow step proxy is not invoked as a method
+  // (`job.start` would serialize `this` and is not a function after replay).
+  const starts = await Promise.all(assets.map((asset) => start(asset)));
   if (stopped()) return;
   let pending: PendingJob<Handle>[] = [];
   for (let index = 0; index < assets.length; index++) {
@@ -165,21 +155,21 @@ export async function runCreateJobs<Handle>(input: {
 
   for (let p = 0; p < maxPolls && pending.length > 0; p++) {
     if (stopped()) return;
-    const polls = await job.poll(
+    const polls = await poll(
       pending.map((item) => ({ index: item.index, handle: item.handle })),
     );
     if (stopped()) return;
-    const byIndex = new Map(polls.map((poll) => [poll.index, poll]));
+    const byIndex = new Map(polls.map((item) => [item.index, item]));
 
     for (const item of pending) {
-      const poll = byIndex.get(item.index)!;
-      progress[item.index] = poll.progress;
-      if (poll.status !== "failed") continue;
-      const reason = poll.error ?? `${job.name} failed`;
+      const result = byIndex.get(item.index)!;
+      progress[item.index] = result.progress;
+      if (result.status !== "failed") continue;
+      const reason = result.error ?? `${name} failed`;
       stop();
-      await job.fail?.(item.asset, reason);
+      await fail?.(item.asset, reason);
       throw new Error(
-        `${job.name} failed for ${createAssetLabel(item.asset)}: ${reason}`,
+        `${name} failed for ${createAssetLabel(item.asset)}: ${reason}`,
       );
     }
     await onProgress(meanProgress(progress));
@@ -189,7 +179,7 @@ export async function runCreateJobs<Handle>(input: {
     );
     for (const item of done) {
       if (stopped()) return;
-      await job.finish(item.asset, item.handle);
+      await finish(item.asset, item.handle);
       progress[item.index] = 1;
     }
     if (done.length > 0) {
@@ -204,10 +194,10 @@ export async function runCreateJobs<Handle>(input: {
 
   if (stopped()) return;
   if (pending.length > 0) {
-    const reason = `${job.name} timed out`;
+    const reason = `${name} timed out`;
     stop();
     for (const item of pending) {
-      await job.fail?.(item.asset, reason);
+      await fail?.(item.asset, reason);
     }
     throw new Error(`${reason} for ${pendingLabels(pending)}`);
   }

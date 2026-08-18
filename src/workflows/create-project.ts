@@ -16,13 +16,12 @@ import {
   createMediaProgressGate,
   runCreateJobs,
   settleMediaJobs,
-  withJobIO,
 } from "~/server/create/jobs/create-job";
 
 import type { CreateProgressEvent } from "~/domain/create-progress";
 import type {
   CreateAssetRef,
-  CreateJobIO,
+  CreateJob,
   MeasureHandle,
   WhisperXHandle,
 } from "~/server/create/jobs/create-job";
@@ -39,6 +38,23 @@ const FAL_MAX_POLLS = 120;
 export async function createProjectWorkflow(projectId: string) {
   "use workflow";
 
+  // `"use step"` fns are only callable at a direct call site. Storing them on
+  // an object (`{ start: startWhisperXStep }`) leaves a non-callable step id
+  // — production then throws `job.start is not a function`.
+  const whisperXWorkflowJob: CreateJob<WhisperXHandle> = {
+    name: "WhisperX",
+    start: (asset) => startWhisperXStep(asset),
+    poll: (jobs) => pollWhisperXBatchStep(jobs),
+    finish: (asset, handle) => finishWhisperXStep(asset, handle),
+    fail: (asset, reason) => failWhisperXStep(asset, reason),
+  };
+  const measureWorkflowJob: CreateJob<MeasureHandle> = {
+    name: "fal measure",
+    start: (asset) => startMeasureStep(asset),
+    poll: (jobs) => pollMeasureBatchStep(jobs),
+    finish: (asset, handle) => finishMeasureStep(asset, handle),
+  };
+
   try {
     const assets = await loadAssetsStep(projectId);
     const cancel = { cancelled: false };
@@ -48,7 +64,7 @@ export async function createProjectWorkflow(projectId: string) {
     });
     await settleMediaJobs(
       runCreateJobs({
-        job: withJobIO("WhisperX", whisperXSteps),
+        job: whisperXWorkflowJob,
         assets,
         maxPolls: WHISPERX_MAX_POLLS,
         sleep: () => sleep(WHISPERX_POLL_SLEEP),
@@ -56,7 +72,7 @@ export async function createProjectWorkflow(projectId: string) {
         cancel,
       }),
       runCreateJobs({
-        job: withJobIO("fal measure", measureSteps),
+        job: measureWorkflowJob,
         assets,
         maxPolls: FAL_MAX_POLLS,
         sleep: () => sleep(FAL_POLL_SLEEP),
@@ -77,19 +93,6 @@ export async function createProjectWorkflow(projectId: string) {
     throw new FatalError(message);
   }
 }
-
-const whisperXSteps: CreateJobIO<WhisperXHandle> = {
-  start: startWhisperXStep,
-  poll: pollWhisperXBatchStep,
-  finish: finishWhisperXStep,
-  fail: failWhisperXStep,
-};
-
-const measureSteps: CreateJobIO<MeasureHandle> = {
-  start: startMeasureStep,
-  poll: pollMeasureBatchStep,
-  finish: finishMeasureStep,
-};
 
 async function emitProgressStep(
   projectId: string,

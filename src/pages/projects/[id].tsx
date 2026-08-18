@@ -67,25 +67,6 @@ export default function ProjectPage() {
           ) : null}
           {projectQuery.data ? (
             <div className="mx-auto max-w-lg pt-10">
-              <Link
-                href="/projects"
-                className={cn(
-                  buttonVariants({ variant: "ghost", size: "sm" }),
-                  "mb-8 -ml-2 text-[#432E6F]",
-                )}
-              >
-                ← Projects
-              </Link>
-              <p className="ember-display animate-rise text-5xl leading-[.82] sm:text-6xl">
-                {title}
-              </p>
-              <p className="animate-rise-delay mt-3 text-base text-[#432E6F]">
-                {status === "processing"
-                  ? "We’ll open the editor when this finishes."
-                  : status === "failed"
-                    ? "Something went wrong while creating this project."
-                    : `This project is ${status}.`}
-              </p>
               {status === "processing" || status === "failed" ? (
                 <div className="animate-rise-delay-2 mt-10">
                   <CreateProgressBar
