@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 
 import {
+  CREATE_UPLOAD_WEIGHT,
   createProgressEvent,
   meanProgress,
   overallCreateProgress,
@@ -54,7 +55,7 @@ export async function markCreateFailed(
     projectId,
     createProgressEvent(
       "failed",
-      prev ? overallCreateProgress(prev) : 0,
+      prev ? overallCreateProgress(prev, 1) : CREATE_UPLOAD_WEIGHT,
       truncated,
     ),
   );

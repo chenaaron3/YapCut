@@ -1,10 +1,12 @@
-import { AudioLines, Check, CircleAlert, Sparkles } from "lucide-react";
+import { AudioLines, Check, CircleAlert, Sparkles, Upload } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import {
   clampProgress,
   CREATE_STAGE_LABEL,
   CREATE_STAGE_WEIGHT,
+  CREATE_UPLOAD_LABEL,
+  failedPipelineProgress,
   overallCreateProgress,
 } from "~/domain/create-progress";
 import { cn } from "~/lib/utils";
@@ -14,29 +16,38 @@ import type {
   CreateProgressStage,
 } from "~/domain/create-progress";
 
-const PIPELINE_STEPS = ["media", "ai_analysis"] as const;
+const PIPELINE_STEPS = ["upload", "media", "ai_analysis"] as const;
 type PipelineStep = (typeof PIPELINE_STEPS)[number];
 
 const STEP_META: Record<
   PipelineStep,
   { title: string; Icon: typeof AudioLines }
 > = {
+  upload: { title: "Upload", Icon: Upload },
   media: { title: "Transcribe", Icon: AudioLines },
   ai_analysis: { title: "AI analysis", Icon: Sparkles },
 };
 
 type StepVisual = "pending" | "active" | "done" | "error";
 
-function failedStep(event: CreateProgressEvent): PipelineStep {
-  const overall = overallCreateProgress(event);
-  if (overall < CREATE_STAGE_WEIGHT.media) return "media";
+function failedStep(
+  event: CreateProgressEvent,
+): Exclude<PipelineStep, "upload"> {
+  const pipeline = failedPipelineProgress(event);
+  if (pipeline < CREATE_STAGE_WEIGHT.media) return "media";
   return "ai_analysis";
 }
 
 function stepVisual(
   step: PipelineStep,
   event: CreateProgressEvent | null,
+  uploadProgress: number,
 ): StepVisual {
+  if (step === "upload") {
+    return uploadProgress >= 1 ? "done" : "active";
+  }
+  if (uploadProgress < 1) return "pending";
+
   const stage: CreateProgressStage = event?.stage ?? "media";
   if (event?.stage === "failed") {
     const failed = failedStep(event);
@@ -60,9 +71,11 @@ function stepFill(
   step: PipelineStep,
   visual: StepVisual,
   event: CreateProgressEvent | null,
+  uploadProgress: number,
 ): number {
   if (visual === "done") return 1;
   if (visual === "pending" || visual === "error") return 0;
+  if (step === "upload") return clampProgress(uploadProgress);
   if (!event) return 0;
   if (event.stage === step) return clampProgress(event.progress);
   return 0;
@@ -104,17 +117,29 @@ type Props = {
   event: CreateProgressEvent | null;
   failed?: boolean;
   failureReason?: string | null;
+  /** 0–1 client upload. Defaults to 1 (already complete on the project page). */
+  uploadProgress?: number;
 };
 
-export function CreateProgressBar({ event, failed, failureReason }: Props) {
-  const overall = event ? overallCreateProgress(event) : 0;
+export function CreateProgressBar({
+  event,
+  failed,
+  failureReason,
+  uploadProgress = 1,
+}: Props) {
+  const upload = clampProgress(uploadProgress);
+  const overall = overallCreateProgress(event, upload);
   const smooth = useSmoothPercent(overall);
   const pct = Math.round(smooth * 100);
+  const uploading = upload < 1;
   const headline = failed
     ? "Couldn’t finish creating"
     : event?.stage === "ready"
       ? "Ready"
       : "Building your edit";
+  const label = uploading
+    ? CREATE_UPLOAD_LABEL
+    : (event?.label ?? CREATE_STAGE_LABEL.media);
 
   return (
     <div className="relative overflow-hidden rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] shadow-[8px_9px_0_#450E16]">
@@ -147,7 +172,11 @@ export function CreateProgressBar({ event, failed, failureReason }: Props) {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={failed ? undefined : pct}
-          aria-label={event?.label ?? CREATE_STAGE_LABEL.media}
+          aria-label={
+            uploading
+              ? CREATE_UPLOAD_LABEL
+              : (event?.label ?? CREATE_STAGE_LABEL.media)
+          }
         >
           <div
             className={cn(
@@ -164,16 +193,14 @@ export function CreateProgressBar({ event, failed, failureReason }: Props) {
             {failureReason}
           </p>
         ) : (
-          <p className="mt-3 text-sm text-[#432E6F]">
-            {event?.label ?? CREATE_STAGE_LABEL.media}
-          </p>
+          <p className="mt-3 text-sm text-[#432E6F]">{label}</p>
         )}
       </div>
 
       <ol className="border-foreground/8 relative border-t px-6 py-5 sm:px-8">
         {PIPELINE_STEPS.map((step, i) => {
-          const visual = stepVisual(step, event);
-          const fill = stepFill(step, visual, event);
+          const visual = stepVisual(step, event, upload);
+          const fill = stepFill(step, visual, event, upload);
           const { title, Icon } = STEP_META[step];
           const isLast = i === PIPELINE_STEPS.length - 1;
           return (

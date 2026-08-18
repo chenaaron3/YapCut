@@ -40,7 +40,7 @@ const QUOTE_TYPEWRITER_WORD = {
 const BOLD_WHITE_BASE: CaptionGroupStyle = {
   fontFamily: "chillax",
   fontSize: 125,
-  y: 0,
+  y: 1,
   groupAnimation: "none",
   wordAnimation: "none",
   wordReveal: "none",

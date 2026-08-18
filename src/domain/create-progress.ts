@@ -21,7 +21,12 @@ export const CREATE_STAGE_LABEL: Record<CreateProgressStage, string> = {
   failed: "Create failed",
 };
 
-/** Share of the overall bar before/at each non-terminal stage. */
+/** Share of the overall bar for client upload. */
+export const CREATE_UPLOAD_WEIGHT = 0.2;
+
+export const CREATE_UPLOAD_LABEL = "Uploading video…";
+
+/** Share of the post-upload pipeline before/at each stage. */
 export const CREATE_STAGE_WEIGHT = {
   media: 0.6,
   ai_analysis: 0.4,
@@ -80,7 +85,8 @@ export function meanProgress(parts: readonly number[]): number {
   return clampProgress(sum / parts.length);
 }
 
-export function overallCreateProgress(event: CreateProgressEvent): number {
+/** 0–1 through transcribe + AI analysis (upload excluded). */
+export function pipelineCreateProgress(event: CreateProgressEvent): number {
   if (event.stage === "ready") return 1;
   if (event.stage === "failed") {
     return clampProgress(event.progress);
@@ -90,6 +96,30 @@ export function overallCreateProgress(event: CreateProgressEvent): number {
     return local * CREATE_STAGE_WEIGHT.media;
   }
   return CREATE_STAGE_WEIGHT.media + local * CREATE_STAGE_WEIGHT.ai_analysis;
+}
+
+/** Overall 0–1 including client upload. Defaults upload to complete. */
+export function overallCreateProgress(
+  event: CreateProgressEvent | null,
+  uploadProgress = 1,
+): number {
+  if (event?.stage === "failed") {
+    return clampProgress(event.progress);
+  }
+  const pipeline = event ? pipelineCreateProgress(event) : 0;
+  return (
+    CREATE_UPLOAD_WEIGHT * clampProgress(uploadProgress) +
+    (1 - CREATE_UPLOAD_WEIGHT) * pipeline
+  );
+}
+
+/** Pipeline 0–1 at failure (upload is always complete server-side). */
+export function failedPipelineProgress(event: CreateProgressEvent): number {
+  if (event.stage !== "failed") return pipelineCreateProgress(event);
+  return clampProgress(
+    (clampProgress(event.progress) - CREATE_UPLOAD_WEIGHT) /
+      (1 - CREATE_UPLOAD_WEIGHT),
+  );
 }
 
 /** Combine parallel WhisperX + fal progress into the media stage. */

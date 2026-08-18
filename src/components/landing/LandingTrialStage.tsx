@@ -6,7 +6,6 @@ import { landingSignIn } from "~/components/landing/landing-auth";
 import { LandingHeroCompare } from "~/components/landing/LandingHeroCompare";
 import { CreateProgressBar } from "~/components/projects/CreateProgressBar";
 import { Button } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
 
 import type { LandingTrialPhase } from "~/components/landing/use-landing-trial";
 import type { CreateProgressEvent } from "~/domain/create-progress";
@@ -62,34 +61,15 @@ export function LandingTrialStage({
   }
 
   const failed = phase === "failed";
-  const pct = Math.round(uploadProgress * 100);
 
   return (
-    <div
-      className={cn(
-        "w-full max-w-[360px] overflow-hidden rounded-[24px] border-2 border-[#450E16] bg-[#F5F9CE] text-[#450E16] shadow-[6px_7px_0_#000]",
-      )}
-    >
-      {phase === "uploading" ? (
-        <div className="px-6 py-8">
-          <p className="ember-mono text-[10px] font-semibold tracking-[.18em] text-[#432E6F] uppercase">
-            Uploading
-          </p>
-          <p className="ember-display mt-3 text-4xl leading-none">{pct}%</p>
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-[#450E16]/10">
-            <div
-              className="h-full bg-[#FFA102] transition-[width]"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        </div>
-      ) : (
-        <CreateProgressBar
-          event={failed ? (project?.createProgress ?? progress) : progress}
-          failed={failed}
-          failureReason={project?.failureReason}
-        />
-      )}
+    <div className="w-full max-w-[360px]">
+      <CreateProgressBar
+        event={failed ? (project?.createProgress ?? progress) : progress}
+        failed={failed}
+        failureReason={project?.failureReason}
+        uploadProgress={phase === "uploading" ? uploadProgress : 1}
+      />
     </div>
   );
 }
