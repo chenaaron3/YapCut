@@ -119,9 +119,14 @@ export function PlayerPanel() {
     });
   }, []);
 
+  const shellClassName =
+    "relative z-20 flex h-full min-h-0 w-[min(50cqw,calc((100cqh-2.25rem-2rem)*9/16+2rem))] shrink-0 flex-col bg-[#0b0c10] fullscreen:w-full";
+
   if (!inputProps) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0b0c10] text-sm text-[#F5F9CE]/55">
+      <div
+        className={`${shellClassName} items-center justify-center p-4 text-sm text-[#F5F9CE]/55`}
+      >
         No preview
       </div>
     );
@@ -130,16 +135,10 @@ export function PlayerPanel() {
   const durationInFrames = Math.max(1, inputProps.durationInFrames);
 
   return (
-    <div
-      ref={shellRef}
-      className="relative z-20 flex h-full min-h-0 flex-col bg-[#0b0c10]"
-    >
-      <div className="relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-visible bg-black">
+    <div ref={shellRef} className={shellClassName}>
+      <div className="relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-visible p-4 fullscreen:p-0">
         <div
-          className="relative h-full max-h-full w-auto max-w-full overflow-visible"
-          style={{
-            aspectRatio: `${COMPOSITION_WIDTH} / ${COMPOSITION_HEIGHT}`,
-          }}
+          className="relative h-full w-full overflow-visible bg-black"
           onPointerDownCapture={onPlayGesture}
         >
           <Player

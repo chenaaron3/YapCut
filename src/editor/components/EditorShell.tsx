@@ -262,7 +262,7 @@ export function EditorShell({ projectId }: Props) {
     <div
       className={cn(
         "bg-background text-foreground fixed inset-0 grid h-screen min-h-0 w-full overflow-hidden overscroll-none",
-        "grid-rows-[auto_1fr_auto]",
+        "grid-rows-[auto_minmax(0,1fr)]",
         "selection:bg-[#FFA102] selection:text-[#450E16]",
       )}
     >
@@ -282,13 +282,16 @@ export function EditorShell({ projectId }: Props) {
         </div>
       </header>
 
-      <div className="border-border grid min-h-0 min-w-0 grid-cols-[240px_minmax(0,1fr)_280px] border-b">
-        <AssetsPanel />
-        <TranscriptPanel />
+      <div className="@container-size grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)_auto]">
+        <div className="border-border grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] border-r">
+          <div className="grid min-h-0 min-w-0 grid-cols-[240px_minmax(0,1fr)]">
+            <AssetsPanel />
+            <TranscriptPanel />
+          </div>
+          <Timeline />
+        </div>
         <PlayerPanel />
       </div>
-
-      <Timeline />
     </div>
   );
 }

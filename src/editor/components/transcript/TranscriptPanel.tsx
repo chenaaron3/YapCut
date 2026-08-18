@@ -103,7 +103,7 @@ export function TranscriptPanel() {
   });
 
   return (
-    <div className="border-border bg-panel flex min-h-0 min-w-0 flex-col overflow-hidden border-r">
+    <div className="border-border bg-panel flex min-h-0 min-w-0 flex-col overflow-hidden">
       <div className="border-border flex h-12 shrink-0 items-center justify-between gap-3 border-b px-3">
         <ProjectTitleField />
         <div className="flex shrink-0 items-center gap-2">
