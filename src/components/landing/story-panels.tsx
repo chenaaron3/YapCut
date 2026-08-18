@@ -502,7 +502,7 @@ export function StoryUpload({ progress }: { progress: number }) {
 export function StoryTranscript({ progress }: { progress: number }) {
   return (
     <div className="flex h-full flex-col gap-4">
-      <PanelHeader label="02 / let it read" badge="AI Edits" tone="teal" />
+      <PanelHeader label="02 / watch it in action" badge="AI Edits" tone="teal" />
       <div className="flex min-h-0 flex-1 items-center">
         <TranscriptCard
           progress={progress}
@@ -541,7 +541,7 @@ export function StoryEdit({ progress }: { progress: number }) {
 
   return (
     <div ref={rootRef} className="relative flex h-full flex-col gap-3 sm:gap-4">
-      <PanelHeader label="03 / make it yours" badge="your call" tone="orange" />
+      <PanelHeader label="03 / tweak it" badge="your call" tone="orange" />
       <div className="flex min-h-0 flex-1 items-center">
         <TranscriptCard
           progress={1}

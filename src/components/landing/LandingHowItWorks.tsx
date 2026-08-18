@@ -14,8 +14,8 @@ import { cn } from "~/lib/utils";
 
 const STEPS = [
   { n: "01", label: "Drop it in" },
-  { n: "02", label: "Let it read" },
-  { n: "03", label: "Make it yours" },
+  { n: "02", label: "Watch it in action" },
+  { n: "03", label: "Tweak it" },
   { n: "04", label: "Share it" },
 ] as const;
 
@@ -33,7 +33,7 @@ export function LandingHowItWorks() {
       className="border-y-2 border-[#450E16]/20 bg-[#F5F9CE] px-5 py-12 sm:px-10 sm:py-16 lg:px-14 lg:py-20"
     >
       <div className="mx-auto max-w-[1280px]">
-        <div className="max-w-[940px]">
+        <div className="mx-auto max-w-[940px] text-center lg:mx-0 lg:text-left">
           <p className="ember-mono mb-4 text-[10px] font-semibold tracking-[.2em] text-[#DD5533] uppercase">
             From first click to ready post
           </p>
@@ -51,10 +51,10 @@ export function LandingHowItWorks() {
           ref={trackRef}
           className="relative mt-8 min-h-[420vh] sm:mt-10 lg:min-h-[520vh]"
         >
-          <div className="sticky top-0 z-10 flex min-h-dvh flex-col gap-4 py-4 lg:grid lg:grid-cols-[160px_minmax(0,1fr)] lg:items-center lg:gap-10 lg:py-6">
+          <div className="sticky top-0 z-10 flex min-h-dvh flex-col items-center justify-center gap-4 py-4 lg:grid lg:grid-cols-[160px_minmax(0,1fr)] lg:items-center lg:justify-items-stretch lg:gap-10 lg:py-6">
             <aside
               aria-label="How it works steps"
-              className="flex shrink-0 flex-row justify-between gap-1 overflow-x-auto bg-[#F5F9CE]/90 py-2 backdrop-blur-sm lg:flex-col lg:justify-center lg:gap-6 lg:overflow-visible lg:bg-transparent lg:py-0 lg:backdrop-blur-none"
+              className="flex w-full shrink-0 flex-row justify-between gap-1 overflow-x-auto bg-[#F5F9CE]/90 py-2 backdrop-blur-sm lg:flex-col lg:justify-center lg:gap-6 lg:overflow-visible lg:bg-transparent lg:py-0 lg:backdrop-blur-none"
             >
               {STEPS.map((step, i) => (
                 <button

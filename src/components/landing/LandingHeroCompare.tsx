@@ -60,8 +60,8 @@ export function LandingHeroCompare() {
   };
 
   return (
-    <div className="flex w-full max-w-[260px] flex-col items-center gap-3 sm:w-auto sm:max-w-none">
-      <div className="relative h-[280px] w-full sm:h-[420px] sm:w-[340px]">
+    <div className="flex w-full max-w-[320px] flex-col items-center gap-2 sm:w-auto sm:max-w-none sm:gap-2.5">
+      <div className="relative h-[370px] w-full sm:h-[400px] sm:w-[320px] lg:h-[420px] lg:w-[340px]">
         <PhoneFrame
           side="before"
           front={shown === "before"}
@@ -72,7 +72,7 @@ export function LandingHeroCompare() {
           onEnded={() => {
             if (shown === "before") setPlaying(false);
           }}
-          className="absolute top-6 left-0 w-[52%] sm:top-8 sm:w-[200px] lg:w-[220px]"
+          className="absolute top-4 left-0 w-[62%] sm:top-6 sm:w-[200px] lg:w-[220px]"
           tilt="-rotate-6"
         />
         <PhoneFrame
@@ -85,7 +85,7 @@ export function LandingHeroCompare() {
           onEnded={() => {
             if (shown === "after") setPlaying(false);
           }}
-          className="absolute top-0 right-0 w-[52%] sm:w-[200px] lg:w-[220px]"
+          className="absolute top-0 right-0 w-[62%] sm:w-[200px] lg:w-[220px]"
           tilt="rotate-3"
           sparkles={shown === "after"}
         />
@@ -93,18 +93,18 @@ export function LandingHeroCompare() {
       <Button
         variant="ember"
         size="sm"
-        className="relative z-10 h-auto gap-1.5 rounded-[14px] px-3 py-2 shadow-[3px_3px_0_#FFA102] hover:shadow-none"
+        className="relative z-10 h-auto gap-1 rounded-[10px] px-2 py-1 shadow-[2px_2px_0_#FFA102] hover:shadow-none sm:gap-1.5 sm:rounded-[14px] sm:px-3 sm:py-2 sm:shadow-[3px_3px_0_#FFA102]"
         onClick={() => switchTo(shown === "before" ? "after" : "before")}
       >
         {shown === "before" ? (
           <>
-            <Wand2 className="size-3.5" />
-            <span className="ember-mono text-[9px] font-semibold tracking-[.1em] uppercase">
+            <Wand2 className="size-3 sm:size-3.5" />
+            <span className="ember-mono text-[7px] font-semibold tracking-[.1em] uppercase sm:text-[9px]">
               One AI click
             </span>
           </>
         ) : (
-          <span className="ember-mono text-[9px] font-semibold tracking-[.1em] uppercase">
+          <span className="ember-mono text-[7px] font-semibold tracking-[.1em] uppercase sm:text-[9px]">
             See original
           </span>
         )}
@@ -152,18 +152,18 @@ function PhoneFrame({
       <Card
         className={cn(
           emberCard,
-          "pointer-events-none w-full py-2",
+          "pointer-events-none w-full gap-0 p-1 sm:p-1.5",
           isBefore
             ? "bg-[#BC2D29] text-[#F5F9CE]"
             : "bg-[#F5F9CE] text-[#450E16]",
         )}
       >
-        <CardContent>
+        <CardContent className="p-0">
           <button
             type="button"
             aria-label={playing ? `Pause ${side}` : `Play ${side}`}
             className={cn(
-              "relative block aspect-[9/16] w-full overflow-hidden rounded-[16px] border-2 border-[#450E16] bg-[#450E16]",
+              "relative block aspect-[9/16] w-full overflow-hidden rounded-[12px] border-2 border-[#450E16] bg-[#450E16] sm:rounded-[16px]",
               front ? "pointer-events-auto" : "pointer-events-none",
             )}
             onClick={onToggle}
@@ -176,15 +176,15 @@ function PhoneFrame({
               preload="metadata"
               onEnded={onEnded}
             />
-            <span className="ember-mono absolute top-2.5 left-2.5 rounded-full bg-[#FFA102] px-2.5 py-1.5 text-[9px] font-bold tracking-[0.1em] text-[#450E16] uppercase">
+            <span className="ember-mono absolute top-1.5 left-1.5 rounded-full bg-[#FFA102] px-1.5 py-0.5 text-[7px] font-bold tracking-[0.1em] text-[#450E16] uppercase sm:top-2 sm:left-2 sm:px-2 sm:py-1 sm:text-[8px]">
               {isBefore ? "Before" : "After"}
             </span>
             {front ? (
-              <span className="absolute right-2.5 bottom-2.5 grid size-8 place-items-center rounded-full border-2 border-[#450E16] bg-[#FFA102] text-[#450E16]">
+              <span className="absolute right-1.5 bottom-1.5 grid size-6 place-items-center rounded-full border-2 border-[#450E16] bg-[#FFA102] text-[#450E16] sm:right-2.5 sm:bottom-2.5 sm:size-8">
                 {playing ? (
-                  <Pause className="size-3.5" />
+                  <Pause className="size-3 sm:size-3.5" />
                 ) : (
-                  <Play className="size-3.5 translate-x-px" />
+                  <Play className="size-3 translate-x-px sm:size-3.5" />
                 )}
               </span>
             ) : null}
