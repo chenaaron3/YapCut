@@ -16,32 +16,36 @@ import { cn } from "~/lib/utils";
 const FEATURES = [
   {
     n: "01",
-    title: "AI transcripts",
-    body: "Speech becomes words you can cut — plus perfectly timed subtitles, so nothing gets missed.",
+    title: "Cut by deleting words",
+    payoff: "Save hours of tedious timeline cutting.",
+    how: "AI automatically cuts the gaps and retakes. Change the words, the video follows.",
     Visual: MockTranscripts,
     Icon: AlignLeft,
     tilt: "md:rotate-[-1deg]",
   },
   {
     n: "02",
-    title: "AI edits",
-    body: "AI places zooms, SFX, and text overlays with intention — edits that boost engagement.",
+    title: "Looks directed on arrival",
+    payoff: "Boost retention with a Short that already looks finished.",
+    how: "Zooms, SFX, and overlays land on the words that matter.",
     Visual: MockEdits,
     Icon: Sparkles,
     tilt: "md:rotate-[1deg]",
   },
   {
     n: "03",
-    title: "Word-based view",
-    body: "A beginner-friendly editor built for talking head videos. No editing experience required.",
+    title: "Tap a word, place the edit",
+    payoff: "Keep every edit tied to the timing of the words.",
+    how: "The timeline’s still there; you just don’t have to live in it.",
     Visual: MockWordView,
     Icon: TextCursorInput,
     tilt: "md:rotate-[1deg]",
   },
   {
     n: "04",
-    title: "Take control",
-    body: "AI is the sidekick. You stay in control — nudge, swap, or undo any treatment.",
+    title: "Your brand stays yours",
+    payoff: "The first pass is automatic.",
+    how: "Nudge, swap, or undo anything until the look matches the brand you want.",
     Visual: MockControl,
     Icon: MousePointerClick,
     tilt: "md:rotate-[-1deg]",
@@ -60,14 +64,16 @@ export function LandingFeatures() {
           <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <p className="ember-mono mb-3 text-[10px] font-semibold tracking-[.2em] text-[#432E6F] uppercase">
-                A smaller toolkit
+                The new way to edit talking-head Shorts
               </p>
               <h2
                 id="features-title"
-                className="ember-display m-0 max-w-[720px] text-[clamp(2.6rem,12vw,6.6rem)] leading-[.8] lg:text-[clamp(3.4rem,6.5vw,6.6rem)]"
+                className="ember-display m-0 max-w-[940px] text-[clamp(2.6rem,12vw,6.6rem)] leading-[.8] lg:text-[clamp(3.4rem,6.5vw,6.6rem)]"
               >
-                Your words are{" "}
-                <span className="text-[#DD5533]">the timeline.</span>
+                Remove the slow, skippable parts —{" "}
+                <span className="text-[#DD5533]">
+                  so you can shape the brand.
+                </span>
               </h2>
             </div>
           </div>
@@ -90,12 +96,15 @@ export function LandingFeatures() {
                     <span className="ember-mono text-[10px] font-semibold text-[#DD5533]">
                       {feature.n}
                     </span>
-                    <h3 className="ember-display m-0 text-xl leading-none sm:text-2xl">
+                    <h3 className="ember-display m-0 text-xl leading-tight sm:text-2xl">
                       {feature.title}
                     </h3>
                   </div>
                   <p className="m-0 text-sm leading-snug text-[#432E6F]">
-                    {feature.body}
+                    <span className="font-semibold text-[#450E16]">
+                      {feature.payoff}
+                    </span>{" "}
+                    {feature.how}
                   </p>
                 </div>
                 <feature.Icon className="mt-0.5 size-4 text-[#450E16]" />
