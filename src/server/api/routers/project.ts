@@ -6,6 +6,7 @@ import { arollAssetOrder } from "~/domain/arolls";
 import {
   assertCreateBatch,
   assertCreateUploadBytes,
+  assertLandingCreateBatch,
   CREATE_MAX_BYTES,
 } from "~/domain/create-limits";
 import {
@@ -20,7 +21,11 @@ import {
 } from "~/domain/project-list-badge";
 import { isEditorProjectStatus } from "~/domain/project-status";
 import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 import {
   deleteAssetObjects,
   deleteDraftProject,
@@ -40,6 +45,7 @@ import {
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";
 import { isGlobalMusicKey, isGlobalSfxKey } from "~/server/media/keys";
 import { measureAsset } from "~/server/media/measure-asset";
+import { canAccessProject, sessionUserId } from "~/server/project-access";
 import {
   projectListVisible,
   projectListWhere,
@@ -218,7 +224,7 @@ export const projectRouter = createTRPCRouter({
     }),
 
   /** Global SFX + music libraries (`projectId` null). */
-  listGlobalAssets: protectedProcedure.query(async ({ ctx }) => {
+  listGlobalAssets: publicProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db
       .select({
         id: assets.id,
@@ -239,16 +245,14 @@ export const projectRouter = createTRPCRouter({
     return rows.map(toClientAsset);
   }),
 
-  byId: protectedProcedure
+  byId: publicProcedure
     .input(z.object({ id: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       const project = await ctx.db.query.projects.findFirst({
-        where: and(
-          eq(projects.id, input.id),
-          eq(projects.userId, ctx.session.user.id),
-        ),
+        where: eq(projects.id, input.id),
         columns: {
           id: true,
+          userId: true,
           title: true,
           status: true,
           failureReason: true,
@@ -293,7 +297,7 @@ export const projectRouter = createTRPCRouter({
         },
       });
 
-      if (!project) return null;
+      if (!project || !canAccessProject(project, ctx.session)) return null;
 
       const downloadUrl =
         project.exportS3Key && project.exportBucketName
@@ -544,7 +548,7 @@ export const projectRouter = createTRPCRouter({
       return { ok: true as const };
     }),
 
-  createStart: protectedProcedure
+  createStart: publicProcedure
     .input(
       z.object({
         title: z.string().max(512).optional(),
@@ -552,6 +556,7 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const userId = sessionUserId(ctx.session);
       for (const file of input.files) {
         if (!file.contentType.startsWith("video/")) {
           throw new TRPCError({
@@ -562,7 +567,8 @@ export const projectRouter = createTRPCRouter({
       }
 
       try {
-        assertCreateBatch(input.files);
+        if (userId == null) assertLandingCreateBatch(input.files);
+        else assertCreateBatch(input.files);
       } catch (error) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -578,7 +584,7 @@ export const projectRouter = createTRPCRouter({
 
       await ctx.db.insert(projects).values({
         id: projectId,
-        userId: ctx.session.user.id,
+        userId,
         title,
         status: "processing",
         config: {},
@@ -707,18 +713,43 @@ export const projectRouter = createTRPCRouter({
       return { ok: true as const };
     }),
 
-  createDiscard: protectedProcedure
+  createDiscard: publicProcedure
     .input(z.object({ projectId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       await requireDraftProject(ctx.db, {
         projectId: input.projectId,
-        userId: ctx.session.user.id,
+        userId: sessionUserId(ctx.session),
       });
       await deleteDraftProject(ctx.db, input.projectId);
       return { ok: true as const };
     }),
 
-  createFinalize: protectedProcedure
+  /** Delete a failed unclaimed Project so landing can start over. */
+  abandonUnclaimed: publicProcedure
+    .input(z.object({ projectId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select({
+          id: projects.id,
+          userId: projects.userId,
+          status: projects.status,
+        })
+        .from(projects)
+        .where(eq(projects.id, input.projectId))
+        .limit(1);
+
+      if (!project || project.userId != null || project.status !== "failed") {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+
+      await deleteDraftProject(ctx.db, input.projectId);
+      return { ok: true as const };
+    }),
+
+  createFinalize: publicProcedure
     .input(
       z.object({
         projectId: z.string().min(1),
@@ -728,7 +759,7 @@ export const projectRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await requireDraftProject(ctx.db, {
         projectId: input.projectId,
-        userId: ctx.session.user.id,
+        userId: sessionUserId(ctx.session),
       });
 
       const allAssets = await ctx.db

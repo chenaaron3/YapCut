@@ -9,8 +9,12 @@ Production rewrite of the `talking-head` prototype: T3 stack, S3 assets, Postgre
 ### Product / persistence
 
 **Project**:
-One deliverable video. Owned by a single user. Display name is `Project.title` (DB column — not inside config).
-_Avoid_: Episode (prototype term), episode title as config field
+One deliverable video. Owned by at most one User (none until **Claim**). Display name is `Project.title` (DB column — not inside config).
+_Avoid_: Episode (prototype term), episode title as config field; requiring a User at create
+
+**Claim**:
+Attaching a User to a Project that has none. Required to open the editor or Export. After Claim the Project is owned by that User and the id is no longer enough to open it.
+_Avoid_: anonymous / guest / shadow User; treating Claim as merging two Users; a separate unclaimed-access secret; showing an unclaimed Project on `/projects` or in the editor
 
 **ProjectConfig**:
 Sparse JSON document on the Project row: topology (`arolls`), flat `edits`, and Project fields (e.g. `captions`). Editor holds an in-memory copy and debounced-autosaves the whole blob.
@@ -213,7 +217,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
 
 **Create workflow** (Vercel Workflows):
 
-1. Presigned upload → Project + Assets (`processing`)
+1. Presigned upload → Project + Assets (`processing`). May start with no User from the landing drop (one A-roll). Signed-in create is unchanged (multi-clip).
 2. WhisperX and fal measure in parallel per A-roll (enqueue all, poll; create fails if either fails). WhisperX: language autodetect, diarization off → Transcript rows. Measure: LUFS + true peak + waveform via fal ffmpeg-api.
 3. Keep builder (long gaps) → `arolls`
 4. AI assist (create + editor **AI** button), on **timeline projected** transcript (kept words only):
@@ -237,6 +241,13 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 
 ## Relationships
 
+- A **Project** is owned by 0..1 User; **Claim** attaches a User to an unclaimed Project
+- Until **Claim**, knowing a Project’s id is enough to load it; after Claim only the owning User may
+- An unclaimed Project is created and watched only on the landing page (create progress, then a watch-only player). The editor and project list require a User
+- The landing page restores the current unclaimed Project across refresh and later visits (progress or player)
+- Landing accepts only one unclaimed Project at a time; `processing` and `ready` stay on landing until **Claim** (no second drop). `failed` shows the error and a new drop discards it
+- Any Google sign-in from landing **Claim**s the current unclaimed Project if one exists, then opens the editor. No landing Project → project list
+- Landing unclaimed create is one A-roll, 250 MB max; signed-in create keeps the existing multi-clip limits
 - Project has many Assets; Asset has 0..1 Transcript
 - Global Assets have `projectId = null` (seeded SFX under `global/sfx/`, music under `global/music/`); edits and `music` reference any Asset by id
 - ProjectConfig.arolls reference project video Assets
@@ -302,6 +313,9 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 >
 > **Dev:** "Can I delete a ScheduleEntry after YouTube succeeded but TikTok failed?"
 > **Domain expert:** "You can’t delete ScheduleEntries at all — the queue is history. Retry TikTok."
+>
+> **Dev:** "Does dropping a video on landing create a User?"
+> **Domain expert:** "No. That’s an unclaimed **Project**. **Claim** happens when they sign in — then they can open the editor or Export."
 
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid (may reuse **Cover**)

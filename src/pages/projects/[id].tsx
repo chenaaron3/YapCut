@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useEffect } from "react";
 
+import {
+  clearUnclaimedProjectId,
+  readUnclaimedProjectId,
+} from "~/components/landing/unclaimed-project";
 import { AppLayout } from "~/components/layout/AppLayout";
 import { EmberLoading } from "~/components/layout/EmberLoading";
 import { CreateProgressBar } from "~/components/projects/CreateProgressBar";
@@ -10,6 +15,8 @@ import { isEditorProjectStatus } from "~/domain/project-status";
 import { EditorShell } from "~/editor/components/EditorShell";
 import { cn } from "~/lib/utils";
 import { requireUser } from "~/server/auth/session";
+import { db } from "~/server/db";
+import { claimUnclaimedProject } from "~/server/project-access";
 import { api } from "~/utils/api";
 
 import type { GetServerSideProps } from "next";
@@ -27,6 +34,10 @@ export default function ProjectPage() {
     { id },
     { enabled: id.length > 0 },
   );
+
+  useEffect(() => {
+    if (id && readUnclaimedProjectId() === id) clearUnclaimedProjectId();
+  }, [id]);
 
   const status = projectQuery.data?.status;
   const progress = useCreateProgressStream({
@@ -96,5 +107,16 @@ export default function ProjectPage() {
   );
 }
 
-export const getServerSideProps: GetServerSideProps<Props> = (ctx) =>
-  requireUser(ctx);
+export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
+  const result = await requireUser(ctx);
+  if (!("props" in result)) return result;
+  const { session } = await Promise.resolve(result.props);
+  const id = ctx.params?.id;
+  if (typeof id === "string") {
+    await claimUnclaimedProject(db, {
+      projectId: id,
+      userId: session.user.id,
+    });
+  }
+  return { props: { session } };
+};

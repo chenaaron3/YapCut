@@ -2,6 +2,10 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useLayoutEffect } from "react";
 
+import {
+  isEditorProjectStatus,
+  isProjectStatus,
+} from "~/domain/project-status";
 import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
 import { ExportButton } from "~/editor/components/ExportButton";
@@ -13,7 +17,6 @@ import { applyWordSelectionHotkey } from "~/editor/lib/word-hotkeys";
 import { useSelection } from "~/editor/selection-store";
 import { bindEditorSavers, useEditor } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
-import { isEditorProjectStatus, isProjectStatus } from "~/domain/project-status";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 

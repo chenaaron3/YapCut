@@ -5,6 +5,11 @@ export const CREATE_MAX_BYTES = 4 * 1024 * 1024 * 1024;
 
 export const CREATE_LIMITS_HINT = `${CREATE_MAX_DURATION_SEC / 60} min · 4 GB`;
 
+/** Landing trial: one A-roll, tighter size than signed-in create. */
+export const LANDING_CREATE_MAX_FILES = 1;
+export const LANDING_CREATE_MAX_BYTES = 250 * 1024 * 1024;
+export const LANDING_CREATE_LIMITS_HINT = "1 video · 250 MB";
+
 export type CreateMediaInput = {
   filename: string;
   size: number;
@@ -13,7 +18,8 @@ export type CreateMediaInput = {
   height: number;
 };
 
-export type CreateLimitCode = "file-size" | "total-size" | "duration";
+export type CreateLimitCode =
+  "file-size" | "total-size" | "duration" | "file-count";
 
 export type CreateUsed = {
   count: number;
@@ -33,6 +39,8 @@ export function createLimitMessage(
       return `Project footage can be up to 4 GB total${named}.`;
     case "duration":
       return `Project footage can be up to ${CREATE_MAX_DURATION_SEC / 60} minutes${named}.`;
+    case "file-count":
+      return `Drop one talking-head video (${LANDING_CREATE_LIMITS_HINT}).`;
   }
 }
 
@@ -72,6 +80,22 @@ export function assertCreateBatch(files: CreateMediaInput[]): void {
     used.bytes += file.size;
     used.durationSec += file.durationSec;
   }
+}
+
+/** Landing trial: one file, 250 MB, plus signed-in duration cap. */
+export function assertLandingCreateBatch(files: CreateMediaInput[]): void {
+  if (files.length === 0) return;
+  if (files.length > LANDING_CREATE_MAX_FILES) {
+    throw new Error(createLimitMessage("file-count"));
+  }
+  for (const file of files) {
+    if (file.size > LANDING_CREATE_MAX_BYTES) {
+      throw new Error(
+        `Each video must be 250 MB or smaller (${file.filename}).`,
+      );
+    }
+  }
+  assertCreateBatch(files);
 }
 
 export function summarizeCreateRejections(

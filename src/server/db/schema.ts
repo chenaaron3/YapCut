@@ -119,7 +119,6 @@ export const projects = createTable(
       .$defaultFn(() => crypto.randomUUID()),
     userId: d
       .varchar({ length: 255 })
-      .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     title: d.varchar({ length: 512 }),
     status: d

@@ -5,8 +5,11 @@ import { LandingFeatures } from "~/components/landing/LandingFeatures";
 import { LandingHeader } from "~/components/landing/LandingHeader";
 import { LandingHero } from "~/components/landing/LandingHero";
 import { LandingHowItWorks } from "~/components/landing/LandingHowItWorks";
+import { useLandingTrial } from "~/components/landing/use-landing-trial";
 
 export function LandingView() {
+  const trial = useLandingTrial();
+
   return (
     <div className="ember-shell relative min-h-[100dvh] overflow-x-clip selection:bg-[#FFA102] selection:text-[#450E16]">
       <div
@@ -15,10 +18,10 @@ export function LandingView() {
       />
       <LandingHeader />
       <main className="relative z-10">
-        <LandingHero />
+        <LandingHero trial={trial} />
         <LandingFeatures />
         <LandingHowItWorks />
-        <LandingCta />
+        <LandingCta trial={trial} />
       </main>
       <LandingFooter />
     </div>

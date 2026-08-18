@@ -1,11 +1,16 @@
 "use client";
 
-import { ArrowUpRight } from "lucide-react";
+import { LandingDropZone } from "~/components/landing/LandingDropZone";
 
-import { landingSignIn } from "~/components/landing/landing-auth";
-import { Button } from "~/components/ui/button";
+import type { useLandingTrial } from "~/components/landing/use-landing-trial";
 
-export function LandingCta() {
+type Trial = ReturnType<typeof useLandingTrial>;
+
+function scrollToHero() {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+export function LandingCta({ trial }: { trial: Trial }) {
   return (
     <section
       id="cta"
@@ -26,15 +31,14 @@ export function LandingCta() {
         >
           Your next Short is already in the transcript.
         </h2>
-        <Button
-          variant="ember-ink"
-          size="lg"
-          className="mt-10 h-auto px-6 py-4"
-          onClick={landingSignIn}
-        >
-          Try for free
-          <ArrowUpRight data-icon="inline-end" className="size-[15px]" />
-        </Button>
+        <LandingDropZone
+          className="mx-auto mt-10"
+          tone="cta"
+          phase={trial.phase}
+          disabled={trial.locked}
+          acceptFiles={trial.acceptFiles}
+          onAccepted={scrollToHero}
+        />
         <p className="mt-6 text-lg text-[#450E16]/65">
           Designed for Vertical talking-head Shorts.
         </p>

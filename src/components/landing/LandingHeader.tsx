@@ -34,10 +34,10 @@ export function LandingHeader() {
           <Button
             variant="ember"
             size="sm"
-            className="h-auto px-3 py-2 shadow-[3px_3px_0_#000] hover:shadow-none md:hidden"
-            onClick={landingSignIn}
+            className="h-auto px-3 py-2 shadow-[3px_3px_0_#000] hover:shadow-none"
+            onClick={() => landingSignIn()}
           >
-            Try for free
+            Sign in
           </Button>
         </div>
       </nav>

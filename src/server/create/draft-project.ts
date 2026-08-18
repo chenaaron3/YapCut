@@ -1,8 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 
+import { isDraftCreate } from "~/domain/create-draft";
 import { assets, projects } from "~/server/db/schema";
 import { deleteObject } from "~/server/media/s3";
+import { ownerWhere } from "~/server/project-access";
 
 import type { db } from "~/server/db";
 
@@ -15,18 +17,11 @@ export type DraftProjectRow = {
   workflowRunId: string | null;
 };
 
-/** Project exists but the create pipeline has not started. */
-export function isDraftCreate(project: DraftProjectRow): boolean {
-  return (
-    project.status === "processing" &&
-    project.createProgress == null &&
-    project.workflowRunId == null
-  );
-}
+export { isDraftCreate };
 
 export async function requireDraftProject(
   database: Db,
-  options: { projectId: string; userId: string },
+  options: { projectId: string; userId: string | null },
 ): Promise<DraftProjectRow> {
   const [project] = await database
     .select({
@@ -36,12 +31,7 @@ export async function requireDraftProject(
       workflowRunId: projects.workflowRunId,
     })
     .from(projects)
-    .where(
-      and(
-        eq(projects.id, options.projectId),
-        eq(projects.userId, options.userId),
-      ),
-    )
+    .where(and(eq(projects.id, options.projectId), ownerWhere(options.userId)))
     .limit(1);
 
   if (!project) {

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getRun } from "workflow/api";
 
 import { auth } from "~/server/auth";
@@ -9,6 +9,7 @@ import {
 import { parseCreateProgress } from "~/server/create/publish-progress";
 import { db } from "~/server/db";
 import { projects } from "~/server/db/schema";
+import { canAccessProject } from "~/server/project-access";
 
 import type { CreateProgressEvent } from "~/domain/create-progress";
 
@@ -55,10 +56,6 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
   const { id } = await context.params;
   const [project] = await db
     .select({
@@ -67,10 +64,10 @@ export async function GET(
       createProgress: projects.createProgress,
     })
     .from(projects)
-    .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
+    .where(eq(projects.id, id))
     .limit(1);
 
-  if (!project) {
+  if (!project || !canAccessProject(project, session)) {
     return new Response("Not found", { status: 404 });
   }
 

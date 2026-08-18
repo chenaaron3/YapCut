@@ -1,7 +1,9 @@
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { readUnclaimedProjectId } from "~/components/landing/unclaimed-project";
 import { AppLayout } from "~/components/layout/AppLayout";
+import { EmberLoading } from "~/components/layout/EmberLoading";
 import { CreateProjectModal } from "~/components/projects/CreateProjectModal";
 import { ProjectsEmptyLibrary } from "~/components/projects/project-list/ProjectsEmptyLibrary";
 import { ProjectsGrid } from "~/components/projects/project-list/ProjectsGrid";
@@ -22,7 +24,25 @@ type Props = {
 export default function ProjectsPage() {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
+  const [ready, setReady] = useState(false);
   const list = useProjectList();
+
+  useEffect(() => {
+    const id = readUnclaimedProjectId();
+    if (id) {
+      void router.replace(`/projects/${id}`);
+      return;
+    }
+    setReady(true);
+  }, [router]);
+
+  if (!ready) {
+    return (
+      <AppLayout title="Projects · YapCut" description="Your YapCut projects.">
+        <EmberLoading />
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout title="Projects · YapCut" description="Your YapCut projects.">

@@ -1,14 +1,26 @@
 "use client";
 
-import { ArrowUpRight } from "lucide-react";
-
-import { landingSignIn } from "~/components/landing/landing-auth";
 import { emberEyebrow } from "~/components/landing/landing-ui";
-import { LandingHeroCompare } from "~/components/landing/LandingHeroCompare";
+import { LandingDropZone } from "~/components/landing/LandingDropZone";
+import { LandingTrialStage } from "~/components/landing/LandingTrialStage";
+import { useCreateProgressStream } from "~/components/projects/use-create-progress-stream";
 import { Badge } from "~/components/ui/badge";
-import { Button } from "~/components/ui/button";
 
-export function LandingHero() {
+import type { useLandingTrial } from "~/components/landing/use-landing-trial";
+
+type Trial = ReturnType<typeof useLandingTrial>;
+
+export function LandingHero({ trial }: { trial: Trial }) {
+  const showDrop = trial.phase === "idle" || trial.phase === "failed";
+  const progress = useCreateProgressStream({
+    projectId: trial.projectId ?? "",
+    enabled:
+      Boolean(trial.projectId) &&
+      (trial.phase === "processing" || trial.phase === "restoring"),
+    fallback: trial.project?.createProgress ?? null,
+    onTerminal: trial.onTerminal,
+  });
+
   return (
     <section
       id="product"
@@ -46,20 +58,23 @@ export function LandingHero() {
             caption, SFX, and more — so you can focus on building your personal
             brand.
           </p>
-          <div className="mt-6 sm:mt-8">
-            <Button
-              variant="ember"
-              size="lg"
-              className="h-auto px-5 py-3.5 shadow-[4px_4px_0_#000] hover:shadow-none"
-              onClick={landingSignIn}
-            >
-              Try for free
-              <ArrowUpRight data-icon="inline-end" className="size-[15px]" />
-            </Button>
-          </div>
+          {showDrop ? (
+            <LandingDropZone
+              className="mt-6 sm:mt-8"
+              phase={trial.phase}
+              disabled={trial.locked}
+              acceptFiles={trial.acceptFiles}
+            />
+          ) : null}
         </div>
         <div className="flex justify-center lg:block">
-          <LandingHeroCompare />
+          <LandingTrialStage
+            phase={trial.phase}
+            projectId={trial.projectId}
+            project={trial.project}
+            progress={progress}
+            uploadProgress={trial.uploadProgress}
+          />
         </div>
       </div>
     </section>
