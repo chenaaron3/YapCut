@@ -12,8 +12,11 @@ import {
   optionalEmphasisStyleSchema,
 } from "~/domain/emphasis-style";
 
+import { shotPlanSchema } from "~/domain/motion-config";
+
 import type { CompanionSfxMap } from "~/domain/companion-sfx-map";
 import type { EmphasisStyle } from "~/domain/emphasis-style";
+import type { ShotPlan } from "~/domain/motion-config";
 import type { LocalTime, TimelineTime } from "~/domain/time";
 
 export type { EmphasisStyle };
@@ -156,6 +159,19 @@ export type VfxShakeEdit = EditBase & {
   intensity?: number;
 };
 
+/**
+ * Word-synced graphic overlay. Persisted document is a ShotPlan
+ * (Director form) plus caption-catalog TemplateStyle.
+ */
+export type VfxMotionEdit = EditBase &
+  Transform &
+  CanHideCaptions & {
+    kind: "vfx";
+    type: "motion";
+    plan: ShotPlan | null;
+    style: TemplateStyle;
+  };
+
 /** Normalized transform applied at props / overlay time. */
 export type Transform = {
   scale: number;
@@ -218,7 +234,11 @@ export type TransitionEdit = EditBase & {
 };
 
 export type VfxEdit =
-  VfxTextEdit | VfxQuoteEdit | VfxListicleEdit | VfxShakeEdit;
+  | VfxTextEdit
+  | VfxQuoteEdit
+  | VfxListicleEdit
+  | VfxShakeEdit
+  | VfxMotionEdit;
 
 export type Edit = BrollEdit | SfxEdit | ZoomEdit | VfxEdit | TransitionEdit;
 
@@ -376,6 +396,14 @@ const vfxShakeEditSchema = editBaseSchema.extend({
   intensity: z.number().optional(),
 });
 
+const vfxMotionEditSchema = editBaseSchema.merge(transformSchema).extend({
+  kind: z.literal("vfx"),
+  type: z.literal("motion"),
+  hideCaptions: z.boolean(),
+  plan: shotPlanSchema.nullable(),
+  style: templateStyleSchema,
+});
+
 const brollEditSchema = editBaseSchema
   .merge(transformSchema)
   .merge(mediaRefSchema)
@@ -417,6 +445,7 @@ export const projectConfigSchema = z.object({
       vfxQuoteEditSchema,
       vfxListicleEditSchema,
       vfxShakeEditSchema,
+      vfxMotionEditSchema,
       brollEditSchema,
       sfxEditSchema,
       transitionEditSchema,

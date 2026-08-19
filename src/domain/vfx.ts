@@ -4,6 +4,7 @@ import {
   nextEditId,
   overlayMidpointSec,
 } from "~/domain/project-config";
+import { motionSeed } from "~/domain/motion";
 import { quoteSeed } from "~/domain/quote";
 import { shakeSeed } from "~/domain/shake";
 import { OVERLAY_TRANSFORM_DEFAULTS } from "~/domain/transform";
@@ -17,7 +18,7 @@ export const DEFAULT_TEXT_VFX_DURATION_SEC = 5;
 /** DataTransfer MIME for drag-from-Assets → transcript place. */
 export const VFX_DRAG_MIME = "application/x-vfx-preset";
 
-export type VfxPresetType = "quote" | "text" | "listicle" | "shake";
+export type VfxPresetType = "quote" | "text" | "listicle" | "shake" | "motion";
 
 /** Payload for drag-from-Assets → transcript place. */
 export type VfxDragPayload = {
@@ -31,6 +32,7 @@ export const VFX_PRESETS: readonly VfxDragPayload[] = [
   { type: "text", label: "Text" },
   { type: "listicle", label: "Listicle" },
   { type: "shake", label: "Shake" },
+  { type: "motion", label: "Motion" },
 ] as const;
 
 /** Place-time defaults for a text VFX (range filled by `placeEdit`). */
@@ -74,6 +76,7 @@ export function vfxSeedFromPreset(
 ): Extract<EditSeed, { kind: "vfx" }> {
   if (type === "quote") return quoteSeed();
   if (type === "shake") return shakeSeed();
+  if (type === "motion") return motionSeed();
   return textSeed();
 }
 

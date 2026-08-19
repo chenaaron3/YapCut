@@ -46,6 +46,7 @@ function vfxTopologyEqual(a: VfxEdit, b: VfxEdit): boolean {
       return a.middle === (b as typeof a).middle;
     case "quote":
     case "shake":
+    case "motion":
       return true;
     default:
       return assertNever(a);

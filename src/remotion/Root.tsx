@@ -28,6 +28,7 @@ const defaultProps: ProjectProps = {
   sfx: [],
   music: null,
   transitions: [],
+  motionOverlays: [],
 };
 
 const calculateMetadata: CalculateMetadataFunction<TalkingHeadProps> = ({

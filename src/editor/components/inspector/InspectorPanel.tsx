@@ -4,6 +4,7 @@ import { BRollInspector } from "~/editor/components/inspector/BRollInspector";
 import { CaptionsInspector } from "~/editor/components/inspector/CaptionsInspector";
 import { CompanionSfxFields } from "~/editor/components/inspector/field";
 import { ListicleVfxInspector } from "~/editor/components/inspector/ListicleVfxInspector";
+import { MotionVfxInspector } from "~/editor/components/inspector/MotionVfxInspector";
 import { MusicInspector } from "~/editor/components/inspector/MusicInspector";
 import { ProjectSettingsInspector } from "~/editor/components/inspector/ProjectSettingsInspector";
 import { QuoteVfxInspector } from "~/editor/components/inspector/QuoteVfxInspector";
@@ -62,6 +63,9 @@ export function InspectorPanel() {
     } else if (edit?.kind === "vfx" && edit.type === "shake") {
       title = "Shake";
       body = <ShakeVfxInspector edit={edit} />;
+    } else if (edit?.kind === "vfx" && edit.type === "motion") {
+      title = "Motion";
+      body = <MotionVfxInspector edit={edit} />;
     } else if (edit?.kind === "broll") {
       title = "B-roll";
       body = <BRollInspector edit={edit} />;

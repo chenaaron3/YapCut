@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 import { isBrollActiveAt } from "~/domain/broll";
+import { isMotionEdit } from "~/domain/motion";
 import { isTextBaseEdit } from "~/domain/project-config";
 import { transformOf, type Transform } from "~/domain/transform";
 import { isZoomActiveAt } from "~/domain/zoom";
@@ -75,6 +76,19 @@ function editableForEdit(
       label:
         edit.heading.trim() ||
         (edit.type === "listicle" ? "Listicle" : "Title"),
+      layer: "overlay",
+    };
+  }
+
+  if (isMotionEdit(edit)) {
+    if (timelineSec < edit.start || timelineSec >= edit.end) return null;
+    const size = overlaySize ?? OVERLAY_MEASURE_FALLBACK;
+    return {
+      editId: edit.id,
+      transform: transformOf(edit),
+      width: size.width,
+      height: size.height,
+      label: "Motion",
       layer: "overlay",
     };
   }

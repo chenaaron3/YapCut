@@ -3,6 +3,7 @@ import {
   Film,
   ListOrdered,
   Quote,
+  Sparkles,
   Type,
   Vibrate,
   Volume2,
@@ -23,6 +24,7 @@ export type EditChromeKey =
   | "vfx:quote"
   | "vfx:listicle"
   | "vfx:shake"
+  | "vfx:motion"
   | "broll"
   | "sfx"
   | "transition";
@@ -97,6 +99,17 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
     highlightClass: "bg-vfx/20",
     matches: (e) => e.kind === "vfx" && e.type === "shake",
+  },
+  {
+    key: "vfx:motion",
+    label: "motion",
+    Icon: Sparkles,
+    markerClass: "bg-vfx/80 text-black",
+    markerSelectedClass: "bg-vfx text-black",
+    dotClass: "bg-vfx",
+    underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
+    highlightClass: "bg-vfx/20",
+    matches: (e) => e.kind === "vfx" && e.type === "motion",
   },
   {
     key: "sfx",

@@ -65,7 +65,7 @@ broll | sfx | zoom | vfx | transition
 ```
 
 - **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
-- **vfx** — `type: "quote" | "text" | "listicle" | "shake"` (location/cutout out of scope)
+- **vfx** — `type: "quote" | "text" | "listicle" | "shake" | "motion"` (location/cutout out of scope)
 - **transition** — A-roll picture stitch (`templateId: "flash" | "fade" | "slide"`). Identity is `stitch` + `durationSec`; one per keep–keep stitch (plus opening and closing). Not a VFX subtype, not a sting.
 
 **Transition**:
@@ -111,6 +111,14 @@ _Avoid_: parallel `captionTemplateId` + `captionStyle` fields, dumping resolved 
 **TextBase**:
 Shared mixin on title (`vfx/text`) and listicle (`vfx/listicle`): `Transform` (block pose) + `heading` / `subheading` (empty subheading = heading only) + `middle` (null = no split) + `hideCaptions` (seed true for both) + `style` (`TemplateStyle`). Title owns its look per-edit. Listicle look is Project field `listicleStyle` as source of truth — denormalized onto each listicle’s `style` at place/AI seed and fanned out on every global patch. One overlay catalog (`stacked` lives on the template, not the edit). Serial templates always stagger (virtual midpoint if `middle` is unset; persist on handle drag or picking a serial template). Stacked + stagger off = both lines from t=start.
 _Avoid_: overlay `style.y` as block position; reading Project.`listicleStyle` at paint/resolve time (use the edit’s `style`)
+
+**Motion Edit** (`vfx/motion`):
+Word-synced graphic overlay. Persisted document is a **ShotPlan** (Director form, discriminated by `category`) plus a caption-catalog **TemplateStyle** on the Edit. Inspector Generate sends a prompt (+ current `plan` when revising) — prompt is request-only, not stored on the Edit. Director is one chat: optional `source_still` tool (search/generate into project Assets) then a ShotPlan. Builder is a Remotion catalog: `stat` / `charts` / `lower-thirds` (`name-bar` | `chip`) / `news` / `asset-fusion` / `checklist`. Look comes from `TemplateStyle` (`overrides.fill` is the accent). Extra overlay duration holds the last authored frame.
+_Avoid_: LLM-written Remotion/GSAP/HTML; Score/Draft/layout trees; `wordIndex` clocks; treating quote/title as kinetic motion; a second paint path; persisting prompt/thread; duplicating `vfx/listicle` as Motion (checklist is one accumulating stack, not one card per item)
+
+**ShotPlan**:
+The Motion Edit’s category form. Director fills it; painters mux on `category`. Image slots are `MediaRef` (same pointer as b-roll). Place seed is `plan: null`. `checklist` is `headline` + `items[{ label, atSec }]` — `atSec` is seconds from overlay start (copied from numbered words). Rows persist; extra overlay time holds the last item.
+_Avoid_: persisting `wordIndex`; a parallel ShotAsset type; `recipeId` as a second document
 
 **No-op default / Place seed**:
 Same spirit as prototype: omit means identity at props time; place may write on-seeds (e.g. entrance SFX) once.
@@ -192,7 +200,7 @@ A-roll track shows keep/gap cells from `arolls`. Each Edit gets an Edit cell on 
 ### View — player primitives
 
 **Text overlay**, **Zoom**, **ScreenShake**, **Media layer**, **Audio layer**, **Transition**:
-Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside. Stack: A-roll → zoom → b-roll → **transition** → text overlays → captions. Fade/slide need both keep pictures at the stitch (overlap). Flash is a short full-frame white pulse on the picture (after A-roll+b-roll+zoom, under title/listicle/captions) — do not cover headings.
+Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside. Stack: A-roll → zoom → b-roll → **transition** → text overlays (title/listicle/quote + **motion**) → captions. Fade/slide need both keep pictures at the stitch (overlap). Flash is a short full-frame white pulse on the picture (after A-roll+b-roll+zoom, under title/listicle/captions) — do not cover headings.
 
 **ProjectProps**:
 Fully resolved render DTO (defaults materialized). Built from ProjectConfig + assets + projected transcripts.
@@ -276,6 +284,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 | vfx/text     | Edit                                                              | yes               | Edit cell      | Overlay (`TextBase`, per-edit `style`)                        |
 | vfx/listicle | Edit                                                              | yes               | Edit cell      | Overlay (`TextBase`, `style` mirrored from `listicleStyle`)   |
 | vfx/shake    | Edit                                                              | yes               | Edit cell      | ScreenShake (wraps A-roll/zoom/b-roll; captions/text outside) |
+| vfx/motion   | Edit (`plan`: ShotPlan, `style`: caption TemplateStyle)           | yes               | Edit cell      | MotionLayer → category painter                                |
 | captions     | Project field                                                     | no                | optional track | Text overlay (words from projection)                          |
 | music        | Project field                                                     | no                | —              | Audio layer (looping bed, edge fades, no ducking)             |
 | transition   | Edit                                                              | marker only       | Video gutter   | Picture stitch (fade/slide overlap; flash pulse under text)   |
@@ -320,6 +329,6 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid (may reuse **Cover**)
 - ~~whether schedule **Publisher**s require a separate cover Asset vs frame-from-export~~ → **Cover** is a first-class styled Project output (prototype title-on-first-frame look), required for Publisher
-- ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle/shake → SFX → Zoom → Transition; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary). Transition has no handles.
+- ~~Overlapping idle underlines / markers: stack vs priority~~ → **priority** (B-roll → VFX text/quote/listicle/shake/motion → SFX → Zoom → Transition; same key → lower `editId`): one primary marker chip + secondary color dots (click expands inline); underline/highlight/handles only when selected (same primary). Transition has no handles.
 - ~~Exact min-gap for companion SFX stacking~~ → **300ms**; priority reveal/tick → quote ping → punch-in motion (risers are manual library only)
 - ~~Aggressive quote cadence hard quota vs soft~~ → **key-phrase only** (~3–10 words; first quote from word 0; ≥5 words between — spaced subsets)

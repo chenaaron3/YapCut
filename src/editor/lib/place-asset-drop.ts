@@ -125,7 +125,8 @@ function placeVfxFromDrop({
   if (
     payload?.type === "quote" ||
     payload?.type === "text" ||
-    payload?.type === "shake"
+    payload?.type === "shake" ||
+    payload?.type === "motion"
   ) {
     placeEditOnWord(globalIndex, vfxSeedFromPreset(payload.type));
   }

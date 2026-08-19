@@ -1,4 +1,4 @@
-import { ListOrdered, Quote, Type, Vibrate } from "lucide-react";
+import { ListOrdered, Quote, Sparkles, Type, Vibrate } from "lucide-react";
 
 import { VFX_DRAG_MIME, VFX_PRESETS } from "~/domain/vfx";
 import {
@@ -14,6 +14,7 @@ const PRESET_ICON: Record<VfxPresetType, typeof Quote> = {
   text: Type,
   listicle: ListOrdered,
   shake: Vibrate,
+  motion: Sparkles,
 };
 
 const PRESET_CHROME: Record<VfxPresetType, EditChromeKey> = {
@@ -21,6 +22,7 @@ const PRESET_CHROME: Record<VfxPresetType, EditChromeKey> = {
   text: "vfx:text",
   listicle: "vfx:listicle",
   shake: "vfx:shake",
+  motion: "vfx:motion",
 };
 
 function VfxPresetRow({ preset }: { preset: VfxDragPayload }) {

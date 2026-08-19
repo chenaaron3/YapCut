@@ -14,12 +14,14 @@ import {
   parseProjectConfig,
   projectConfigSchema,
 } from "~/domain/project-config";
+import { MOTION_MAX_PROMPT, shotPlanSchema } from "~/domain/motion-config";
 import {
   PROJECT_LIST_BADGES,
   PROJECT_LIST_PAGE_SIZE,
   projectListBadge,
 } from "~/domain/project-list-badge";
 import { isEditorProjectStatus } from "~/domain/project-status";
+import { generateMotionPlan, motionFailMessage } from "~/server/ai/motion";
 import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
 import {
   createTRPCRouter,
@@ -494,6 +496,35 @@ export const projectRouter = createTRPCRouter({
       }
 
       return { configUpdatedAt: now.toISOString() };
+    }),
+
+  generateMotion: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().min(1),
+        start: z.number(),
+        end: z.number(),
+        prompt: z.string().min(1).max(MOTION_MAX_PROMPT),
+        plan: z.unknown().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const parsedPlan = shotPlanSchema.safeParse(input.plan);
+        return await generateMotionPlan({
+          projectId: input.id,
+          userId: ctx.session.user.id,
+          start: input.start,
+          end: input.end,
+          prompt: input.prompt,
+          plan: parsedPlan.success ? parsedPlan.data : null,
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: motionFailMessage(error),
+        });
+      }
     }),
 
   updateTranscriptWords: protectedProcedure

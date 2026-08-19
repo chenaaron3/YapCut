@@ -4,6 +4,7 @@ import { AbsoluteFill, Series, useVideoConfig } from "remotion";
 import { BRollOverlay } from "~/remotion/components/BRollOverlay";
 import { Captions } from "~/remotion/components/Captions";
 import { EnsureLocalFonts } from "~/remotion/components/EnsureLocalFonts";
+import { MotionLayer } from "~/remotion/components/motion/MotionLayer";
 import { MusicOverlay } from "~/remotion/components/MusicOverlay";
 import { ScreenShake } from "~/remotion/components/ScreenShake";
 import { SfxAudio } from "~/remotion/components/SfxAudio";
@@ -54,6 +55,7 @@ export function TalkingHead({
   sfx,
   music,
   transitions = [],
+  motionOverlays = [],
 }: TalkingHeadProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
@@ -71,6 +73,7 @@ export function TalkingHead({
         </TransitionLayer>
       </ScreenShake>
       <TextOverlay overlays={textOverlays} />
+      <MotionLayer overlays={motionOverlays} />
       <Captions groups={captionGroups} />
       <SfxAudio sfx={sfx} />
       <MusicOverlay music={music} />

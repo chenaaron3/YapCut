@@ -26,6 +26,7 @@ const VISIBILITY_LABEL: Record<TranscriptChromeGroup, string> = {
   "vfx:quote": "Quote",
   "vfx:listicle": "Listicle",
   "vfx:shake": "Shake",
+  "vfx:motion": "Motion",
   sfx: "SFX",
   zoom: "Zoom",
   transition: "Transition",

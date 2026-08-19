@@ -1,3 +1,4 @@
+import type { ShotPlan } from "~/domain/motion-config";
 import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
@@ -122,6 +123,25 @@ export type TransitionClipProp = {
   in?: TransitionPictureProp;
 };
 
+export type MotionStillProp = {
+  src: string;
+  width: number | null;
+  height: number | null;
+};
+
+export type MotionOverlayProp = {
+  id: number;
+  startFrame: number;
+  endFrame: number;
+  plan: ShotPlan;
+  style: CaptionGroupStyle;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+  media: MotionStillProp | null;
+};
+
 export type ProjectProps = {
   /** Project.title at props time (Cover still; TalkingHead ignores). */
   title: string;
@@ -138,4 +158,5 @@ export type ProjectProps = {
   sfx: SfxClipProp[];
   music?: MusicClipProp | null;
   transitions: TransitionClipProp[];
+  motionOverlays: MotionOverlayProp[];
 };

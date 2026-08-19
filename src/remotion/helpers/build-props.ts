@@ -10,6 +10,8 @@ import {
   outputDurationFromArolls,
   timelineRangeToOutput,
 } from "~/domain/layout-time";
+import { isMotionEdit } from "~/domain/motion";
+import { motionMediaRef } from "~/domain/motion-config";
 import {
   editHidesCaptions,
   isTextBaseEdit,
@@ -69,6 +71,7 @@ import type {
   TransitionClipProp,
   TransitionPictureProp,
   ZoomProp,
+  MotionOverlayProp,
 } from "~/remotion/helpers/types";
 
 export type BuildProjectPropsInput = {
@@ -454,6 +457,57 @@ function buildShakes(
   return out;
 }
 
+function buildMotionOverlays(
+  edits: ProjectConfig["edits"],
+  cells: ReturnType<typeof buildArollLayout>,
+  mediaUrls: ReadonlyMap<string, string>,
+  assetSize: ReadonlyMap<string, { width: number; height: number }>,
+  fps: number,
+): MotionOverlayProp[] {
+  const out: MotionOverlayProp[] = [];
+  for (const e of edits) {
+    if (!isMotionEdit(e) || e.plan == null) continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+    const pose = resolveTransform(e);
+    const style = resolveTemplateStyle(
+      e.style,
+      isCaptionTemplateId,
+      DEFAULT_CAPTION_TEMPLATE_ID,
+      resolveCaptionTemplateStyle,
+    );
+    const ref = motionMediaRef(e.plan);
+    let media: MotionOverlayProp["media"] = null;
+    if (ref) {
+      const src = mediaUrls.get(ref.assetId);
+      if (src) {
+        const size = assetSize.get(ref.assetId);
+        media = {
+          src,
+          width: size?.width ?? null,
+          height: size?.height ?? null,
+        };
+      }
+    }
+    out.push({
+      id: e.id,
+      startFrame: secToFrame(range.start, fps),
+      endFrame: Math.max(
+        secToFrame(range.start, fps) + 1,
+        secToFrame(range.end, fps),
+      ),
+      plan: e.plan,
+      style,
+      scale: pose.scale,
+      offsetX: pose.offsetX,
+      offsetY: pose.offsetY,
+      rotation: pose.rotation,
+      media,
+    });
+  }
+  return out;
+}
+
 const COMPANION_SFX_FALLBACK_SEC = 0.35;
 
 function pushSfxClip(
@@ -718,6 +772,13 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
       input.config.edits,
       layout,
       input.mediaUrls,
+      fps,
+    ),
+    motionOverlays: buildMotionOverlays(
+      input.config.edits,
+      layout,
+      input.mediaUrls,
+      input.assetSize,
       fps,
     ),
   };

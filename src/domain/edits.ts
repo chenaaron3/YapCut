@@ -321,6 +321,7 @@ const PLAIN_PATCH_KEYS = [
   "emphasisStyle",
   "templateId",
   "durationSec",
+  "plan",
 ] as const;
 
 function applyPlainPatch(edit: Edit, patch: EditPatch): Edit {

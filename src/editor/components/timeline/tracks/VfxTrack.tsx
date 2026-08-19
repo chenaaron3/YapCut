@@ -1,3 +1,4 @@
+import { isMotionEdit, motionLabel } from "~/domain/motion";
 import { clampOverlayMiddle, isTextBaseEdit } from "~/domain/project-config";
 import { editMiddleSec } from "~/domain/vfx";
 import {
@@ -40,6 +41,7 @@ function vfxCellLabel(edit: VfxEdit): string {
   if (edit.type === "text" || edit.type === "listicle")
     return overlayLabel(edit);
   if (edit.type === "shake") return "Shake";
+  if (isMotionEdit(edit)) return motionLabel(edit);
   return resolveQuoteTemplate(
     resolveTemplateId(edit.style, isQuoteTemplateId, DEFAULT_QUOTE_TEMPLATE_ID),
   ).label;
