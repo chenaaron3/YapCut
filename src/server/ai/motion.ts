@@ -4,6 +4,12 @@ import { z } from "zod";
 
 import { durationMapFromArolls } from "~/domain/aroll/arolls";
 import {
+  keptTimelineWords,
+  projectTimelineWords,
+} from "~/domain/aroll/projection";
+import { parseProjectConfig } from "~/domain/project/project-config";
+import { isEditorProjectStatus } from "~/domain/project/project-status";
+import {
   assetFusionContentSchema,
   chartsContentSchema,
   checklistContentSchema,
@@ -17,19 +23,16 @@ import {
   statContentSchema,
   withMotionMedia,
 } from "~/domain/vfx/motion-config";
-import { parseProjectConfig } from "~/domain/project/project-config";
-import { isEditorProjectStatus } from "~/domain/project/project-status";
-import { keptTimelineWords, projectTimelineWords } from "~/domain/aroll/projection";
 import { IMAGE_SIZES } from "~/server/ai/images/types";
 import { sourceMotionAssets } from "~/server/ai/motion-source";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
 
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import type { ShotPlan } from "~/domain/vfx/motion-config";
 import type { TranscriptWord } from "~/domain/transcript/transcript";
-import type { AssetNeed, SourcedAsset } from "~/server/ai/motion-source";
+import type { ShotPlan } from "~/domain/vfx/motion-config";
+import type { AssetNeed, GeneratedAsset } from "~/server/ai/motion-source";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 const sourceStillParams = z.object({
   method: z.enum(["search", "generate"]),
@@ -60,9 +63,7 @@ const motionPlanLlmSchema = z.object({
 
 const MAX_DIRECTOR_ROUNDS = 6;
 
-function shotPlanFromLlm(
-  raw: z.infer<typeof motionPlanLlmSchema>,
-): ShotPlan {
+function shotPlanFromLlm(raw: z.infer<typeof motionPlanLlmSchema>): ShotPlan {
   const env = { brief: raw.brief, style: raw.style };
   switch (raw.category) {
     case "stat":
@@ -216,7 +217,7 @@ async function runSourceStill(options: {
   db: typeof db;
   projectId: string;
   args: unknown;
-}): Promise<{ ok: true; asset: SourcedAsset } | { ok: false; error: string }> {
+}): Promise<{ ok: true; asset: GeneratedAsset } | { ok: false; error: string }> {
   const parsed = sourceStillParams.safeParse(options.args);
   if (!parsed.success) return { ok: false, error: parsed.error.message };
   const need: AssetNeed = {
@@ -242,7 +243,10 @@ function planMediaIsKnown(plan: ShotPlan, known: ReadonlySet<string>): boolean {
   return ref == null || known.has(ref.assetId);
 }
 
-export function motionFailMessage(error: unknown): string {
+export function motionFailMessage(
+  error: unknown,
+  fallback = "Motion generate failed",
+): string {
   if (error && typeof error === "object") {
     const body = error as {
       message?: unknown;
@@ -266,7 +270,7 @@ export function motionFailMessage(error: unknown): string {
       return body.message;
     }
   }
-  return "Motion generate failed";
+  return fallback;
 }
 
 function parsedOrThrow<T>(
@@ -288,7 +292,7 @@ export async function generateMotionPlan(input: {
   end: number;
   prompt: string;
   plan?: ShotPlan | null;
-}): Promise<{ plan: ShotPlan; assets: SourcedAsset["client"][] }> {
+}): Promise<{ plan: ShotPlan; assets: GeneratedAsset["client"][] }> {
   const prompt = input.prompt.trim().slice(0, MOTION_MAX_PROMPT);
   if (!prompt) throw new Error("Prompt is empty");
   if (input.end <= input.start) throw new Error("Invalid range");
@@ -357,7 +361,7 @@ export async function generateMotionPlan(input: {
     },
   ];
 
-  const sourced: SourcedAsset[] = [];
+  const sourced: GeneratedAsset[] = [];
   let raw: z.infer<typeof motionPlanLlmSchema> | null = null;
   for (let round = 0; round < MAX_DIRECTOR_ROUNDS; round++) {
     const completion = await client.chat.completions.parse({
@@ -386,7 +390,7 @@ export async function generateMotionPlan(input: {
           "parsed_arguments" in call.function &&
           call.function.parsed_arguments != null
             ? call.function.parsed_arguments
-            : JSON.parse(call.function.arguments) as unknown;
+            : (JSON.parse(call.function.arguments) as unknown);
         const result =
           call.function.name === "source_still"
             ? await runSourceStill({
@@ -394,7 +398,10 @@ export async function generateMotionPlan(input: {
                 projectId: input.projectId,
                 args,
               })
-            : { ok: false as const, error: `Unknown tool ${call.function.name}` };
+            : {
+                ok: false as const,
+                error: `Unknown tool ${call.function.name}`,
+              };
         if (result.ok) {
           sourced.splice(0, sourced.length, result.asset);
           messages.push({

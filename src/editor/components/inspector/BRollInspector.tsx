@@ -1,14 +1,19 @@
+import { Label } from "~/components/ui/label";
 import {
   DEFAULT_KEN_BURNS,
   KEN_BURNS_MAX,
   KEN_BURNS_MIN,
 } from "~/domain/edit/broll";
 import { transformOf } from "~/domain/edit/transform";
-import type { BrollEdit } from "~/domain/project/project-config";
-import { Label } from "~/components/ui/label";
-import { SliderField, TransformFields } from "~/editor/components/inspector/field";
+import {
+  PersonFields,
+  SliderField,
+  TransformFields,
+} from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
+
+import type { BrollEdit } from "~/domain/project/project-config";
 
 const MIN_RANGE_SEC = 0.05;
 
@@ -23,17 +28,17 @@ export function BRollInspector({ edit }: { edit: BrollEdit }) {
   const mediaOffset = edit.mediaOffsetSec;
   const volume = edit.volume;
   const srcDur = asset?.durationSec ?? null;
-  const maxOffset =
-    srcDur != null ? Math.max(0, srcDur - MIN_RANGE_SEC) : 0;
+  const maxOffset = srcDur != null ? Math.max(0, srcDur - MIN_RANGE_SEC) : 0;
   const kenBurnsOn = edit.kenBurns != null;
   const kenBurns = edit.kenBurns ?? DEFAULT_KEN_BURNS;
   const label = asset?.originalFilename ?? edit.assetId.slice(0, 8);
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      <p className="truncate text-[11px] text-muted-foreground" title={label}>
+      <p className="text-muted-foreground truncate text-[11px]" title={label}>
         {label}
       </p>
+      <PersonFields edit={edit} />
 
       {isVideo ? (
         <>
@@ -76,7 +81,7 @@ export function BRollInspector({ edit }: { edit: BrollEdit }) {
             )
           }
         >
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <Label className="text-muted-foreground text-[10px] tracking-wider uppercase">
             Ken Burns
           </Label>
           <span

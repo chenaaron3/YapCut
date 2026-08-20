@@ -3,8 +3,8 @@ import { and, eq } from "drizzle-orm";
 
 import { isDraftCreate } from "~/domain/project/create-draft";
 import { assets, projects } from "~/server/db/schema";
-import { deleteObject } from "~/server/media/s3";
-import { ownerWhere } from "~/server/project-access";
+import { deleteAssets } from "~/server/media/delete-assets";
+import { ownerWhere } from "~/server/project/access";
 
 import type { db } from "~/server/db";
 
@@ -16,8 +16,6 @@ export type DraftProjectRow = {
   createProgress: unknown;
   workflowRunId: string | null;
 };
-
-export { isDraftCreate };
 
 export async function requireDraftProject(
   database: Db,
@@ -51,29 +49,17 @@ export async function requireDraftProject(
   return project;
 }
 
-export async function deleteAssetObjects(
-  rows: Array<{ s3Key: string }>,
-): Promise<void> {
-  for (const row of rows) {
-    try {
-      await deleteObject(row.s3Key);
-    } catch (error) {
-      console.warn(
-        `[create] S3 delete failed for ${row.s3Key}:`,
-        error instanceof Error ? error.message : error,
-      );
-    }
-  }
-}
-
 export async function deleteDraftProject(
   database: Db,
   projectId: string,
 ): Promise<void> {
   const rows = await database
-    .select({ s3Key: assets.s3Key })
+    .select({ id: assets.id })
     .from(assets)
     .where(eq(assets.projectId, projectId));
-  await deleteAssetObjects(rows);
+  await deleteAssets(
+    database,
+    rows.map((row) => row.id),
+  );
   await database.delete(projects).where(eq(projects.id, projectId));
 }

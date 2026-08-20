@@ -29,8 +29,24 @@ Project field: one looping audio Asset for the whole output. `MusicBed` is a `Me
 _Avoid_: music as an Edit; a music timeline track; audio ducking; treating project-uploaded music as SFX
 
 **Asset**:
-Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set ⇒ project-scoped; `projectId` null ⇒ **global** library (SFX pack under `global/sfx/`, music under `global/music/`). Create-flow uploads are project-scoped A-roll videos only. Create and music upload **require** measured `lufs` / `truePeakDb` (fal `ffmpeg-api/loudnorm` over a signed CloudFront URL). A-roll video also stores a peak `waveform` (`ffmpeg-api/waveform`) for the timeline VoiceBand. `npm run seed:global` is idempotent: upserts the global SFX/music libraries.
-_Avoid_: is_visual / is_audio booleans, public URLs as source of truth
+Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set ⇒ project-scoped; `projectId` null ⇒ **global** library (SFX pack under `global/sfx/`, music under `global/music/`). Create-flow uploads are project-scoped A-roll videos only. Create and music upload **require** measured `lufs` / `truePeakDb` (fal `ffmpeg-api/loudnorm` over a signed CloudFront URL). A-roll video also stores a peak `waveform` (`ffmpeg-api/waveform`) for the timeline VoiceBand. Optional **Mask** and **Transcript** are 1:1 decorator tables, not sibling Assets. `npm run seed:global` is idempotent: upserts the global SFX/music libraries.
+_Avoid_: is_visual / is_audio booleans, public URLs as source of truth; a `subject` column on Asset; a second Asset row for the mask file
+
+**Job**:
+Shared start → progress → finish/fail runner for remote vendor work (WhisperX, fal measure, BiRefNet), durable when `USE_VERCEL_WORKFLOW=true` else in-process, streaming a time-estimate 0–1 as NDJSON.
+_Avoid_: CreateJob; editor polling; treating export Lambda as this runner
+
+**Mask**:
+1:1 decorator on an Asset (same pattern as Transcript: `assetId` unique, cascade delete). Owns `type` (`cutout` | `occlude`), `enabled`, and the hard-mask file (`s3Key` nested under the source asset; null while BiRefNet runs). No row = never turned on (or the job failed before a file). Off sets `enabled` false and **keeps** the row and file. Client DTO omits disabled masks (`mask: null` = Off). Not listed in libraries. First On inserts the row and enqueues fal (image: `fal-ai/birefnet/v2`, video: `fal-ai/birefnet/v2/video`) via the same **Job** runner as create — durable Workflow when `USE_VERCEL_WORKFLOW=true`, else in-process. tRPC returns immediately; progress lives on the Mask (`runId`, `progress`) and streams (`/api/projects/:id/assets/:assetId/mask-stream`) like create until `s3Key` is set. Fal queue has no percent (IN_QUEUE / IN_PROGRESS / COMPLETED); we time-estimate and stream 0–1. Fail deletes the Mask row if no file was stored. Paint always uses **original × hard (thresholded) mask**, never the API’s RGB. A-roll **Separate background** is `type: "occlude"` (original → behind-person overlays → original × hard person mask). Inspector: On/Off (not Cutout). Person-on-custom-bg is Separate background + a behind-person background image. Stored A-roll Cutout paints as Occlude.
+_Avoid_: Subject (old name for Mask); a `subject` column on Asset; subject mask Asset; `subjectMaskAssetId`; `derivedFromAssetId`; treating the mask file as library b-roll; playing BiRefNet/SAM restained video; blocking the inspector mutation on fal; greenscreen; swapping playback to the masker’s RGB cutout
+
+**Remove background**:
+B-roll only. On/off on the **Asset** (library inspector), not the placed edit. Every placement uses the asset setting. Generic foreground keep (product, scene, person — whatever is not the backdrop). Stored as Mask `type: "cutout"` + the same BiRefNet pipeline. Library thumb shows the cutout. Off keeps the Mask.
+_Avoid_: Remove background on the b-roll edit inspector; Occlude on B-roll; SAM “person” prompt for B-roll
+
+**behindPerson**:
+Sparse `true` on sticker, b-roll, and vfx `text` / `quote` / `listicle` / `motion`. Omit = in front of the person. Person inspector (`In front | Behind`) when the overlapping A-roll has Separate background. Behind sits between original A-roll and the masked person plate. Captions stay in front with no field.
+_Avoid_: Person control on captions, zoom, shake, transition, SFX
 
 **Transcript**:
 Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: two AI passes unioned — sparse across the whole script, then denser (most content words) inside each quote punch phrase. Look is an `EmphasisStyle` treatment layered on the current group style (caption, or caption→quote): scale × group size, fill, optional font. Project field `emphasisStyle` is the base; `VfxQuoteEdit.emphasisStyle` sparse-merges on top. Layout (y / words-per-group) always follows the surrounding group. Optional **scribble** is a sibling word field, not part of `EmphasisStyle`.
@@ -69,7 +85,7 @@ broll | sticker | sfx | zoom | vfx | transition
 ```
 
 - **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
-- **vfx** — `type: "quote" | "text" | "listicle" | "shake" | "motion"` (location/cutout out of scope)
+- **vfx** — `type: "quote" | "text" | "listicle" | "shake" | "motion"` (location VFX out of scope; **Separate background** / **Remove background** are Asset **Mask**, not a VFX type)
 - **sticker** — catalog overlay (`source: "emoji" | "lordicon"` + `catalogId`). Same Edit shape; `source` is playback (`loop` vs intro-then-hold), not a second kind. Fixed ~180px box + `Transform`. No Ken Burns, no Asset row. Catalog files live under `public/stickers/{source}/{topic}/`. Emoji: Noto top 250 by popularity, Unicode group as topic (skip Animals & Nature and Flags), plus 15 food/drink. Lordicon: Wired Flat Popular + original Marks + talking-head extras; topic is a collapsed Lordicon category (`ui` / `people` / `media` / `business` / `tech` / `objects`). Drag from Stickers (Popular / Emoji / Marks / All + search). Place range is the drop word. Editor AI re-run drops stickers (keeps b-roll).
 - **transition** — A-roll picture stitch (`templateId: "flash" | "fade" | "slide"`). Identity is `stitch` + `durationSec`; one per keep–keep stitch (plus opening and closing). Not a VFX subtype, not a sting.
 
@@ -205,7 +221,7 @@ A-roll track shows keep/gap cells from `arolls`. Each Edit gets an Edit cell on 
 ### View — player primitives
 
 **Text overlay**, **Zoom**, **ScreenShake**, **Media layer**, **Audio layer**, **Transition**:
-Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside. Stack: A-roll → zoom → b-roll → **transition** → text overlays (title/listicle/quote + **motion** + **sticker**) → captions. Fade/slide need both keep pictures at the stitch (overlap). Flash is a short full-frame white pulse on the picture (after A-roll+b-roll+zoom, under title/listicle/captions) — do not cover headings.
+Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside Zoom. Stack: A-roll → zoom → b-roll → **transition** → text overlays (title/listicle/quote + **motion** + **sticker**) → captions. Behind-person overlays (b-roll / sticker / title / quote / listicle / motion) sit **inside Zoom** so punch-in lines up: **Separate background** sandwiches them between original and masked A-roll. Front overlays stay outside Zoom; captions always front. B-roll **Remove background** replaces the overlay with original × hard mask. Fade/slide need both keep pictures at the stitch (overlap). Flash is a short full-frame white pulse on the picture (after A-roll+b-roll+zoom, under title/listicle/captions) — do not cover headings.
 
 **ProjectProps**:
 Fully resolved render DTO (defaults materialized). Built from ProjectConfig + assets + projected transcripts.
@@ -246,6 +262,12 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
       Editor re-run keeps `arolls`, Project fields, and b-roll edits; replaces other edits + emphasis.
 5. Seed default `captions` TemplateStyle → `ready` (create only)
 
+**Mask workflow** (same **Job** runner + `USE_VERCEL_WORKFLOW` gate as create):
+Enqueue fal BiRefNet, poll every 5s (up to ~15 min), persist hard-mask file onto the Mask row (`s3Key` under the source asset). Image and video are separate fal endpoints, one job per source Asset. Stores `runId` + `progress` on Mask. Progress streams like create (`getReadable` when a run id exists, else in-process bus). Editor does not poll.
+
+**Adding a workflow:**
+Job adapter + kickoff + progress publish/stream. Same filenames in `server/workflow/<name>/` as create/mask (`start.ts`, `run.ts`, `publish.ts`, `jobs/`). `"use step"` wrappers stay named functions in `src/workflows/` (do not put step fns on an object). Product work stays in that pipeline folder.
+
 **Export workflow**:
 Remotion Lambda; private S3 via IAM (editor uses signed URLs). Output 1080×1920 @ 30fps. On success writes video export key and **Cover** key on the Project.
 
@@ -261,7 +283,8 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - Landing accepts only one unclaimed Project at a time; `processing` and `ready` stay on landing until **Claim** (no second drop). `failed` shows the error and a new drop discards it
 - Any Google sign-in from landing **Claim**s the current unclaimed Project if one exists, then opens the editor. No landing Project → project list
 - Landing unclaimed create is one A-roll, 250 MB max; signed-in create keeps the existing multi-clip limits
-- Project has many Assets; Asset has 0..1 Transcript
+- Project has many Assets; Asset has 0..1 Transcript and 0..1 **Mask** (decorators, not sibling Assets)
+- Create and Mask workflows share the **Job** runner (kickoff, progress stream, vendor poll)
 - Global Assets have `projectId = null` (seeded SFX under `global/sfx/`, music under `global/music/`); edits and `music` reference any Asset by id
 - ProjectConfig.arolls reference project video Assets
 - `music` is a Project field (one looping bed or null); project-scoped audio uploads are music, not SFX
@@ -300,7 +323,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 
 ## Deprioritized / out of scope
 
-- Location VFX, cutout greenscreen
+- Location VFX
 - Listicle/emphasis process flags
 - Teams/sharing; user upload to global library
 - Per-project dimensions/fps
@@ -332,6 +355,9 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 >
 > **Dev:** "Does dropping a video on landing create a User?"
 > **Domain expert:** "No. That’s an unclaimed **Project**. **Claim** happens when they sign in — then they can open the editor or Export."
+>
+> **Dev:** "Is the mask another Asset I should show in the b-roll library?"
+> **Domain expert:** "No. **Mask** is a decorator on the source Asset, like Transcript. Libraries never list it. Off keeps the row and file; fail with no file deletes the row."
 
 - ~~Whether b-roll entrance SFX is place-seeded by default~~ → **unset by default**; project field `defaultBRollSfxAssetId` places a sibling `sfx` edit on new b-roll drops (no nesting)
 - Poster/thumbnail for projects grid (may reuse **Cover**)

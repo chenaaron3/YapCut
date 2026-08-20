@@ -7,6 +7,7 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
+import type { MaskProgressEvent } from "~/domain/asset/mask-progress";
 import type { CreateProgressEvent } from "~/domain/project/create-progress";
 import type { ProjectConfig } from "~/domain/project/project-config";
 import type { ProjectStatus } from "~/domain/project/project-status";
@@ -336,12 +337,67 @@ export const assets = createTable(
   ],
 );
 
+/**
+ * Mask decorator on an Asset (1:1). Owns the hard-mask file.
+ * `enabled` false = Off (keep file). `s3Key` null while BiRefNet runs.
+ */
+export const masks = createTable(
+  "mask",
+  (d) => ({
+    id: d
+      .varchar({ length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    assetId: d
+      .varchar({ length: 255 })
+      .notNull()
+      .unique()
+      .references(() => assets.id, { onDelete: "cascade" }),
+    type: d.varchar({ length: 16 }).$type<"cutout" | "occlude">().notNull(),
+    enabled: d.boolean().notNull().default(true),
+    s3Key: d.varchar({ length: 1024 }),
+    kind: d.varchar({ length: 32 }).$type<"video" | "image">().notNull(),
+    contentType: d.varchar({ length: 255 }),
+    width: d.integer(),
+    height: d.integer(),
+    durationSec: d.doublePrecision(),
+    /** Vercel Workflow run id while BiRefNet is in flight. */
+    runId: d.varchar({ length: 255 }),
+    progress: d.jsonb().$type<MaskProgressEvent | null>(),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .notNull(),
+    updatedAt: d
+      .timestamp({ withTimezone: true })
+      .$defaultFn(() => /* @__PURE__ */ new Date())
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  }),
+  (t) => [index("mask_asset_id_idx").on(t.assetId)],
+);
+
 export const assetsRelations = relations(assets, ({ one }) => ({
   project: one(projects, {
     fields: [assets.projectId],
     references: [projects.id],
   }),
-  transcript: one(transcripts),
+  transcript: one(transcripts, {
+    fields: [assets.id],
+    references: [transcripts.assetId],
+  }),
+  mask: one(masks, {
+    fields: [assets.id],
+    references: [masks.assetId],
+  }),
+}));
+
+export const masksRelations = relations(masks, ({ one }) => ({
+  asset: one(assets, {
+    fields: [masks.assetId],
+    references: [assets.id],
+  }),
 }));
 
 export const transcripts = createTable(

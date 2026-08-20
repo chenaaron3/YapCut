@@ -2,25 +2,21 @@ import {
   finalizeCreateProject,
   loadCreateAssets,
   markCreateFailed,
-} from "~/server/create/create-pipeline";
+} from "~/server/workflow/create/pipeline";
 import {
   createMediaProgressGate,
-  runCreateJobs,
   settleMediaJobs,
-} from "~/server/create/jobs/create-job";
-import { measureJob } from "~/server/create/jobs/measure";
-import { whisperXJob } from "~/server/create/jobs/whisperx";
-import { publishCreateProgress } from "~/server/create/publish-progress";
+} from "~/server/workflow/create/media-progress";
+import { measureJob } from "~/server/workflow/create/jobs/measure";
+import { whisperXJob } from "~/server/workflow/create/jobs/whisperx";
+import { publishCreateProgress } from "~/server/workflow/create/publish";
+import { runJobs } from "~/server/workflow/job";
+import { inProcessSleep } from "~/server/workflow/kickoff";
 
-const IN_PROCESS_POLL_MS = 5_000;
 /** ~30 min wall time for the whole transcribe stage. */
 const IN_PROCESS_TRANSCRIBE_MAX_POLLS = 360;
 /** ~10 min wall time for the whole measure stage. */
 const IN_PROCESS_MEASURE_MAX_POLLS = 120;
-
-function inProcessSleep(): Promise<void> {
-  return new Promise((r) => setTimeout(r, IN_PROCESS_POLL_MS));
-}
 
 /**
  * End-to-end create pipeline for local / in-process fallback.
@@ -45,17 +41,17 @@ async function runCreatePipelineInner(projectId: string): Promise<void> {
   });
 
   await settleMediaJobs(
-    runCreateJobs({
+    runJobs({
       job: whisperXJob,
-      assets,
+      items: assets,
       maxPolls: IN_PROCESS_TRANSCRIBE_MAX_POLLS,
       sleep: inProcessSleep,
       onProgress: gate.onTranscribe,
       cancel,
     }),
-    runCreateJobs({
+    runJobs({
       job: measureJob,
-      assets,
+      items: assets,
       maxPolls: IN_PROCESS_MEASURE_MAX_POLLS,
       sleep: inProcessSleep,
       onProgress: gate.onMeasure,

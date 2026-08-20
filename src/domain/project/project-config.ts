@@ -81,6 +81,14 @@ export type EditBase = TimelineTime & {
 };
 
 /**
+ * Eligible overlays can sit behind the A-roll person when Separate background is on.
+ * Omit = in front. Captions never use this.
+ */
+export type CanSitBehindPerson = {
+  behindPerson?: true;
+};
+
+/**
  * Mixin for edits that can suppress spoken captions under their timeline range.
  * Title and listicle opt in via `TextBase.hideCaptions`
  * (title seeded false; listicle seeded true).
@@ -125,25 +133,28 @@ export type TextBase = Transform &
   };
 
 export type VfxTextEdit = EditBase &
-  TextBase & {
+  TextBase &
+  CanSitBehindPerson & {
     kind: "vfx";
     type: "text";
   };
 
-export type VfxQuoteEdit = EditBase & {
-  kind: "vfx";
-  type: "quote";
-  style?: TemplateStyle;
-  /**
-   * Sparse merge over project `emphasisStyle` for emphasized words in this quote.
-   * Omit / `{}` = use project only.
-   */
-  emphasisStyle?: EmphasisStyle;
-};
+export type VfxQuoteEdit = EditBase &
+  CanSitBehindPerson & {
+    kind: "vfx";
+    type: "quote";
+    style?: TemplateStyle;
+    /**
+     * Sparse merge over project `emphasisStyle` for emphasized words in this quote.
+     * Omit / `{}` = use project only.
+     */
+    emphasisStyle?: EmphasisStyle;
+  };
 
 /** Listicle overlay — `style` mirrors Project.listicleStyle (fan-out on patch). */
 export type VfxListicleEdit = EditBase &
-  TextBase & {
+  TextBase &
+  CanSitBehindPerson & {
     kind: "vfx";
     type: "listicle";
   };
@@ -164,7 +175,8 @@ export type VfxShakeEdit = EditBase & {
  */
 export type VfxMotionEdit = EditBase &
   Transform &
-  CanHideCaptions & {
+  CanHideCaptions &
+  CanSitBehindPerson & {
     kind: "vfx";
     type: "motion";
     plan: ShotPlan | null;
@@ -203,7 +215,8 @@ export type MusicBed = MediaRef;
  */
 export type BrollEdit = EditBase &
   Transform &
-  MediaRef & {
+  MediaRef &
+  CanSitBehindPerson & {
     kind: "broll";
     kenBurns?: number;
   };
@@ -218,7 +231,8 @@ export type SfxEdit = EditBase &
  * Not b-roll: fixed box, no Ken Burns, no media Asset row.
  */
 export type StickerEdit = EditBase &
-  Transform & {
+  Transform &
+  CanSitBehindPerson & {
     kind: "sticker";
     source: "emoji" | "lordicon";
     catalogId: string;
@@ -351,6 +365,10 @@ const editBaseSchema = z.object({
   companionSfx: mediaRefSchema.optional(),
 });
 
+const behindPersonSchema = z.object({
+  behindPerson: z.literal(true).optional(),
+});
+
 const transformSchema = z.object({
   scale: z.number(),
   offsetX: z.number(),
@@ -380,22 +398,28 @@ const textBaseSchema = transformSchema.extend({
   style: templateStyleSchema,
 });
 
-const vfxTextEditSchema = editBaseSchema.merge(textBaseSchema).extend({
-  kind: z.literal("vfx"),
-  type: z.literal("text"),
-});
+const vfxTextEditSchema = editBaseSchema
+  .merge(textBaseSchema)
+  .merge(behindPersonSchema)
+  .extend({
+    kind: z.literal("vfx"),
+    type: z.literal("text"),
+  });
 
-const vfxQuoteEditSchema = editBaseSchema.extend({
+const vfxQuoteEditSchema = editBaseSchema.merge(behindPersonSchema).extend({
   kind: z.literal("vfx"),
   type: z.literal("quote"),
   style: templateStyleSchema.optional(),
   emphasisStyle: optionalEmphasisStyleSchema,
 });
 
-const vfxListicleEditSchema = editBaseSchema.merge(textBaseSchema).extend({
-  kind: z.literal("vfx"),
-  type: z.literal("listicle"),
-});
+const vfxListicleEditSchema = editBaseSchema
+  .merge(textBaseSchema)
+  .merge(behindPersonSchema)
+  .extend({
+    kind: z.literal("vfx"),
+    type: z.literal("listicle"),
+  });
 
 const vfxShakeEditSchema = editBaseSchema.extend({
   kind: z.literal("vfx"),
@@ -403,17 +427,21 @@ const vfxShakeEditSchema = editBaseSchema.extend({
   intensity: z.number().optional(),
 });
 
-const vfxMotionEditSchema = editBaseSchema.merge(transformSchema).extend({
-  kind: z.literal("vfx"),
-  type: z.literal("motion"),
-  hideCaptions: z.boolean(),
-  plan: shotPlanSchema.nullable(),
-  style: templateStyleSchema,
-});
+const vfxMotionEditSchema = editBaseSchema
+  .merge(transformSchema)
+  .merge(behindPersonSchema)
+  .extend({
+    kind: z.literal("vfx"),
+    type: z.literal("motion"),
+    hideCaptions: z.boolean(),
+    plan: shotPlanSchema.nullable(),
+    style: templateStyleSchema,
+  });
 
 const brollEditSchema = editBaseSchema
   .merge(transformSchema)
   .merge(mediaRefSchema)
+  .merge(behindPersonSchema)
   .extend({
     kind: z.literal("broll"),
     kenBurns: z.number().optional(),
@@ -423,11 +451,14 @@ const sfxEditSchema = editBaseSchema.merge(mediaRefSchema).extend({
   kind: z.literal("sfx"),
 });
 
-const stickerEditSchema = editBaseSchema.merge(transformSchema).extend({
-  kind: z.literal("sticker"),
-  source: z.enum(["emoji", "lordicon"]),
-  catalogId: z.string().min(1),
-});
+const stickerEditSchema = editBaseSchema
+  .merge(transformSchema)
+  .merge(behindPersonSchema)
+  .extend({
+    kind: z.literal("sticker"),
+    source: z.enum(["emoji", "lordicon"]),
+    catalogId: z.string().min(1),
+  });
 
 const transitionStitchSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("opening") }),

@@ -18,7 +18,7 @@ type Props = {
 };
 
 export function SfxTrack({ edits, width }: Props) {
-  const isSel = useIsSelected(["edit", "arollAsset"]);
+  const isSel = useIsSelected(["edit", "aroll"]);
   const pxPerSec = useEditor((s) => s.pxPerSec);
   const assets = useEditor((s) => s.assets);
   const select = useSelection((s) => s.select);

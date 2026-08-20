@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
 
+import { ArollAssetInspector } from "~/editor/components/inspector/ArollAssetInspector";
+import { BrollAssetInspector } from "~/editor/components/inspector/BrollAssetInspector";
 import { BRollInspector } from "~/editor/components/inspector/BRollInspector";
 import { CaptionsInspector } from "~/editor/components/inspector/CaptionsInspector";
 import { CompanionSfxFields } from "~/editor/components/inspector/field";
@@ -15,7 +17,8 @@ import { TextVfxInspector } from "~/editor/components/inspector/TextVfxInspector
 import { TransitionInspector } from "~/editor/components/inspector/TransitionInspector";
 import { WordInspector } from "~/editor/components/inspector/WordInspector";
 import { ZoomInspector } from "~/editor/components/inspector/ZoomInspector";
-import { primaryId } from "~/editor/lib/selection/selection";
+import { selectedArollAssetId } from "~/editor/lib/selection/aroll-asset-selection";
+import { primaryAssetId, primaryId } from "~/editor/lib/selection/selection";
 import { usePlayerPlaying } from "~/editor/lib/player/use-player-playing";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useGlobalWords } from "~/editor/store";
@@ -32,6 +35,8 @@ export function InspectorPanel() {
   const playing = usePlayerPlaying();
   const selection = useSelection((s) => {
     if (s.selection?.kind === "edit") return s.selection;
+    if (s.selection?.kind === "aroll") return s.selection;
+    if (s.selection?.kind === "broll") return s.selection;
     if (s.selection?.kind === "word") {
       const hasEmphasis = s.selection.ids.some(
         (id) => typeof id === "number" && words[id]?.emphasized,
@@ -42,6 +47,8 @@ export function InspectorPanel() {
   });
   const projectPanel = useSelection((s) => s.projectPanel);
   const config = useEditor((s) => s.config);
+  const assets = useEditor((s) => s.assets);
+  const getLayout = useEditor((s) => s.getLayout);
   const clearSelection = useSelection((s) => s.clearSelection);
 
   let title: string | null = null;
@@ -62,6 +69,21 @@ export function InspectorPanel() {
   } else if (selection?.kind === "word" && !playing) {
     title = "Word";
     body = <WordInspector />;
+  } else if (selection?.kind === "aroll") {
+    const assetId = selectedArollAssetId(selection, getLayout());
+    const asset =
+      assetId != null ? assets.find((a) => a.id === assetId) : undefined;
+    if (asset && (asset.kind === "image" || asset.kind === "video")) {
+      title = "A-roll";
+      body = <ArollAssetInspector asset={asset} />;
+    }
+  } else if (selection?.kind === "broll") {
+    const id = primaryAssetId(selection);
+    const asset = id != null ? assets.find((a) => a.id === id) : undefined;
+    if (asset && (asset.kind === "image" || asset.kind === "video")) {
+      title = "B-roll";
+      body = <BrollAssetInspector asset={asset} />;
+    }
   } else if (selection?.kind === "edit" && config) {
     const id = primaryId(selection);
     const edit = id != null ? config.edits.find((e) => e.id === id) : undefined;

@@ -3,7 +3,6 @@ import { asc, eq } from "drizzle-orm";
 import {
   CREATE_UPLOAD_WEIGHT,
   createProgressEvent,
-  meanProgress,
   overallCreateProgress,
 } from "~/domain/project/create-progress";
 import { buildArollKeepsFromWords } from "~/domain/aroll/keeps";
@@ -16,10 +15,9 @@ import { runAiAssist } from "~/server/ai/run-ai-assist";
 import {
   parseCreateProgress,
   publishCreateProgress,
-} from "~/server/create/publish-progress";
+} from "~/server/workflow/create/publish";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
-import { measureAsset } from "~/server/media/measure-asset";
 import { headObject, presignGetObject } from "~/server/media/s3";
 import {
   getWhisperXPrediction,
@@ -28,9 +26,14 @@ import {
 
 import type { ProjectConfig } from "~/domain/project/project-config";
 import type { TranscriptWord } from "~/domain/transcript/transcript";
-import type { CreateAssetRef } from "~/server/create/jobs/create-job";
 
-export type { CreateAssetRef };
+/** Serializable A-roll ref passed across workflow `sleep()` / steps. */
+export type CreateAssetRef = {
+  id: string;
+  s3Key: string;
+  originalFilename: string | null;
+  durationSec: number;
+};
 
 const FAILURE_REASON_MAX = 2000;
 
@@ -269,44 +272,6 @@ export async function markAssetTranscriptFailed(
       raw: { error: reason },
     });
   }
-}
-
-export async function measureCreateAsset(asset: {
-  id: string;
-  s3Key: string;
-  originalFilename: string | null;
-  lufs?: number | null;
-  waveformPeaks?: number[] | null;
-}): Promise<void> {
-  await measureAsset(asset, { waveform: true });
-  console.log(
-    `[create] measured audio asset=${asset.id} ${asset.originalFilename ?? ""}`,
-  );
-}
-
-/** Measure A-roll LUFS + waveform. Failure fails create. */
-export async function measureCreateAssets(projectId: string): Promise<void> {
-  const rows = await db
-    .select({
-      id: assets.id,
-      s3Key: assets.s3Key,
-      lufs: assets.lufs,
-      waveformPeaks: assets.waveformPeaks,
-      originalFilename: assets.originalFilename,
-    })
-    .from(assets)
-    .where(eq(assets.projectId, projectId));
-
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i]!;
-    const parts = rows.map((_, j) => (j < i ? 1 : j === i ? 0.5 : 0));
-    await publishCreateProgress(
-      projectId,
-      createProgressEvent("media", meanProgress(parts)),
-    );
-    await measureCreateAsset(row);
-  }
-  await publishCreateProgress(projectId, createProgressEvent("media", 1));
 }
 
 /**

@@ -1,7 +1,10 @@
+import { Sparkles } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
+import { Button } from "~/components/ui/button";
+import { BrollGenerateModal } from "~/editor/components/assets/broll-generate";
 import { BrollPreviewModal } from "~/editor/components/assets/BrollPreviewModal";
 import { BrollTile } from "~/editor/components/assets/BrollTile";
 import { useAssetUpload } from "~/editor/components/assets/useAssetUpload";
@@ -23,9 +26,14 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
     () => new Set(),
   );
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const visibleAssets = useMemo(
     () => assets.filter((asset) => !hiddenIds.has(asset.id)),
     [assets, hiddenIds],
+  );
+  const imageAssets = useMemo(
+    () => visibleAssets.filter((asset) => asset.kind === "image"),
+    [visibleAssets],
   );
   const previewAsset = visibleAssets.find((a) => a.id === previewId) ?? null;
 
@@ -53,7 +61,7 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
     [projectId, hiddenIds, removeAsset, rehydrateFromServer],
   );
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (files) => {
       void importFiles(files, async (raw) => {
         const file = await prepareMediaFileForUpload(raw);
@@ -87,6 +95,17 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
       className={cn("flex min-h-full flex-col", isDragActive && "bg-primary/5")}
     >
       <input {...getInputProps()} />
+      <div className="border-border flex shrink-0 items-center border-b px-2 py-1.5">
+        <Button
+          type="button"
+          size="sm"
+          disabled={!projectId || importing}
+          onClick={() => setGenerateOpen(true)}
+        >
+          <Sparkles className="size-3.5" />
+          Generate
+        </Button>
+      </div>
       <PickerGrid className="p-2">
         {visibleAssets.map((asset) => (
           <BrollTile
@@ -102,6 +121,11 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
         {importing ? <PickerEmpty>Importing…</PickerEmpty> : null}
         {isDragActive ? <PickerEmpty>Drop media to add</PickerEmpty> : null}
       </PickerGrid>
+      <BrollGenerateModal
+        imageAssets={imageAssets}
+        open={generateOpen}
+        onClose={() => setGenerateOpen(false)}
+      />
       <BrollPreviewModal
         asset={previewAsset}
         open={previewAsset != null}

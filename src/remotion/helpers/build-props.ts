@@ -1,3 +1,8 @@
+import {
+  arollPlaybackMask,
+  behindPersonProp,
+  maskProp,
+} from "~/domain/asset/mask";
 import { buildArollLayout } from "~/domain/aroll/arolls";
 import {
   arollPlaybackGain,
@@ -52,6 +57,7 @@ import {
 import { resolveTemplateStyle } from "~/remotion/templates/style";
 
 import type { ArollLayoutCell } from "~/domain/aroll/arolls";
+import type { MaskEntry } from "~/domain/asset/mask";
 import type {
   EmphasisStyle,
   ResolvedEmphasisStyle,
@@ -77,24 +83,26 @@ import type {
   ZoomProp,
 } from "~/remotion/helpers/types";
 
+/** Per-asset lookup for props (playback, size, loudness, mask). Absent mask = Off. */
+export type PropsAsset = {
+  src: string;
+  kind: "video" | "image" | "audio";
+  durationSec: number | null;
+  width: number | null;
+  height: number | null;
+  lufs: number | null;
+  truePeakDb: number | null;
+  mask?: MaskEntry;
+};
+
+type Assets = ReadonlyMap<string, PropsAsset>;
+
 export type BuildProjectPropsInput = {
   config: ProjectConfig;
   /** Display title for Cover (and future on-export metadata). */
   title?: string;
-  /** assetId → signed playback URL */
-  mediaUrls: ReadonlyMap<string, string>;
   transcriptsByAssetId: ReadonlyMap<string, readonly TranscriptWord[]>;
-  /** assetId → media duration (for timeline→output edit mapping). */
-  assetDurationSec: ReadonlyMap<string, number>;
-  /** assetId → natural size for b-roll contain-fit. */
-  assetSize: ReadonlyMap<string, { width: number; height: number }>;
-  /** assetId → media kind (image|video|audio). */
-  assetKind: ReadonlyMap<string, "video" | "image" | "audio">;
-  /** assetId → measured loudness (missing → gain 1). */
-  assetLoudness?: ReadonlyMap<
-    string,
-    { lufs: number | null; truePeakDb: number | null }
-  >;
+  assets: Assets;
   fps?: number;
 };
 
@@ -119,35 +127,40 @@ function outputMiddleFrame(
   return Math.min(endFrame, Math.max(startFrame, secToFrame(middleSec, fps)));
 }
 
-function loudnessOf(
-  assetLoudness:
-    | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
-    | undefined,
-  assetId: string,
-): { lufs: number | null; truePeakDb: number | null } {
-  return assetLoudness?.get(assetId) ?? { lufs: null, truePeakDb: null };
+function durationSecById(assets: Assets): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const [id, asset] of assets) {
+    map.set(id, asset.durationSec ?? 0);
+  }
+  return map;
+}
+
+function loudnessOf(asset: PropsAsset | undefined): {
+  lufs: number | null;
+  truePeakDb: number | null;
+} {
+  return { lufs: asset?.lufs ?? null, truePeakDb: asset?.truePeakDb ?? null };
 }
 
 function buildSections(
   arolls: readonly ArollKeep[],
-  mediaUrls: ReadonlyMap<string, string>,
-  assetLoudness:
-    | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
-    | undefined,
+  assets: Assets,
   fps: number,
 ): ArollSection[] {
   return arolls.map((keep) => {
+    const asset = assets.get(keep.assetId);
     const trimBefore = secToFrame(keep.start, fps);
     const trimAfter = secToFrame(keep.end, fps);
     const durationInFrames = Math.max(1, trimAfter - trimBefore);
-    const loud = loudnessOf(assetLoudness, keep.assetId);
+    const loud = loudnessOf(asset);
     return {
       assetId: keep.assetId,
-      src: mediaUrls.get(keep.assetId) ?? "",
+      src: asset?.src ?? "",
       trimBefore,
       trimAfter,
       durationInFrames,
       volume: arollPlaybackGain(loud.lufs, loud.truePeakDb),
+      ...maskProp(arollPlaybackMask(asset?.mask)),
     };
   });
 }
@@ -171,6 +184,7 @@ type OutputQuote = {
   end: number;
   style: CaptionGroupStyle;
   emphasisStyle?: EmphasisStyle;
+  behindPerson?: boolean;
 };
 
 function outputQuotes(
@@ -193,6 +207,7 @@ function outputQuotes(
         resolveQuoteTemplateStyle,
       ),
       emphasisStyle: e.emphasisStyle,
+      ...behindPersonProp(e),
     });
   }
   return out;
@@ -253,6 +268,7 @@ function buildCaptionGroups(
     captionsAtATime: number;
     style: CaptionGroupStyle;
     emphasisStyle: ResolvedEmphasisStyle;
+    behindPerson?: boolean;
   };
 
   // Keep source punctuation through grouping so sentence boundaries work;
@@ -284,14 +300,17 @@ function buildCaptionGroups(
       captionsAtATime: style.captionsAtATime,
       style,
       emphasisStyle,
+      behindPerson: quote?.behindPerson === true,
     });
   }
 
   const styleByKey = new Map<string, CaptionGroupStyle>();
   const emphasisByKey = new Map<string, ResolvedEmphasisStyle>();
+  const behindByKey = new Map<string, boolean>();
   for (const word of styledWords) {
     styleByKey.set(word.styleKey, word.style);
     emphasisByKey.set(word.styleKey, word.emphasisStyle);
+    if (word.behindPerson) behindByKey.set(word.styleKey, true);
   }
 
   const displayGroups = groupStyledCaptionWords(styledWords)
@@ -313,6 +332,7 @@ function buildCaptionGroups(
         captionsAtATime: style.captionsAtATime,
         style,
         emphasisStyle,
+        ...(behindByKey.get(group.styleKey) ? { behindPerson: true } : {}),
       };
     })
     .filter((g): g is NonNullable<typeof g> => g != null);
@@ -390,6 +410,7 @@ function buildTextOverlays(
       offsetX: t.offsetX,
       offsetY: t.offsetY,
       rotation: t.rotation,
+      ...behindPersonProp(e),
     });
   }
   return out;
@@ -398,20 +419,23 @@ function buildTextOverlays(
 function buildBrolls(
   edits: ProjectConfig["edits"],
   cells: ReturnType<typeof buildArollLayout>,
-  mediaUrls: ReadonlyMap<string, string>,
-  assetSize: ReadonlyMap<string, { width: number; height: number }>,
-  assetKind: ReadonlyMap<string, "video" | "image" | "audio">,
+  assets: Assets,
   fps: number,
 ): BrollClipProp[] {
   const out: BrollClipProp[] = [];
   for (const e of edits) {
     if (e.kind !== "broll") continue;
-    const src = mediaUrls.get(e.assetId);
-    if (!src) continue;
-    const size = assetSize.get(e.assetId);
-    if (!size || size.width <= 0 || size.height <= 0) continue;
-    const kind = assetKind.get(e.assetId);
-    if (kind !== "image" && kind !== "video") continue;
+    const asset = assets.get(e.assetId);
+    if (!asset?.src) continue;
+    if (
+      asset.width == null ||
+      asset.height == null ||
+      asset.width <= 0 ||
+      asset.height <= 0
+    ) {
+      continue;
+    }
+    if (asset.kind !== "image" && asset.kind !== "video") continue;
     const range = timelineRangeToOutput(cells, e);
     if (!range) continue;
     out.push({
@@ -421,10 +445,10 @@ function buildBrolls(
         secToFrame(range.start, fps) + 1,
         secToFrame(range.end, fps),
       ),
-      src,
-      width: size.width,
-      height: size.height,
-      mediaKind: kind,
+      src: asset.src,
+      width: asset.width,
+      height: asset.height,
+      mediaKind: asset.kind,
       scale: e.scale,
       offsetX: e.offsetX,
       offsetY: e.offsetY,
@@ -432,6 +456,8 @@ function buildBrolls(
       mediaOffsetSec: e.mediaOffsetSec,
       volume: e.volume,
       ...(e.kenBurns != null ? { kenBurns: e.kenBurns } : {}),
+      ...maskProp(asset.mask?.type === "cutout" ? asset.mask : undefined),
+      ...behindPersonProp(e),
     });
   }
   return out;
@@ -463,8 +489,7 @@ function buildShakes(
 function buildMotionOverlays(
   edits: ProjectConfig["edits"],
   cells: ReturnType<typeof buildArollLayout>,
-  mediaUrls: ReadonlyMap<string, string>,
-  assetSize: ReadonlyMap<string, { width: number; height: number }>,
+  assets: Assets,
   fps: number,
 ): MotionOverlayProp[] {
   const out: MotionOverlayProp[] = [];
@@ -482,13 +507,12 @@ function buildMotionOverlays(
     const ref = motionMediaRef(e.plan);
     let media: MotionOverlayProp["media"] = null;
     if (ref) {
-      const src = mediaUrls.get(ref.assetId);
-      if (src) {
-        const size = assetSize.get(ref.assetId);
+      const asset = assets.get(ref.assetId);
+      if (asset?.src) {
         media = {
-          src,
-          width: size?.width ?? null,
-          height: size?.height ?? null,
+          src: asset.src,
+          width: asset.width,
+          height: asset.height,
         };
       }
     }
@@ -506,6 +530,7 @@ function buildMotionOverlays(
       offsetY: pose.offsetY,
       rotation: pose.rotation,
       media,
+      ...behindPersonProp(e),
     });
   }
   return out;
@@ -535,6 +560,7 @@ function buildStickers(
       offsetX: pose.offsetX,
       offsetY: pose.offsetY,
       rotation: pose.rotation,
+      ...behindPersonProp(e),
     });
   }
   return out;
@@ -552,23 +578,18 @@ function pushSfxClip(
     mediaOffsetSec: number;
     volume: number;
     cells: ReturnType<typeof buildArollLayout>;
-    mediaUrls: ReadonlyMap<string, string>;
-    assetKind: ReadonlyMap<string, "video" | "image" | "audio">;
-    assetLoudness:
-      | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
-      | undefined;
+    assets: Assets;
     fps: number;
   },
 ): void {
-  const src = args.mediaUrls.get(args.assetId);
-  if (!src) return;
-  if (args.assetKind.get(args.assetId) !== "audio") return;
+  const asset = args.assets.get(args.assetId);
+  if (!asset?.src || asset.kind !== "audio") return;
   const range = timelineRangeToOutput(args.cells, {
     start: args.start,
     end: args.end,
   });
   if (!range) return;
-  const loud = loudnessOf(args.assetLoudness, args.assetId);
+  const loud = loudnessOf(asset);
   out.push({
     id: args.id,
     startFrame: secToFrame(range.start, args.fps),
@@ -576,7 +597,7 @@ function pushSfxClip(
       secToFrame(range.start, args.fps) + 1,
       secToFrame(range.end, args.fps),
     ),
-    src,
+    src: asset.src,
     mediaOffsetSec: args.mediaOffsetSec,
     volume: sfxPlaybackVolume(args.volume, loud.lufs, loud.truePeakDb),
   });
@@ -585,7 +606,7 @@ function pushSfxClip(
 function companionPlayEnd(
   start: number,
   mediaOffsetSec: number,
-  srcDurationSec: number | undefined,
+  srcDurationSec: number | null | undefined,
 ): number {
   const play =
     srcDurationSec != null && srcDurationSec > 0
@@ -597,12 +618,7 @@ function companionPlayEnd(
 function buildSfx(
   edits: ProjectConfig["edits"],
   cells: ReturnType<typeof buildArollLayout>,
-  mediaUrls: ReadonlyMap<string, string>,
-  assetKind: ReadonlyMap<string, "video" | "image" | "audio">,
-  assetLoudness:
-    | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
-    | undefined,
-  assetDurationSec: ReadonlyMap<string, number>,
+  assets: Assets,
   fps: number,
 ): SfxClipProp[] {
   const out: SfxClipProp[] = [];
@@ -616,9 +632,7 @@ function buildSfx(
         mediaOffsetSec: e.mediaOffsetSec,
         volume: e.volume,
         cells,
-        mediaUrls,
-        assetKind,
-        assetLoudness,
+        assets,
         fps,
       });
       continue;
@@ -631,15 +645,13 @@ function buildSfx(
       end: companionPlayEnd(
         e.start,
         companion.mediaOffsetSec,
-        assetDurationSec.get(companion.assetId),
+        assets.get(companion.assetId)?.durationSec,
       ),
       assetId: companion.assetId,
       mediaOffsetSec: companion.mediaOffsetSec,
       volume: companion.volume,
       cells,
-      mediaUrls,
-      assetKind,
-      assetLoudness,
+      assets,
       fps,
     });
   }
@@ -648,19 +660,14 @@ function buildSfx(
 
 function buildMusic(
   music: ProjectConfig["music"],
-  mediaUrls: ReadonlyMap<string, string>,
-  assetKind: ReadonlyMap<string, "video" | "image" | "audio">,
-  assetLoudness:
-    | ReadonlyMap<string, { lufs: number | null; truePeakDb: number | null }>
-    | undefined,
+  assets: Assets,
 ): MusicClipProp | null {
   if (!music) return null;
-  const src = mediaUrls.get(music.assetId);
-  if (!src) return null;
-  if (assetKind.get(music.assetId) !== "audio") return null;
-  const loud = loudnessOf(assetLoudness, music.assetId);
+  const asset = assets.get(music.assetId);
+  if (!asset?.src || asset.kind !== "audio") return null;
+  const loud = loudnessOf(asset);
   return {
-    src,
+    src: asset.src,
     volume: mixPlaybackVolume(
       music.volume,
       loud.lufs,
@@ -683,20 +690,23 @@ function stitchPicture(
   keep: ArollLayoutCell,
   timelineSec: number,
   side: "out" | "in",
-  mediaUrls: ReadonlyMap<string, string>,
+  assets: Assets,
   fps: number,
 ): TransitionPictureProp | undefined {
-  const src = mediaUrls.get(keep.local.assetId);
+  const asset = assets.get(keep.local.assetId);
+  const src = asset?.src;
   if (!src) return undefined;
   const trimStart = secToFrame(keep.local.start, fps);
   const trimEnd = Math.max(trimStart + 1, secToFrame(keep.local.end, fps));
   const at = secToFrame(localSecInKeep(keep, timelineSec), fps);
+  const mask = maskProp(arollPlaybackMask(asset?.mask));
   if (side === "out") {
     return {
       src,
       trimBefore: at,
       trimAfter: trimEnd,
       freezeFrame: Math.max(trimStart, trimEnd - 1),
+      ...mask,
     };
   }
   return {
@@ -704,13 +714,14 @@ function stitchPicture(
     trimBefore: trimStart,
     trimAfter: Math.max(trimStart + 1, at),
     freezeFrame: trimStart,
+    ...mask,
   };
 }
 
 function buildTransitions(
   edits: ProjectConfig["edits"],
   cells: ReturnType<typeof buildArollLayout>,
-  mediaUrls: ReadonlyMap<string, string>,
+  assets: Assets,
   fps: number,
 ): TransitionClipProp[] {
   const out: TransitionClipProp[] = [];
@@ -738,10 +749,10 @@ function buildTransitions(
       stitchFrame,
       mode: kind,
       ...(kind !== "opening"
-        ? { out: stitchPicture(pair.outKeep, e.start, "out", mediaUrls, fps) }
+        ? { out: stitchPicture(pair.outKeep, e.start, "out", assets, fps) }
         : {}),
       ...(kind !== "closing"
-        ? { in: stitchPicture(pair.inKeep, e.end, "in", mediaUrls, fps) }
+        ? { in: stitchPicture(pair.inKeep, e.end, "in", assets, fps) }
         : {}),
     });
   }
@@ -752,12 +763,14 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
   const fps = input.fps ?? COMPOSITION_FPS ?? PROJECT_FPS;
   const sections = buildSections(
     input.config.arolls,
-    input.mediaUrls,
-    input.assetLoudness,
+    input.assets,
     fps,
   ).filter((s) => s.src.length > 0);
 
-  const layout = buildArollLayout(input.config.arolls, input.assetDurationSec);
+  const layout = buildArollLayout(
+    input.config.arolls,
+    durationSecById(input.assets),
+  );
   const durationSec = outputDurationFromArolls(input.config.arolls);
   const durationInFrames = Math.max(1, secToFrame(durationSec, fps));
 
@@ -777,40 +790,19 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
     zooms: buildZooms(input.config.edits, layout, fps),
     textOverlays: buildTextOverlays(input.config, layout, fps),
     shakes: buildShakes(input.config.edits, layout, fps),
-    brolls: buildBrolls(
-      input.config.edits,
-      layout,
-      input.mediaUrls,
-      input.assetSize,
-      input.assetKind,
-      fps,
-    ),
-    sfx: buildSfx(
-      input.config.edits,
-      layout,
-      input.mediaUrls,
-      input.assetKind,
-      input.assetLoudness,
-      input.assetDurationSec,
-      fps,
-    ),
-    music: buildMusic(
-      input.config.music,
-      input.mediaUrls,
-      input.assetKind,
-      input.assetLoudness,
-    ),
+    brolls: buildBrolls(input.config.edits, layout, input.assets, fps),
+    sfx: buildSfx(input.config.edits, layout, input.assets, fps),
+    music: buildMusic(input.config.music, input.assets),
     transitions: buildTransitions(
       input.config.edits,
       layout,
-      input.mediaUrls,
+      input.assets,
       fps,
     ),
     motionOverlays: buildMotionOverlays(
       input.config.edits,
       layout,
-      input.mediaUrls,
-      input.assetSize,
+      input.assets,
       fps,
     ),
     stickers: buildStickers(input.config.edits, layout, fps),

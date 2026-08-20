@@ -1,6 +1,6 @@
-import { Video } from "@remotion/media";
 import { AbsoluteFill, Freeze, Sequence, useVideoConfig } from "remotion";
 
+import { MaskedMedia } from "~/remotion/components/MaskedMedia";
 import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
 
 import type {
@@ -10,6 +10,29 @@ import type {
 import type { CSSProperties } from "react";
 
 const VIDEO_FILL: CSSProperties = { width: "100%", height: "100%" };
+
+function Picture({
+  picture,
+  trimBefore,
+  trimAfter,
+}: {
+  picture: TransitionPictureProp;
+  trimBefore: number;
+  trimAfter: number;
+}) {
+  return (
+    <MaskedMedia
+      src={picture.src}
+      maskSrc={picture.mask?.src}
+      mediaKind="video"
+      trimBefore={trimBefore}
+      trimAfter={trimAfter}
+      volume={0}
+      objectFit="cover"
+      style={VIDEO_FILL}
+    />
+  );
+}
 
 function Still({
   picture,
@@ -21,27 +44,17 @@ function Still({
   const frame = at === "first" ? picture.trimBefore : picture.freezeFrame;
   return (
     <Freeze frame={0}>
-      <Video
-        src={picture.src}
-        trimBefore={frame}
-        trimAfter={frame + 1}
-        volume={0}
-        objectFit="cover"
-        style={VIDEO_FILL}
-      />
+      <Picture picture={picture} trimBefore={frame} trimAfter={frame + 1} />
     </Freeze>
   );
 }
 
 function Playing({ picture }: { picture: TransitionPictureProp }) {
   return (
-    <Video
-      src={picture.src}
+    <Picture
+      picture={picture}
       trimBefore={picture.trimBefore}
       trimAfter={picture.trimAfter}
-      volume={0}
-      objectFit="cover"
-      style={VIDEO_FILL}
     />
   );
 }

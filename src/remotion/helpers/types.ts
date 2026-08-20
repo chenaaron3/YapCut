@@ -1,3 +1,4 @@
+import type { MaskEntry } from "~/domain/asset/mask";
 import type { ResolvedEmphasisStyle } from "~/domain/transcript/emphasis-style";
 import type { ShotPlan } from "~/domain/vfx/motion-config";
 import type { ScribbleId } from "~/domain/transcript/scribble";
@@ -12,6 +13,8 @@ export type ArollSection = {
   durationInFrames: number;
   /** Peak-limited gain to voice target LUFS. */
   volume: number;
+  /** Omit = off (original picture). A-roll only stores Occlude (Separate background). */
+  mask?: MaskEntry;
 };
 
 export type CaptionWordProp = {
@@ -31,6 +34,8 @@ export type CaptionGroupProp = {
   style?: CaptionGroupStyle;
   /** Resolved emphasis paint for `emphasized` words (captions/quotes). */
   emphasisStyle?: ResolvedEmphasisStyle;
+  /** Quote groups only — spoken captions stay in front. */
+  behindPerson?: boolean;
 };
 
 export type ZoomProp = {
@@ -61,6 +66,7 @@ export type TextOverlayProp = {
   offsetX: number;
   offsetY: number;
   rotation: number;
+  behindPerson?: boolean;
 };
 
 export type BrollClipProp = {
@@ -79,6 +85,9 @@ export type BrollClipProp = {
   kenBurns?: number;
   mediaOffsetSec: number;
   volume: number;
+  /** B-roll remove-background (generic foreground keep). */
+  mask?: MaskEntry;
+  behindPerson?: boolean;
 };
 
 export type SfxClipProp = {
@@ -111,6 +120,7 @@ export type TransitionPictureProp = {
   trimAfter: number;
   /** Source frame to hold when the keep picture runs out. */
   freezeFrame: number;
+  mask?: MaskEntry;
 };
 
 export type TransitionClipProp = {
@@ -142,6 +152,7 @@ export type MotionOverlayProp = {
   offsetY: number;
   rotation: number;
   media: MotionStillProp | null;
+  behindPerson?: boolean;
 };
 
 export type StickerClipProp = {
@@ -154,6 +165,7 @@ export type StickerClipProp = {
   offsetX: number;
   offsetY: number;
   rotation: number;
+  behindPerson?: boolean;
 };
 
 export type ProjectProps = {

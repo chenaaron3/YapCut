@@ -45,8 +45,8 @@ const config = {
 };
 
 /**
- * Workflow SDK is always configured here. Runtime create path is selected by
- * `USE_VERCEL_WORKFLOW` (see `src/server/create/start-create-pipeline.ts`):
- * false/unset → in-process; true → durable `createProjectWorkflow`.
+ * Workflow SDK is always configured here. Runtime path is selected by
+ * `USE_VERCEL_WORKFLOW` (`startCreatePipeline` / `startMaskPipeline`):
+ * false/unset → in-process; true → durable workflows.
  */
 export default withWorkflow(config);

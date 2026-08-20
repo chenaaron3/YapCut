@@ -49,7 +49,7 @@ export function useEntitySelected(
     // Fast path for word playback highlight (no editor-store subscription).
     if (kind === "word" && typeof id === "number") {
       if (selection.kind === "word") return selection.ids.includes(id);
-      if (selection.kind === "arollAsset" && assetId != null) {
+      if (selection.kind === "aroll" && assetId != null) {
         return selection.ids.includes(assetId);
       }
       return false;

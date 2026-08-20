@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import { CaptionTemplatePreview } from "~/editor/components/inspector/preview/CaptionTemplatePreview";
 import { play } from "~/editor/lib/player/player-bridge";
 import { primaryId } from "~/editor/lib/selection/selection";
@@ -40,11 +41,17 @@ export function StyleTemplatePicker({
   const previewLabel = previewingOther ? hovered.label : (selected?.label ?? null);
 
   return (
-    <div className="grid min-w-0 grid-cols-1 gap-1.5">
-      <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-        Template
-      </span>
-
+    <InspectorCollapsible
+      title="Template"
+      accessory={
+        selected ? (
+          <span className="max-w-[50%] truncate text-[10px] text-muted-foreground/70">
+            {selected.label}
+          </span>
+        ) : undefined
+      }
+      contentClassName="gap-1.5"
+    >
       <div className="overflow-hidden rounded-lg border border-border">
         {previewStyle ? (
           <>
@@ -124,6 +131,6 @@ export function StyleTemplatePicker({
           );
         })}
       </div>
-    </div>
+    </InspectorCollapsible>
   );
 }

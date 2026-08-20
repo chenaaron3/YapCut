@@ -1,6 +1,7 @@
 import {
   CaptionStyleFields,
   EmphasisStyleFields,
+  PersonFields,
 } from "~/editor/components/inspector/field";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
@@ -39,6 +40,7 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
+      <PersonFields edit={edit} />
       <StyleTemplatePicker
         templates={QUOTE_TEMPLATE_LIST}
         value={templateId}

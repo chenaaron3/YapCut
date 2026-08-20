@@ -6,12 +6,14 @@ import type { Selection } from "~/editor/lib/selection/selection";
 
 export function selectedArollAssetId(
   selection: Selection | null | undefined,
+  layout?: readonly { id: number; local: { assetId: string } }[],
 ): string | null {
-  if (selection?.kind !== "arollAsset" || selection.ids.length === 0) {
+  if (selection?.kind !== "aroll" || selection.ids.length === 0) {
     return null;
   }
   const id = selection.ids[selection.ids.length - 1]!;
-  return typeof id === "string" ? id : null;
+  if (typeof id === "string") return id;
+  return layout?.find((c) => c.id === id)?.local.assetId ?? null;
 }
 
 export function selectedArollAssetRun(

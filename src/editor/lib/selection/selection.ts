@@ -6,7 +6,7 @@ import { selectedArollAssetRun } from "~/editor/lib/selection/aroll-asset-select
 /** Opaque selection key — numeric for word/edit/aroll cells, string for asset ids. */
 export type SelectionId = number | string;
 
-export type SelectionKind = "word" | "edit" | "aroll" | "arollAsset";
+export type SelectionKind = "word" | "edit" | "aroll" | "broll";
 
 export type Selection = {
   kind: SelectionKind;
@@ -26,7 +26,8 @@ export type IsSelectedEditor = {
 
 /**
  * True when `id` is selected as `kind`, or (with `editor`) when an A-roll
- * asset selection owns that entity (word/aroll by assetId; edit by start-in-run).
+ * library selection (string asset ids) owns that entity.
+ * Keep-cell A-roll ids and `broll` do not own other timeline entities.
  */
 export function isSelected(
   selection: Selection | null | undefined,
@@ -35,10 +36,13 @@ export function isSelected(
   editor?: IsSelectedEditor,
 ): boolean {
   if (!selection) return false;
-  if (selection.kind === kind) {
-    return selection.ids.includes(id);
-  }
-  if (selection.kind !== "arollAsset" || !editor) return false;
+  // Exact id in this kind (word/edit/cell/library tile).
+  if (selection.kind === kind && selection.ids.includes(id)) return true;
+  // Only library A-roll (string asset ids) owns the run. Numeric aroll ids
+  // are keep/gap cells — cell-only, no word/edit highlight. `broll` is the
+  // same: library tile only. Need `editor` for config / words / layout.
+  if (selection.kind !== "aroll" || !editor) return false;
+  if (!selection.ids.some((item) => typeof item === "string")) return false;
 
   const durations = durationMapFromAssets(editor.assets);
 
@@ -69,6 +73,15 @@ export function primaryId(
   if (!selection || selection.ids.length === 0) return null;
   const id = selection.ids[selection.ids.length - 1]!;
   return typeof id === "number" ? id : null;
+}
+
+/** Last selected asset id, if any. */
+export function primaryAssetId(
+  selection: Selection | null | undefined,
+): string | null {
+  if (!selection || selection.ids.length === 0) return null;
+  const id = selection.ids[selection.ids.length - 1]!;
+  return typeof id === "string" ? id : null;
 }
 
 export function replaceSelection(

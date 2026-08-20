@@ -2,29 +2,25 @@
  * Vercel Workflow definition for project create.
  * Started when `USE_VERCEL_WORKFLOW=true` (see `startCreatePipeline`).
  *
- * WhisperX and fal measure enqueue in parallel, then the shared runner polls
- * each job type across short steps with `sleep()`.
+ * WhisperX and fal measure enqueue in parallel, then the shared Job runner
+ * polls each job type across short steps with `sleep()`.
  *
  * Node I/O (postgres, fal, Replicate) is loaded only inside `"use step"`
  * functions so the workflow isolate stays sandbox-safe.
  *
  * @see https://workflow-sdk.dev/docs/getting-started/next
  */
-import { FatalError, sleep } from "workflow";
+import { sleep } from "workflow";
 
-import {
-  createMediaProgressGate,
-  runCreateJobs,
-  settleMediaJobs,
-} from "~/server/create/jobs/create-job";
+import { createMediaProgressGate, settleMediaJobs } from "~/server/workflow/create/media-progress";
+import { rethrowAsFatal, rethrowFatalFal } from "~/server/workflow/fatal";
+import { runJobs } from "~/server/workflow/job";
 
 import type { CreateProgressEvent } from "~/domain/project/create-progress";
-import type {
-  CreateAssetRef,
-  CreateJob,
-  MeasureHandle,
-  WhisperXHandle,
-} from "~/server/create/jobs/create-job";
+import type { CreateAssetRef } from "~/server/workflow/create/pipeline";
+import type { MeasureHandle } from "~/server/workflow/create/jobs/measure";
+import type { WhisperXHandle } from "~/server/workflow/create/jobs/whisperx";
+import type { Job } from "~/server/workflow/job";
 
 /** Suspend between Replicate polls (no compute while sleeping). */
 const WHISPERX_POLL_SLEEP = "15s";
@@ -41,14 +37,14 @@ export async function createProjectWorkflow(projectId: string) {
   // `"use step"` fns are only callable at a direct call site. Storing them on
   // an object (`{ start: startWhisperXStep }`) leaves a non-callable step id
   // — production then throws `job.start is not a function`.
-  const whisperXWorkflowJob: CreateJob<WhisperXHandle> = {
+  const whisperXWorkflowJob: Job<WhisperXHandle, CreateAssetRef> = {
     name: "WhisperX",
     start: (asset) => startWhisperXStep(asset),
     poll: (jobs) => pollWhisperXBatchStep(jobs),
     finish: (asset, handle) => finishWhisperXStep(asset, handle),
     fail: (asset, reason) => failWhisperXStep(asset, reason),
   };
-  const measureWorkflowJob: CreateJob<MeasureHandle> = {
+  const measureWorkflowJob: Job<MeasureHandle, CreateAssetRef> = {
     name: "fal measure",
     start: (asset) => startMeasureStep(asset),
     poll: (jobs) => pollMeasureBatchStep(jobs),
@@ -63,17 +59,17 @@ export async function createProjectWorkflow(projectId: string) {
       cancel,
     });
     await settleMediaJobs(
-      runCreateJobs({
+      runJobs({
         job: whisperXWorkflowJob,
-        assets,
+        items: assets,
         maxPolls: WHISPERX_MAX_POLLS,
         sleep: () => sleep(WHISPERX_POLL_SLEEP),
         onProgress: gate.onTranscribe,
         cancel,
       }),
-      runCreateJobs({
+      runJobs({
         job: measureWorkflowJob,
-        assets,
+        items: assets,
         maxPolls: FAL_MAX_POLLS,
         sleep: () => sleep(FAL_POLL_SLEEP),
         onProgress: gate.onMeasure,
@@ -82,15 +78,11 @@ export async function createProjectWorkflow(projectId: string) {
     );
     await finalizeStep(projectId);
   } catch (error) {
-    const message =
-      error instanceof FatalError
-        ? error.message
-        : error instanceof Error
-          ? error.message
-          : "Create workflow failed";
-    await markFailedStep(projectId, message);
-    if (error instanceof FatalError) throw error;
-    throw new FatalError(message);
+    await markFailedStep(
+      projectId,
+      error instanceof Error ? error.message : "Create workflow failed",
+    );
+    rethrowAsFatal(error, "Create workflow failed");
   }
 }
 
@@ -100,20 +92,20 @@ async function emitProgressStep(
 ): Promise<void> {
   "use step";
   const { publishCreateProgress } = await import(
-    "~/server/create/publish-progress"
+    "~/server/workflow/create/publish"
   );
   await publishCreateProgress(projectId, event);
 }
 
 async function loadAssetsStep(projectId: string): Promise<CreateAssetRef[]> {
   "use step";
-  const { loadCreateAssets } = await import("~/server/create/create-pipeline");
+  const { loadCreateAssets } = await import("~/server/workflow/create/pipeline");
   return loadCreateAssets(projectId);
 }
 
 async function startWhisperXStep(asset: CreateAssetRef) {
   "use step";
-  const { whisperXJob } = await import("~/server/create/jobs/whisperx");
+  const { whisperXJob } = await import("~/server/workflow/create/jobs/whisperx");
   return whisperXJob.start(asset);
 }
 
@@ -121,7 +113,7 @@ async function pollWhisperXBatchStep(
   jobs: Array<{ index: number; handle: WhisperXHandle }>,
 ) {
   "use step";
-  const { whisperXJob } = await import("~/server/create/jobs/whisperx");
+  const { whisperXJob } = await import("~/server/workflow/create/jobs/whisperx");
   return whisperXJob.poll(jobs);
 }
 
@@ -130,19 +122,19 @@ async function finishWhisperXStep(
   handle: WhisperXHandle,
 ) {
   "use step";
-  const { whisperXJob } = await import("~/server/create/jobs/whisperx");
+  const { whisperXJob } = await import("~/server/workflow/create/jobs/whisperx");
   await whisperXJob.finish(asset, handle);
 }
 
 async function failWhisperXStep(asset: CreateAssetRef, reason: string) {
   "use step";
-  const { whisperXJob } = await import("~/server/create/jobs/whisperx");
+  const { whisperXJob } = await import("~/server/workflow/create/jobs/whisperx");
   await whisperXJob.fail(asset, reason);
 }
 
 async function startMeasureStep(asset: CreateAssetRef) {
   "use step";
-  const { measureJob } = await import("~/server/create/jobs/measure");
+  const { measureJob } = await import("~/server/workflow/create/jobs/measure");
   try {
     return await measureJob.start(asset);
   } catch (error) {
@@ -154,7 +146,7 @@ async function pollMeasureBatchStep(
   jobs: Array<{ index: number; handle: MeasureHandle }>,
 ) {
   "use step";
-  const { measureJob } = await import("~/server/create/jobs/measure");
+  const { measureJob } = await import("~/server/workflow/create/jobs/measure");
   try {
     return await measureJob.poll(jobs);
   } catch (error) {
@@ -164,7 +156,7 @@ async function pollMeasureBatchStep(
 
 async function finishMeasureStep(asset: CreateAssetRef, handle: MeasureHandle) {
   "use step";
-  const { measureJob } = await import("~/server/create/jobs/measure");
+  const { measureJob } = await import("~/server/workflow/create/jobs/measure");
   try {
     await measureJob.finish(asset, handle);
   } catch (error) {
@@ -175,7 +167,7 @@ async function finishMeasureStep(asset: CreateAssetRef, handle: MeasureHandle) {
 async function finalizeStep(projectId: string): Promise<void> {
   "use step";
   const { finalizeCreateProject } = await import(
-    "~/server/create/create-pipeline"
+    "~/server/workflow/create/pipeline"
   );
   await finalizeCreateProject(projectId);
 }
@@ -185,18 +177,6 @@ async function markFailedStep(
   reason: string,
 ): Promise<void> {
   "use step";
-  const { markCreateFailed } = await import("~/server/create/create-pipeline");
+  const { markCreateFailed } = await import("~/server/workflow/create/pipeline");
   await markCreateFailed(projectId, reason);
-}
-
-function rethrowFatalFal(error: unknown): never {
-  if (
-    error instanceof Error &&
-    error.name === "FalMeasureError" &&
-    "fatal" in error &&
-    error.fatal === true
-  ) {
-    throw new FatalError(error.message);
-  }
-  throw error;
 }

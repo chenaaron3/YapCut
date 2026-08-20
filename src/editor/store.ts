@@ -14,6 +14,8 @@ import {
   keepCells,
   reorderArollAssets,
 } from "~/domain/aroll/arolls";
+import type { MaskType } from "~/domain/asset/mask";
+import type { MaskProgressEvent } from "~/domain/asset/mask-progress";
 import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import {
   editsForAiAssist,
@@ -43,11 +45,11 @@ import {
   wordIndexAtTimelineSec,
 } from "~/domain/aroll/projection";
 import { placeFailureMessage } from "~/editor/lib/place/place-failure";
+import { projectPropsFromAssets } from "~/editor/lib/project/project-props";
 import { primaryId } from "~/editor/lib/selection/selection";
 import { snapWordActionRangeToKeeps } from "~/editor/lib/timeline/snap";
 import { wordActionRange } from "~/editor/lib/word/word-selection";
 import { useSelection } from "~/editor/selection-store";
-import { buildProjectProps } from "~/remotion/helpers/build-props";
 import {
   COMPOSITION_FPS,
   COMPOSITION_HEIGHT,
@@ -92,6 +94,12 @@ export type EditorAsset = {
   lufs: number | null;
   truePeakDb: number | null;
   waveform: SerializedWaveform | null;
+  /** Mask decorator; null = Off (no row, or `enabled` false on the server). */
+  mask: {
+    type: MaskType;
+    playbackUrl: string | null;
+    progress: MaskProgressEvent | null;
+  } | null;
 };
 
 type Snapshot = {
@@ -282,40 +290,10 @@ export function bindEditorSavers(options: {
   saveWordsMutate = options.updateTranscriptWords;
 }
 
-function mediaUrlMap(assets: EditorAsset[]): Map<string, string> {
-  return new Map(assets.map((a) => [a.id, a.playbackUrl]));
-}
-
 function transcriptMap(
   transcriptsByAssetId: Record<string, TranscriptWord[]>,
 ): Map<string, TranscriptWord[]> {
   return new Map(Object.entries(transcriptsByAssetId));
-}
-
-function sizeMap(
-  assets: EditorAsset[],
-): Map<string, { width: number; height: number }> {
-  const map = new Map<string, { width: number; height: number }>();
-  for (const a of assets) {
-    if (a.width != null && a.height != null && a.width > 0 && a.height > 0) {
-      map.set(a.id, { width: a.width, height: a.height });
-    }
-  }
-  return map;
-}
-
-function kindMap(
-  assets: EditorAsset[],
-): Map<string, "video" | "image" | "audio"> {
-  return new Map(assets.map((a) => [a.id, a.kind]));
-}
-
-function loudnessMap(
-  assets: EditorAsset[],
-): Map<string, { lufs: number | null; truePeakDb: number | null }> {
-  return new Map(
-    assets.map((a) => [a.id, { lufs: a.lufs, truePeakDb: a.truePeakDb }]),
-  );
 }
 
 function recomputeProps(state: {
@@ -325,17 +303,7 @@ function recomputeProps(state: {
   fps: number;
   title?: string;
 }): ProjectProps {
-  return buildProjectProps({
-    config: state.config,
-    title: state.title,
-    mediaUrls: mediaUrlMap(state.assets),
-    transcriptsByAssetId: transcriptMap(state.transcriptsByAssetId),
-    assetDurationSec: durationMapFromAssets(state.assets),
-    assetSize: sizeMap(state.assets),
-    assetKind: kindMap(state.assets),
-    assetLoudness: loudnessMap(state.assets),
-    fps: state.fps,
-  });
+  return projectPropsFromAssets(state);
 }
 
 type LayoutCache = {
@@ -1050,6 +1018,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       if (
         selection?.kind === "aroll" &&
         selection.ids.length === 1 &&
+        typeof selection.ids[0] === "number" &&
         selection.ids[0] !== cellId
       ) {
         setSelection({ kind: "aroll", ids: [cellId] });

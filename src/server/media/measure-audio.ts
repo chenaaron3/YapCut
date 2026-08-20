@@ -122,10 +122,23 @@ export async function submitFalJob(
 export async function pollFalJob(job: FalJobRef): Promise<FalJobStatus> {
   configureFal();
   try {
-    const status = await fal.queue.status(job.endpoint, {
+    const queued = await fal.queue.status(job.endpoint, {
       requestId: job.requestId,
     });
-    return status.status;
+    // Fal's typed status is already the success union; read as string so
+    // unexpected phases (FAILED, etc.) still throw instead of narrowing to never.
+    const phase = String((queued as { status: string }).status);
+    if (
+      phase !== "IN_QUEUE" &&
+      phase !== "IN_PROGRESS" &&
+      phase !== "COMPLETED"
+    ) {
+      throw new FalMeasureError(
+        `fal ${job.what} failed (${phase || "unknown"})`,
+        { fatal: true },
+      );
+    }
+    return phase;
   } catch (error) {
     wrapFalError(error, `${job.what} poll`);
   }

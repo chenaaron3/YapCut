@@ -92,11 +92,16 @@ export function SortableArollRow({
   onTogglePlay: () => void;
 }) {
   const select = useSelection((s) => s.select);
-  const selected = useSelection((s) =>
-    s.selection?.kind === "arollAsset"
-      ? s.selection.ids.includes(asset.id)
-      : false,
-  );
+  const selected = useSelection((s) => {
+    if (s.selection?.kind !== "aroll") return false;
+    if (s.selection.ids.includes(asset.id)) return true;
+    const layout = useEditor.getState().getLayout();
+    return s.selection.ids.some(
+      (id) =>
+        typeof id === "number" &&
+        layout.find((c) => c.id === id)?.local.assetId === asset.id,
+    );
+  });
   const {
     attributes,
     listeners,
@@ -107,7 +112,7 @@ export function SortableArollRow({
   } = useSortable({ id: asset.id });
 
   const onSelect = () => {
-    select("arollAsset", asset.id);
+    select("aroll", asset.id);
     const editor = useEditor.getState();
     if (!editor.config) return;
     const durations = durationMapFromAssets(editor.assets);

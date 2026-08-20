@@ -2,15 +2,14 @@ import type { CSSProperties } from "react";
 import {
   AbsoluteFill,
   Easing,
-  Img,
   Sequence,
   interpolate,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { Video } from "@remotion/media";
 
 import { containSize } from "~/domain/edit/transform";
+import { MaskedMedia } from "~/remotion/components/MaskedMedia";
 import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
 import type { BrollClipProp } from "~/remotion/helpers/types";
 
@@ -76,18 +75,15 @@ function Clip({ clip }: { clip: BrollClipProp }) {
           transformOrigin: "center center",
         }}
       >
-        {clip.mediaKind === "video" ? (
-          <Video
-            src={clip.src}
-            trimBefore={trimBefore}
-            volume={volume}
-            muted={volume <= 0}
-            objectFit="fill"
-            style={mediaStyle}
-          />
-        ) : (
-          <Img src={clip.src} style={mediaStyle} />
-        )}
+        <MaskedMedia
+          src={clip.src}
+          maskSrc={clip.mask?.src}
+          mediaKind={clip.mediaKind}
+          trimBefore={clip.mediaKind === "video" ? trimBefore : undefined}
+          volume={clip.mediaKind === "video" ? volume : undefined}
+          objectFit="fill"
+          style={mediaStyle}
+        />
       </div>
     </AbsoluteFill>
   );

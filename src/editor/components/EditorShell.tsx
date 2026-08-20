@@ -17,6 +17,7 @@ import { togglePlayback } from "~/editor/lib/player/player-bridge";
 import { applyWordSelectionHotkey } from "~/editor/lib/word/word-hotkeys";
 import { useSelection } from "~/editor/selection-store";
 import { bindEditorSavers, useEditor } from "~/editor/store";
+import { MaskStreams } from "~/editor/components/inspector/field/use-mask-stream";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
@@ -260,6 +261,7 @@ export function EditorShell({ projectId }: Props) {
         </div>
         <PlayerPanel />
       </div>
+      <MaskStreams />
     </div>
   );
 }

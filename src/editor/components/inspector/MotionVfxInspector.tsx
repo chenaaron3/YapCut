@@ -7,6 +7,7 @@ import { DEFAULT_CAPTION_TEMPLATE_ID } from "~/domain/project/project-config";
 import { TRANSFORM_DEFAULTS, transformOf } from "~/domain/edit/transform";
 import {
   CaptionStyleFields,
+  PersonFields,
   TextField,
   TransformFields,
 } from "~/editor/components/inspector/field";
@@ -84,6 +85,7 @@ export function MotionVfxInspector({ edit }: { edit: VfxMotionEdit }) {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
+      <PersonFields edit={edit} />
       <TextField
         label={revising ? "Change" : "Describe"}
         value={prompt}

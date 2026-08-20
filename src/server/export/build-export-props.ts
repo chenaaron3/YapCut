@@ -1,14 +1,16 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 
+import { maskEntry, maskProp, type MaskEntry } from "~/domain/asset/mask";
 import {
   emptyProjectConfig,
   parseProjectConfig,
 } from "~/domain/project/project-config";
 import type { TranscriptWord } from "~/domain/transcript/transcript";
-import { buildProjectProps } from "~/remotion/helpers/build-props";
+import { buildProjectProps, type PropsAsset } from "~/remotion/helpers/build-props";
 import type { ProjectProps } from "~/remotion/helpers/types";
 import { db } from "~/server/db";
 import { assets, projects } from "~/server/db/schema";
+import type { MaskRow } from "~/server/media/client-asset";
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";
 
 /** Long-lived signed URLs so Lambda can fetch media for the whole render. */
@@ -18,6 +20,14 @@ function isEmptyConfig(value: unknown): boolean {
   if (value == null) return true;
   if (typeof value !== "object") return true;
   return Object.keys(value).length === 0;
+}
+
+function exportMask(mask: MaskRow | null | undefined): MaskEntry | undefined {
+  if (!mask?.enabled || !mask.s3Key) return undefined;
+  return maskEntry(
+    mask.type,
+    signedCloudFrontUrl(mask.s3Key, { expiresInSec: EXPORT_MEDIA_TTL_SEC }),
+  );
 }
 
 export async function buildExportProps(
@@ -40,6 +50,7 @@ export async function buildExportProps(
           truePeakDb: true,
         },
         with: {
+          mask: true,
           transcript: {
             columns: { words: true },
           },
@@ -84,8 +95,8 @@ export async function buildExportProps(
               durationSec: assets.durationSec,
               width: assets.width,
               height: assets.height,
-              lufs: assets.lufs,
-              truePeakDb: assets.truePeakDb,
+          lufs: assets.lufs,
+          truePeakDb: assets.truePeakDb,
             })
             .from(assets)
             .where(
@@ -96,32 +107,22 @@ export async function buildExportProps(
             )
         ).map((a) => ({ ...a, transcript: null }));
 
-  const mediaUrls = new Map<string, string>();
+  const assetById = new Map<string, PropsAsset>();
   const transcriptsByAssetId = new Map<string, readonly TranscriptWord[]>();
-  const assetDurationSec = new Map<string, number>();
-  const assetSize = new Map<string, { width: number; height: number }>();
-  const assetKind = new Map<string, "video" | "image" | "audio">();
-  const assetLoudness = new Map<
-    string,
-    { lufs: number | null; truePeakDb: number | null }
-  >();
 
   for (const asset of [...project.assets, ...globals]) {
-    mediaUrls.set(
-      asset.id,
-      signedCloudFrontUrl(asset.s3Key, { expiresInSec: EXPORT_MEDIA_TTL_SEC }),
-    );
-    assetKind.set(asset.id, asset.kind);
-    assetLoudness.set(asset.id, {
+    assetById.set(asset.id, {
+      src: signedCloudFrontUrl(asset.s3Key, {
+        expiresInSec: EXPORT_MEDIA_TTL_SEC,
+      }),
+      kind: asset.kind,
+      durationSec: asset.durationSec,
+      width: asset.width,
+      height: asset.height,
       lufs: asset.lufs,
       truePeakDb: asset.truePeakDb,
+      ...maskProp("mask" in asset ? exportMask(asset.mask) : undefined),
     });
-    if (asset.durationSec != null) {
-      assetDurationSec.set(asset.id, asset.durationSec);
-    }
-    if (asset.width != null && asset.height != null) {
-      assetSize.set(asset.id, { width: asset.width, height: asset.height });
-    }
     const words = asset.transcript?.words;
     if (words) {
       transcriptsByAssetId.set(asset.id, words);
@@ -131,11 +132,7 @@ export async function buildExportProps(
   return buildProjectProps({
     config,
     title: project.title ?? undefined,
-    mediaUrls,
     transcriptsByAssetId,
-    assetDurationSec,
-    assetSize,
-    assetKind,
-    assetLoudness,
+    assets: assetById,
   });
 }

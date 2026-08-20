@@ -3,6 +3,7 @@ import { useState } from "react";
 import { overlayMidpointSec } from "~/domain/project/project-config";
 import { OVERLAY_TRANSFORM_DEFAULTS, transformOf } from "~/domain/edit/transform";
 import { CaptionStyleFields } from "~/editor/components/inspector/field/CaptionStyleFields";
+import { PersonFields } from "~/editor/components/inspector/field/PersonFields";
 import { TextField } from "~/editor/components/inspector/field/TextField";
 import { TransformFields } from "~/editor/components/inspector/field/TransformFields";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
@@ -104,6 +105,7 @@ export function OverlayVfxFields({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
+      <PersonFields edit={edit} />
       <TextField
         id={`${edit.type}-heading`}
         label={headingLabel}

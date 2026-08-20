@@ -1,6 +1,6 @@
 import { stickerLabel } from "~/domain/edit/sticker";
 import { transformOf } from "~/domain/edit/transform";
-import { TransformFields } from "~/editor/components/inspector/field";
+import { PersonFields, TransformFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
 
 import type { StickerEdit } from "~/domain/project/project-config";
@@ -15,6 +15,7 @@ export function StickerInspector({ edit }: { edit: StickerEdit }) {
       <p className="text-muted-foreground truncate text-[11px]" title={label}>
         {label}
       </p>
+      <PersonFields edit={edit} />
       <TransformFields
         transform={transform}
         onPatch={(partial, live) => patchEdit(edit.id, partial, live)}

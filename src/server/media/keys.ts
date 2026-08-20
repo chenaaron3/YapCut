@@ -4,6 +4,11 @@ export function assetSourceKey(projectId: string, assetId: string): string {
   return `projects/${projectId}/assets/${assetId}/source`;
 }
 
+/** Hard-mask object nested under the source asset. */
+export function assetMaskKey(projectId: string, assetId: string): string {
+  return `projects/${projectId}/assets/${assetId}/mask`;
+}
+
 export const GLOBAL_SFX_PREFIX = "global/sfx/";
 export const GLOBAL_MUSIC_PREFIX = "global/music/";
 

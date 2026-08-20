@@ -69,10 +69,12 @@ export type EditSeed = Edit extends infer E
  */
 export type EditPatch = Edit extends infer E
   ? E extends Edit
-    ? Partial<Omit<E, "id" | "kind" | "type" | "kenBurns" | "companionSfx">> & {
+    ? Partial<Omit<E, "id" | "kind" | "type" | "kenBurns" | "companionSfx" | "behindPerson">> & {
         kenBurns?: number | null;
         /** `null` clears a nested companion. */
         companionSfx?: MediaRef | null;
+        /** `false` clears (omit = in front). */
+        behindPerson?: boolean;
       }
     : never
   : never;
@@ -400,6 +402,18 @@ function applyCompanionSfxPatch(edit: Edit, patch: EditPatch): Edit {
   return { ...edit, companionSfx: patch.companionSfx };
 }
 
+/** `true` = behind the person; omit / false = in front. */
+function applyBehindPersonPatch(edit: Edit, patch: EditPatch): Edit {
+  if (!("behindPerson" in patch)) return edit;
+  if (patch.behindPerson === true) {
+    if ("behindPerson" in edit && edit.behindPerson === true) return edit;
+    return { ...edit, behindPerson: true } as Edit;
+  }
+  if (!("behindPerson" in edit)) return edit;
+  const { behindPerson: _removed, ...rest } = edit;
+  return rest as Edit;
+}
+
 /** Recompute derived `{start,end}` from stitch + duration. */
 function applyTransitionPatch(
   edit: Edit,
@@ -426,6 +440,7 @@ export function patchEdit(
     next = applyKenBurnsPatch(next, patch);
     next = applyShakeIntensityPatch(next, patch);
     next = applyCompanionSfxPatch(next, patch);
+    next = applyBehindPersonPatch(next, patch);
     next = applyTransitionPatch(next, config, ctx);
     draft.edits[idx] = next;
   });

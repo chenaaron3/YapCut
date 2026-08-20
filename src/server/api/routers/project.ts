@@ -2,14 +2,15 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
+import { maskProgressEvent } from "~/domain/asset/mask-progress";
 import { arollAssetOrder } from "~/domain/aroll/arolls";
+import { BROLL_GENERATE_MAX_PROMPT } from "~/domain/edit/broll";
 import {
   assertCreateBatch,
   assertCreateUploadBytes,
   assertLandingCreateBatch,
   CREATE_MAX_BYTES,
 } from "~/domain/project/create-limits";
-import { MOTION_MAX_PROMPT, shotPlanSchema } from "~/domain/vfx/motion-config";
 import {
   emptyProjectConfig,
   parseProjectConfig,
@@ -22,6 +23,12 @@ import {
 } from "~/domain/project/project-list-badge";
 import { isEditorProjectStatus } from "~/domain/project/project-status";
 import { SCRIBBLE_IDS } from "~/domain/transcript/scribble";
+import { MOTION_MAX_PROMPT, shotPlanSchema } from "~/domain/vfx/motion-config";
+import {
+  generateBrollCandidates,
+  persistGeneratedBroll,
+} from "~/server/ai/broll-generate";
+import { IMAGE_SIZES } from "~/server/ai/images/types";
 import { generateMotionPlan, motionFailMessage } from "~/server/ai/motion";
 import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
 import {
@@ -30,13 +37,14 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import {
-  deleteAssetObjects,
   deleteDraftProject,
   requireDraftProject,
-} from "~/server/create/draft-project";
-import { parseCreateProgress } from "~/server/create/publish-progress";
-import { startCreatePipeline } from "~/server/create/start-create-pipeline";
-import { assets, projects, transcripts } from "~/server/db/schema";
+} from "~/server/project/draft";
+import { parseCreateProgress } from "~/server/workflow/create/publish";
+import { startCreatePipeline } from "~/server/workflow/create/start";
+import { publishMaskProgress } from "~/server/workflow/mask/publish";
+import { startMaskPipeline } from "~/server/workflow/mask/start";
+import { assets, masks, projects, transcripts } from "~/server/db/schema";
 import { exportDownloadUrl } from "~/server/export/download-url";
 import { pollProjectExport } from "~/server/export/poll-export";
 import { startProjectExport } from "~/server/export/start-export";
@@ -46,17 +54,19 @@ import {
   nextAssetSortOrder,
 } from "~/server/media/asset-upload";
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";
-import { isGlobalMusicKey, isGlobalSfxKey } from "~/server/media/keys";
+import { toClientAsset, clientMaskColumns, maskOnAsset } from "~/server/media/client-asset";
+import { deleteAssets } from "~/server/media/delete-assets";
 import { measureAsset } from "~/server/media/measure-asset";
+import { assertMaskAllowed } from "~/server/workflow/mask/io";
 import {
   canAccessProject,
   claimUnclaimedProject,
   sessionUserId,
-} from "~/server/project-access";
+} from "~/server/project/access";
 import {
   projectListVisible,
   projectListWhere,
-} from "~/server/project-list-query";
+} from "~/server/project/list-query";
 
 const createFileSchema = z.object({
   filename: z.string().min(1).max(512),
@@ -80,40 +90,6 @@ function isEmptyConfig(value: unknown): boolean {
   if (value == null) return true;
   if (typeof value !== "object") return true;
   return Object.keys(value).length === 0;
-}
-
-function audioLibraryOf(
-  s3Key: string,
-  kind: "video" | "image" | "audio",
-): "sfx" | "music" | null {
-  if (kind !== "audio") return null;
-  if (isGlobalSfxKey(s3Key)) return "sfx";
-  if (isGlobalMusicKey(s3Key)) return "music";
-  return "music";
-}
-
-/** Sign playback; never send s3Key. `audioLibrary` is derived from the key. */
-function toClientAsset<
-  T extends {
-    kind: "video" | "image" | "audio";
-    s3Key: string;
-    waveformPeaks?: number[] | null;
-    waveformPeaksPerSec?: number | null;
-  },
->(row: T) {
-  const { s3Key, waveformPeaks, waveformPeaksPerSec, ...rest } = row;
-  const waveform =
-    waveformPeaksPerSec != null &&
-    Array.isArray(waveformPeaks) &&
-    waveformPeaks.length > 0
-      ? { peaksPerSec: waveformPeaksPerSec, peaks: waveformPeaks }
-      : null;
-  return {
-    ...rest,
-    playbackUrl: signedCloudFrontUrl(s3Key, { expiresInSec: 60 * 60 * 6 }),
-    audioLibrary: audioLibraryOf(s3Key, row.kind),
-    waveform,
-  };
 }
 
 export const projectRouter = createTRPCRouter({
@@ -245,8 +221,10 @@ export const projectRouter = createTRPCRouter({
         sortOrder: assets.sortOrder,
         lufs: assets.lufs,
         truePeakDb: assets.truePeakDb,
+        mask: clientMaskColumns,
       })
       .from(assets)
+      .leftJoin(masks, maskOnAsset)
       .where(and(isNull(assets.projectId), eq(assets.kind, "audio")))
       .orderBy(asc(assets.originalFilename));
 
@@ -292,6 +270,7 @@ export const projectRouter = createTRPCRouter({
               waveformPeaks: true,
             },
             with: {
+              mask: true,
               transcript: {
                 columns: {
                   words: true,
@@ -502,6 +481,58 @@ export const projectRouter = createTRPCRouter({
       }
 
       return { configUpdatedAt: now.toISOString() };
+    }),
+
+  generateBrollImages: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        prompt: z.string().min(1).max(BROLL_GENERATE_MAX_PROMPT),
+        imageSize: z.enum(IMAGE_SIZES),
+        referenceAssetId: z.string().min(1).nullable().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await generateBrollCandidates({
+          projectId: input.projectId,
+          userId: ctx.session.user.id,
+          prompt: input.prompt,
+          imageSize: input.imageSize,
+          referenceAssetId: input.referenceAssetId,
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: motionFailMessage(error, "Image generate failed"),
+        });
+      }
+    }),
+
+  persistGeneratedBroll: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        url: z.string().url().max(2048),
+        width: z.number().int().positive().nullable().optional(),
+        height: z.number().int().positive().nullable().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      try {
+        return await persistGeneratedBroll({
+          projectId: input.projectId,
+          userId: ctx.session.user.id,
+          url: input.url,
+          width: input.width,
+          height: input.height,
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: motionFailMessage(error, "Could not add image to B-roll"),
+        });
+      }
     }),
 
   generateMotion: protectedProcedure
@@ -738,7 +769,7 @@ export const projectRouter = createTRPCRouter({
       });
 
       const [asset] = await ctx.db
-        .select({ id: assets.id, s3Key: assets.s3Key })
+        .select({ id: assets.id })
         .from(assets)
         .where(
           and(
@@ -755,8 +786,7 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      await deleteAssetObjects([asset]);
-      await ctx.db.delete(assets).where(eq(assets.id, asset.id));
+      await deleteAssets(ctx.db, [asset.id]);
       return { ok: true as const };
     }),
 
@@ -842,12 +872,9 @@ export const projectRouter = createTRPCRouter({
       const keepIds = new Set(orderedIds);
       const extras = allAssets.filter((row) => !keepIds.has(row.id));
       if (extras.length > 0) {
-        await deleteAssetObjects(extras);
-        await ctx.db.delete(assets).where(
-          inArray(
-            assets.id,
-            extras.map((row) => row.id),
-          ),
+        await deleteAssets(
+          ctx.db,
+          extras.map((row) => row.id),
         );
       }
 
@@ -1087,8 +1114,10 @@ export const projectRouter = createTRPCRouter({
           truePeakDb: assets.truePeakDb,
           waveformPeaksPerSec: assets.waveformPeaksPerSec,
           waveformPeaks: assets.waveformPeaks,
+          mask: clientMaskColumns,
         })
         .from(assets)
+        .leftJoin(masks, maskOnAsset)
         .where(
           and(
             eq(assets.projectId, input.projectId),
@@ -1147,7 +1176,7 @@ export const projectRouter = createTRPCRouter({
       }
 
       const [asset] = await ctx.db
-        .select({ id: assets.id, s3Key: assets.s3Key, kind: assets.kind })
+        .select({ id: assets.id, kind: assets.kind })
         .from(assets)
         .where(
           and(
@@ -1186,8 +1215,134 @@ export const projectRouter = createTRPCRouter({
         })
         .where(eq(projects.id, input.projectId));
 
-      await deleteAssetObjects([asset]);
-      await ctx.db.delete(assets).where(eq(assets.id, asset.id));
+      await deleteAssets(ctx.db, [asset.id]);
       return { configUpdatedAt: now.toISOString() };
+    }),
+
+  setAssetMask: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        assetId: z.string().min(1),
+        type: z.enum(["cutout", "occlude"]).nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .select({
+          status: projects.status,
+          config: projects.config,
+          assetId: assets.id,
+          kind: assets.kind,
+          maskId: masks.id,
+        })
+        .from(projects)
+        .leftJoin(
+          assets,
+          and(
+            eq(assets.projectId, projects.id),
+            eq(assets.id, input.assetId),
+          ),
+        )
+        .leftJoin(masks, maskOnAsset)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.session.user.id),
+          ),
+        )
+        .limit(1);
+
+      if (!row) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+      if (!isEditorProjectStatus(row.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot change Mask while status is ${row.status}`,
+        });
+      }
+      if (row.assetId == null || row.kind == null) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Asset not found",
+        });
+      }
+
+      try {
+        assertMaskAllowed({
+          type: input.type,
+          source: { id: row.assetId, kind: row.kind },
+          config: isEmptyConfig(row.config)
+            ? emptyProjectConfig()
+            : row.config,
+        });
+      } catch (error) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: error instanceof Error ? error.message : "Invalid Mask",
+        });
+      }
+
+      try {
+        if (input.type == null) {
+          if (row.maskId) {
+            await ctx.db
+              .update(masks)
+              .set({ enabled: false })
+              .where(eq(masks.assetId, row.assetId));
+          }
+        } else if (row.maskId) {
+          await ctx.db
+            .update(masks)
+            .set({ type: input.type, enabled: true })
+            .where(eq(masks.assetId, row.assetId));
+        } else if (row.kind === "image" || row.kind === "video") {
+          const running = maskProgressEvent("running", 0);
+          await ctx.db.insert(masks).values({
+            assetId: row.assetId,
+            type: input.type,
+            enabled: true,
+            kind: row.kind,
+            progress: running,
+          });
+          await publishMaskProgress(row.assetId, running);
+          await startMaskPipeline(input.projectId, row.assetId);
+        }
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Could not build the mask",
+        });
+      }
+
+      const [client] = await ctx.db
+        .select({
+          id: assets.id,
+          kind: assets.kind,
+          s3Key: assets.s3Key,
+          durationSec: assets.durationSec,
+          width: assets.width,
+          height: assets.height,
+          originalFilename: assets.originalFilename,
+          sortOrder: assets.sortOrder,
+          lufs: assets.lufs,
+          truePeakDb: assets.truePeakDb,
+          waveformPeaksPerSec: assets.waveformPeaksPerSec,
+          waveformPeaks: assets.waveformPeaks,
+          mask: clientMaskColumns,
+        })
+        .from(assets)
+        .leftJoin(masks, maskOnAsset)
+        .where(eq(assets.id, row.assetId))
+        .limit(1);
+
+      return { assets: client ? [toClientAsset(client)] : [] };
     }),
 });

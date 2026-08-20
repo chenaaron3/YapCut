@@ -1,8 +1,16 @@
+import { TRANSFORM_DEFAULTS } from "~/domain/edit/transform";
 import { DEFAULT_MEDIA_VOLUME } from "~/domain/media/media";
 import { type BrollEdit } from "~/domain/project/project-config";
-import { TRANSFORM_DEFAULTS } from "~/domain/edit/transform";
 
 import type { EditSeed } from "~/domain/edit/edits";
+
+export const BROLL_GENERATE_MAX_PROMPT = 2000;
+
+export const BROLL_IMAGE_SIZE_LABELS = {
+  portrait: "9:16",
+  square: "1:1",
+  landscape: "16:9",
+} as const;
 
 export const DEFAULT_KEN_BURNS = 1.15;
 export const KEN_BURNS_MIN = 0.5;

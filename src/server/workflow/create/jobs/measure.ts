@@ -1,20 +1,21 @@
-import { falJobProgress } from "~/server/create/progress-estimate";
+import { MEASURE_PROGRESS_TAU_SEC } from "~/domain/project/create-progress";
+import { falJobProgress } from "~/server/workflow/estimate";
 import {
   finishMeasureAssetJobs,
   pollMeasureAssetJobs,
   startMeasureAssetJobs,
 } from "~/server/media/measure-asset";
 
-import type {
-  CreateAssetRef,
-  CreateJob,
-  JobPollResult,
-  MeasureHandle,
-} from "~/server/create/jobs/create-job";
+import type { CreateAssetRef } from "~/server/workflow/create/pipeline";
+import type { MeasureJobSet } from "~/server/media/measure-asset";
+import type { Job, JobPollResult } from "~/server/workflow/job";
 
-export type { MeasureHandle };
+export type MeasureHandle = {
+  jobSet: MeasureJobSet;
+  startedAtMs: number;
+};
 
-export class MeasureJob implements CreateJob<MeasureHandle> {
+export class MeasureJob implements Job<MeasureHandle, CreateAssetRef> {
   readonly name = "fal measure";
 
   async start(asset: CreateAssetRef): Promise<MeasureHandle | null> {
@@ -30,8 +31,18 @@ export class MeasureJob implements CreateJob<MeasureHandle> {
       jobs.map(async ({ index, handle }) => {
         const poll = await pollMeasureAssetJobs(handle.jobSet);
         const progress =
-          (falJobProgress(poll.loudnorm, handle.startedAtMs, nowMs) +
-            falJobProgress(poll.waveform, handle.startedAtMs, nowMs)) /
+          (falJobProgress(
+            poll.loudnorm,
+            handle.startedAtMs,
+            nowMs,
+            MEASURE_PROGRESS_TAU_SEC,
+          ) +
+            falJobProgress(
+              poll.waveform,
+              handle.startedAtMs,
+              nowMs,
+              MEASURE_PROGRESS_TAU_SEC,
+            )) /
           2;
         return {
           index,

@@ -1,21 +1,21 @@
+import { TRANSCRIBE_PROGRESS_TAU_SEC } from "~/domain/project/create-progress";
+import { replicateJobProgress } from "~/server/workflow/estimate";
 import {
   markAssetTranscriptFailed,
   saveAssetTranscript,
   startAssetWhisperX,
-} from "~/server/create/create-pipeline";
-import { whisperJobProgress } from "~/server/create/progress-estimate";
+} from "~/server/workflow/create/pipeline";
 import { getWhisperXPrediction } from "~/server/transcribe/whisperx";
 
-import type {
-  CreateAssetRef,
-  CreateJob,
-  JobPollResult,
-  WhisperXHandle,
-} from "~/server/create/jobs/create-job";
+import type { CreateAssetRef } from "~/server/workflow/create/pipeline";
+import type { Job, JobPollResult } from "~/server/workflow/job";
 
-export type { WhisperXHandle };
+export type WhisperXHandle = {
+  predictionId: string;
+  startedAtMs: number;
+};
 
-export class WhisperXJob implements CreateJob<WhisperXHandle> {
+export class WhisperXJob implements Job<WhisperXHandle, CreateAssetRef> {
   readonly name = "WhisperX";
 
   async start(asset: CreateAssetRef): Promise<WhisperXHandle | null> {
@@ -37,10 +37,11 @@ export class WhisperXJob implements CreateJob<WhisperXHandle> {
         console.log(
           `[create] whisperx poll prediction=${handle.predictionId} status=${poll.status}`,
         );
-        const progress = whisperJobProgress(
+        const progress = replicateJobProgress(
           poll.status,
           handle.startedAtMs,
           nowMs,
+          TRANSCRIBE_PROGRESS_TAU_SEC,
         );
         if (poll.status === "succeeded") {
           return { index, progress, status: "done" as const };

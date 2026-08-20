@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { arollAssetOrder } from "~/domain/aroll/arolls";
+import { isLibraryVisualAsset } from "~/domain/asset/mask";
 import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
 import { BrollLibrary } from "~/editor/components/assets/BrollLibrary";
 import { MusicLibrary } from "~/editor/components/assets/MusicLibrary";
@@ -79,8 +80,7 @@ export function AssetsPanel() {
   const brollAssets = useMemo(
     () =>
       assets.filter(
-        (a) =>
-          (a.kind === "image" || a.kind === "video") && !arollIds.has(a.id),
+        (a) => isLibraryVisualAsset(a) && !arollIds.has(a.id),
       ),
     [assets, arollIds],
   );
