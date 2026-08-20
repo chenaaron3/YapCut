@@ -1,8 +1,8 @@
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-import type { Edit } from "~/domain/project-config";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
+import type { Edit } from "~/domain/project/project-config";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 import {
   interiorStitchesWithoutTransition,
   placeTransitionAtStitch,
@@ -10,10 +10,10 @@ import {
   seedOpeningClosingPair,
   stitchKey,
   type TransitionStitch,
-} from "~/domain/transition";
+} from "~/domain/edit/transition";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
-import type { ArollLayoutCell } from "~/domain/arolls";
+import type { ArollLayoutCell } from "~/domain/aroll/arolls";
 
 export const TransitionReconcileSchema = z.object({
   decisions: z

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef } from "react";
 
-import { buildArollLayoutFromAssets } from "~/domain/arolls";
-import { clampOverlayMiddle, isTextBaseEdit } from "~/domain/project-config";
-import { editMiddleSec } from "~/domain/vfx";
+import { buildArollLayoutFromAssets } from "~/domain/aroll/arolls";
+import { clampOverlayMiddle, isTextBaseEdit } from "~/domain/project/project-config";
+import { editMiddleSec } from "~/domain/edit/vfx";
 import type { ResizeEdge } from "~/editor/components/transcript/RangeHandle";
-import { editsTopologyEqual } from "~/editor/lib/edit-topology";
-import { runGesture } from "~/editor/lib/gesture";
-import { snapTranscriptCaptionEdge } from "~/editor/lib/snap";
-import { wordIndexFromPoint } from "~/editor/lib/use-word-drag-select";
+import { editsTopologyEqual } from "~/editor/lib/timeline/edit-topology";
+import { runGesture } from "~/editor/lib/selection/gesture";
+import { snapTranscriptCaptionEdge } from "~/editor/lib/timeline/snap";
+import { wordIndexFromPoint } from "~/editor/lib/word/use-word-drag-select";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useEditorEqual, useGlobalWords } from "~/editor/store";
 import { overlayStackedForEdit } from "~/remotion/templates/overlay";

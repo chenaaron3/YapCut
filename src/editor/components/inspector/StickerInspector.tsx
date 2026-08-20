@@ -1,9 +1,9 @@
-import { stickerLabel } from "~/domain/sticker";
-import { transformOf } from "~/domain/transform";
+import { stickerLabel } from "~/domain/edit/sticker";
+import { transformOf } from "~/domain/edit/transform";
 import { TransformFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
 
-import type { StickerEdit } from "~/domain/project-config";
+import type { StickerEdit } from "~/domain/project/project-config";
 
 export function StickerInspector({ edit }: { edit: StickerEdit }) {
   const patchEdit = useEditor((s) => s.patchEdit);

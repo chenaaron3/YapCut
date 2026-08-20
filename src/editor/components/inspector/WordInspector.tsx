@@ -1,12 +1,12 @@
-import { SCRIBBLE_IDS, SCRIBBLE_LABELS } from "~/domain/scribble";
+import { SCRIBBLE_IDS, SCRIBBLE_LABELS } from "~/domain/transcript/scribble";
 import { PickerGrid, PickerTile } from "~/editor/components/picker";
-import { play } from "~/editor/lib/player-bridge";
-import { primaryId } from "~/editor/lib/selection";
+import { play } from "~/editor/lib/player/player-bridge";
+import { primaryId } from "~/editor/lib/selection/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useGlobalWords } from "~/editor/store";
 import { SCRIBBLE_CATALOG } from "~/remotion/components/captions/scribble-catalog";
 
-import type { ScribbleId } from "~/domain/scribble";
+import type { ScribbleId } from "~/domain/transcript/scribble";
 import type { MouseEvent } from "react";
 
 function ScribbleThumb({ id }: { id: ScribbleId }) {

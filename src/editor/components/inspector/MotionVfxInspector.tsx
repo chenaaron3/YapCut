@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
-import { DEFAULT_CAPTION_TEMPLATE_ID } from "~/domain/project-config";
-import { TRANSFORM_DEFAULTS, transformOf } from "~/domain/transform";
+import { DEFAULT_CAPTION_TEMPLATE_ID } from "~/domain/project/project-config";
+import { TRANSFORM_DEFAULTS, transformOf } from "~/domain/edit/transform";
 import {
   CaptionStyleFields,
   TextField,
@@ -25,7 +25,7 @@ import {
 } from "~/remotion/templates/style";
 import { api } from "~/utils/api";
 
-import type { VfxMotionEdit } from "~/domain/project-config";
+import type { VfxMotionEdit } from "~/domain/project/project-config";
 
 export function MotionVfxInspector({ edit }: { edit: VfxMotionEdit }) {
   const projectId = useEditor((s) => s.projectId);

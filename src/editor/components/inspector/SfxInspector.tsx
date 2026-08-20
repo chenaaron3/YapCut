@@ -1,8 +1,8 @@
-import { formatSfxLabel } from "~/domain/sfx";
+import { formatSfxLabel } from "~/domain/edit/sfx";
 import { MediaRefFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
 
-import type { SfxEdit } from "~/domain/project-config";
+import type { SfxEdit } from "~/domain/project/project-config";
 
 export function SfxInspector({ edit }: { edit: SfxEdit }) {
   const assets = useEditor((s) => s.assets);

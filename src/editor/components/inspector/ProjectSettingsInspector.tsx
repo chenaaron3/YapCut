@@ -7,13 +7,13 @@ import { Label } from "~/components/ui/label";
 import {
   COMPANION_SFX_CUE_IDS,
   COMPANION_SFX_CUE_LABELS,
-} from "~/domain/companion-sfx-map";
+} from "~/domain/audio/companion-sfx-map";
 import {
   formatSfxLabel,
   SFX_FOLDER_ORDER,
   sfxFolderLabel,
   sfxFolderOf,
-} from "~/domain/sfx";
+} from "~/domain/edit/sfx";
 import { InspectorSelect } from "~/editor/components/inspector/field/InspectorSelect";
 import {
   matchesSfxQuery,
@@ -24,7 +24,7 @@ import { useEditor } from "~/editor/store";
 import type {
   CompanionSfxCueId,
   CompanionSfxSource,
-} from "~/domain/companion-sfx-map";
+} from "~/domain/audio/companion-sfx-map";
 import type { KeyboardEvent } from "react";
 
 function sourceSelectValue(source: CompanionSfxSource): string {

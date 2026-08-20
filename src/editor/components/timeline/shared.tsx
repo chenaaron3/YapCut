@@ -4,10 +4,10 @@ import {
   type ReactNode,
 } from "react";
 
-import type { RangeEdge } from "~/domain/edits";
+import type { RangeEdge } from "~/domain/edit/edits";
 import { TRACK_HEIGHT } from "~/editor/components/timeline/constants";
-import { runGesture } from "~/editor/lib/gesture";
-import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
+import { runGesture } from "~/editor/lib/selection/gesture";
+import { useTimelineSnap } from "~/editor/lib/timeline/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";

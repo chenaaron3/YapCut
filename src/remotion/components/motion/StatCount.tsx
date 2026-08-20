@@ -6,7 +6,7 @@ import {
 } from "~/remotion/components/motion/clock";
 import { motionLook } from "~/remotion/components/motion/look";
 
-import type { StatContent } from "~/domain/motion-config";
+import type { StatContent } from "~/domain/vfx/motion-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 /** Authored length of HyperFrames `apple-money-count`. */

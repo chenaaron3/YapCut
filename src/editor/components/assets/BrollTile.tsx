@@ -1,16 +1,16 @@
 import { useRef } from "react";
 import { Trash2 } from "lucide-react";
 
-import { BROLL_DRAG_MIME } from "~/domain/broll";
+import { BROLL_DRAG_MIME } from "~/domain/edit/broll";
 import { BrollThumb } from "~/editor/components/assets/BrollThumb";
 import { PickerTile } from "~/editor/components/picker";
 import {
   beginAssetPlaceDrag,
   endAssetPlaceDrag,
-} from "~/editor/lib/asset-place-drag";
+} from "~/editor/lib/place/asset-place-drag";
 import { cn } from "~/lib/utils";
 
-import type { BrollDragPayload } from "~/domain/broll";
+import type { BrollDragPayload } from "~/domain/edit/broll";
 import type { EditorAsset } from "~/editor/store";
 
 export function BrollTile({

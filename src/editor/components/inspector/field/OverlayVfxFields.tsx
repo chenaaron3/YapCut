@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { overlayMidpointSec } from "~/domain/project-config";
-import { OVERLAY_TRANSFORM_DEFAULTS, transformOf } from "~/domain/transform";
+import { overlayMidpointSec } from "~/domain/project/project-config";
+import { OVERLAY_TRANSFORM_DEFAULTS, transformOf } from "~/domain/edit/transform";
 import { CaptionStyleFields } from "~/editor/components/inspector/field/CaptionStyleFields";
 import { TextField } from "~/editor/components/inspector/field/TextField";
 import { TransformFields } from "~/editor/components/inspector/field/TransformFields";
@@ -21,7 +21,7 @@ import type {
   TemplateStyle,
   VfxListicleEdit,
   VfxTextEdit,
-} from "~/domain/project-config";
+} from "~/domain/project/project-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type { OverlayTemplateId } from "~/remotion/templates/overlay";
 

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
-import { isCreateProgressEvent } from "~/domain/create-progress";
+import { isCreateProgressEvent } from "~/domain/project/create-progress";
 
-import type { CreateProgressEvent } from "~/domain/create-progress";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
 
 function parseChunk(value: unknown): CreateProgressEvent | null {
   if (isCreateProgressEvent(value)) return value;

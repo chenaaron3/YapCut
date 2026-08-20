@@ -2,7 +2,7 @@ import { pathToFileURL } from "node:url";
 
 import { eq } from "drizzle-orm";
 
-import { SCHEDULE_OPERATOR_EMAIL, type PlatformId } from "~/domain/schedule";
+import { SCHEDULE_OPERATOR_EMAIL, type PlatformId } from "~/domain/schedule/schedule";
 import { db } from "~/server/db";
 import { users } from "~/server/db/schema";
 import { executeScheduleRun } from "~/schedule/execute-run";

@@ -2,26 +2,26 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 
-import { arollAssetOrder } from "~/domain/arolls";
+import { arollAssetOrder } from "~/domain/aroll/arolls";
 import {
   assertCreateBatch,
   assertCreateUploadBytes,
   assertLandingCreateBatch,
   CREATE_MAX_BYTES,
-} from "~/domain/create-limits";
-import { MOTION_MAX_PROMPT, shotPlanSchema } from "~/domain/motion-config";
+} from "~/domain/project/create-limits";
+import { MOTION_MAX_PROMPT, shotPlanSchema } from "~/domain/vfx/motion-config";
 import {
   emptyProjectConfig,
   parseProjectConfig,
   projectConfigSchema,
-} from "~/domain/project-config";
+} from "~/domain/project/project-config";
 import {
   PROJECT_LIST_BADGES,
   PROJECT_LIST_PAGE_SIZE,
   projectListBadge,
-} from "~/domain/project-list-badge";
-import { isEditorProjectStatus } from "~/domain/project-status";
-import { SCRIBBLE_IDS } from "~/domain/scribble";
+} from "~/domain/project/project-list-badge";
+import { isEditorProjectStatus } from "~/domain/project/project-status";
+import { SCRIBBLE_IDS } from "~/domain/transcript/scribble";
 import { generateMotionPlan, motionFailMessage } from "~/server/ai/motion";
 import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
 import {

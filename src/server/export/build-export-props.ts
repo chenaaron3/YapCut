@@ -3,8 +3,8 @@ import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   emptyProjectConfig,
   parseProjectConfig,
-} from "~/domain/project-config";
-import type { TranscriptWord } from "~/domain/transcript";
+} from "~/domain/project/project-config";
+import type { TranscriptWord } from "~/domain/transcript/transcript";
 import { buildProjectProps } from "~/remotion/helpers/build-props";
 import type { ProjectProps } from "~/remotion/helpers/types";
 import { db } from "~/server/db";

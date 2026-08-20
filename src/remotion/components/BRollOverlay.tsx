@@ -10,7 +10,7 @@ import {
 } from "remotion";
 import { Video } from "@remotion/media";
 
-import { containSize } from "~/domain/transform";
+import { containSize } from "~/domain/edit/transform";
 import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
 import type { BrollClipProp } from "~/remotion/helpers/types";
 

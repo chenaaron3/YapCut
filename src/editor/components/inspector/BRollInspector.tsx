@@ -2,9 +2,9 @@ import {
   DEFAULT_KEN_BURNS,
   KEN_BURNS_MAX,
   KEN_BURNS_MIN,
-} from "~/domain/broll";
-import { transformOf } from "~/domain/transform";
-import type { BrollEdit } from "~/domain/project-config";
+} from "~/domain/edit/broll";
+import { transformOf } from "~/domain/edit/transform";
+import type { BrollEdit } from "~/domain/project/project-config";
 import { Label } from "~/components/ui/label";
 import { SliderField, TransformFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";

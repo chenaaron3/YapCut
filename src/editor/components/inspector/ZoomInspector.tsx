@@ -1,11 +1,11 @@
 import { Label } from "~/components/ui/label";
-import { transformOf } from "~/domain/transform";
-import { resolveZoomEase } from "~/domain/zoom";
+import { transformOf } from "~/domain/edit/transform";
+import { resolveZoomEase } from "~/domain/edit/zoom";
 import { TransformFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-import type { ZoomEdit } from "~/domain/project-config";
+import type { ZoomEdit } from "~/domain/project/project-config";
 
 export function ZoomInspector({ edit }: { edit: ZoomEdit }) {
   const patchEdit = useEditor((s) => s.patchEdit);

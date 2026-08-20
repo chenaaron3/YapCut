@@ -8,7 +8,7 @@ import { InspectorCollapsible } from "~/editor/components/inspector/field/Inspec
 import { InspectorSelect } from "~/editor/components/inspector/field/InspectorSelect";
 import { NumberField } from "~/editor/components/inspector/field/NumberField";
 import { SliderField } from "~/editor/components/inspector/field/SliderField";
-import { runGesture } from "~/editor/lib/gesture";
+import { runGesture } from "~/editor/lib/selection/gesture";
 import {
   CAPTION_ARC_MAX,
   CAPTION_ARC_MIN,

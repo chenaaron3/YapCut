@@ -11,15 +11,15 @@ import {
   createFileLimit,
   summarizeCreateRejections,
   usedFromCreateFiles,
-} from "~/domain/create-limits";
-import { probeVideoFile } from "~/editor/lib/probe-media";
+} from "~/domain/project/create-limits";
+import { probeVideoFile } from "~/editor/lib/player/probe-media";
 
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import type {
   ClipItem,
   CreateUploader,
 } from "~/components/projects/create-project/types";
-import type { CreateLimitCode, CreateMediaInput } from "~/domain/create-limits";
+import type { CreateLimitCode, CreateMediaInput } from "~/domain/project/create-limits";
 
 function revokeAll(items: ClipItem[]) {
   for (const clip of items) URL.revokeObjectURL(clip.previewUrl);

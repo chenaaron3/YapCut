@@ -4,11 +4,11 @@ import { z } from "zod";
 import {
   buildNumberedTranscript,
   wordIndexToTimelineSec,
-} from "~/domain/projection";
-import type { Edit, VfxQuoteEdit } from "~/domain/project-config";
-import { nextEditId } from "~/domain/project-config";
-import { quoteRangeConflicts, quoteSeed } from "~/domain/quote";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
+} from "~/domain/aroll/projection";
+import type { Edit, VfxQuoteEdit } from "~/domain/project/project-config";
+import { nextEditId } from "~/domain/project/project-config";
+import { quoteRangeConflicts, quoteSeed } from "~/domain/vfx/quote";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
 const MAX_QUOTES = 30;

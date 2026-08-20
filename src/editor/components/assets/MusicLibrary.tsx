@@ -11,7 +11,7 @@ import {
   PickerGrid,
   PickerTile,
 } from "~/editor/components/picker";
-import { probeAudioFile } from "~/editor/lib/probe-media";
+import { probeAudioFile } from "~/editor/lib/player/probe-media";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 

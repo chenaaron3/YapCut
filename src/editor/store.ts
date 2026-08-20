@@ -13,7 +13,7 @@ import {
   keepCellIdForArollIndex,
   keepCells,
   reorderArollAssets,
-} from "~/domain/arolls";
+} from "~/domain/aroll/arolls";
 import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import {
   editsForAiAssist,
@@ -21,31 +21,31 @@ import {
   patchEditRange as applyPatchEditRange,
   placeEdit,
   removeEdit,
-} from "~/domain/edits";
+} from "~/domain/edit/edits";
 import {
   clampTimelineSec,
   layoutTimelineDuration,
   outputToTimelineSec,
   snapTimelineSec,
   timelineToOutputSec,
-} from "~/domain/layout-time";
-import { isListicleEdit } from "~/domain/listicle";
-import { clampTimelineRangeToMedia, withMediaRefPatch } from "~/domain/media";
-import { musicFromAsset } from "~/domain/music";
+} from "~/domain/aroll/layout-time";
+import { isListicleEdit } from "~/domain/vfx/listicle";
+import { clampTimelineRangeToMedia, withMediaRefPatch } from "~/domain/media/media";
+import { musicFromAsset } from "~/domain/audio/music";
 import {
   applyTemplateStylePatch,
   cloneTemplateStyle,
   PROJECT_FPS,
-} from "~/domain/project-config";
+} from "~/domain/project/project-config";
 import {
   adjacentKeptWordIndex,
   projectTimelineWords,
   wordIndexAtTimelineSec,
-} from "~/domain/projection";
-import { placeFailureMessage } from "~/editor/lib/place-failure";
-import { primaryId } from "~/editor/lib/selection";
-import { snapWordActionRangeToKeeps } from "~/editor/lib/snap";
-import { wordActionRange } from "~/editor/lib/word-selection";
+} from "~/domain/aroll/projection";
+import { placeFailureMessage } from "~/editor/lib/place/place-failure";
+import { primaryId } from "~/editor/lib/selection/selection";
+import { snapWordActionRangeToKeeps } from "~/editor/lib/timeline/snap";
+import { wordActionRange } from "~/editor/lib/word/word-selection";
 import { useSelection } from "~/editor/selection-store";
 import { buildProjectProps } from "~/remotion/helpers/build-props";
 import {
@@ -54,22 +54,22 @@ import {
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
 
-import type { ArollLayoutCell } from "~/domain/arolls";
+import type { ArollLayoutCell } from "~/domain/aroll/arolls";
 import type { SerializedWaveform } from "~/domain/audio/waveform";
 import type {
   CompanionSfxCueId,
   CompanionSfxSource,
-} from "~/domain/companion-sfx-map";
-import type { EditPatch, EditSeed, RangeEdge } from "~/domain/edits";
-import type { EmphasisStyle } from "~/domain/emphasis-style";
-import type { MediaRefPatch } from "~/domain/media";
+} from "~/domain/audio/companion-sfx-map";
+import type { EditPatch, EditSeed, RangeEdge } from "~/domain/edit/edits";
+import type { EmphasisStyle } from "~/domain/transcript/emphasis-style";
+import type { MediaRefPatch } from "~/domain/media/media";
 import type {
   EditId,
   ProjectConfig,
   TemplateStyle,
-} from "~/domain/project-config";
-import type { TimelineTime } from "~/domain/time";
-import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
+} from "~/domain/project/project-config";
+import type { TimelineTime } from "~/domain/media/time";
+import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript/transcript";
 import type { ProjectProps } from "~/remotion/helpers/types";
 
 /** Mutable transcript-word fields (local asset words). */

@@ -1,6 +1,6 @@
 import { and, eq, or } from "drizzle-orm";
 
-import { canStartProjectExport } from "~/domain/project-status";
+import { canStartProjectExport } from "~/domain/project/project-status";
 import { db } from "~/server/db";
 import { projects } from "~/server/db/schema";
 import { buildExportProps } from "~/server/export/build-export-props";

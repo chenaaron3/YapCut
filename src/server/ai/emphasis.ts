@@ -1,10 +1,10 @@
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-import { buildNumberedTranscript } from "~/domain/projection";
-import type { Edit } from "~/domain/project-config";
-import { isQuoteEdit } from "~/domain/quote";
-import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
+import { buildNumberedTranscript } from "~/domain/aroll/projection";
+import type { Edit } from "~/domain/project/project-config";
+import { isQuoteEdit } from "~/domain/vfx/quote";
+import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript/transcript";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
 export type QuoteWordRange = {

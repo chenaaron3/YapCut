@@ -2,7 +2,7 @@ import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import { MediaRefFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
 
-import type { MusicBed } from "~/domain/project-config";
+import type { MusicBed } from "~/domain/project/project-config";
 
 export function MusicInspector({ clip }: { clip: MusicBed }) {
   const assets = useEditor((s) => s.assets);

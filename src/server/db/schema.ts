@@ -7,11 +7,11 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
-import type { CreateProgressEvent } from "~/domain/create-progress";
-import type { ProjectConfig } from "~/domain/project-config";
-import type { ProjectStatus } from "~/domain/project-status";
-import type { PlatformPublishStatus } from "~/domain/schedule";
-import type { TranscriptStatus, TranscriptWord } from "~/domain/transcript";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
+import type { ProjectConfig } from "~/domain/project/project-config";
+import type { ProjectStatus } from "~/domain/project/project-status";
+import type { PlatformPublishStatus } from "~/domain/schedule/schedule";
+import type { TranscriptStatus, TranscriptWord } from "~/domain/transcript/transcript";
 import type { AdapterAccount } from "next-auth/adapters";
 
 /**

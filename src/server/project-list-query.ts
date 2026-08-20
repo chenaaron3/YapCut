@@ -2,7 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { projects } from "~/server/db/schema";
 
-import type { ProjectListBadge } from "~/domain/project-list-badge";
+import type { ProjectListBadge } from "~/domain/project/project-list-badge";
 import type { SQL } from "drizzle-orm";
 
 /** Same fallback as `projectTitle`: blank titles search as "Untitled". */

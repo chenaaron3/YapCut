@@ -22,7 +22,7 @@ import {
   expectedSfxPoolDirs,
   parseOfficialSfxPath,
   SFX_FOLDER_ORDER,
-} from "~/domain/sfx";
+} from "~/domain/edit/sfx";
 import { globalSfxKey, isGlobalSfxKey } from "~/server/media/keys";
 import {
   parseSeedDirArgs,

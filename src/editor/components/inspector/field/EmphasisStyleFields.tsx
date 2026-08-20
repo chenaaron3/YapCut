@@ -8,17 +8,17 @@ import {
   DEFAULT_EMPHASIS_SCALE,
   EMPHASIS_SCALE_MAX,
   EMPHASIS_SCALE_MIN,
-} from "~/domain/emphasis-style";
+} from "~/domain/transcript/emphasis-style";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import { InspectorSelect } from "~/editor/components/inspector/field/InspectorSelect";
 import { NumberField } from "~/editor/components/inspector/field/NumberField";
-import { runGesture } from "~/editor/lib/gesture";
+import { runGesture } from "~/editor/lib/selection/gesture";
 import {
   CAPTION_FONT_IDS,
   CAPTION_FONT_LABELS,
 } from "~/remotion/captions/style";
 
-import type { EmphasisStyle } from "~/domain/emphasis-style";
+import type { EmphasisStyle } from "~/domain/transcript/emphasis-style";
 import type { CaptionFontId } from "~/remotion/captions/style";
 
 function hexOrDefault(fill: string): string {

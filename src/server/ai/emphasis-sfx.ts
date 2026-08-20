@@ -7,17 +7,17 @@ import {
   isAiSfxPlaceRole,
   volumeForRole,
   type AiSfxPlaceRole,
-} from "~/domain/ai-sfx-pack";
-import { hasSfxOnsetAt } from "~/domain/companion-sfx";
-import { splitTranscriptSentences } from "~/domain/pacing";
-import { nextEditId } from "~/domain/project-config";
-import { pickSfxAssetId, sfxFolderOf } from "~/domain/sfx";
+} from "~/domain/audio/ai-sfx-pack";
+import { hasSfxOnsetAt } from "~/domain/audio/companion-sfx";
+import { splitTranscriptSentences } from "~/domain/transcript/pacing";
+import { nextEditId } from "~/domain/project/project-config";
+import { pickSfxAssetId, sfxFolderOf } from "~/domain/edit/sfx";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 import { loadGlobalSfxAssets } from "~/server/ai/global-sfx";
 
-import type { CompanionSfxAsset } from "~/domain/companion-sfx";
-import type { Edit, SfxEdit } from "~/domain/project-config";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
+import type { CompanionSfxAsset } from "~/domain/audio/companion-sfx";
+import type { Edit, SfxEdit } from "~/domain/project/project-config";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 
 export type EmphasisSfxCandidate = {
   id: string;

@@ -5,13 +5,13 @@ import { useRef } from "react";
 import {
   CREATE_STAGE_LABEL,
   overallCreateProgress,
-} from "~/domain/create-progress";
-import { PROJECT_LIST_BADGE_LABEL } from "~/domain/project-list-badge";
+} from "~/domain/project/create-progress";
+import { PROJECT_LIST_BADGE_LABEL } from "~/domain/project/project-list-badge";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 
-import type { CreateProgressEvent } from "~/domain/create-progress";
-import type { ProjectListBadge } from "~/domain/project-list-badge";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
+import type { ProjectListBadge } from "~/domain/project/project-list-badge";
 
 type Props = {
   id: string;

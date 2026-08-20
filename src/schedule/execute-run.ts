@@ -1,5 +1,5 @@
-import type { PlatformId } from "~/domain/schedule";
-import { formatLocalSlot } from "~/domain/schedule-cadence";
+import type { PlatformId } from "~/domain/schedule/schedule";
+import { formatLocalSlot } from "~/domain/schedule/schedule-cadence";
 import { exportDownloadUrl } from "~/server/export/download-url";
 import {
   getOrCreateScheduleSettings,

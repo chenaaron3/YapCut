@@ -1,19 +1,19 @@
 import {
   attachCompanionSfxToEdits,
   resolveCompanionSfxPool,
-} from "~/domain/companion-sfx";
+} from "~/domain/audio/companion-sfx";
 import {
   defaultCompanionSfxMap,
   type CompanionSfxMap,
-} from "~/domain/companion-sfx-map";
-import { isTextBaseEdit, nextEditId } from "~/domain/project-config";
-import { COMPANION_SFX_VOLUME, pickSfxAssetId, sfxSeed } from "~/domain/sfx";
-import { editMiddleSec } from "~/domain/vfx";
+} from "~/domain/audio/companion-sfx-map";
+import { isTextBaseEdit, nextEditId } from "~/domain/project/project-config";
+import { COMPANION_SFX_VOLUME, pickSfxAssetId, sfxSeed } from "~/domain/edit/sfx";
+import { editMiddleSec } from "~/domain/edit/vfx";
 import { overlayStackedForEdit } from "~/remotion/templates/overlay";
 import { loadGlobalSfxAssets } from "~/server/ai/global-sfx";
 
-import type { CompanionSfxAsset } from "~/domain/companion-sfx";
-import type { Edit, SfxEdit } from "~/domain/project-config";
+import type { CompanionSfxAsset } from "~/domain/audio/companion-sfx";
+import type { Edit, SfxEdit } from "~/domain/project/project-config";
 
 type DurationSecFor = (assetId: string) => number | null;
 

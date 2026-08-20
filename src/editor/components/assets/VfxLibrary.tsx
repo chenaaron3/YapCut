@@ -1,14 +1,14 @@
 import { ListOrdered, Quote, Sparkles, Type, Vibrate } from "lucide-react";
 
-import { VFX_DRAG_MIME, VFX_PRESETS } from "~/domain/vfx";
+import { VFX_DRAG_MIME, VFX_PRESETS } from "~/domain/edit/vfx";
 import { PickerGrid, PickerTile } from "~/editor/components/picker";
 import {
   beginAssetPlaceDrag,
   endAssetPlaceDrag,
-} from "~/editor/lib/asset-place-drag";
+} from "~/editor/lib/place/asset-place-drag";
 
-import type { VfxDragPayload, VfxPresetType } from "~/domain/vfx";
-import type { EditChromeKey } from "~/editor/lib/edit-chrome";
+import type { VfxDragPayload, VfxPresetType } from "~/domain/edit/vfx";
+import type { EditChromeKey } from "~/editor/lib/timeline/edit-chrome";
 
 const PRESET_ICON: Record<VfxPresetType, typeof Quote> = {
   quote: Quote,

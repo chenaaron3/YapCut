@@ -1,8 +1,8 @@
 import { useRef } from "react";
 
 import { BrollThumb } from "~/editor/components/assets/BrollThumb";
-import { chromeByKey } from "~/editor/lib/edit-chrome";
-import type { WordEditSpan } from "~/editor/lib/word-annotations";
+import { chromeByKey } from "~/editor/lib/timeline/edit-chrome";
+import type { WordEditSpan } from "~/editor/lib/word/word-annotations";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 

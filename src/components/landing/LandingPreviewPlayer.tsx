@@ -7,8 +7,8 @@ import { useMemo, useRef, useState } from "react";
 import { emberCard } from "~/components/landing/landing-ui";
 import { LandingSparkles } from "~/components/landing/LandingSparkles";
 import { Card, CardContent } from "~/components/ui/card";
-import { hydrateInputFromProject } from "~/editor/lib/hydrate-project";
-import { projectPropsFromAssets } from "~/editor/lib/project-props";
+import { hydrateInputFromProject } from "~/editor/lib/project/hydrate-project";
+import { projectPropsFromAssets } from "~/editor/lib/project/project-props";
 import { cn } from "~/lib/utils";
 import {
   COMPOSITION_FPS,

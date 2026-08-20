@@ -5,13 +5,13 @@ import {
   createProgressEvent,
   meanProgress,
   overallCreateProgress,
-} from "~/domain/create-progress";
-import { buildArollKeepsFromWords } from "~/domain/keeps";
+} from "~/domain/project/create-progress";
+import { buildArollKeepsFromWords } from "~/domain/aroll/keeps";
 import {
   assignKeepIds,
   DEFAULT_CAPTION_TEMPLATE_ID,
   emptyProjectConfig,
-} from "~/domain/project-config";
+} from "~/domain/project/project-config";
 import { runAiAssist } from "~/server/ai/run-ai-assist";
 import {
   parseCreateProgress,
@@ -26,8 +26,8 @@ import {
   startWhisperXPrediction,
 } from "~/server/transcribe/whisperx";
 
-import type { ProjectConfig } from "~/domain/project-config";
-import type { TranscriptWord } from "~/domain/transcript";
+import type { ProjectConfig } from "~/domain/project/project-config";
+import type { TranscriptWord } from "~/domain/transcript/transcript";
 import type { CreateAssetRef } from "~/server/create/jobs/create-job";
 
 export type { CreateAssetRef };

@@ -10,7 +10,7 @@ import {
 } from "~/remotion/components/motion/look";
 
 import type { ReactNode } from "react";
-import type { ChartsContent } from "~/domain/motion-config";
+import type { ChartsContent } from "~/domain/vfx/motion-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 const AUTHORED = 8;

@@ -1,18 +1,18 @@
-import { arollIndexForKeepCell } from "~/domain/arolls";
+import { arollIndexForKeepCell } from "~/domain/aroll/arolls";
 import {
   Handle,
   TrackLabel,
   useTrackDrag,
 } from "~/editor/components/timeline/shared";
 import { VoiceBand } from "~/editor/components/timeline/tracks/VoiceBand";
-import { clampRangeEdge } from "~/editor/lib/range";
-import { useIsSelected } from "~/editor/lib/use-is-selected";
-import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
+import { clampRangeEdge } from "~/editor/lib/timeline/range";
+import { useIsSelected } from "~/editor/lib/selection/use-is-selected";
+import { useTimelineSnap } from "~/editor/lib/timeline/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-import type { ArollLayoutCell } from "~/domain/arolls";
+import type { ArollLayoutCell } from "~/domain/aroll/arolls";
 
 type Props = {
   layout: ArollLayoutCell[];

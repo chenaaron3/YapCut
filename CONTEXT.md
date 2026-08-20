@@ -70,7 +70,7 @@ broll | sticker | sfx | zoom | vfx | transition
 
 - **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
 - **vfx** — `type: "quote" | "text" | "listicle" | "shake" | "motion"` (location/cutout out of scope)
-- **sticker** — catalog overlay (`source: "emoji" | "lordicon"` + `catalogId`). Same Edit shape; `source` is playback (`loop` vs intro-then-hold), not a second kind. Fixed ~180px box + `Transform`. No Ken Burns, no Asset row. Catalog: Noto Animated Emoji top 250 + Lordicon Wired Flat Popular (plus original Marks and a hand-picked talking-head set). Drag from Stickers (Popular / Emoji / Marks / All + search). Place range is the drop word. Editor AI re-run drops stickers (keeps b-roll).
+- **sticker** — catalog overlay (`source: "emoji" | "lordicon"` + `catalogId`). Same Edit shape; `source` is playback (`loop` vs intro-then-hold), not a second kind. Fixed ~180px box + `Transform`. No Ken Burns, no Asset row. Catalog files live under `public/stickers/{source}/{topic}/`. Emoji: Noto top 250 by popularity, Unicode group as topic (skip Animals & Nature and Flags), plus 15 food/drink. Lordicon: Wired Flat Popular + original Marks + talking-head extras; topic is a collapsed Lordicon category (`ui` / `people` / `media` / `business` / `tech` / `objects`). Drag from Stickers (Popular / Emoji / Marks / All + search). Place range is the drop word. Editor AI re-run drops stickers (keeps b-roll).
 - **transition** — A-roll picture stitch (`templateId: "flash" | "fade" | "slide"`). Identity is `stitch` + `durationSec`; one per keep–keep stitch (plus opening and closing). Not a VFX subtype, not a sting.
 
 **Transition**:
@@ -171,7 +171,7 @@ Seconds on the compacted playback/export timeline (sum of keep durations in `aro
 _Avoid_: persisting output times on Edits
 
 **Projection**:
-Derive timeline words from `arolls` + per-asset transcripts + asset durations (for gap layout). Do not persist a separate projected transcript. Map timeline → output at the Remotion edge. Clock conversion, clamp, and snap live in `src/domain/layout-time.ts`; layout construction and keep lookups stay in `arolls.ts`.
+Derive timeline words from `arolls` + per-asset transcripts + asset durations (for gap layout). Do not persist a separate projected transcript. Map timeline → output at the Remotion edge. Clock conversion, clamp, and snap live in `src/domain/aroll/layout-time.ts`; layout construction and keep lookups stay in `arolls.ts`.
 
 **Caption / quote Y**:
 `CaptionGroupStyle.y` for captions and quotes is −1…1 in the **safe area**. `0` = middle, `1` = bottom, `−1` = top. Positive is down.

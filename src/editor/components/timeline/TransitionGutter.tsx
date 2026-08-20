@@ -1,13 +1,13 @@
 import { useTrackDrag } from "~/editor/components/timeline/shared";
-import { useIsSelected } from "~/editor/lib/use-is-selected";
+import { useIsSelected } from "~/editor/lib/selection/use-is-selected";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-import type { ArollLayoutCell } from "~/domain/arolls";
-import { keepsForStitch, resizeTransitionFromEdge } from "~/domain/transition";
-import type { TransitionEdit } from "~/domain/project-config";
-import type { RangeEdge } from "~/domain/edits";
+import type { ArollLayoutCell } from "~/domain/aroll/arolls";
+import { keepsForStitch, resizeTransitionFromEdge } from "~/domain/edit/transition";
+import type { TransitionEdit } from "~/domain/project/project-config";
+import type { RangeEdge } from "~/domain/edit/edits";
 
 type Props = {
   layout: ArollLayoutCell[];

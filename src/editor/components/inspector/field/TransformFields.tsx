@@ -3,7 +3,7 @@ import {
   TRANSFORM_SCALE_MAX,
   TRANSFORM_SCALE_MIN,
   type Transform,
-} from "~/domain/transform";
+} from "~/domain/edit/transform";
 import { Button } from "~/components/ui/button";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import { NumberField } from "~/editor/components/inspector/field/NumberField";

@@ -7,7 +7,7 @@ import {
   useVideoConfig,
 } from "remotion";
 
-import { TRANSFORM_DEFAULTS } from "~/domain/transform";
+import { TRANSFORM_DEFAULTS } from "~/domain/edit/transform";
 import type { ZoomProp } from "~/remotion/helpers/types";
 
 const EASE = Easing.inOut(Easing.ease);

@@ -1,12 +1,12 @@
 import {
   DEFAULT_LISTICLE_TEMPLATE_ID,
   DEFAULT_TEXT_TEMPLATE_ID,
-} from "~/domain/project-config";
+} from "~/domain/project/project-config";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
 import { resolveTemplateId } from "~/remotion/templates/style";
 
-import type { TemplateStyle, TextBaseEdit } from "~/domain/project-config";
+import type { TemplateStyle, TextBaseEdit } from "~/domain/project/project-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export const OVERLAY_TEMPLATE_IDS = [

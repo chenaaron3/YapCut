@@ -6,7 +6,7 @@ import {
 import { motionLook, type MotionLook } from "~/remotion/components/motion/look";
 
 import type { CSSProperties } from "react";
-import type { LowerThirdsContent } from "~/domain/motion-config";
+import type { LowerThirdsContent } from "~/domain/vfx/motion-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 /** HyperFrames `lt-clean-bar` / generic chip. Extra time holds. */

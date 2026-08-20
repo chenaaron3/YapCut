@@ -14,7 +14,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
-import { canUseSchedule } from "~/domain/schedule";
+import { canUseSchedule } from "~/domain/schedule/schedule";
 import { useEditor } from "~/editor/store";
 import { api } from "~/utils/api";
 

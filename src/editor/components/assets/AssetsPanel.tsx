@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { arollAssetOrder } from "~/domain/arolls";
+import { arollAssetOrder } from "~/domain/aroll/arolls";
 import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
 import { BrollLibrary } from "~/editor/components/assets/BrollLibrary";
 import { MusicLibrary } from "~/editor/components/assets/MusicLibrary";

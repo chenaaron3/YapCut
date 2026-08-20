@@ -18,7 +18,7 @@ import {
   settleMediaJobs,
 } from "~/server/create/jobs/create-job";
 
-import type { CreateProgressEvent } from "~/domain/create-progress";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
 import type {
   CreateAssetRef,
   CreateJob,

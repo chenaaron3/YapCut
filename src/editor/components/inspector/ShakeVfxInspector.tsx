@@ -1,10 +1,10 @@
 import { Label } from "~/components/ui/label";
-import type { VfxShakeEdit } from "~/domain/project-config";
+import type { VfxShakeEdit } from "~/domain/project/project-config";
 import {
   resolveShakeIntensity,
   SHAKE_INTENSITY_MAX,
   SHAKE_INTENSITY_MIN,
-} from "~/domain/shake";
+} from "~/domain/vfx/shake";
 import { SliderField } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";

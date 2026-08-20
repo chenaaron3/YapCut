@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 
-import { isCreateProgressEvent } from "~/domain/create-progress";
+import { isCreateProgressEvent } from "~/domain/project/create-progress";
 import { fanoutCreateProgress } from "~/server/create/progress-bus";
 import { db } from "~/server/db";
 import { projects } from "~/server/db/schema";
 
-import type { CreateProgressEvent } from "~/domain/create-progress";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
 
 const OUTSIDE_WORKFLOW =
   "`getWritable()` can only be called inside a workflow or step function";

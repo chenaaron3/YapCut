@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 import { CaptionTemplatePreview } from "~/editor/components/inspector/preview/CaptionTemplatePreview";
-import { play } from "~/editor/lib/player-bridge";
-import { primaryId } from "~/editor/lib/selection";
+import { play } from "~/editor/lib/player/player-bridge";
+import { primaryId } from "~/editor/lib/selection/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import {

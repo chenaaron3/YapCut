@@ -1,4 +1,4 @@
-import type { PlatformId } from "~/domain/schedule";
+import type { PlatformId } from "~/domain/schedule/schedule";
 import type { Publisher } from "~/schedule/publisher";
 import { createInstagramPublisher } from "~/schedule/local/platforms/instagram";
 import { createTikTokPublisher } from "~/schedule/local/platforms/tiktok";

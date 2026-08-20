@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { BrollFilmstripTrack } from "~/editor/components/assets/BrollFilmstripTrack";
-import { MIN_RANGE_SEC } from "~/editor/lib/range";
+import { MIN_RANGE_SEC } from "~/editor/lib/timeline/range";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 
 import type { EditorAsset } from "~/editor/store";

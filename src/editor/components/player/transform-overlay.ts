@@ -1,13 +1,13 @@
 import type { CSSProperties } from "react";
 
-import { containSize } from "~/domain/transform";
-import type { EditableTransform } from "~/editor/lib/use-editable-transform";
+import { containSize } from "~/domain/edit/transform";
+import type { EditableTransform } from "~/editor/lib/player/use-editable-transform";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
 
-import type { Transform } from "~/domain/transform";
+import type { Transform } from "~/domain/edit/transform";
 
 export const EDIT_HIT_ATTR = "data-edit-hit";
 

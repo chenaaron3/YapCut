@@ -15,12 +15,12 @@ import { TextVfxInspector } from "~/editor/components/inspector/TextVfxInspector
 import { TransitionInspector } from "~/editor/components/inspector/TransitionInspector";
 import { WordInspector } from "~/editor/components/inspector/WordInspector";
 import { ZoomInspector } from "~/editor/components/inspector/ZoomInspector";
-import { primaryId } from "~/editor/lib/selection";
-import { usePlayerPlaying } from "~/editor/lib/use-player-playing";
+import { primaryId } from "~/editor/lib/selection/selection";
+import { usePlayerPlaying } from "~/editor/lib/player/use-player-playing";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useGlobalWords } from "~/editor/store";
 
-import type { Edit } from "~/domain/project-config";
+import type { Edit } from "~/domain/project/project-config";
 import type { ReactNode } from "react";
 
 /**

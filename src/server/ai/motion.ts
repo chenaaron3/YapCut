@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { zodFunction, zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-import { durationMapFromArolls } from "~/domain/arolls";
+import { durationMapFromArolls } from "~/domain/aroll/arolls";
 import {
   assetFusionContentSchema,
   chartsContentSchema,
@@ -16,10 +16,10 @@ import {
   shotPlanSchema,
   statContentSchema,
   withMotionMedia,
-} from "~/domain/motion-config";
-import { parseProjectConfig } from "~/domain/project-config";
-import { isEditorProjectStatus } from "~/domain/project-status";
-import { keptTimelineWords, projectTimelineWords } from "~/domain/projection";
+} from "~/domain/vfx/motion-config";
+import { parseProjectConfig } from "~/domain/project/project-config";
+import { isEditorProjectStatus } from "~/domain/project/project-status";
+import { keptTimelineWords, projectTimelineWords } from "~/domain/aroll/projection";
 import { IMAGE_SIZES } from "~/server/ai/images/types";
 import { sourceMotionAssets } from "~/server/ai/motion-source";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
@@ -27,8 +27,8 @@ import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
 
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import type { ShotPlan } from "~/domain/motion-config";
-import type { TranscriptWord } from "~/domain/transcript";
+import type { ShotPlan } from "~/domain/vfx/motion-config";
+import type { TranscriptWord } from "~/domain/transcript/transcript";
 import type { AssetNeed, SourcedAsset } from "~/server/ai/motion-source";
 
 const sourceStillParams = z.object({

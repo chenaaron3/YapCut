@@ -1,4 +1,4 @@
-import type { CreateProgressEvent } from "~/domain/create-progress";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
 
 type Listener = (event: CreateProgressEvent) => void;
 

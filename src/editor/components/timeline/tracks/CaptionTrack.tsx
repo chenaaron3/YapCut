@@ -1,14 +1,14 @@
 import { memo, useCallback, useRef } from "react";
 
 import { TrackLabel } from "~/editor/components/timeline/shared";
-import { rangeStyle } from "~/editor/lib/timeline-time";
-import { useEntitySelected } from "~/editor/lib/use-is-selected";
-import { useWordDragSelect } from "~/editor/lib/use-word-drag-select";
+import { rangeStyle } from "~/editor/lib/timeline/timeline-time";
+import { useEntitySelected } from "~/editor/lib/selection/use-is-selected";
+import { useWordDragSelect } from "~/editor/lib/word/use-word-drag-select";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useGlobalWords } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-import type { GlobalTranscriptWord } from "~/domain/transcript";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 
 type Props = {
   width: number;

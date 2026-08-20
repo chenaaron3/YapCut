@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { canUseSchedule, scheduleSettingsSchema } from "~/domain/schedule";
+import { canUseSchedule, scheduleSettingsSchema } from "~/domain/schedule/schedule";
 import { getScheduleUploadService } from "~/schedule/upload-service";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import {

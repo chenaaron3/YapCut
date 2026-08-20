@@ -4,12 +4,12 @@ import { z } from "zod";
 import {
   bareSentencesForPacing,
   type TranscriptSentence,
-} from "~/domain/pacing";
-import type { Edit, ZoomEdit } from "~/domain/project-config";
-import { nextEditId } from "~/domain/project-config";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
-import { TRANSFORM_DEFAULTS } from "~/domain/transform";
-import { ZOOM_STRENGTH } from "~/domain/zoom";
+} from "~/domain/transcript/pacing";
+import type { Edit, ZoomEdit } from "~/domain/project/project-config";
+import { nextEditId } from "~/domain/project/project-config";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
+import { TRANSFORM_DEFAULTS } from "~/domain/edit/transform";
+import { ZOOM_STRENGTH } from "~/domain/edit/zoom";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
 const SLOW_ZOOM_SCALE = ZOOM_STRENGTH.strong;

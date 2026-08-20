@@ -11,7 +11,7 @@ import { db } from "~/server/db";
 import { projects } from "~/server/db/schema";
 import { canAccessProject } from "~/server/project-access";
 
-import type { CreateProgressEvent } from "~/domain/create-progress";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
 
 export const maxDuration = 300;
 export const runtime = "nodejs";

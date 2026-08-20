@@ -3,8 +3,10 @@ import { useMemo, useState } from "react";
 import {
   STICKER_CATALOG,
   STICKER_DRAG_MIME,
+  groupStickersByTopic,
   stickerMatchesQuery,
-} from "~/domain/sticker";
+} from "~/domain/edit/sticker";
+import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import {
   PickerEmpty,
   PickerGrid,
@@ -13,10 +15,10 @@ import {
 import {
   beginAssetPlaceDrag,
   endAssetPlaceDrag,
-} from "~/editor/lib/asset-place-drag";
+} from "~/editor/lib/place/asset-place-drag";
 import { cn } from "~/lib/utils";
 
-import type { StickerCatalogEntry, StickerDragPayload } from "~/domain/sticker";
+import type { StickerCatalogEntry, StickerDragPayload } from "~/domain/edit/sticker";
 
 type StickerTab = "popular" | "emoji" | "marks" | "all";
 
@@ -77,8 +79,10 @@ function StickerTile({ entry }: { entry: StickerCatalogEntry }) {
 export function StickerLibrary() {
   const [tab, setTab] = useState<StickerTab>("popular");
   const [query, setQuery] = useState("");
-  const entries = useMemo(() => tabEntries(tab, query), [tab, query]);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
   const searching = query.trim().length > 0;
+  const entries = useMemo(() => tabEntries(tab, query), [tab, query]);
+  const groups = useMemo(() => groupStickersByTopic(entries), [entries]);
 
   return (
     <div className="flex flex-col">
@@ -116,14 +120,39 @@ export function StickerLibrary() {
           })}
         </div>
       </div>
-      <PickerGrid className="p-2">
-        {entries.map((entry) => (
-          <StickerTile key={`${entry.source}:${entry.id}`} entry={entry} />
-        ))}
-        {entries.length === 0 ? (
+      <div className="px-2 pb-2">
+        {groups.map((group) => {
+          const isOpen = searching ? true : (open[group.key] ?? false);
+          return (
+            <InspectorCollapsible
+              key={group.key}
+              title={group.label}
+              open={isOpen}
+              onOpenChange={(next) =>
+                setOpen((prev) => ({ ...prev, [group.key]: next }))
+              }
+              accessory={
+                <span className="text-[10px] text-muted-foreground/70">
+                  {group.entries.length}
+                </span>
+              }
+              contentClassName="gap-0 pt-2"
+            >
+              <PickerGrid>
+                {group.entries.map((entry) => (
+                  <StickerTile
+                    key={`${entry.source}:${entry.id}`}
+                    entry={entry}
+                  />
+                ))}
+              </PickerGrid>
+            </InspectorCollapsible>
+          );
+        })}
+        {groups.length === 0 ? (
           <PickerEmpty>No stickers match.</PickerEmpty>
         ) : null}
-      </PickerGrid>
+      </div>
     </div>
   );
 }

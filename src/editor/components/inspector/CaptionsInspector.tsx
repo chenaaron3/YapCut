@@ -4,7 +4,7 @@ import {
 } from "~/editor/components/inspector/field";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
-import { applyEmphasisPatch } from "~/domain/emphasis-style";
+import { applyEmphasisPatch } from "~/domain/transcript/emphasis-style";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
 import {

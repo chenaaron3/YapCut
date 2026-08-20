@@ -6,7 +6,7 @@ import {
 import { motionLook } from "~/remotion/components/motion/look";
 
 import type { CSSProperties } from "react";
-import type { NewsContent } from "~/domain/motion-config";
+import type { NewsContent } from "~/domain/vfx/motion-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 /** Text-only news card. Keyword marker-band after the line settles. */

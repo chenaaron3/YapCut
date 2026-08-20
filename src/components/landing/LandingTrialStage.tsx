@@ -8,7 +8,7 @@ import { CreateProgressBar } from "~/components/projects/CreateProgressBar";
 import { Button } from "~/components/ui/button";
 
 import type { LandingTrialPhase } from "~/components/landing/use-landing-trial";
-import type { CreateProgressEvent } from "~/domain/create-progress";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
 import type { RouterOutputs } from "~/utils/api";
 
 const LandingPreviewPlayer = dynamic(

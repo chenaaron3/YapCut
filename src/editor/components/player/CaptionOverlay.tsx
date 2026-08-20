@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
-import { isQuoteEdit } from "~/domain/quote";
+import { isQuoteEdit } from "~/domain/vfx/quote";
 import {
   captionOverlayBox,
   safeAreaHeightPx,
@@ -10,8 +10,8 @@ import {
   clientToComp,
 } from "~/editor/components/player/transform-overlay";
 import { TransformHandles } from "~/editor/components/player/TransformHandles";
-import { runGesture } from "~/editor/lib/gesture";
-import { primaryId } from "~/editor/lib/selection";
+import { runGesture } from "~/editor/lib/selection/gesture";
+import { primaryId } from "~/editor/lib/selection/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";

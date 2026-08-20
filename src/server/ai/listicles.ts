@@ -6,13 +6,13 @@ import {
   nextEditId,
   type TemplateStyle,
   type VfxListicleEdit,
-} from "~/domain/project-config";
+} from "~/domain/project/project-config";
 import {
   buildNumberedTranscript,
   wordIndexToTimelineSec,
-} from "~/domain/projection";
-import { OVERLAY_TRANSFORM_DEFAULTS } from "~/domain/transform";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
+} from "~/domain/aroll/projection";
+import { OVERLAY_TRANSFORM_DEFAULTS } from "~/domain/edit/transform";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
 const MAX_ITEMS = 5;

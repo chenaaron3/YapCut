@@ -1,5 +1,5 @@
-import { isVocalizedPause } from "~/domain/filler";
-import { scribbleWordFields } from "~/domain/scribble";
+import { isVocalizedPause } from "~/domain/transcript/filler";
+import { scribbleWordFields } from "~/domain/transcript/scribble";
 import {
   CAPTION_GROUP_GAP_SEC,
   CAPTION_LAST_WORD_PAD_SEC,

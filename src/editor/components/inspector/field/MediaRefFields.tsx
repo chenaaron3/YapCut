@@ -5,8 +5,8 @@ import {
   mixSliderOf,
   volumeFromMixSlider,
 } from "~/domain/audio/mix-levels";
-import type { MediaRefPatch } from "~/domain/media";
-import type { EditId, MediaRef } from "~/domain/project-config";
+import type { MediaRefPatch } from "~/domain/media/media";
+import type { EditId, MediaRef } from "~/domain/project/project-config";
 import { Label } from "~/components/ui/label";
 import { SliderField } from "~/editor/components/inspector/field/SliderField";
 import { useEditor } from "~/editor/store";

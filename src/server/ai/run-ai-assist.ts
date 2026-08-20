@@ -1,12 +1,12 @@
-import { buildArollLayout } from "~/domain/arolls";
+import { buildArollLayout } from "~/domain/aroll/arolls";
 import {
   firstKeepTimelineSec,
   layoutTimelineDuration,
-} from "~/domain/layout-time";
-import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project-config";
-import { keptTimelineWords, projectTimelineWords } from "~/domain/projection";
-import { snapWordBoundsToKeepEdges } from "~/domain/snap";
-import { seedTitleTextVfx } from "~/domain/vfx";
+} from "~/domain/aroll/layout-time";
+import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project/project-config";
+import { keptTimelineWords, projectTimelineWords } from "~/domain/aroll/projection";
+import { snapWordBoundsToKeepEdges } from "~/domain/edit/snap";
+import { seedTitleTextVfx } from "~/domain/edit/vfx";
 import { generateCompanionSfxEdits } from "~/server/ai/companion-sfx";
 import { generateEmphasisUpdates } from "~/server/ai/emphasis";
 import { generateEmphasisSfxEdits } from "~/server/ai/emphasis-sfx";
@@ -18,9 +18,9 @@ import { generateTitle } from "~/server/ai/title";
 import { generateTransitionEdits } from "~/server/ai/transitions";
 import { generateZoomEdits } from "~/server/ai/zooms";
 
-import type { CompanionSfxMap } from "~/domain/companion-sfx-map";
-import type { ArollKeep, Edit, TemplateStyle } from "~/domain/project-config";
-import type { TranscriptWord } from "~/domain/transcript";
+import type { CompanionSfxMap } from "~/domain/audio/companion-sfx-map";
+import type { ArollKeep, Edit, TemplateStyle } from "~/domain/project/project-config";
+import type { TranscriptWord } from "~/domain/transcript/transcript";
 
 export type AiAssistProgress = (
   completed: number,

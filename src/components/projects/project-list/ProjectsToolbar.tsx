@@ -10,7 +10,7 @@ import { Input } from "~/components/ui/input";
 import {
   PROJECT_LIST_BADGE_LABEL,
   PROJECT_LIST_BADGES,
-} from "~/domain/project-list-badge";
+} from "~/domain/project/project-list-badge";
 import { cn } from "~/lib/utils";
 
 import type { ProjectStatusFilter } from "./types";

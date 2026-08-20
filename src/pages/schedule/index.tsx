@@ -3,7 +3,7 @@ import { useState } from "react";
 
 import { AppLayout } from "~/components/layout/AppLayout";
 import { Button } from "~/components/ui/button";
-import { PLATFORM_IDS, type PlatformId } from "~/domain/schedule";
+import { PLATFORM_IDS, type PlatformId } from "~/domain/schedule/schedule";
 import { requireUser } from "~/server/auth/session";
 import { api } from "~/utils/api";
 

@@ -1,6 +1,6 @@
 import Replicate from "replicate";
 
-import type { TranscriptWord } from "~/domain/transcript";
+import type { TranscriptWord } from "~/domain/transcript/transcript";
 import { env } from "~/env";
 
 /**

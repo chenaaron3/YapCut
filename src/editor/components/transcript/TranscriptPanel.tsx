@@ -1,25 +1,25 @@
 import { Captions, Settings2 } from "lucide-react";
 import { useMemo } from "react";
 
-import { buildArollLayoutFromAssets } from "~/domain/arolls";
-import { validTransitionDrops } from "~/domain/transition";
+import { buildArollLayoutFromAssets } from "~/domain/aroll/arolls";
+import { validTransitionDrops } from "~/domain/edit/transition";
 import { InspectorPanel } from "~/editor/components/inspector/InspectorPanel";
 import { SaveStatusBadge } from "~/editor/components/SaveStatusBadge";
 import { useRangeResize } from "~/editor/components/transcript/hooks/useRangeResize";
 import { TranscriptChromeVisibilityToggles } from "~/editor/components/transcript/TranscriptChromeVisibilityToggles";
 import { WordCell } from "~/editor/components/transcript/WordCell";
-import { editsTopologyEqual } from "~/editor/lib/edit-topology";
-import { useWordDragSelect } from "~/editor/lib/use-word-drag-select";
+import { editsTopologyEqual } from "~/editor/lib/timeline/edit-topology";
+import { useWordDragSelect } from "~/editor/lib/word/use-word-drag-select";
 import {
   buildWordAnnotations,
   EMPTY_WORD_ANNOTATION,
-} from "~/editor/lib/word-annotations";
+} from "~/editor/lib/word/word-annotations";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor, useEditorEqual, useGlobalWords } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
-import type { GlobalTranscriptWord } from "~/domain/transcript";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 import type { ReactNode } from "react";
 
 function endsWithSentencePunctuation(text: string): boolean {

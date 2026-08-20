@@ -11,7 +11,7 @@ import {
   useVideoConfig,
 } from "remotion";
 
-import { STICKER_BOX_PX, stickerEntry } from "~/domain/sticker";
+import { STICKER_BOX_PX, stickerEntry } from "~/domain/edit/sticker";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,

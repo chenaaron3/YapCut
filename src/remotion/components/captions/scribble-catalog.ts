@@ -3,7 +3,7 @@
  * Path data adapted from berkantay/cheez (MIT) — driven by Remotion `evolvePath`,
  * not the original Web Animations API player.
  */
-import type { ScribbleId } from "~/domain/scribble";
+import type { ScribbleId } from "~/domain/transcript/scribble";
 
 export type ScribblePlacement = {
   top: string;

@@ -5,7 +5,7 @@ import {
   boxCss,
   type BoxStyle,
 } from "~/editor/components/player/transform-overlay";
-import type { EditableTransform } from "~/editor/lib/use-editable-transform";
+import type { EditableTransform } from "~/editor/lib/player/use-editable-transform";
 
 export type TransformDragKind = "move" | "scale" | "rotate";
 

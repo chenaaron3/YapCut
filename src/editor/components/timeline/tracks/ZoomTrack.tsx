@@ -3,13 +3,13 @@ import {
   TrackLabel,
   useEditEdgeDrag,
 } from "~/editor/components/timeline/shared";
-import { rangeStyle } from "~/editor/lib/timeline-time";
-import { useIsSelected } from "~/editor/lib/use-is-selected";
+import { rangeStyle } from "~/editor/lib/timeline/timeline-time";
+import { useIsSelected } from "~/editor/lib/selection/use-is-selected";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-import type { ZoomEdit } from "~/domain/project-config";
+import type { ZoomEdit } from "~/domain/project/project-config";
 
 type Props = {
   edits: ZoomEdit[];

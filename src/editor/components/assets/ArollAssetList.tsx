@@ -20,7 +20,7 @@ import {
   ArollRowContent,
   SortableArollRow,
 } from "~/editor/components/assets/ArollRow";
-import { runGesture } from "~/editor/lib/gesture";
+import { runGesture } from "~/editor/lib/selection/gesture";
 import { useEditor } from "~/editor/store";
 
 import type {

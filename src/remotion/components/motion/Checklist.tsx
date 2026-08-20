@@ -6,7 +6,7 @@ import {
 import { motionLook } from "~/remotion/components/motion/look";
 
 import type { CSSProperties } from "react";
-import type { ChecklistContent } from "~/domain/motion-config";
+import type { ChecklistContent } from "~/domain/vfx/motion-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 const SLAM = 0.36;

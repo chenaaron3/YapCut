@@ -1,16 +1,16 @@
 import { PanelRight, ScanSearch, Zap } from "lucide-react";
 
-import { TRANSITION_DRAG_MIME, TRANSITION_PRESETS } from "~/domain/transition";
+import { TRANSITION_DRAG_MIME, TRANSITION_PRESETS } from "~/domain/edit/transition";
 import { PickerGrid, PickerTile } from "~/editor/components/picker";
 import {
   beginAssetPlaceDrag,
   endAssetPlaceDrag,
-} from "~/editor/lib/asset-place-drag";
+} from "~/editor/lib/place/asset-place-drag";
 
 import type {
   TransitionDragPayload,
   TransitionTemplateId,
-} from "~/domain/transition";
+} from "~/domain/edit/transition";
 
 const PRESET_ICON: Record<TransitionTemplateId, typeof Zap> = {
   flash: Zap,

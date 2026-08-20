@@ -7,14 +7,14 @@ import {
   mixSliderOf,
   volumeFromMixSlider,
 } from "~/domain/audio/mix-levels";
-import { companionSfxRef, formatSfxLabel } from "~/domain/sfx";
+import { companionSfxRef, formatSfxLabel } from "~/domain/edit/sfx";
 import { Label } from "~/components/ui/label";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import { SfxSearchSelect } from "~/editor/components/inspector/field/SfxSearchSelect";
 import { SliderField } from "~/editor/components/inspector/field/SliderField";
 import { useEditor } from "~/editor/store";
 
-import type { Edit, MediaRef } from "~/domain/project-config";
+import type { Edit, MediaRef } from "~/domain/project/project-config";
 
 export function CompanionSfxFields({ edit }: { edit: Edit }) {
   const assets = useEditor((s) => s.assets);

@@ -1,5 +1,4 @@
-import { ChevronRight } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { sfxPlaybackVolume } from "~/domain/audio/mix-levels";
 import {
@@ -9,8 +8,9 @@ import {
   SFX_FOLDER_ORDER,
   sfxFolderLabel,
   sfxFolderOf,
-} from "~/domain/sfx";
+} from "~/domain/edit/sfx";
 import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
+import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import {
   PickerEmpty,
   PickerGrid,
@@ -19,10 +19,9 @@ import {
 import {
   beginAssetPlaceDrag,
   endAssetPlaceDrag,
-} from "~/editor/lib/asset-place-drag";
-import { cn } from "~/lib/utils";
+} from "~/editor/lib/place/asset-place-drag";
 
-import type { SfxDragPayload } from "~/domain/sfx";
+import type { SfxDragPayload } from "~/domain/edit/sfx";
 import type { EditorAsset } from "~/editor/store";
 
 function groupSfx(assets: EditorAsset[]) {
@@ -118,11 +117,6 @@ function SfxTile({
 export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
   const { playingKey, preview } = useAudioPreview();
   const groups = useMemo(() => groupSfx(assets), [assets]);
-  const [open, setOpen] = useState<Record<string, boolean>>(() => {
-    const init: Record<string, boolean> = {};
-    for (const g of SFX_FOLDER_ORDER) init[g] = true;
-    return init;
-  });
 
   if (assets.length === 0) {
     return (
@@ -136,41 +130,32 @@ export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-1 p-2">
+    <div className="px-2 pb-2">
       {groups.map((group) => {
         const key = group.folder ?? "__other__";
-        const isOpen = open[key] ?? true;
         return (
-          <div key={key} className="border-border/60 rounded-md border">
-            <button
-              type="button"
-              className="text-muted-foreground hover:text-foreground flex w-full items-center gap-1 px-2 py-1.5 text-left text-[11px] font-medium"
-              onClick={() => setOpen((prev) => ({ ...prev, [key]: !isOpen }))}
-            >
-              <ChevronRight
-                className={cn(
-                  "size-3.5 transition-transform",
-                  isOpen && "rotate-90",
-                )}
-              />
-              {group.label}
-              <span className="ml-auto text-[10px] opacity-70">
+          <InspectorCollapsible
+            key={key}
+            title={group.label}
+            defaultOpen
+            accessory={
+              <span className="text-[10px] text-muted-foreground/70">
                 {group.assets.length}
               </span>
-            </button>
-            {isOpen ? (
-              <PickerGrid className="px-1.5 pb-1.5">
-                {group.assets.map((asset) => (
-                  <SfxTile
-                    key={asset.id}
-                    asset={asset}
-                    playingKey={playingKey}
-                    onPreview={preview}
-                  />
-                ))}
-              </PickerGrid>
-            ) : null}
-          </div>
+            }
+            contentClassName="gap-0 pt-2"
+          >
+            <PickerGrid>
+              {group.assets.map((asset) => (
+                <SfxTile
+                  key={asset.id}
+                  asset={asset}
+                  playingKey={playingKey}
+                  onPreview={preview}
+                />
+              ))}
+            </PickerGrid>
+          </InspectorCollapsible>
         );
       })}
     </div>

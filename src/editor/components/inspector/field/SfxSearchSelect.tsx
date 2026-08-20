@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
-import { formatSfxLabel } from "~/domain/sfx";
+import { formatSfxLabel } from "~/domain/edit/sfx";
 import { Input } from "~/components/ui/input";
 import {
   matchesSfxQuery,

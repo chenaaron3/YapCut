@@ -2,7 +2,7 @@ import {
   estimateJobProgress,
   MEASURE_PROGRESS_TAU_SEC,
   TRANSCRIBE_PROGRESS_TAU_SEC,
-} from "~/domain/create-progress";
+} from "~/domain/project/create-progress";
 
 import type { FalJobStatus } from "~/server/media/measure-audio";
 

@@ -1,13 +1,13 @@
 import { and, eq } from "drizzle-orm";
 
-import { editsForAiAssist } from "~/domain/edits";
-import { parseProjectConfig } from "~/domain/project-config";
-import { isEditorProjectStatus } from "~/domain/project-status";
+import { editsForAiAssist } from "~/domain/edit/edits";
+import { parseProjectConfig } from "~/domain/project/project-config";
+import { isEditorProjectStatus } from "~/domain/project/project-status";
 import { runAiAssist } from "~/server/ai/run-ai-assist";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
 
-import type { TranscriptWord } from "~/domain/transcript";
+import type { TranscriptWord } from "~/domain/transcript/transcript";
 
 /**
  * Re-run create AI assist on an editable project.

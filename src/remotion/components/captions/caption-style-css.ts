@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
+import type { ResolvedEmphasisStyle } from "~/domain/transcript/emphasis-style";
 import {
   mergeWordStyle,
   resolveCaptionFont,

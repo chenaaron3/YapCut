@@ -1,15 +1,15 @@
-import { isMotionEdit, motionLabel } from "~/domain/motion";
-import { clampOverlayMiddle, isTextBaseEdit } from "~/domain/project-config";
-import { editMiddleSec } from "~/domain/vfx";
+import { isMotionEdit, motionLabel } from "~/domain/vfx/motion";
+import { clampOverlayMiddle, isTextBaseEdit } from "~/domain/project/project-config";
+import { editMiddleSec } from "~/domain/edit/vfx";
 import {
   Handle,
   TrackLabel,
   useEditEdgeDrag,
   useTrackDrag,
 } from "~/editor/components/timeline/shared";
-import { rangeStyle } from "~/editor/lib/timeline-time";
-import { useIsSelected } from "~/editor/lib/use-is-selected";
-import { useTimelineSnap } from "~/editor/lib/use-timeline-snap";
+import { rangeStyle } from "~/editor/lib/timeline/timeline-time";
+import { useIsSelected } from "~/editor/lib/selection/use-is-selected";
+import { useTimelineSnap } from "~/editor/lib/timeline/use-timeline-snap";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
@@ -21,7 +21,7 @@ import {
 } from "~/remotion/templates/quote";
 import { resolveTemplateId } from "~/remotion/templates/style";
 
-import type { TextBaseEdit, VfxEdit } from "~/domain/project-config";
+import type { TextBaseEdit, VfxEdit } from "~/domain/project/project-config";
 
 type Props = {
   edits: VfxEdit[];

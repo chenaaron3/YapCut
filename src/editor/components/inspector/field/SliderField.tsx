@@ -1,6 +1,6 @@
 import { Label } from "~/components/ui/label";
 import { Slider } from "~/components/ui/slider";
-import { beginPointerGesture } from "~/editor/lib/gesture";
+import { beginPointerGesture } from "~/editor/lib/selection/gesture";
 
 export function SliderField({
   label,

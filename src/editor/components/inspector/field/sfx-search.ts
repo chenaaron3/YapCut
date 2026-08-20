@@ -1,4 +1,4 @@
-import { formatSfxLabel, sfxFolderOf } from "~/domain/sfx";
+import { formatSfxLabel, sfxFolderOf } from "~/domain/edit/sfx";
 
 export type SfxAssetOption = { id: string; originalFilename: string | null };
 

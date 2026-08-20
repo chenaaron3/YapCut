@@ -1,6 +1,6 @@
-import { meanProgress, mediaProgressEvent } from "~/domain/create-progress";
+import { meanProgress, mediaProgressEvent } from "~/domain/project/create-progress";
 
-import type { CreateProgressEvent } from "~/domain/create-progress";
+import type { CreateProgressEvent } from "~/domain/project/create-progress";
 
 /** Serializable A-roll ref passed across workflow `sleep()` / steps. */
 export type CreateAssetRef = {

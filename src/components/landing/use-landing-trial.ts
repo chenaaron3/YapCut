@@ -10,12 +10,12 @@ import {
   isAbortError,
   putToPresignedUrl,
 } from "~/components/projects/create-project/upload";
-import { isDraftCreate } from "~/domain/create-draft";
+import { isDraftCreate } from "~/domain/project/create-draft";
 import {
   CREATE_MAX_DURATION_SEC,
   LANDING_CREATE_MAX_BYTES,
-} from "~/domain/create-limits";
-import { probeVideoFile } from "~/editor/lib/probe-media";
+} from "~/domain/project/create-limits";
+import { probeVideoFile } from "~/editor/lib/player/probe-media";
 import { api } from "~/utils/api";
 
 export type LandingTrialPhase =

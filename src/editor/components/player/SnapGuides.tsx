@@ -3,7 +3,7 @@ import {
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
 
-import type { SnapGuide } from "~/domain/transform";
+import type { SnapGuide } from "~/domain/edit/transform";
 
 export function SnapGuides({ guides }: { guides: readonly SnapGuide[] }) {
   return (

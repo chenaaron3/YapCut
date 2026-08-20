@@ -5,14 +5,14 @@ import {
   replaceSelection,
   selectWordRange,
   toggleSelection,
-} from "~/editor/lib/selection";
+} from "~/editor/lib/selection/selection";
 
 import type {
   ProjectPanel,
   Selection,
   SelectionId,
   SelectionKind,
-} from "~/editor/lib/selection";
+} from "~/editor/lib/selection/selection";
 
 export { isSelected };
 export type { ProjectPanel, Selection, SelectionId, SelectionKind };

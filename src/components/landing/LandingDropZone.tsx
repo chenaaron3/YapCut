@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   LANDING_CREATE_LIMITS_HINT,
   LANDING_CREATE_MAX_BYTES,
-} from "~/domain/create-limits";
+} from "~/domain/project/create-limits";
 import { cn } from "~/lib/utils";
 
 import type { LandingTrialPhase } from "~/components/landing/use-landing-trial";

@@ -11,14 +11,14 @@ import {
   chromeByKey,
   chromeForEdit,
   EDIT_CHROME,
-} from "~/editor/lib/edit-chrome";
-import { editsTopologyEqual } from "~/editor/lib/edit-topology";
+} from "~/editor/lib/timeline/edit-chrome";
+import { editsTopologyEqual } from "~/editor/lib/timeline/edit-topology";
 import { useEditorEqual } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
-import type { Edit } from "~/domain/project-config";
-import type { TranscriptChromeGroup } from "~/editor/lib/transcript-chrome-visibility";
+import type { Edit } from "~/domain/project/project-config";
+import type { TranscriptChromeGroup } from "~/editor/lib/selection/transcript-chrome-visibility";
 
 const VISIBILITY_LABEL: Record<TranscriptChromeGroup, string> = {
   broll: "B-roll",

@@ -10,7 +10,7 @@ import {
   snapTransformOffset,
   snapTransformScale,
   transformOf,
-} from "~/domain/transform";
+} from "~/domain/edit/transform";
 import { HitTarget } from "~/editor/components/player/HitTarget";
 import { SelectedChrome } from "~/editor/components/player/SelectedChrome";
 import { SnapGuides } from "~/editor/components/player/SnapGuides";
@@ -19,12 +19,12 @@ import {
   clientToComp,
   editIdsFromPoint,
 } from "~/editor/components/player/transform-overlay";
-import { runGesture } from "~/editor/lib/gesture";
-import { primaryId } from "~/editor/lib/selection";
+import { runGesture } from "~/editor/lib/selection/gesture";
+import { primaryId } from "~/editor/lib/selection/selection";
 import {
   useEditableTransforms,
   type EditableTransform,
-} from "~/editor/lib/use-editable-transform";
+} from "~/editor/lib/player/use-editable-transform";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import {
@@ -32,7 +32,7 @@ import {
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
 
-import type { SnapGuide, Transform } from "~/domain/transform";
+import type { SnapGuide, Transform } from "~/domain/edit/transform";
 
 type DragMode =
   | { kind: "move"; startX: number; startY: number; origin: Transform }

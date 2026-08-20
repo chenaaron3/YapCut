@@ -1,4 +1,4 @@
-import type { PlatformId } from "~/domain/schedule";
+import type { PlatformId } from "~/domain/schedule/schedule";
 
 /** Opaque media the Publisher can fetch — never a local filesystem path. */
 export type PublishMedia = {

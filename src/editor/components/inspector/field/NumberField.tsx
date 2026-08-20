@@ -2,7 +2,7 @@ import { useRef } from "react";
 
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { runGesture } from "~/editor/lib/gesture";
+import { runGesture } from "~/editor/lib/selection/gesture";
 
 export function NumberField({
   label,

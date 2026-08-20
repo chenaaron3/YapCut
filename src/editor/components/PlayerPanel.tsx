@@ -8,7 +8,7 @@ import {
   ensurePlayerAudible,
   getPlayer,
   setPlayer,
-} from "~/editor/lib/player-bridge";
+} from "~/editor/lib/player/player-bridge";
 import { isTimelineScrubbing, useEditor } from "~/editor/store";
 import {
   COMPOSITION_FPS,

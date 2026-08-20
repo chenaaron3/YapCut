@@ -1,6 +1,6 @@
 import { OverlayVfxFields } from "~/editor/components/inspector/field";
 import { useEditor } from "~/editor/store";
-import type { VfxTextEdit } from "~/domain/project-config";
+import type { VfxTextEdit } from "~/domain/project/project-config";
 import { DEFAULT_TEXT_TEMPLATE_ID } from "~/remotion/templates/overlay";
 
 export function TextVfxInspector({ edit }: { edit: VfxTextEdit }) {

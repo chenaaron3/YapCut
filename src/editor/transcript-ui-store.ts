@@ -1,12 +1,12 @@
 import { create } from "zustand";
 
-import { DEFAULT_TRANSCRIPT_CHROME_VISIBILITY } from "~/editor/lib/transcript-chrome-visibility";
+import { DEFAULT_TRANSCRIPT_CHROME_VISIBILITY } from "~/editor/lib/selection/transcript-chrome-visibility";
 
-import type { AssetDropKind } from "~/editor/lib/place-asset-drop";
+import type { AssetDropKind } from "~/editor/lib/place/place-asset-drop";
 import type {
   TranscriptChromeGroup,
   TranscriptChromeVisibility,
-} from "~/editor/lib/transcript-chrome-visibility";
+} from "~/editor/lib/selection/transcript-chrome-visibility";
 
 export type PendingBrollPlace = {
   assetId: string;

@@ -1,4 +1,4 @@
-import type { TemplateStyle } from "~/domain/project-config";
+import type { TemplateStyle } from "~/domain/project/project-config";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
   applyCaptionOverrides,

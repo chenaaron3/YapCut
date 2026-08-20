@@ -2,7 +2,7 @@ import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
-import { useRehydrateFromServer } from "~/editor/lib/use-rehydrate-from-server";
+import { useRehydrateFromServer } from "~/editor/lib/project/use-rehydrate-from-server";
 import { useEditor } from "~/editor/store";
 import { api } from "~/utils/api";
 

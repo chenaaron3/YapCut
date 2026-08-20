@@ -1,35 +1,35 @@
 import { memo, useState } from "react";
 
-import { quoteSeed } from "~/domain/quote";
-import { isValidTransitionDropWord } from "~/domain/transition";
-import { textSeed } from "~/domain/vfx";
-import { zoomSeed } from "~/domain/zoom";
+import { quoteSeed } from "~/domain/vfx/quote";
+import { isValidTransitionDropWord } from "~/domain/edit/transition";
+import { textSeed } from "~/domain/edit/vfx";
+import { zoomSeed } from "~/domain/edit/zoom";
 import { EditMarkerCluster } from "~/editor/components/transcript/EditMarkerCluster";
 import { RangeHandle } from "~/editor/components/transcript/RangeHandle";
 import { WordContextMenu } from "~/editor/components/transcript/WordContextMenu";
 import { WordGap } from "~/editor/components/transcript/WordGap";
-import { chromeByKey } from "~/editor/lib/edit-chrome";
+import { chromeByKey } from "~/editor/lib/timeline/edit-chrome";
 import {
   assetDropKindFromTypes,
   placeEditFromAssetDrop,
-} from "~/editor/lib/place-asset-drop";
-import { placePendingBrollOnWord } from "~/editor/lib/place-pending-broll";
-import { isChromeKeyVisible } from "~/editor/lib/transcript-chrome-visibility";
-import { useEntitySelected } from "~/editor/lib/use-is-selected";
+} from "~/editor/lib/place/place-asset-drop";
+import { placePendingBrollOnWord } from "~/editor/lib/place/place-pending-broll";
+import { isChromeKeyVisible } from "~/editor/lib/selection/transcript-chrome-visibility";
+import { useEntitySelected } from "~/editor/lib/selection/use-is-selected";
 import {
   isAfterMarkerRole,
   isMarkerRole,
   resolvePrimarySpan,
-} from "~/editor/lib/word-annotations";
+} from "~/editor/lib/word/word-annotations";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";
 
-import type { GlobalTranscriptWord } from "~/domain/transcript";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 import type { ResizeEdge } from "~/editor/components/transcript/RangeHandle";
-import type { AssetDropKind } from "~/editor/lib/place-asset-drop";
-import type { WordAnnotation } from "~/editor/lib/word-annotations";
+import type { AssetDropKind } from "~/editor/lib/place/place-asset-drop";
+import type { WordAnnotation } from "~/editor/lib/word/word-annotations";
 
 type Props = {
   word: GlobalTranscriptWord;

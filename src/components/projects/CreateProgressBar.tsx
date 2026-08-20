@@ -8,13 +8,13 @@ import {
   CREATE_UPLOAD_LABEL,
   failedPipelineProgress,
   overallCreateProgress,
-} from "~/domain/create-progress";
+} from "~/domain/project/create-progress";
 import { cn } from "~/lib/utils";
 
 import type {
   CreateProgressEvent,
   CreateProgressStage,
-} from "~/domain/create-progress";
+} from "~/domain/project/create-progress";
 
 const PIPELINE_STEPS = ["upload", "media", "ai_analysis"] as const;
 type PipelineStep = (typeof PIPELINE_STEPS)[number];

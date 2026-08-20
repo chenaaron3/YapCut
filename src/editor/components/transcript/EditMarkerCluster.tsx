@@ -4,13 +4,13 @@ import {
   EditMarker,
   markerLabel,
 } from "~/editor/components/transcript/EditMarker";
-import { chromeByKey } from "~/editor/lib/edit-chrome";
-import { useEntitySelected } from "~/editor/lib/use-is-selected";
+import { chromeByKey } from "~/editor/lib/timeline/edit-chrome";
+import { useEntitySelected } from "~/editor/lib/selection/use-is-selected";
 import {
   resolvePrimarySpan,
   sortByChromePriority,
   type WordEditSpan,
-} from "~/editor/lib/word-annotations";
+} from "~/editor/lib/word/word-annotations";
 import { useSelection } from "~/editor/selection-store";
 import { useTranscriptUi } from "~/editor/transcript-ui-store";
 import { cn } from "~/lib/utils";

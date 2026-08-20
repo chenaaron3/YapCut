@@ -4,7 +4,7 @@ import { db } from "~/server/db";
 import { assets } from "~/server/db/schema";
 import { isGlobalSfxKey } from "~/server/media/keys";
 
-import type { CompanionSfxAsset } from "~/domain/companion-sfx";
+import type { CompanionSfxAsset } from "~/domain/audio/companion-sfx";
 
 export type GlobalSfxLibrary = {
   assets: CompanionSfxAsset[];

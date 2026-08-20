@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { buildArollLayoutFromAssets } from "~/domain/arolls";
-import { layoutTimelineDuration } from "~/domain/layout-time";
+import { buildArollLayoutFromAssets } from "~/domain/aroll/arolls";
+import { layoutTimelineDuration } from "~/domain/aroll/layout-time";
 import {
   LABEL_OFFSET,
   TIMELINE_MAX_HEIGHT,
@@ -20,8 +20,8 @@ import { VfxTrack } from "~/editor/components/timeline/tracks/VfxTrack";
 import { VideoTrack } from "~/editor/components/timeline/tracks/VideoTrack";
 import { ZoomTrack } from "~/editor/components/timeline/tracks/ZoomTrack";
 import { TransitionGutter } from "~/editor/components/timeline/TransitionGutter";
-import { editsTopologyEqual } from "~/editor/lib/edit-topology";
-import { getPlayer } from "~/editor/lib/player-bridge";
+import { editsTopologyEqual } from "~/editor/lib/timeline/edit-topology";
+import { getPlayer } from "~/editor/lib/player/player-bridge";
 import {
   isTimelineScrubbing,
   setTimelineScrubbing,
@@ -36,7 +36,7 @@ import type {
   TransitionEdit,
   VfxEdit,
   ZoomEdit,
-} from "~/domain/project-config";
+} from "~/domain/project/project-config";
 
 function scrollPlayheadIntoView(el: HTMLDivElement, playheadX: number): void {
   const viewLeft = el.scrollLeft;

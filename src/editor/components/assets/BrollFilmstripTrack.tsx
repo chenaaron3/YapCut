@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { clampBoundedRange, moveBoundedRange } from "~/editor/lib/range";
+import { clampBoundedRange, moveBoundedRange } from "~/editor/lib/timeline/range";
 import { cn } from "~/lib/utils";
 
 const TRACK_H = 64;

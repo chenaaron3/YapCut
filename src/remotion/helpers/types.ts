@@ -1,6 +1,6 @@
-import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
-import type { ShotPlan } from "~/domain/motion-config";
-import type { ScribbleId } from "~/domain/scribble";
+import type { ResolvedEmphasisStyle } from "~/domain/transcript/emphasis-style";
+import type { ShotPlan } from "~/domain/vfx/motion-config";
+import type { ScribbleId } from "~/domain/transcript/scribble";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export type ArollSection = {

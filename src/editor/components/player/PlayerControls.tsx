@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Maximize, Minimize, Pause, Play } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
-import { togglePlayback } from "~/editor/lib/player-bridge";
-import { usePlayerPlaying } from "~/editor/lib/use-player-playing";
+import { togglePlayback } from "~/editor/lib/player/player-bridge";
+import { usePlayerPlaying } from "~/editor/lib/player/use-player-playing";
 import { useEditor } from "~/editor/store";
 import { COMPOSITION_FPS } from "~/remotion/helpers/constants";
 

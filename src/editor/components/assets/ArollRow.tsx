@@ -4,7 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 
-import { assetRunForAssetId, durationMapFromAssets } from "~/domain/arolls";
+import { assetRunForAssetId, durationMapFromAssets } from "~/domain/aroll/arolls";
 import { ArollMiniPlayer } from "~/editor/components/assets/ArollMiniPlayer";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";

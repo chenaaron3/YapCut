@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, eq } from "drizzle-orm";
 
-import { isDraftCreate } from "~/domain/create-draft";
+import { isDraftCreate } from "~/domain/project/create-draft";
 import { assets, projects } from "~/server/db/schema";
 import { deleteObject } from "~/server/media/s3";
 import { ownerWhere } from "~/server/project-access";

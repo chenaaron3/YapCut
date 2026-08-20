@@ -4,8 +4,8 @@ import {
 } from "~/editor/components/inspector/field";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
-import { applyEmphasisPatch } from "~/domain/emphasis-style";
-import type { VfxQuoteEdit } from "~/domain/project-config";
+import { applyEmphasisPatch } from "~/domain/transcript/emphasis-style";
+import type { VfxQuoteEdit } from "~/domain/project/project-config";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
   DEFAULT_QUOTE_TEMPLATE_ID,

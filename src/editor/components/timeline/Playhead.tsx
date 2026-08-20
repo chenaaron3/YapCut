@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { LABEL_OFFSET } from "~/editor/components/timeline/constants";
-import { formatTimeHover } from "~/editor/lib/timeline-time";
+import { formatTimeHover } from "~/editor/lib/timeline/timeline-time";
 import { useEditor } from "~/editor/store";
 
 type Props = {

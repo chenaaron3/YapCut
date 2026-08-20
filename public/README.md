@@ -2,7 +2,7 @@
 
 ## Stickers (`stickers/`)
 
-Emoji (Noto Animated Emoji Lottie) and Marks (Lordicon Wired Flat). How to import more: [`stickers/README.md`](./stickers/README.md). Catalog: `src/domain/sticker.ts`.
+Emoji (Noto Animated Emoji Lottie) and Marks (Lordicon Wired Flat), filed as `{source}/{topic}/{id}`. How to import more: [`stickers/README.md`](./stickers/README.md). Catalog: `src/domain/edit/sticker.ts`.
 
 ## AI SFX pack (`sfx/`)
 

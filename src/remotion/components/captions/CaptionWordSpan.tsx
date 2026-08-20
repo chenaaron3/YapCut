@@ -14,7 +14,7 @@ import { ScribbleWordFrame } from "./ScribbleMark";
 
 import type { ArcLayout } from "./arc-layout";
 import type { CaptionWordVisual } from "./caption-word-visual";
-import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
+import type { ResolvedEmphasisStyle } from "~/domain/transcript/emphasis-style";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type { CaptionWordProp } from "~/remotion/helpers/types";
 import type { CSSProperties } from "react";

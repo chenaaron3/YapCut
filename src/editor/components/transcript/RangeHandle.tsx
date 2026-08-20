@@ -3,7 +3,7 @@ import {
   isSplitHandleRole,
   isStartHandleRole,
   type WordEditSpan,
-} from "~/editor/lib/word-annotations";
+} from "~/editor/lib/word/word-annotations";
 import { cn } from "~/lib/utils";
 
 export type ResizeEdge = "start" | "middle" | "end";

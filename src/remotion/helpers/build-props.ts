@@ -1,30 +1,30 @@
-import { buildArollLayout } from "~/domain/arolls";
+import { buildArollLayout } from "~/domain/aroll/arolls";
 import {
   arollPlaybackGain,
   mixPlaybackVolume,
   MUSIC_VOLUME_DEFAULT,
   sfxPlaybackVolume,
 } from "~/domain/audio/mix-levels";
-import { pickEmphasisStyle } from "~/domain/emphasis-style";
+import { pickEmphasisStyle } from "~/domain/transcript/emphasis-style";
 import {
   outputDurationFromArolls,
   timelineRangeToOutput,
-} from "~/domain/layout-time";
-import { isMotionEdit } from "~/domain/motion";
-import { motionMediaRef } from "~/domain/motion-config";
+} from "~/domain/aroll/layout-time";
+import { isMotionEdit } from "~/domain/vfx/motion";
+import { motionMediaRef } from "~/domain/vfx/motion-config";
 import {
   editHidesCaptions,
   isTextBaseEdit,
   PROJECT_FPS,
-} from "~/domain/project-config";
-import { projectOutputWords } from "~/domain/projection";
-import { scribbleWordFields } from "~/domain/scribble";
-import { resolveShakeIntensity } from "~/domain/shake";
-import { isStickerEdit } from "~/domain/sticker";
-import { resolveTransform } from "~/domain/transform";
-import { keepsForStitch } from "~/domain/transition";
-import { editMiddleSec } from "~/domain/vfx";
-import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/zoom";
+} from "~/domain/project/project-config";
+import { projectOutputWords } from "~/domain/aroll/projection";
+import { scribbleWordFields } from "~/domain/transcript/scribble";
+import { resolveShakeIntensity } from "~/domain/vfx/shake";
+import { isStickerEdit } from "~/domain/edit/sticker";
+import { resolveTransform } from "~/domain/edit/transform";
+import { keepsForStitch } from "~/domain/edit/transition";
+import { editMiddleSec } from "~/domain/edit/vfx";
+import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/edit/zoom";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
 import {
@@ -51,14 +51,14 @@ import {
 } from "~/remotion/templates/quote";
 import { resolveTemplateStyle } from "~/remotion/templates/style";
 
-import type { ArollLayoutCell } from "~/domain/arolls";
+import type { ArollLayoutCell } from "~/domain/aroll/arolls";
 import type {
   EmphasisStyle,
   ResolvedEmphasisStyle,
-} from "~/domain/emphasis-style";
-import type { ArollKeep, ProjectConfig } from "~/domain/project-config";
-import type { OutputTime } from "~/domain/time";
-import type { TranscriptWord } from "~/domain/transcript";
+} from "~/domain/transcript/emphasis-style";
+import type { ArollKeep, ProjectConfig } from "~/domain/project/project-config";
+import type { OutputTime } from "~/domain/media/time";
+import type { TranscriptWord } from "~/domain/transcript/transcript";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type {
   ArollSection,

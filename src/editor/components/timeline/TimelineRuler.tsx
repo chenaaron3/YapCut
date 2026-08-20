@@ -4,7 +4,7 @@ import {
   buildTicks,
   formatTimeLabel,
   pickTickIntervals,
-} from "~/editor/lib/timeline-time";
+} from "~/editor/lib/timeline/timeline-time";
 import { LABEL_OFFSET, RULER_HEIGHT } from "~/editor/components/timeline/constants";
 
 type Props = {

@@ -11,7 +11,7 @@ import {
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
 
-import type { AssetFusionContent } from "~/domain/motion-config";
+import type { AssetFusionContent } from "~/domain/vfx/motion-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 /** HyperFrames asset-fusion still + label. */

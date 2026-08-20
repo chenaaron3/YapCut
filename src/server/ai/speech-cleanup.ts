@@ -1,21 +1,21 @@
 import { zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
-import { buildArollLayout, keepCells } from "~/domain/arolls";
+import { buildArollLayout, keepCells } from "~/domain/aroll/arolls";
 import {
   buildNumberedTranscript,
   keptTimelineWords,
   projectTimelineWords,
-} from "~/domain/projection";
+} from "~/domain/aroll/projection";
 import {
   applyWordIndexCuts,
   vocalizedPauseCuts,
-} from "~/domain/speech-cleanup";
+} from "~/domain/aroll/speech-cleanup";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
-import type { ArollKeep } from "~/domain/project-config";
-import type { WordIndexCut } from "~/domain/speech-cleanup";
-import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
+import type { ArollKeep } from "~/domain/project/project-config";
+import type { WordIndexCut } from "~/domain/aroll/speech-cleanup";
+import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript/transcript";
 
 const MAX_CUTS = 80;
 

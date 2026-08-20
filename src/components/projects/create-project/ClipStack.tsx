@@ -17,7 +17,7 @@ import {
   ClipCard,
   SortableClipCard,
 } from "~/components/projects/create-project/ClipCard";
-import { CREATE_LIMITS_HINT } from "~/domain/create-limits";
+import { CREATE_LIMITS_HINT } from "~/domain/project/create-limits";
 import { cn } from "~/lib/utils";
 
 import type { DragEndEvent, DragStartEvent, Modifier } from "@dnd-kit/core";

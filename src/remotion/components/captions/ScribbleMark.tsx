@@ -1,7 +1,7 @@
 import { evolvePath } from "@remotion/paths";
 import React, { useId } from "react";
 
-import { paintsScribble } from "~/domain/scribble";
+import { paintsScribble } from "~/domain/transcript/scribble";
 import {
   SCRIBBLE_CATALOG,
   scribbleAuthoredMs,
@@ -9,7 +9,7 @@ import {
   scribbleWordT,
 } from "~/remotion/components/captions/scribble-catalog";
 
-import type { ScribbleId } from "~/domain/scribble";
+import type { ScribbleId } from "~/domain/transcript/scribble";
 import type { CaptionWordProp } from "~/remotion/helpers/types";
 import type {
   ScribbleDefinition,

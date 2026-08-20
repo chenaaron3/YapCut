@@ -4,16 +4,16 @@ import { z } from "zod";
 import {
   buildNumberedTranscript,
   wordIndexToTimelineSec,
-} from "~/domain/projection";
-import type { ZoomEdit } from "~/domain/project-config";
-import { nextEditId } from "~/domain/project-config";
-import type { GlobalTranscriptWord } from "~/domain/transcript";
-import { TRANSFORM_DEFAULTS } from "~/domain/transform";
+} from "~/domain/aroll/projection";
+import type { ZoomEdit } from "~/domain/project/project-config";
+import { nextEditId } from "~/domain/project/project-config";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
+import { TRANSFORM_DEFAULTS } from "~/domain/edit/transform";
 import {
   ZOOM_MAX_DURATION_SEC,
   ZOOM_MIN_DURATION_SEC,
   ZOOM_STRENGTH,
-} from "~/domain/zoom";
+} from "~/domain/edit/zoom";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
 
 const MAX_ZOOMS = 10;

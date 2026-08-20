@@ -1,11 +1,11 @@
 import { and, asc, eq } from "drizzle-orm";
 
-import { nextPublishAt } from "~/domain/schedule-cadence";
+import { nextPublishAt } from "~/domain/schedule/schedule-cadence";
 import {
   assertValidTimezone,
   DEFAULT_SCHEDULE_SETTINGS,
   type ScheduleSettingsInput,
-} from "~/domain/schedule";
+} from "~/domain/schedule/schedule";
 import { db } from "~/server/db";
 import {
   platformPublishes,

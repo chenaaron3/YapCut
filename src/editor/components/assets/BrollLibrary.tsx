@@ -6,9 +6,9 @@ import { BrollPreviewModal } from "~/editor/components/assets/BrollPreviewModal"
 import { BrollTile } from "~/editor/components/assets/BrollTile";
 import { useAssetUpload } from "~/editor/components/assets/useAssetUpload";
 import { PickerEmpty, PickerGrid } from "~/editor/components/picker";
-import { prepareMediaFileForUpload } from "~/editor/lib/prepare-media-file";
-import { probeMediaFile } from "~/editor/lib/probe-media";
-import { useRehydrateFromServer } from "~/editor/lib/use-rehydrate-from-server";
+import { prepareMediaFileForUpload } from "~/editor/lib/player/prepare-media-file";
+import { probeMediaFile } from "~/editor/lib/player/probe-media";
+import { useRehydrateFromServer } from "~/editor/lib/project/use-rehydrate-from-server";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
@@ -97,9 +97,7 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
           />
         ))}
         {visibleAssets.length === 0 && !importing ? (
-          <PickerEmpty>
-            Drop images or videos here, then drag onto the transcript.
-          </PickerEmpty>
+          <PickerEmpty>Drop images or videos here</PickerEmpty>
         ) : null}
         {importing ? <PickerEmpty>Importing…</PickerEmpty> : null}
         {isDragActive ? <PickerEmpty>Drop media to add</PickerEmpty> : null}

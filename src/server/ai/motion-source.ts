@@ -1,4 +1,4 @@
-import { stillMediaRef } from "~/domain/motion-config";
+import { stillMediaRef } from "~/domain/vfx/motion-config";
 import { generateImage } from "~/server/ai/images/generate";
 import { searchImage } from "~/server/ai/images/search";
 import { assets } from "~/server/db/schema";
@@ -7,7 +7,7 @@ import { assetSourceKey } from "~/server/media/keys";
 import { nextAssetSortOrder } from "~/server/media/asset-upload";
 import { putObject } from "~/server/media/s3";
 
-import type { MediaRef } from "~/domain/project-config";
+import type { MediaRef } from "~/domain/project/project-config";
 import type { ImageSize, RemoteStill } from "~/server/ai/images/types";
 
 type Database = Parameters<typeof nextAssetSortOrder>[0];

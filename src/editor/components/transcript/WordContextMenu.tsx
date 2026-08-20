@@ -2,7 +2,7 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { Bold, Plus, Quote, Type } from "lucide-react";
 import { ContextMenu } from "@base-ui/react/context-menu";
 
-import { WORD_SELECTION_HOTKEYS } from "~/editor/lib/word-hotkeys";
+import { WORD_SELECTION_HOTKEYS } from "~/editor/lib/word/word-hotkeys";
 import { cn } from "~/lib/utils";
 
 type Props = {

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { peakMax, sampleWaveformGrid } from "~/domain/audio/waveform";
-import type { TimelineTime } from "~/domain/time";
+import type { TimelineTime } from "~/domain/media/time";
 import { useEditor } from "~/editor/store";
 
 type Props = TimelineTime & {

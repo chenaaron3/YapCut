@@ -1,16 +1,16 @@
-import { stickerLabel } from "~/domain/sticker";
+import { stickerLabel } from "~/domain/edit/sticker";
 import {
   Handle,
   TrackLabel,
   useEditEdgeDrag,
 } from "~/editor/components/timeline/shared";
-import { rangeStyle } from "~/editor/lib/timeline-time";
-import { useIsSelected } from "~/editor/lib/use-is-selected";
+import { rangeStyle } from "~/editor/lib/timeline/timeline-time";
+import { useIsSelected } from "~/editor/lib/selection/use-is-selected";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-import type { StickerEdit } from "~/domain/project-config";
+import type { StickerEdit } from "~/domain/project/project-config";
 
 type Props = {
   edits: StickerEdit[];
