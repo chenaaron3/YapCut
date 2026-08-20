@@ -1,21 +1,23 @@
-import React, { useContext, type CSSProperties } from "react";
-
-import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
-import type { CaptionGroupStyle } from "~/remotion/captions/style";
-import type { CaptionWordProp } from "~/remotion/helpers/types";
+import React, { useContext } from "react";
 
 import {
-  ArcLayoutContext,
   arcGlyphBoxStyle,
+  ArcLayoutContext,
   wordGlyphOffset,
-  type ArcLayout,
 } from "./arc-layout";
 import { transformCaptionWord } from "./caption-style-css";
 import {
   resolveCaptionWordVisual,
   typewriterLetterVisible,
-  type CaptionWordVisual,
 } from "./caption-word-visual";
+import { ScribbleWordFrame } from "./ScribbleMark";
+
+import type { ArcLayout } from "./arc-layout";
+import type { CaptionWordVisual } from "./caption-word-visual";
+import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
+import type { CaptionGroupStyle } from "~/remotion/captions/style";
+import type { CaptionWordProp } from "~/remotion/helpers/types";
+import type { CSSProperties } from "react";
 
 function isWhitespaceWord(text: string): boolean {
   return /^\s+$/.test(text);
@@ -61,8 +63,7 @@ function ArcWordPaint({
         const pose = arc.glyphs[start + i];
         if (!pose) return null;
         const letterVisible =
-          !typewriter ||
-          typewriterLetterVisible(word, i, glyphs.length, frame);
+          !typewriter || typewriterLetterVisible(word, i, glyphs.length, frame);
         return (
           <span
             key={i}
@@ -167,12 +168,7 @@ export const CaptionWordSpan: React.FC<{
         <span
           key={i}
           style={{
-            visibility: typewriterLetterVisible(
-              word,
-              i,
-              glyphs.length,
-              frame,
-            )
+            visibility: typewriterLetterVisible(word, i, glyphs.length, frame)
               ? "visible"
               : "hidden",
             whiteSpace: "pre",
@@ -198,7 +194,11 @@ export const CaptionWordSpan: React.FC<{
   }
 
   return (
-    <span
+    <ScribbleWordFrame
+      word={word}
+      color={emphasisStyle?.fill ?? ""}
+      frame={frame}
+      fps={fps}
       style={{
         display: "inline-block",
         whiteSpace: whitespace ? "pre" : undefined,
@@ -209,6 +209,6 @@ export const CaptionWordSpan: React.FC<{
       }}
     >
       {content}
-    </span>
+    </ScribbleWordFrame>
   );
 };

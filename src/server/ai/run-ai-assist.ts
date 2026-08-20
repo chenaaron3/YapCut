@@ -36,7 +36,7 @@ export type AiAssistInput = {
   title: string;
   /** When true and title empty, generate a title. */
   generateTitleIfEmpty: boolean;
-  /** Edits to keep before AI (typically b-roll only). */
+  /** Edits to keep before AI (`editsForAiAssist`). */
   baseEdits?: readonly Edit[];
   /** SoT listicle look — copied onto each seeded listicle. */
   listicleStyle?: TemplateStyle;

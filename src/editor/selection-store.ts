@@ -61,28 +61,29 @@ export const useSelection = create<SelectionState & SelectionActions>(
     selection: null,
     projectPanel: null,
 
-    setSelection: (selection) => set({ selection, projectPanel: null }),
+    setSelection: (selection) =>
+      set({
+        selection,
+        projectPanel: null,
+      }),
 
     select: (kind, id, toggle = false) => {
       if (id == null) {
+        const next = get().selection?.kind === kind ? null : get().selection;
         set({
-          selection: get().selection?.kind === kind ? null : get().selection,
+          selection: next,
           projectPanel: null,
         });
         return;
       }
 
-      if (toggle) {
-        set({
-          selection: toggleSelection(get().selection, kind, id),
-          projectPanel: null,
-        });
-      } else {
-        set({
-          selection: replaceSelection(kind, [id]),
-          projectPanel: null,
-        });
-      }
+      const selection = toggle
+        ? toggleSelection(get().selection, kind, id)
+        : replaceSelection(kind, [id]);
+      set({
+        selection,
+        projectPanel: null,
+      });
 
       if (
         kind === "edit" &&
@@ -106,10 +107,12 @@ export const useSelection = create<SelectionState & SelectionActions>(
     },
 
     selectWordRange: (start, end) => {
-      set({ selection: selectWordRange(start, end), projectPanel: null });
+      set({
+        selection: selectWordRange(start, end),
+        projectPanel: null,
+      });
     },
 
     clearSelection: () => set({ selection: null, projectPanel: null }),
   }),
 );
-

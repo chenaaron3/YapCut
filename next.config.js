@@ -20,6 +20,8 @@ const config = {
     "remotion",
     "@remotion/player",
     "@remotion/media",
+    "@remotion/lottie",
+    "@remotion/paths",
   ],
   // Keep Vercel CLI config / xdg-app-paths out of the webpack graph — bundling
   // xdg-portable crashes page-data collection (path.parse(undefined)).

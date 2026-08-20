@@ -4,7 +4,6 @@ import { buildArollLayout, durationMapFromArolls } from "~/domain/arolls";
 import { SFX_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import { withBrollKenBurns } from "~/domain/broll";
 import { withCompanionSfx } from "~/domain/companion-sfx";
-import { withPlacedZoomEase } from "~/domain/zoom";
 import {
   clampTimelineRangeToMedia,
   isDurationLimitedMedia,
@@ -20,6 +19,7 @@ import {
   materializeTransition,
   transitionStitchConflicts,
 } from "~/domain/transition";
+import { withPlacedZoomEase } from "~/domain/zoom";
 
 import type { ArollLayoutCell } from "~/domain/arolls";
 import type { CompanionSfxAsset } from "~/domain/companion-sfx";
@@ -322,6 +322,8 @@ const PLAIN_PATCH_KEYS = [
   "templateId",
   "durationSec",
   "plan",
+  "catalogId",
+  "source",
 ] as const;
 
 function applyPlainPatch(edit: Edit, patch: EditPatch): Edit {
@@ -443,6 +445,11 @@ export function findEditById(
   id: number,
 ): Edit | undefined {
   return edits.find((e) => e.id === id);
+}
+
+/** Edits AI re-run keeps (b-roll). Other kinds are replaced. */
+export function editsForAiAssist(edits: readonly Edit[]): Edit[] {
+  return edits.filter((e) => e.kind === "broll");
 }
 
 export function asEditBase(edit: Edit): EditBase {

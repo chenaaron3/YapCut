@@ -21,7 +21,7 @@ export const EMPHASIS_SCALE_MAX = 2.5;
  * Emphasis treatment layered on the current caption/quote group style.
  * Sparse — missing keys resolve at props time.
  * Same shape for ProjectConfig and VfxQuoteEdit; quote keys merge over project.
- * Not a TemplateStyle: no y / words-per-group.
+ * Not a TemplateStyle: no y / words-per-group. Scribble is a word field, not here.
  */
 export type EmphasisStyle = {
   scale?: number;

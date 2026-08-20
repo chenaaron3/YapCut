@@ -12,6 +12,11 @@ import {
 } from "~/domain/sfx";
 import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
 import {
+  PickerEmpty,
+  PickerGrid,
+  PickerTile,
+} from "~/editor/components/picker";
+import {
   beginAssetPlaceDrag,
   endAssetPlaceDrag,
 } from "~/editor/lib/asset-place-drag";
@@ -56,7 +61,7 @@ function groupSfx(assets: EditorAsset[]) {
   return ordered;
 }
 
-function SfxRow({
+function SfxTile({
   asset,
   playingKey,
   onPreview,
@@ -67,14 +72,13 @@ function SfxRow({
 }) {
   const label = formatSfxLabel(asset.originalFilename, asset.id);
   const canDrag = asset.kind === "audio" && asset.playbackUrl.length > 0;
+  const playing = playingKey === asset.id;
 
   return (
-    <div
-      className={cn(
-        "border-border bg-panel-2 flex items-center gap-2 rounded-lg border px-2 py-1.5 select-none",
-        canDrag && "cursor-grab active:cursor-grabbing",
-      )}
+    <PickerTile
+      label={label}
       draggable={canDrag}
+      thumbClassName="bg-sfx/25 text-sfx"
       onDragStart={(e) => {
         if (!canDrag) return;
         const payload: SfxDragPayload = {
@@ -94,7 +98,7 @@ function SfxRow({
     >
       <button
         type="button"
-        className="bg-sfx/25 text-sfx hover:bg-sfx/40 flex h-7 w-7 shrink-0 items-center justify-center rounded"
+        className="flex size-full items-center justify-center"
         onClick={(e) => {
           e.stopPropagation();
           onPreview(
@@ -103,19 +107,11 @@ function SfxRow({
             sfxPlaybackVolume(DEFAULT_SFX_VOLUME, asset.lufs, asset.truePeakDb),
           );
         }}
-        title={playingKey === asset.id ? "Stop" : "Preview"}
+        title={playing ? "Stop" : "Preview"}
       >
-        {playingKey === asset.id ? "■" : "▶"}
+        {playing ? "■" : "▶"}
       </button>
-      <span className="text-foreground min-w-0 flex-1 truncate text-[11px]">
-        {label}
-      </span>
-      {asset.durationSec != null ? (
-        <span className="text-muted-foreground shrink-0 text-[10px]">
-          {asset.durationSec.toFixed(1)}s
-        </span>
-      ) : null}
-    </div>
+    </PickerTile>
   );
 }
 
@@ -130,10 +126,12 @@ export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
 
   if (assets.length === 0) {
     return (
-      <p className="text-muted-foreground p-2.5 text-xs">
-        No global SFX seeded. Run{" "}
-        <code className="text-[10px]">npm run seed:global</code>.
-      </p>
+      <PickerGrid className="p-2">
+        <PickerEmpty>
+          No global SFX seeded. Run{" "}
+          <code className="text-[10px]">npm run seed:global</code>.
+        </PickerEmpty>
+      </PickerGrid>
     );
   }
 
@@ -161,16 +159,16 @@ export function SfxLibrary({ assets }: { assets: EditorAsset[] }) {
               </span>
             </button>
             {isOpen ? (
-              <div className="flex flex-col gap-1 px-1.5 pb-1.5">
+              <PickerGrid className="px-1.5 pb-1.5">
                 {group.assets.map((asset) => (
-                  <SfxRow
+                  <SfxTile
                     key={asset.id}
                     asset={asset}
                     playingKey={playingKey}
                     onPreview={preview}
                   />
                 ))}
-              </div>
+              </PickerGrid>
             ) : null}
           </div>
         );

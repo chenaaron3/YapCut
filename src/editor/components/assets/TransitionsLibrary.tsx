@@ -1,6 +1,7 @@
 import { PanelRight, ScanSearch, Zap } from "lucide-react";
 
 import { TRANSITION_DRAG_MIME, TRANSITION_PRESETS } from "~/domain/transition";
+import { PickerGrid, PickerTile } from "~/editor/components/picker";
 import {
   beginAssetPlaceDrag,
   endAssetPlaceDrag,
@@ -17,35 +18,30 @@ const PRESET_ICON: Record<TransitionTemplateId, typeof Zap> = {
   slide: PanelRight,
 };
 
-function TransitionPresetRow({ preset }: { preset: TransitionDragPayload }) {
+function TransitionPresetTile({ preset }: { preset: TransitionDragPayload }) {
   const Icon = PRESET_ICON[preset.templateId];
   return (
-    <div
-      className="border-border bg-panel-2 flex cursor-grab items-center gap-2 rounded-lg border px-2 py-1.5 select-none active:cursor-grabbing"
+    <PickerTile
+      label={preset.label}
       draggable
+      thumbClassName="bg-transition/25 text-transition"
       onDragStart={(e) => {
         e.dataTransfer.setData(TRANSITION_DRAG_MIME, JSON.stringify(preset));
         beginAssetPlaceDrag(e, "transition", "transition");
       }}
       onDragEnd={endAssetPlaceDrag}
-      title={preset.label}
     >
-      <span className="bg-transition/25 text-transition flex h-7 w-7 shrink-0 items-center justify-center rounded">
-        <Icon className="size-3.5" />
-      </span>
-      <span className="text-foreground min-w-0 flex-1 truncate text-[11px]">
-        {preset.label}
-      </span>
-    </div>
+      <Icon className="size-3.5" />
+    </PickerTile>
   );
 }
 
 export function TransitionsLibrary() {
   return (
-    <div className="flex flex-col gap-1 p-2">
+    <PickerGrid className="p-2">
       {TRANSITION_PRESETS.map((preset) => (
-        <TransitionPresetRow key={preset.templateId} preset={preset} />
+        <TransitionPresetTile key={preset.templateId} preset={preset} />
       ))}
-    </div>
+    </PickerGrid>
   );
 }

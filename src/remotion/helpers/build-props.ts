@@ -18,7 +18,9 @@ import {
   PROJECT_FPS,
 } from "~/domain/project-config";
 import { projectOutputWords } from "~/domain/projection";
+import { scribbleWordFields } from "~/domain/scribble";
 import { resolveShakeIntensity } from "~/domain/shake";
+import { isStickerEdit } from "~/domain/sticker";
 import { resolveTransform } from "~/domain/transform";
 import { keepsForStitch } from "~/domain/transition";
 import { editMiddleSec } from "~/domain/vfx";
@@ -63,15 +65,16 @@ import type {
   BrollClipProp,
   CaptionGroupProp,
   CaptionWordProp,
+  MotionOverlayProp,
   MusicClipProp,
   ProjectProps,
   SfxClipProp,
   ShakeClipProp,
+  StickerClipProp,
   TextOverlayProp,
   TransitionClipProp,
   TransitionPictureProp,
   ZoomProp,
-  MotionOverlayProp,
 } from "~/remotion/helpers/types";
 
 export type BuildProjectPropsInput = {
@@ -275,7 +278,7 @@ function buildCaptionGroups(
       text: word.text,
       startFrame,
       endFrame,
-      ...(word.emphasized ? { emphasized: true } : {}),
+      ...scribbleWordFields(word),
       styleKey: quote ? `quote:${quote.id}` : "default",
       segmentKey: String(segment),
       captionsAtATime: style.captionsAtATime,
@@ -503,6 +506,35 @@ function buildMotionOverlays(
       offsetY: pose.offsetY,
       rotation: pose.rotation,
       media,
+    });
+  }
+  return out;
+}
+
+function buildStickers(
+  edits: ProjectConfig["edits"],
+  cells: ReturnType<typeof buildArollLayout>,
+  fps: number,
+): StickerClipProp[] {
+  const out: StickerClipProp[] = [];
+  for (const e of edits) {
+    if (!isStickerEdit(e)) continue;
+    const range = timelineRangeToOutput(cells, e);
+    if (!range) continue;
+    const pose = resolveTransform(e);
+    out.push({
+      id: e.id,
+      startFrame: secToFrame(range.start, fps),
+      endFrame: Math.max(
+        secToFrame(range.start, fps) + 1,
+        secToFrame(range.end, fps),
+      ),
+      source: e.source,
+      catalogId: e.catalogId,
+      scale: pose.scale,
+      offsetX: pose.offsetX,
+      offsetY: pose.offsetY,
+      rotation: pose.rotation,
     });
   }
   return out;
@@ -781,5 +813,6 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
       input.assetSize,
       fps,
     ),
+    stickers: buildStickers(input.config.edits, layout, fps),
   };
 }

@@ -8,7 +8,6 @@ import {
   DEFAULT_EMPHASIS_SCALE,
   EMPHASIS_SCALE_MAX,
   EMPHASIS_SCALE_MIN,
-  type EmphasisStyle,
 } from "~/domain/emphasis-style";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import { InspectorSelect } from "~/editor/components/inspector/field/InspectorSelect";
@@ -17,8 +16,10 @@ import { runGesture } from "~/editor/lib/gesture";
 import {
   CAPTION_FONT_IDS,
   CAPTION_FONT_LABELS,
-  type CaptionFontId,
 } from "~/remotion/captions/style";
+
+import type { EmphasisStyle } from "~/domain/emphasis-style";
+import type { CaptionFontId } from "~/remotion/captions/style";
 
 function hexOrDefault(fill: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(fill) ? fill : DEFAULT_EMPHASIS_FILL;

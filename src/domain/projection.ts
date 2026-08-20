@@ -1,4 +1,5 @@
 import { buildArollLayout } from "~/domain/arolls";
+import { scribbleWordFields } from "~/domain/scribble";
 
 import type { ArollLayoutCell } from "~/domain/arolls";
 import type { ArollKeep } from "~/domain/project-config";
@@ -45,7 +46,7 @@ export function projectTimelineWordsFromLayout(
         text: word.text,
         start: cell.timeline.start + (localStart - cell.local.start),
         end: cell.timeline.start + (localEnd - cell.local.start),
-        emphasized: word.emphasized,
+        ...scribbleWordFields(word),
         assetId: cell.local.assetId,
         localIndex,
         globalIndex,
@@ -87,7 +88,7 @@ export function projectOutputWords(
         text: word.text,
         start: outputCursor + (localStart - keep.start),
         end: outputCursor + (localEnd - keep.start),
-        emphasized: word.emphasized,
+        ...scribbleWordFields(word),
         assetId: keep.assetId,
         localIndex,
         globalIndex,

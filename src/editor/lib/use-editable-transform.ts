@@ -3,7 +3,8 @@ import { useSyncExternalStore } from "react";
 import { isBrollActiveAt } from "~/domain/broll";
 import { isMotionEdit } from "~/domain/motion";
 import { isTextBaseEdit } from "~/domain/project-config";
-import { transformOf, type Transform } from "~/domain/transform";
+import { isStickerEdit, STICKER_BOX_PX, stickerLabel } from "~/domain/sticker";
+import { transformOf } from "~/domain/transform";
 import { isZoomActiveAt } from "~/domain/zoom";
 import { primaryId } from "~/editor/lib/selection";
 import { useSelection } from "~/editor/selection-store";
@@ -20,6 +21,7 @@ import {
 } from "~/remotion/helpers/overlay-measure";
 
 import type { Edit, ProjectConfig } from "~/domain/project-config";
+import type { Transform } from "~/domain/transform";
 
 /** Paint stack under the player: zoom (a-roll) → b-roll → text overlays. */
 export type EditableLayer = "zoom" | "broll" | "overlay";
@@ -89,6 +91,22 @@ function editableForEdit(
       width: size.width,
       height: size.height,
       label: "Motion",
+      layer: "overlay",
+    };
+  }
+
+  if (isStickerEdit(edit)) {
+    if (timelineSec < edit.start || timelineSec >= edit.end) return null;
+    const size = overlaySize ?? {
+      width: STICKER_BOX_PX,
+      height: STICKER_BOX_PX,
+    };
+    return {
+      editId: edit.id,
+      transform: transformOf(edit),
+      width: size.width,
+      height: size.height,
+      label: stickerLabel(edit),
       layer: "overlay",
     };
   }

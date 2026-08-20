@@ -11,7 +11,7 @@ import { EmberLoading } from "~/components/layout/EmberLoading";
 import { RequireUser } from "~/components/layout/RequireUser";
 import { CreateProgressBar } from "~/components/projects/CreateProgressBar";
 import { useCreateProgressStream } from "~/components/projects/use-create-progress-stream";
-import { isEditorProjectStatus, isProjectStatus } from "~/domain/project-status";
+import { isEditorProjectStatus } from "~/domain/project-status";
 import { EditorShell } from "~/editor/components/EditorShell";
 import { api } from "~/utils/api";
 
@@ -87,7 +87,7 @@ function ProjectPageInner() {
     );
   }
 
-  if (status && isProjectStatus(status) && isEditorProjectStatus(status)) {
+  if (isEditorProjectStatus(status)) {
     return <EditorShell projectId={id} />;
   }
 

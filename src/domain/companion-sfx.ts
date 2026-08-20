@@ -2,8 +2,8 @@ import { companionSfxRef, pickSfxAssetId, sfxFolderOf } from "~/domain/sfx";
 import { resolveZoomEase } from "~/domain/zoom";
 
 import type {
-  CompanionSfxMap,
   CompanionSfxCueId,
+  CompanionSfxMap,
   CompanionSfxSource,
 } from "~/domain/companion-sfx-map";
 import type { Edit, MediaRef } from "~/domain/project-config";
@@ -15,9 +15,7 @@ export type CompanionSfxAsset = {
 
 const ONSET_EPS = 0.001;
 
-function normalizeSfxPath(
-  value: string | null | undefined,
-): string | null {
+function normalizeSfxPath(value: string | null | undefined): string | null {
   if (!value) return null;
   return value.replace(/\\/g, "/");
 }
@@ -41,6 +39,7 @@ export function cueForEdit(edit: Edit): CompanionSfxCueId | null {
     }
     if (edit.templateId === "slide") return "slide";
   }
+  if (edit.kind === "sticker") return null;
   return null;
 }
 
@@ -51,9 +50,7 @@ export function resolveCompanionSfxPool(
   if (source.type === "none") return [];
   if (source.type === "paths") {
     const want = new Set(
-      source.paths
-        .map(normalizeSfxPath)
-        .filter((p): p is string => p != null),
+      source.paths.map(normalizeSfxPath).filter((p): p is string => p != null),
     );
     return assets
       .filter((a) => {

@@ -96,7 +96,7 @@ export const WordCell = memo(function WordCell({
         <span className="relative inline-block align-baseline">
           <span
             aria-hidden
-            className="invisible whitespace-pre font-[inherit] leading-[inherit]"
+            className="invisible font-[inherit] leading-[inherit] whitespace-pre"
           >
             {draft || " "}
           </span>
@@ -184,6 +184,7 @@ export const WordCell = memo(function WordCell({
               dropActive === "broll" && "bg-broll/30 ring-broll ring-1",
               pendingBrollPlace &&
                 "hover:bg-broll/30 hover:ring-broll hover:ring-1",
+              dropActive === "sticker" && "bg-sticker/30 ring-sticker ring-1",
               dropActive === "sfx" && "bg-sfx/30 ring-sfx ring-1",
               dropActive === "vfx" && "bg-vfx/30 ring-vfx ring-1",
               dropActive === "transition" &&

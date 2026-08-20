@@ -1,3 +1,4 @@
+import type { ScribbleId } from "~/domain/scribble";
 import type { TimelineTime } from "~/domain/time";
 
 /** One timed token on an asset’s local timeline (seconds). */
@@ -7,6 +8,8 @@ export type TranscriptWord = {
   end: number;
   /** Caption highlight; omit/false = not emphasized. */
   emphasized?: boolean;
+  /** Draw-on mark; paints only when `emphasized`. Omit = none. */
+  scribble?: ScribbleId;
 };
 
 export type TranscriptStatus = "pending" | "ready" | "failed";
@@ -18,6 +21,7 @@ export type TranscriptStatus = "pending" | "ready" | "failed";
 export type GlobalTranscriptWord = TimelineTime & {
   text: string;
   emphasized?: boolean;
+  scribble?: ScribbleId;
   assetId: string;
   /** Index into that asset’s local `words[]`. */
   localIndex: number;

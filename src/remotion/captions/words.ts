@@ -1,4 +1,5 @@
 import { isVocalizedPause } from "~/domain/filler";
+import { scribbleWordFields } from "~/domain/scribble";
 import {
   CAPTION_GROUP_GAP_SEC,
   CAPTION_LAST_WORD_PAD_SEC,
@@ -94,7 +95,7 @@ export function groupStyledCaptionWords(
       text: w.text,
       startFrame: w.startFrame,
       endFrame: w.endFrame,
-      ...(w.emphasized ? { emphasized: true } : {}),
+      ...scribbleWordFields(w),
     }));
     for (const group of groupCaptionWords(plain, atATime)) {
       result.push({ ...group, styleKey });

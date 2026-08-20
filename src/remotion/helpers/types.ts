@@ -1,5 +1,6 @@
-import type { ShotPlan } from "~/domain/motion-config";
 import type { ResolvedEmphasisStyle } from "~/domain/emphasis-style";
+import type { ShotPlan } from "~/domain/motion-config";
+import type { ScribbleId } from "~/domain/scribble";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export type ArollSection = {
@@ -18,6 +19,7 @@ export type CaptionWordProp = {
   startFrame: number;
   endFrame: number;
   emphasized?: boolean;
+  scribble?: ScribbleId;
 };
 
 export type CaptionGroupProp = {
@@ -142,6 +144,18 @@ export type MotionOverlayProp = {
   media: MotionStillProp | null;
 };
 
+export type StickerClipProp = {
+  id: number;
+  startFrame: number;
+  endFrame: number;
+  source: "emoji" | "lordicon";
+  catalogId: string;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  rotation: number;
+};
+
 export type ProjectProps = {
   /** Project.title at props time (Cover still; TalkingHead ignores). */
   title: string;
@@ -159,4 +173,5 @@ export type ProjectProps = {
   music?: MusicClipProp | null;
   transitions: TransitionClipProp[];
   motionOverlays: MotionOverlayProp[];
+  stickers: StickerClipProp[];
 };

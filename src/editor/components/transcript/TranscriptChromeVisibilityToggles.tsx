@@ -22,6 +22,7 @@ import type { TranscriptChromeGroup } from "~/editor/lib/transcript-chrome-visib
 
 const VISIBILITY_LABEL: Record<TranscriptChromeGroup, string> = {
   broll: "B-roll",
+  sticker: "Sticker",
   "vfx:text": "Text",
   "vfx:quote": "Quote",
   "vfx:listicle": "Listicle",

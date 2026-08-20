@@ -8,6 +8,7 @@ import { MotionLayer } from "~/remotion/components/motion/MotionLayer";
 import { MusicOverlay } from "~/remotion/components/MusicOverlay";
 import { ScreenShake } from "~/remotion/components/ScreenShake";
 import { SfxAudio } from "~/remotion/components/SfxAudio";
+import { StickerOverlay } from "~/remotion/components/StickerOverlay";
 import { TextOverlay } from "~/remotion/components/TextOverlay";
 import { Zoom } from "~/remotion/components/Zoom";
 import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
@@ -56,6 +57,7 @@ export function TalkingHead({
   music,
   transitions = [],
   motionOverlays = [],
+  stickers = [],
 }: TalkingHeadProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
@@ -74,6 +76,7 @@ export function TalkingHead({
       </ScreenShake>
       <TextOverlay overlays={textOverlays} />
       <MotionLayer overlays={motionOverlays} />
+      <StickerOverlay stickers={stickers} />
       <Captions groups={captionGroups} />
       <SfxAudio sfx={sfx} />
       <MusicOverlay music={music} />

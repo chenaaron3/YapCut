@@ -10,12 +10,15 @@ import { ProjectSettingsInspector } from "~/editor/components/inspector/ProjectS
 import { QuoteVfxInspector } from "~/editor/components/inspector/QuoteVfxInspector";
 import { SfxInspector } from "~/editor/components/inspector/SfxInspector";
 import { ShakeVfxInspector } from "~/editor/components/inspector/ShakeVfxInspector";
+import { StickerInspector } from "~/editor/components/inspector/StickerInspector";
 import { TextVfxInspector } from "~/editor/components/inspector/TextVfxInspector";
 import { TransitionInspector } from "~/editor/components/inspector/TransitionInspector";
+import { WordInspector } from "~/editor/components/inspector/WordInspector";
 import { ZoomInspector } from "~/editor/components/inspector/ZoomInspector";
 import { primaryId } from "~/editor/lib/selection";
+import { usePlayerPlaying } from "~/editor/lib/use-player-playing";
 import { useSelection } from "~/editor/selection-store";
-import { useEditor } from "~/editor/store";
+import { useEditor, useGlobalWords } from "~/editor/store";
 
 import type { Edit } from "~/domain/project-config";
 import type { ReactNode } from "react";
@@ -25,10 +28,18 @@ import type { ReactNode } from "react";
  * so opening/closing a selection does not reflow the words.
  */
 export function InspectorPanel() {
-  // Ignore word-playback selection churn — inspector only shows edit/project panels.
-  const selection = useSelection((s) =>
-    s.selection?.kind === "edit" ? s.selection : null,
-  );
+  const words = useGlobalWords();
+  const playing = usePlayerPlaying();
+  const selection = useSelection((s) => {
+    if (s.selection?.kind === "edit") return s.selection;
+    if (s.selection?.kind === "word") {
+      const hasEmphasis = s.selection.ids.some(
+        (id) => typeof id === "number" && words[id]?.emphasized,
+      );
+      return hasEmphasis ? s.selection : null;
+    }
+    return null;
+  });
   const projectPanel = useSelection((s) => s.projectPanel);
   const config = useEditor((s) => s.config);
   const clearSelection = useSelection((s) => s.clearSelection);
@@ -48,6 +59,9 @@ export function InspectorPanel() {
       title = "Music";
       body = <MusicInspector clip={config.music} />;
     }
+  } else if (selection?.kind === "word" && !playing) {
+    title = "Word";
+    body = <WordInspector />;
   } else if (selection?.kind === "edit" && config) {
     const id = primaryId(selection);
     const edit = id != null ? config.edits.find((e) => e.id === id) : undefined;
@@ -69,6 +83,9 @@ export function InspectorPanel() {
     } else if (edit?.kind === "broll") {
       title = "B-roll";
       body = <BRollInspector edit={edit} />;
+    } else if (edit?.kind === "sticker") {
+      title = "Sticker";
+      body = <StickerInspector edit={edit} />;
     } else if (edit?.kind === "sfx") {
       title = "SFX";
       body = <SfxInspector edit={edit} />;

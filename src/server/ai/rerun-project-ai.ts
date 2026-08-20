@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 
+import { editsForAiAssist } from "~/domain/edits";
 import { parseProjectConfig } from "~/domain/project-config";
 import { isEditorProjectStatus } from "~/domain/project-status";
 import { runAiAssist } from "~/server/ai/run-ai-assist";
@@ -71,7 +72,7 @@ export async function rerunProjectAiAssist(options: {
     }
   }
 
-  const baseEdits = config.edits.filter((e) => e.kind === "broll");
+  const baseEdits = editsForAiAssist(config.edits);
 
   const assist = await runAiAssist({
     arolls: config.arolls,

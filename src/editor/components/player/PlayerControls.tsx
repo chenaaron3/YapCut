@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Maximize, Minimize, Pause, Play } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
-import { getPlayer, togglePlayback } from "~/editor/lib/player-bridge";
+import { togglePlayback } from "~/editor/lib/player-bridge";
+import { usePlayerPlaying } from "~/editor/lib/use-player-playing";
 import { useEditor } from "~/editor/store";
 import { COMPOSITION_FPS } from "~/remotion/helpers/constants";
 
@@ -24,23 +25,8 @@ export function PlayerControls({
   onToggleFullscreen: () => void;
 }) {
   const frame = useEditor((s) => s.frame);
-  const [playing, setPlaying] = useState(false);
+  const playing = usePlayerPlaying();
   const [fullscreen, setFullscreen] = useState(false);
-
-  useEffect(() => {
-    const player = getPlayer();
-    if (!player) return;
-    const sync = () => setPlaying(player.isPlaying());
-    sync();
-    player.addEventListener("play", sync);
-    player.addEventListener("pause", sync);
-    player.addEventListener("ended", sync);
-    return () => {
-      player.removeEventListener("play", sync);
-      player.removeEventListener("pause", sync);
-      player.removeEventListener("ended", sync);
-    };
-  }, [durationInFrames]);
 
   useEffect(() => {
     const sync = () => setFullscreen(document.fullscreenElement != null);

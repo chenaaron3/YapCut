@@ -33,8 +33,12 @@ Media object in private S3. `kind: "video" | "image" | "audio"`. `projectId` set
 _Avoid_: is_visual / is_audio booleans, public URLs as source of truth
 
 **Transcript**:
-Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: two AI passes unioned — sparse across the whole script, then denser (most content words) inside each quote punch phrase. Look is an `EmphasisStyle` treatment layered on the current group style (caption, or caption→quote): scale × group size, fill, optional font. Project field `emphasisStyle` is the base; `VfxQuoteEdit.emphasisStyle` sparse-merges on top. Layout (y / words-per-group) always follows the surrounding group.
-_Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type, null inherit-group sentinels, emphasis owning y or captionsAtATime
+Word-level transcription for one Asset (0..1). Stored as JSONB `words[]` (local timestamps on that asset) plus duration/status. Emphasis is an optional boolean on a word (`emphasized`), not sentiment. Same flag everywhere: two AI passes unioned — sparse across the whole script, then denser (most content words) inside each quote punch phrase. Look is an `EmphasisStyle` treatment layered on the current group style (caption, or caption→quote): scale × group size, fill, optional font. Project field `emphasisStyle` is the base; `VfxQuoteEdit.emphasisStyle` sparse-merges on top. Layout (y / words-per-group) always follows the surrounding group. Optional **scribble** is a sibling word field, not part of `EmphasisStyle`.
+_Avoid_: normalized word rows, global persisted transcript copy, positive/negative emphasis, a second “quote emphasis” type, null inherit-group sentinels, emphasis owning y or captionsAtATime, scribble on `EmphasisStyle`
+
+**Scribble**:
+Optional draw-on mark on a Transcript word (`scribble`), sibling of `emphasized`. Catalog: `double-underline` / `wavy-underline` / `double-circle` / `corner-box` / `bubble` / `highlight` / `strike-through`. Omit = none. Only paints when the word is `emphasized`. Word-level inspector (not Captions/Quote emphasis). Arc captions skip scribble (no whole-word box). Path data adapted from the Cheez library — Cheez is not a product term.
+_Avoid_: Cheez as a glossary/API name; scribble as a VFX/edit kind; scribble as a second emphasis type; project/quote default scribble
 
 **Aroll keep** (`ArollKeep`):
 One segment to keep from an A-roll asset: `{ id, assetId, start, end }` in **local** asset time. `id` is a monotonic integer (`max(ids)+1`, never reused, never renumbered on insert) — identity for transitions. `ProjectConfig.arolls` is a flat ordered list; array order is stitch order on the timeline / output. Keeps for the same asset are **contiguous** in that list (no interleaving another asset between two keeps of one asset — you cannot cut part of a clip and place it after a different asset). Keep surgery emits generic `ArollKeepOp` (`split` / `merge` / `remove`); edit kinds that bind to keep ids register an `ArollEditPostprocessor` (transitions today) — arolls do not import those kinds.
@@ -52,7 +56,7 @@ _Avoid_: Cut as persisted model type
 
 **Edit**:
 A ranged overlay on the **timeline** (expanded; gaps count). Flat `edits[]` with one discriminant `kind`. Mutated through shared Model CRUD.
-_Avoid_: clip (ambiguous), local-time edits, output-time edits, kind+type nesting except `vfx.type`; treating Transition as VFX
+_Avoid_: clip (ambiguous), local-time edits, output-time edits, kind+type nesting except `vfx.type`; treating Transition as VFX; treating sticker as b-roll or a VFX subtype
 
 **EditId**:
 Monotonic integer identifying an Edit. Assigned at place as `max(ids)+1`; never reused after delete.
@@ -61,11 +65,12 @@ _Avoid_: uuid, array index, string ids
 **Edit kinds (v1)**:
 
 ```
-broll | sfx | zoom | vfx | transition
+broll | sticker | sfx | zoom | vfx | transition
 ```
 
 - **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
 - **vfx** — `type: "quote" | "text" | "listicle" | "shake" | "motion"` (location/cutout out of scope)
+- **sticker** — catalog overlay (`source: "emoji" | "lordicon"` + `catalogId`). Same Edit shape; `source` is playback (`loop` vs intro-then-hold), not a second kind. Fixed ~180px box + `Transform`. No Ken Burns, no Asset row. Catalog: Noto Animated Emoji top 250 + Lordicon Wired Flat Popular (plus original Marks and a hand-picked talking-head set). Drag from Stickers (Popular / Emoji / Marks / All + search). Place range is the drop word. Editor AI re-run drops stickers (keeps b-roll).
 - **transition** — A-roll picture stitch (`templateId: "flash" | "fade" | "slide"`). Identity is `stitch` + `durationSec`; one per keep–keep stitch (plus opening and closing). Not a VFX subtype, not a sting.
 
 **Transition**:
@@ -190,7 +195,7 @@ React editor + Remotion player/export. Composes View primitives. Kind modules ch
 ### View — transcript primitives
 
 **Transcript marker**, **Handle**, **Highlight**, **Underline**:
-Markers show idle; underline + highlight + handles only when the edit is selected. Appearance is kind-specific. Multiple start markers on one word collapse to a primary chip (shared priority with underline: B-roll → VFX → SFX → Zoom → Transition; selected wins) plus vertical color dots for the rest; click expands inline to all chips (one cluster open at a time; primary click toggles shut; collapses when selection leaves the cluster). Transcript header toggles (session-only) can hide chrome per kind (B-roll / VFX / SFX / Zoom / Transition) without affecting timeline or player. **Transition** is marker-only (cannot move; no RangeHandle). Valid drop words are keep-edge punctuated sentence starts (`.?!` only, including in-gap words) plus opening keep and closing after the last kept word. While a Transitions-tab drag is in flight, every valid word shows a gentle blue glow; illegal spots stay unmarked.
+Markers show idle; underline + highlight + handles only when the edit is selected. Appearance is kind-specific. Multiple start markers on one word collapse to a primary chip (shared priority with underline: B-roll → Sticker → VFX → SFX → Zoom → Transition; selected wins) plus vertical color dots for the rest; click expands inline to all chips (one cluster open at a time; primary click toggles shut; collapses when selection leaves the cluster). Transcript header toggles (session-only) can hide chrome per kind (B-roll / Sticker / VFX / SFX / Zoom / Transition) without affecting timeline or player. **Transition** is marker-only (cannot move; no RangeHandle). Valid drop words are keep-edge punctuated sentence starts (`.?!` only, including in-gap words) plus opening keep and closing after the last kept word. While a Transitions-tab drag is in flight, every valid word shows a gentle blue glow; illegal spots stay unmarked.
 
 ### View — timeline primitives
 
@@ -200,7 +205,7 @@ A-roll track shows keep/gap cells from `arolls`. Each Edit gets an Edit cell on 
 ### View — player primitives
 
 **Text overlay**, **Zoom**, **ScreenShake**, **Media layer**, **Audio layer**, **Transition**:
-Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside. Stack: A-roll → zoom → b-roll → **transition** → text overlays (title/listicle/quote + **motion**) → captions. Fade/slide need both keep pictures at the stitch (overlap). Flash is a short full-frame white pulse on the picture (after A-roll+b-roll+zoom, under title/listicle/captions) — do not cover headings.
+Shared modules for editor preview (`@remotion/player`) and Lambda export. Consume resolved **ProjectProps**, not sparse omit semantics. `ScreenShake` wraps A-roll/zoom/b-roll; captions and on-screen text stay outside. Stack: A-roll → zoom → b-roll → **transition** → text overlays (title/listicle/quote + **motion** + **sticker**) → captions. Fade/slide need both keep pictures at the stitch (overlap). Flash is a short full-frame white pulse on the picture (after A-roll+b-roll+zoom, under title/listicle/captions) — do not cover headings.
 
 **ProjectProps**:
 Fully resolved render DTO (defaults materialized). Built from ProjectConfig + assets + projected transcripts.
@@ -264,6 +269,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - On-screen title is a `vfx`/`text` Edit (seeded, deletable) sharing `TextBase` with listicle (heading/subheading/`middle`/hideCaptions/`Transform`/`style`); `Project.title` is metadata only and is not kept in sync after seed
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
 - Emphasis look is a Project field (`emphasisStyle`); quote may sparse-merge the same `EmphasisStyle` shape on top; AI never writes emphasis style
+- Scribble is a Transcript word field (sibling of `emphasized`); AI never writes scribble; paint only when the word is emphasized
 - Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
 - Title and listicle share one overlay catalog and one paint path; both carry `TextBase.style`; listicle’s copy mirrors Project `listicleStyle` (fan-out on patch)
 - Companion SFX are sibling `sfx` edits; AI chooses optional intensity (`soft`/`medium`/`hard`) for a fixed candidate role from the AI SFX pack only; concrete Asset is hash-picked from the seeded role pool; intensity sets volume
@@ -290,6 +296,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 | transition   | Edit                                                              | marker only       | Video gutter   | Picture stitch (fade/slide overlap; flash pulse under text)   |
 | arolls       | topology                                                          | —                 | Keep/gap cells | A-roll Media                                                  |
 | emphasis     | Transcript word flag + Project `emphasisStyle` (+ quote override) | (caption styling) | —              | caption word style                                            |
+| scribble     | Transcript word field (`scribble`); paints only if `emphasized`   | word inspector    | —              | caption word draw-on mark                                     |
 
 ## Deprioritized / out of scope
 

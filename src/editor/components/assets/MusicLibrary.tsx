@@ -1,18 +1,19 @@
-import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { toast } from "sonner";
 
 import {
   mixPlaybackVolume,
   MUSIC_VOLUME_DEFAULT,
 } from "~/domain/audio/mix-levels";
-import { putToPresignedUrl } from "~/editor/components/assets/put-presigned-url";
+import { useAssetUpload } from "~/editor/components/assets/useAssetUpload";
 import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
+import {
+  PickerEmpty,
+  PickerGrid,
+  PickerTile,
+} from "~/editor/components/picker";
 import { probeAudioFile } from "~/editor/lib/probe-media";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
-import { cn } from "~/lib/utils";
-import { api } from "~/utils/api";
 
 import type { EditorAsset } from "~/editor/store";
 
@@ -23,67 +24,26 @@ function musicLabel(asset: EditorAsset): string {
 }
 
 export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
-  const projectId = useEditor((s) => s.projectId);
   const config = useEditor((s) => s.config);
   const setMusic = useEditor((s) => s.setMusic);
-  const addAssets = useEditor((s) => s.addAssets);
   const openMusicPanel = useSelection((s) => s.openMusicPanel);
   const activeId = config?.music?.assetId ?? null;
   const mixVolume = config?.music?.volume ?? MUSIC_VOLUME_DEFAULT;
   const { playingKey, preview, stopPreview } = useAudioPreview();
-  const [importing, setImporting] = useState(false);
-
-  const uploadStart = api.project.uploadAssetsStart.useMutation();
-  const uploadFinalize = api.project.uploadAssetsFinalize.useMutation();
-
-  const onDrop = useCallback(
-    async (accepted: File[]) => {
-      if (!projectId || accepted.length === 0 || importing) return;
-      setImporting(true);
-      stopPreview();
-      try {
-        const probed = await Promise.all(
-          accepted.map(async (file) => {
-            const meta = await probeAudioFile(file);
-            return { file, meta };
-          }),
-        );
-
-        const { uploads } = await uploadStart.mutateAsync({
-          projectId,
-          files: probed.map(({ file, meta }) => ({
-            filename: file.name,
-            contentType: file.type || "audio/mpeg",
-            size: file.size,
-            durationSec: meta.durationSec,
-          })),
-        });
-
-        await Promise.all(
-          uploads.map((u, i) => {
-            const file = probed[i]!.file;
-            return putToPresignedUrl(file, u.uploadUrl, u.contentType);
-          }),
-        );
-
-        const { assets: created } = await uploadFinalize.mutateAsync({
-          projectId,
-          assetIds: uploads.map((u) => u.assetId),
-        });
-
-        addAssets(created);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Upload failed");
-      } finally {
-        setImporting(false);
-      }
-    },
-    [projectId, importing, uploadStart, uploadFinalize, addAssets, stopPreview],
-  );
+  const { importing, importFiles } = useAssetUpload({
+    onBeforeUpload: stopPreview,
+  });
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (accepted) => {
-      void onDrop(accepted);
+      void importFiles(accepted, async (file) => {
+        const meta = await probeAudioFile(file);
+        return {
+          file,
+          contentType: file.type || "audio/mpeg",
+          durationSec: meta.durationSec,
+        };
+      });
     },
     noClick: true,
     noKeyboard: true,
@@ -102,7 +62,7 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
   return (
     <div {...getRootProps()} className="min-h-0 flex-1 overflow-auto">
       <input {...getInputProps()} />
-      <div className="flex flex-col gap-1 p-2.5">
+      <PickerGrid className="p-2">
         {assets.map((asset) => {
           const active = asset.id === activeId;
           const previewVol = mixPlaybackVolume(
@@ -111,15 +71,14 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
             asset.truePeakDb,
             MUSIC_VOLUME_DEFAULT,
           );
+          const playing = playingKey === asset.id;
           return (
-            <div
+            <PickerTile
               key={asset.id}
-              className={cn(
-                "bg-panel-2 flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 select-none",
-                active
-                  ? "border-music ring-music ring-1"
-                  : "border-border hover:border-music/60",
-              )}
+              label={musicLabel(asset)}
+              selected={active}
+              thumbClassName="bg-music/25 text-music"
+              className="cursor-pointer"
               onClick={() => {
                 stopPreview();
                 if (active) {
@@ -136,43 +95,27 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
             >
               <button
                 type="button"
-                className="bg-music/25 text-music hover:bg-music/40 flex h-7 w-7 shrink-0 items-center justify-center rounded"
+                className="flex size-full items-center justify-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   preview(asset.id, asset.playbackUrl, previewVol);
                 }}
-                title={playingKey === asset.id ? "Stop" : "Preview"}
+                title={playing ? "Stop" : "Preview"}
               >
-                {playingKey === asset.id ? "■" : "▶"}
+                {playing ? "■" : "▶"}
               </button>
-              <span className="text-foreground min-w-0 flex-1 truncate text-[11px]">
-                {musicLabel(asset)}
-              </span>
-              <span className="text-muted-foreground shrink-0 text-[10px]">
-                {active
-                  ? "On"
-                  : asset.durationSec != null
-                    ? `${asset.durationSec.toFixed(0)}s`
-                    : ""}
-              </span>
-            </div>
+            </PickerTile>
           );
         })}
         {assets.length === 0 && !importing ? (
-          <p className="text-muted-foreground text-xs">
+          <PickerEmpty>
             Drop audio here, or run{" "}
             <code className="text-[10px]">npm run seed:global</code>.
-          </p>
+          </PickerEmpty>
         ) : null}
-        {importing ? (
-          <p className="text-muted-foreground text-xs">Importing…</p>
-        ) : null}
-        {isDragActive ? (
-          <p className="text-accent text-center text-xs font-medium">
-            Drop audio to add
-          </p>
-        ) : null}
-      </div>
+        {importing ? <PickerEmpty>Importing…</PickerEmpty> : null}
+        {isDragActive ? <PickerEmpty>Drop audio to add</PickerEmpty> : null}
+      </PickerGrid>
     </div>
   );
 }

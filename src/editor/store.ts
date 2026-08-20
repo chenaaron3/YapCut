@@ -16,6 +16,7 @@ import {
 } from "~/domain/arolls";
 import { MUSIC_VOLUME_DEFAULT } from "~/domain/audio/mix-levels";
 import {
+  editsForAiAssist,
   patchEdit as applyPatchEdit,
   patchEditRange as applyPatchEditRange,
   placeEdit,
@@ -72,7 +73,9 @@ import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript";
 import type { ProjectProps } from "~/remotion/helpers/types";
 
 /** Mutable transcript-word fields (local asset words). */
-export type WordPatch = Partial<Pick<TranscriptWord, "emphasized" | "text">>;
+export type WordPatch = Partial<
+  Pick<TranscriptWord, "emphasized" | "text" | "scribble">
+>;
 
 export type AudioLibrary = "sfx" | "music";
 
@@ -164,7 +167,7 @@ type EditorActions = {
   placeEditOnWord: (
     globalIndex: number,
     seed: EditSeed,
-    options?: { maxDurationSec?: number | null },
+    options?: { maxDurationSec?: number | null; minDurationSec?: number },
   ) => void;
   /** Place an edit on a caller-computed timeline range (e.g. a transition stitch). */
   placeEditOnRange: (seed: EditSeed, range: TimelineTime) => void;
@@ -384,6 +387,15 @@ function globalWordsFor(
   return value;
 }
 
+function clearStaleEditSelection(editIds: Iterable<number>) {
+  const { selection, clearSelection } = useSelection.getState();
+  if (selection?.kind !== "edit") return;
+  const kept = new Set(editIds);
+  if (selection.ids.some((id) => typeof id !== "number" || !kept.has(id))) {
+    clearSelection();
+  }
+}
+
 export const useEditor = create<EditorState & EditorActions>((set, get) => {
   const pushHistory = (snap: Snapshot) => {
     history.push(snap);
@@ -529,7 +541,13 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         title: data.title?.trim() ? data.title.trim() : "Untitled",
       });
       const layout = layoutFor(data.config, data.assets);
-      const timelineSec = snapTimelineSec(layout, 0);
+      const prev = get();
+      const keepPlayhead =
+        prev.loadState === "ready" && prev.projectId === data.id;
+      const timelineSec = snapTimelineSec(
+        layout,
+        keepPlayhead ? clampTimelineSec(layout, prev.timelineSec) : 0,
+      );
       const outputSec = timelineToOutputSec(layout, timelineSec);
       set({
         loadState: "ready",
@@ -548,6 +566,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         timelineSec,
         fps,
       });
+      clearStaleEditSelection(data.config.edits.map((edit) => edit.id));
     },
 
     save: async () => {
@@ -646,15 +665,13 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
     syncActiveWord: () => {
       const { timelineSec } = get();
       const { selection, select } = useSelection.getState();
-      // Keep edit / a-roll selections while scrubbing playhead for preview.
+      // Keep edit / a-roll / multi-word selections while the playhead moves.
       if (selection != null && selection.kind !== "word") return;
       if (selection?.kind === "word" && selection.ids.length > 1) return;
       const words = get().getGlobalWords();
       const index = wordIndexAtTimelineSec(timelineSec, words);
       if (index == null) return;
-      const current =
-        selection?.kind === "word" ? (selection.ids[0] ?? null) : null;
-      if (index === current) return;
+      if (selection?.kind === "word" && selection.ids[0] === index) return;
       select("word", index);
     },
 
@@ -823,7 +840,16 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
             local.text = patch.text;
           }
           if ("emphasized" in patch) {
-            local.emphasized = patch.emphasized ? true : undefined;
+            if (patch.emphasized) {
+              local.emphasized = true;
+            } else {
+              delete local.emphasized;
+              delete local.scribble;
+            }
+          }
+          if ("scribble" in patch && local.emphasized) {
+            if (patch.scribble) local.scribble = patch.scribble;
+            else delete local.scribble;
           }
         }
       });
@@ -874,6 +900,12 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       );
       if (options?.maxDurationSec != null) {
         range = clampTimelineRangeToMedia(range, options.maxDurationSec);
+      }
+      if (options?.minDurationSec != null) {
+        const want = options.minDurationSec;
+        if (range.end - range.start < want) {
+          range = { start: range.start, end: range.start + want };
+        }
       }
       get().placeEditOnRange(seed, range);
     },
@@ -958,12 +990,13 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
 
       const nextConfig: ProjectConfig = {
         ...state.config,
-        edits: state.config.edits.filter((e) => e.kind === "broll"),
+        edits: editsForAiAssist(state.config.edits),
       };
       const nextTranscripts = produce(state.transcriptsByAssetId, (draft) => {
         for (const words of Object.values(draft)) {
           for (const w of words) {
             delete w.emphasized;
+            delete w.scribble;
           }
         }
       });
@@ -980,16 +1013,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
         transcriptsByAssetId: nextTranscripts,
         props,
       });
-
-      const { selection, clearSelection } = useSelection.getState();
-      if (selection?.kind === "edit") {
-        const kept = new Set(nextConfig.edits.map((e) => e.id));
-        if (
-          selection.ids.some((id) => typeof id !== "number" || !kept.has(id))
-        ) {
-          clearSelection();
-        }
-      }
+      clearStaleEditSelection(nextConfig.edits.map((edit) => edit.id));
     },
 
     patchEditRange: (id, edge, value) => {

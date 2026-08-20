@@ -1,5 +1,9 @@
 # Public assets
 
+## Stickers (`stickers/`)
+
+Emoji (Noto Animated Emoji Lottie) and Marks (Lordicon Wired Flat). How to import more: [`stickers/README.md`](./stickers/README.md). Catalog: `src/domain/sticker.ts`.
+
 ## AI SFX pack (`sfx/`)
 
 Layout: `sfx/<role>/*.{wav,mp3}`

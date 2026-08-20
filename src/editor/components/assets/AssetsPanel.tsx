@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Blend,
   ChevronRight,
@@ -6,25 +5,31 @@ import {
   Image,
   Music2,
   Sparkles,
+  Sticker,
   Volume2,
-  type LucideIcon,
 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { arollAssetOrder } from "~/domain/arolls";
 import { ArollAssetList } from "~/editor/components/assets/ArollAssetList";
 import { BrollLibrary } from "~/editor/components/assets/BrollLibrary";
 import { MusicLibrary } from "~/editor/components/assets/MusicLibrary";
 import { SfxLibrary } from "~/editor/components/assets/SfxLibrary";
+import { StickerLibrary } from "~/editor/components/assets/StickerLibrary";
 import { TransitionsLibrary } from "~/editor/components/assets/TransitionsLibrary";
 import { VfxLibrary } from "~/editor/components/assets/VfxLibrary";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 
-type Tab = "aroll" | "broll" | "vfx" | "sfx" | "music" | "transitions";
+import type { LucideIcon } from "lucide-react";
+
+type Tab =
+  "aroll" | "broll" | "vfx" | "sfx" | "music" | "transitions" | "sticker";
 
 const TABS: { id: Tab; label: string; Icon: LucideIcon }[] = [
   { id: "aroll", label: "A-roll", Icon: Film },
   { id: "broll", label: "B-roll", Icon: Image },
+  { id: "sticker", label: "Stickers", Icon: Sticker },
   { id: "sfx", label: "SFX", Icon: Volume2 },
   { id: "vfx", label: "VFX", Icon: Sparkles },
   { id: "transitions", label: "Transitions", Icon: Blend },
@@ -97,7 +102,7 @@ export function AssetsPanel() {
           ref={scrollerRef}
           role="tablist"
           aria-label="Asset categories"
-          className="scrollbar-none flex min-w-0 w-full gap-1 overflow-x-auto px-1.5 pr-7"
+          className="flex w-full min-w-0 scrollbar-none gap-1 overflow-x-auto px-1.5 pr-7"
         >
           {TABS.map(({ id, label, Icon }) => {
             const active = tab === id;
@@ -122,7 +127,7 @@ export function AssetsPanel() {
           })}
         </div>
         {canScrollRight ? (
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex w-8 items-center justify-end bg-linear-to-l from-panel from-55% to-transparent pr-1">
+          <div className="from-panel pointer-events-none absolute inset-y-0 right-0 flex w-8 items-center justify-end bg-linear-to-l from-55% to-transparent pr-1">
             <button
               type="button"
               aria-label="Scroll to more asset categories"
@@ -144,6 +149,8 @@ export function AssetsPanel() {
           <BrollLibrary assets={brollAssets} />
         ) : tab === "vfx" ? (
           <VfxLibrary />
+        ) : tab === "sticker" ? (
+          <StickerLibrary />
         ) : tab === "transitions" ? (
           <TransitionsLibrary />
         ) : tab === "music" ? (

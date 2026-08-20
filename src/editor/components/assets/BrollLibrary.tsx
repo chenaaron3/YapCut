@@ -1,12 +1,14 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 
 import { BrollPreviewModal } from "~/editor/components/assets/BrollPreviewModal";
 import { BrollTile } from "~/editor/components/assets/BrollTile";
-import { putToPresignedUrl } from "~/editor/components/assets/put-presigned-url";
+import { useAssetUpload } from "~/editor/components/assets/useAssetUpload";
+import { PickerEmpty, PickerGrid } from "~/editor/components/picker";
 import { prepareMediaFileForUpload } from "~/editor/lib/prepare-media-file";
 import { probeMediaFile } from "~/editor/lib/probe-media";
+import { useRehydrateFromServer } from "~/editor/lib/use-rehydrate-from-server";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
@@ -15,66 +17,57 @@ import type { EditorAsset } from "~/editor/store";
 
 export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
   const projectId = useEditor((s) => s.projectId);
-  const addAssets = useEditor((s) => s.addAssets);
-  const [importing, setImporting] = useState(false);
+  const rehydrateFromServer = useRehydrateFromServer();
+  const { importing, importFiles } = useAssetUpload();
+  const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const previewAsset = assets.find((a) => a.id === previewId) ?? null;
+  const visibleAssets = useMemo(
+    () => assets.filter((asset) => !hiddenIds.has(asset.id)),
+    [assets, hiddenIds],
+  );
+  const previewAsset = visibleAssets.find((a) => a.id === previewId) ?? null;
 
-  const uploadStart = api.project.uploadAssetsStart.useMutation();
-  const uploadFinalize = api.project.uploadAssetsFinalize.useMutation();
+  const removeAsset = api.project.removeBrollAsset.useMutation();
 
-  const onDrop = useCallback(
-    async (accepted: File[]) => {
-      if (!projectId || accepted.length === 0 || importing) return;
-      setImporting(true);
+  const onRemove = useCallback(
+    async (assetId: string) => {
+      if (!projectId || hiddenIds.has(assetId)) return;
+      setHiddenIds((prev) => new Set(prev).add(assetId));
+      setPreviewId((id) => (id === assetId ? null : id));
       try {
-        const probed = await Promise.all(
-          accepted.map(async (raw) => {
-            const file = await prepareMediaFileForUpload(raw);
-            const meta = await probeMediaFile(file);
-            return { file, meta };
-          }),
-        );
-
-        const { uploads } = await uploadStart.mutateAsync({
-          projectId,
-          files: probed.map(({ file, meta }) => ({
-            filename: file.name,
-            contentType: file.type || "application/octet-stream",
-            size: file.size,
-            width: meta.width,
-            height: meta.height,
-            ...(meta.durationSec != null
-              ? { durationSec: meta.durationSec }
-              : {}),
-          })),
-        });
-
-        await Promise.all(
-          uploads.map((u, i) => {
-            const file = probed[i]!.file;
-            return putToPresignedUrl(file, u.uploadUrl, u.contentType);
-          }),
-        );
-
-        const { assets: created } = await uploadFinalize.mutateAsync({
-          projectId,
-          assetIds: uploads.map((u) => u.assetId),
-        });
-
-        addAssets(created);
+        const editor = useEditor.getState();
+        if (editor.configDirty || editor.transcriptsDirty) await editor.save();
+        await removeAsset.mutateAsync({ projectId, assetId });
+        await rehydrateFromServer([assetId]);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Upload failed");
-      } finally {
-        setImporting(false);
+        setHiddenIds((prev) => {
+          const next = new Set(prev);
+          next.delete(assetId);
+          return next;
+        });
+        toast.error(err instanceof Error ? err.message : "Delete failed");
       }
     },
-    [projectId, importing, uploadStart, uploadFinalize, addAssets],
+    [projectId, hiddenIds, removeAsset, rehydrateFromServer],
   );
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop: (files) => {
-      void onDrop(files);
+      void importFiles(files, async (raw) => {
+        const file = await prepareMediaFileForUpload(raw);
+        const meta = await probeMediaFile(file);
+        return {
+          file,
+          contentType: file.type || "application/octet-stream",
+          width: meta.width,
+          height: meta.height,
+          ...(meta.durationSec != null
+            ? { durationSec: meta.durationSec }
+            : {}),
+        };
+      });
     },
     accept: {
       "image/*": [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"],
@@ -94,38 +87,23 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
       className={cn("flex min-h-full flex-col", isDragActive && "bg-primary/5")}
     >
       <input {...getInputProps()} />
-      <div className="grid grid-cols-2 content-start gap-2 p-2.5">
-        {assets.map((asset) => (
+      <PickerGrid className="p-2">
+        {visibleAssets.map((asset) => (
           <BrollTile
             key={asset.id}
             asset={asset}
             onPreview={() => setPreviewId(asset.id)}
+            onRemove={() => void onRemove(asset.id)}
           />
         ))}
-        {assets.length === 0 && !importing ? (
-          <p className="text-muted-foreground col-span-2 text-xs">
+        {visibleAssets.length === 0 && !importing ? (
+          <PickerEmpty>
             Drop images or videos here, then drag onto the transcript.
-          </p>
+          </PickerEmpty>
         ) : null}
-        {importing ? (
-          <p className="text-muted-foreground col-span-2 text-xs">Importing…</p>
-        ) : null}
-        {isDragActive ? (
-          <p className="text-primary col-span-2 text-center text-xs font-medium">
-            Drop media to add
-          </p>
-        ) : null}
-      </div>
-      <div className="border-border mt-auto border-t p-2">
-        <button
-          type="button"
-          className="border-border text-muted-foreground hover:bg-panel-2 hover:text-foreground w-full rounded-md border px-2 py-1.5 text-xs disabled:opacity-50"
-          disabled={importing || !projectId}
-          onClick={() => open()}
-        >
-          Upload b-roll
-        </button>
-      </div>
+        {importing ? <PickerEmpty>Importing…</PickerEmpty> : null}
+        {isDragActive ? <PickerEmpty>Drop media to add</PickerEmpty> : null}
+      </PickerGrid>
       <BrollPreviewModal
         asset={previewAsset}
         open={previewAsset != null}

@@ -4,6 +4,11 @@ import { listicleSeedFromWords } from "~/domain/listicle";
 import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project-config";
 import { SFX_DRAG_MIME, sfxSeed } from "~/domain/sfx";
 import {
+  STICKER_DRAG_MIME,
+  stickerEntry,
+  stickerSeed,
+} from "~/domain/sticker";
+import {
   isTransitionTemplateId,
   rangeForStitch,
   TRANSITION_DRAG_MIME,
@@ -18,14 +23,15 @@ import { useEditor } from "~/editor/store";
 import type { BrollDragPayload } from "~/domain/broll";
 import type { EditSeed } from "~/domain/edits";
 import type { SfxDragPayload } from "~/domain/sfx";
+import type { StickerDragPayload } from "~/domain/sticker";
 import type { VfxDragPayload } from "~/domain/vfx";
 
-export type AssetDropKind = "broll" | "sfx" | "vfx" | "transition";
+export type AssetDropKind = "broll" | "sfx" | "vfx" | "transition" | "sticker";
 
 type PlaceEditOnWord = (
   globalIndex: number,
   seed: EditSeed,
-  options?: { maxDurationSec?: number | null },
+  options?: { maxDurationSec?: number | null; minDurationSec?: number },
 ) => void;
 
 type PlaceDrop = {
@@ -39,6 +45,7 @@ export function assetDropKindFromTypes(
   types: readonly string[],
 ): AssetDropKind | null {
   if (types.includes(BROLL_DRAG_MIME)) return "broll";
+  if (types.includes(STICKER_DRAG_MIME)) return "sticker";
   if (types.includes(SFX_DRAG_MIME)) return "sfx";
   if (types.includes(VFX_DRAG_MIME)) return "vfx";
   if (types.includes(TRANSITION_DRAG_MIME)) return "transition";
@@ -56,6 +63,27 @@ function parseJson<T>(raw: string): T | null {
 function mimeRaw(dataTransfer: DataTransfer, mime: string): string | null {
   const raw = dataTransfer.getData(mime);
   return raw ? raw : null;
+}
+
+function placeStickerFromDrop({
+  dataTransfer,
+  globalIndex,
+  placeEditOnWord,
+}: PlaceDrop): boolean {
+  const raw = mimeRaw(dataTransfer, STICKER_DRAG_MIME);
+  if (!raw) return false;
+  const payload = parseJson<StickerDragPayload>(raw);
+  if (
+    payload?.source &&
+    payload.catalogId &&
+    stickerEntry(payload.source, payload.catalogId)
+  ) {
+    placeEditOnWord(
+      globalIndex,
+      stickerSeed(payload.source, payload.catalogId),
+    );
+  }
+  return true;
 }
 
 function placeBrollFromDrop({
@@ -167,7 +195,7 @@ function placeTransitionFromDrop({
 }
 
 /**
- * Place a b-roll/SFX/VFX/transition edit from a transcript word drop.
+ * Place a b-roll/sticker/SFX/VFX/transition edit from a transcript word drop.
  * Returns true when the event was handled (caller should preventDefault).
  */
 export function placeEditFromAssetDrop(
@@ -178,6 +206,7 @@ export function placeEditFromAssetDrop(
   const drop: PlaceDrop = { dataTransfer, globalIndex, placeEditOnWord };
   return (
     placeBrollFromDrop(drop) ||
+    placeStickerFromDrop(drop) ||
     placeSfxFromDrop(drop) ||
     placeVfxFromDrop(drop) ||
     placeTransitionFromDrop(drop)

@@ -2,11 +2,7 @@ import { Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
-import {
-  isEditorProjectStatus,
-  isProjectStatus,
-} from "~/domain/project-status";
-import { hydrateInputFromProject } from "~/editor/lib/hydrate-project";
+import { useRehydrateFromServer } from "~/editor/lib/use-rehydrate-from-server";
 import { useEditor } from "~/editor/store";
 import { api } from "~/utils/api";
 
@@ -15,25 +11,12 @@ export function AiAssistButton() {
   const status = useEditor((s) => s.status);
   const dirty = useEditor((s) => s.configDirty || s.transcriptsDirty);
   const save = useEditor((s) => s.save);
-  const hydrateFromServer = useEditor((s) => s.hydrateFromServer);
   const clearForAiAssist = useEditor((s) => s.clearForAiAssist);
-
-  const utils = api.useUtils();
+  const rehydrateFromServer = useRehydrateFromServer();
 
   const mutation = api.project.runAiAssist.useMutation({
     onSuccess: async () => {
-      if (!projectId) return;
-      const data = await utils.project.byId.fetch({ id: projectId });
-      if (!data) return;
-      if (
-        !isProjectStatus(data.status) ||
-        !isEditorProjectStatus(data.status)
-      ) {
-        return;
-      }
-      hydrateFromServer(
-        hydrateInputFromProject(data, useEditor.getState().assets),
-      );
+      await rehydrateFromServer();
     },
   });
 

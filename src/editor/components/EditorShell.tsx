@@ -5,10 +5,7 @@ import { useEffect } from "react";
 import { EditorLoading, useEditorLock } from "~/components/layout/EditorLoading";
 import { ProjectsBackLink } from "~/components/layout/ProjectsBackLink";
 
-import {
-  isEditorProjectStatus,
-  isProjectStatus,
-} from "~/domain/project-status";
+import { isEditorProjectStatus } from "~/domain/project-status";
 import { AiAssistButton } from "~/editor/components/AiAssistButton";
 import { AssetsPanel } from "~/editor/components/assets/AssetsPanel";
 import { ExportButton } from "~/editor/components/ExportButton";
@@ -93,23 +90,11 @@ function useGlobalShortcuts() {
         togglePlayback(e);
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
-        if (
-          !e.shiftKey &&
-          selection.selection?.kind === "word" &&
-          editor.seekAdjacentWord(-1)
-        ) {
-          return;
-        }
+        if (!e.shiftKey && editor.seekAdjacentWord(-1)) return;
         editor.seekBySeconds(e.shiftKey ? -0.1 : -1);
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        if (
-          !e.shiftKey &&
-          selection.selection?.kind === "word" &&
-          editor.seekAdjacentWord(1)
-        ) {
-          return;
-        }
+        if (!e.shiftKey && editor.seekAdjacentWord(1)) return;
         editor.seekBySeconds(e.shiftKey ? 0.1 : 1);
       }
     };
@@ -166,7 +151,7 @@ export function EditorShell({ projectId }: Props) {
   useEffect(() => {
     const data = projectQuery.data;
     if (!data) return;
-    if (!isProjectStatus(data.status) || !isEditorProjectStatus(data.status)) {
+    if (!isEditorProjectStatus(data.status)) {
       return;
     }
 

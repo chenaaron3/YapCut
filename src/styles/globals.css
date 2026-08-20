@@ -66,6 +66,7 @@
   --color-panel: #1a1d26;
   --color-panel-2: #222632;
   --color-broll: #c9a227;
+  --color-sticker: #c084fc;
   --color-vfx: #fb7185;
   --color-sfx: #2dd4bf;
   --color-music: #a78bfa;
@@ -387,6 +388,9 @@
 
 .transcript-asset-drop-zone[data-asset-drop="broll"] {
   --transcript-drop-glow: var(--color-broll);
+}
+.transcript-asset-drop-zone[data-asset-drop="sticker"] {
+  --transcript-drop-glow: var(--color-sticker);
 }
 .transcript-asset-drop-zone[data-asset-drop="sfx"] {
   --transcript-drop-glow: var(--color-sfx);

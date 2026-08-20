@@ -4,14 +4,15 @@ import {
   ListOrdered,
   Quote,
   Sparkles,
+  Sticker,
   Type,
   Vibrate,
   Volume2,
   ZoomIn,
-  type LucideIcon,
 } from "lucide-react";
 
 import type { Edit } from "~/domain/project-config";
+import type { LucideIcon } from "lucide-react";
 
 /**
  * View chrome identity for an Edit kind (or vfx subtype).
@@ -26,6 +27,7 @@ export type EditChromeKey =
   | "vfx:shake"
   | "vfx:motion"
   | "broll"
+  | "sticker"
   | "sfx"
   | "transition";
 
@@ -42,7 +44,7 @@ export type EditChromeSpec = {
   matches: (edit: Edit) => boolean;
 };
 
-/** Default transcript chrome — order: B-roll → VFX → SFX → Zoom. */
+/** Default transcript chrome — order: B-roll → Sticker → VFX → SFX → Zoom. */
 export const EDIT_CHROME: readonly EditChromeSpec[] = [
   {
     key: "broll",
@@ -57,13 +59,26 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     matches: (e) => e.kind === "broll",
   },
   {
+    key: "sticker",
+    label: "sticker",
+    Icon: Sticker,
+    markerClass: "bg-sticker/80 text-black",
+    markerSelectedClass: "bg-sticker text-black",
+    dotClass: "bg-sticker",
+    underlineClass:
+      "underline decoration-sticker decoration-2 underline-offset-4",
+    highlightClass: "bg-sticker/20",
+    matches: (e) => e.kind === "sticker",
+  },
+  {
     key: "vfx:text",
     label: "text",
     Icon: Type,
     markerClass: "bg-vfx/80 text-black",
     markerSelectedClass: "bg-vfx text-black",
     dotClass: "bg-vfx",
-    underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
+    underlineClass:
+      "underline decoration-vfx decoration-2 underline-offset-[6px]",
     highlightClass: "bg-vfx/20",
     matches: (e) => e.kind === "vfx" && e.type === "text",
   },
@@ -74,7 +89,8 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     markerClass: "bg-vfx/80 text-black",
     markerSelectedClass: "bg-vfx text-black",
     dotClass: "bg-vfx",
-    underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
+    underlineClass:
+      "underline decoration-vfx decoration-2 underline-offset-[6px]",
     highlightClass: "bg-vfx/20",
     matches: (e) => e.kind === "vfx" && e.type === "quote",
   },
@@ -85,7 +101,8 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     markerClass: "bg-vfx/80 text-black",
     markerSelectedClass: "bg-vfx text-black",
     dotClass: "bg-vfx",
-    underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
+    underlineClass:
+      "underline decoration-vfx decoration-2 underline-offset-[6px]",
     highlightClass: "bg-vfx/20",
     matches: (e) => e.kind === "vfx" && e.type === "listicle",
   },
@@ -96,7 +113,8 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     markerClass: "bg-vfx/80 text-black",
     markerSelectedClass: "bg-vfx text-black",
     dotClass: "bg-vfx",
-    underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
+    underlineClass:
+      "underline decoration-vfx decoration-2 underline-offset-[6px]",
     highlightClass: "bg-vfx/20",
     matches: (e) => e.kind === "vfx" && e.type === "shake",
   },
@@ -107,7 +125,8 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     markerClass: "bg-vfx/80 text-black",
     markerSelectedClass: "bg-vfx text-black",
     dotClass: "bg-vfx",
-    underlineClass: "underline decoration-vfx decoration-2 underline-offset-[6px]",
+    underlineClass:
+      "underline decoration-vfx decoration-2 underline-offset-[6px]",
     highlightClass: "bg-vfx/20",
     matches: (e) => e.kind === "vfx" && e.type === "motion",
   },
@@ -129,8 +148,7 @@ export const EDIT_CHROME: readonly EditChromeSpec[] = [
     markerClass: "bg-zoom/80 text-white",
     markerSelectedClass: "bg-zoom text-white",
     dotClass: "bg-zoom",
-    underlineClass:
-      "underline decoration-zoom decoration-2 underline-offset-4",
+    underlineClass: "underline decoration-zoom decoration-2 underline-offset-4",
     highlightClass: "bg-zoom/15",
     matches: (e) => e.kind === "zoom",
   },

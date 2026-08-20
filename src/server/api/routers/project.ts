@@ -9,18 +9,19 @@ import {
   assertLandingCreateBatch,
   CREATE_MAX_BYTES,
 } from "~/domain/create-limits";
+import { MOTION_MAX_PROMPT, shotPlanSchema } from "~/domain/motion-config";
 import {
   emptyProjectConfig,
   parseProjectConfig,
   projectConfigSchema,
 } from "~/domain/project-config";
-import { MOTION_MAX_PROMPT, shotPlanSchema } from "~/domain/motion-config";
 import {
   PROJECT_LIST_BADGES,
   PROJECT_LIST_PAGE_SIZE,
   projectListBadge,
 } from "~/domain/project-list-badge";
 import { isEditorProjectStatus } from "~/domain/project-status";
+import { SCRIBBLE_IDS } from "~/domain/scribble";
 import { generateMotionPlan, motionFailMessage } from "~/server/ai/motion";
 import { rerunProjectAiAssist } from "~/server/ai/rerun-project-ai";
 import {
@@ -47,7 +48,11 @@ import {
 import { signedCloudFrontUrl } from "~/server/media/cloudfront";
 import { isGlobalMusicKey, isGlobalSfxKey } from "~/server/media/keys";
 import { measureAsset } from "~/server/media/measure-asset";
-import { canAccessProject, claimUnclaimedProject, sessionUserId } from "~/server/project-access";
+import {
+  canAccessProject,
+  claimUnclaimedProject,
+  sessionUserId,
+} from "~/server/project-access";
 import {
   projectListVisible,
   projectListWhere,
@@ -68,6 +73,7 @@ const transcriptWordSchema = z.object({
   start: z.number(),
   end: z.number(),
   emphasized: z.boolean().optional(),
+  scribble: z.enum(SCRIBBLE_IDS).optional(),
 });
 
 function isEmptyConfig(value: unknown): boolean {
@@ -1093,5 +1099,95 @@ export const projectRouter = createTRPCRouter({
       return {
         assets: measured.map(toClientAsset),
       };
+    }),
+
+  /** Delete a project b-roll file (not A-roll) and drop edits that used it. */
+  removeBrollAsset: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string().min(1),
+        assetId: z.string().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [project] = await ctx.db
+        .select({
+          id: projects.id,
+          status: projects.status,
+          config: projects.config,
+        })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, input.projectId),
+            eq(projects.userId, ctx.session.user.id),
+          ),
+        )
+        .limit(1);
+
+      if (!project) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Project not found",
+        });
+      }
+      if (!isEditorProjectStatus(project.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot remove assets while status is ${project.status}`,
+        });
+      }
+
+      const config = parseProjectConfig(project.config);
+      if (config.arolls.some((keep) => keep.assetId === input.assetId)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete an A-roll asset",
+        });
+      }
+
+      const [asset] = await ctx.db
+        .select({ id: assets.id, s3Key: assets.s3Key, kind: assets.kind })
+        .from(assets)
+        .where(
+          and(
+            eq(assets.id, input.assetId),
+            eq(assets.projectId, input.projectId),
+          ),
+        )
+        .limit(1);
+
+      if (!asset) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Asset not found",
+        });
+      }
+      if (asset.kind !== "image" && asset.kind !== "video") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only image/video b-roll can be deleted here",
+        });
+      }
+
+      const now = new Date();
+      const nextConfig = {
+        ...config,
+        edits: config.edits.filter(
+          (edit) => edit.kind !== "broll" || edit.assetId !== input.assetId,
+        ),
+      };
+      await ctx.db
+        .update(projects)
+        .set({
+          config: nextConfig,
+          configUpdatedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(projects.id, input.projectId));
+
+      await deleteAssetObjects([asset]);
+      await ctx.db.delete(assets).where(eq(assets.id, asset.id));
+      return { configUpdatedAt: now.toISOString() };
     }),
 });

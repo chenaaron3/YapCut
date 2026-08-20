@@ -1,5 +1,3 @@
-import type { FC } from "react";
-import type { CalculateMetadataFunction } from "remotion";
 import { Composition } from "remotion";
 
 import { Cover } from "~/remotion/Cover";
@@ -10,8 +8,12 @@ import {
   COMPOSITION_WIDTH,
   COVER_COMPOSITION_ID,
 } from "~/remotion/helpers/constants";
-import { TalkingHead, type TalkingHeadProps } from "~/remotion/TalkingHead";
+import { TalkingHead } from "~/remotion/TalkingHead";
+
 import type { ProjectProps } from "~/remotion/helpers/types";
+import type { TalkingHeadProps } from "~/remotion/TalkingHead";
+import type { FC } from "react";
+import type { CalculateMetadataFunction } from "remotion";
 
 const defaultProps: ProjectProps = {
   title: "Untitled",
@@ -29,6 +31,7 @@ const defaultProps: ProjectProps = {
   music: null,
   transitions: [],
   motionOverlays: [],
+  stickers: [],
 };
 
 const calculateMetadata: CalculateMetadataFunction<TalkingHeadProps> = ({

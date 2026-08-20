@@ -18,6 +18,12 @@ export function editTopologyEqual(a: Edit, b: Edit): boolean {
       return b.kind === "zoom";
     case "broll":
       return b.kind === "broll" && a.assetId === b.assetId;
+    case "sticker":
+      return (
+        b.kind === "sticker" &&
+        a.source === b.source &&
+        a.catalogId === b.catalogId
+      );
     case "sfx":
       return b.kind === "sfx" && a.assetId === b.assetId;
     case "vfx":

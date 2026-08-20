@@ -15,9 +15,19 @@ export function isProjectStatus(value: unknown): value is ProjectStatus {
   );
 }
 
+export type EditorProjectStatus = Extract<
+  ProjectStatus,
+  "ready" | "scheduled" | "exporting"
+>;
+
 /** Editor, rename, config, AI, and media upload. */
-export function isEditorProjectStatus(status: ProjectStatus): boolean {
-  return status === "ready" || status === "scheduled" || status === "exporting";
+export function isEditorProjectStatus(
+  status: unknown,
+): status is EditorProjectStatus {
+  return (
+    isProjectStatus(status) &&
+    (status === "ready" || status === "scheduled" || status === "exporting")
+  );
 }
 
 export function canStartProjectExport(status: ProjectStatus): boolean {

@@ -11,7 +11,6 @@ import {
   emphasisStyleSchema,
   optionalEmphasisStyleSchema,
 } from "~/domain/emphasis-style";
-
 import { shotPlanSchema } from "~/domain/motion-config";
 
 import type { CompanionSfxMap } from "~/domain/companion-sfx-map";
@@ -214,6 +213,17 @@ export type SfxEdit = EditBase &
     kind: "sfx";
   };
 
+/**
+ * Catalog sticker overlay (Noto animated emoji or Lordicon mark).
+ * Not b-roll: fixed box, no Ken Burns, no media Asset row.
+ */
+export type StickerEdit = EditBase &
+  Transform & {
+    kind: "sticker";
+    source: "emoji" | "lordicon";
+    catalogId: string;
+  };
+
 export type TransitionTemplateId = "flash" | "flashZoom" | "slide";
 
 /** Sequence role or a keep–keep stitch (keep ids, not layout indexes). */
@@ -234,13 +244,10 @@ export type TransitionEdit = EditBase & {
 };
 
 export type VfxEdit =
-  | VfxTextEdit
-  | VfxQuoteEdit
-  | VfxListicleEdit
-  | VfxShakeEdit
-  | VfxMotionEdit;
+  VfxTextEdit | VfxQuoteEdit | VfxListicleEdit | VfxShakeEdit | VfxMotionEdit;
 
-export type Edit = BrollEdit | SfxEdit | ZoomEdit | VfxEdit | TransitionEdit;
+export type Edit =
+  BrollEdit | SfxEdit | ZoomEdit | VfxEdit | TransitionEdit | StickerEdit;
 
 /** Edit members that include the `TextBase` mixin. */
 export type TextBaseEdit = Extract<Edit, TextBase>;
@@ -281,7 +288,7 @@ export type ProjectConfig = {
   /**
    * Shared emphasis treatment for `emphasized` words.
    * Applied after the caption/quote group style. Quotes may replace via
-   * `VfxQuoteEdit.emphasisStyle`.
+   * `VfxQuoteEdit.emphasisStyle`. Scribble lives on the transcript word.
    */
   emphasisStyle: EmphasisStyle;
   /**
@@ -416,6 +423,12 @@ const sfxEditSchema = editBaseSchema.merge(mediaRefSchema).extend({
   kind: z.literal("sfx"),
 });
 
+const stickerEditSchema = editBaseSchema.merge(transformSchema).extend({
+  kind: z.literal("sticker"),
+  source: z.enum(["emoji", "lordicon"]),
+  catalogId: z.string().min(1),
+});
+
 const transitionStitchSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("opening") }),
   z.object({ kind: z.literal("closing") }),
@@ -448,6 +461,7 @@ export const projectConfigSchema = z.object({
       vfxMotionEditSchema,
       brollEditSchema,
       sfxEditSchema,
+      stickerEditSchema,
       transitionEditSchema,
     ]),
   ),

@@ -1,30 +1,43 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { buildArollLayoutFromAssets } from '~/domain/arolls';
-import { layoutTimelineDuration } from '~/domain/layout-time';
-import { LABEL_OFFSET, TIMELINE_MAX_HEIGHT } from '~/editor/components/timeline/constants';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { buildArollLayoutFromAssets } from "~/domain/arolls";
+import { layoutTimelineDuration } from "~/domain/layout-time";
 import {
-    contentXForSec, useTimelineZoom
-} from '~/editor/components/timeline/hooks/useTimelineZoom';
-import { Playhead } from '~/editor/components/timeline/Playhead';
-import { TimelineRuler } from '~/editor/components/timeline/TimelineRuler';
-import { TransitionGutter } from '~/editor/components/timeline/TransitionGutter';
-import { BRollTrack } from '~/editor/components/timeline/tracks/BRollTrack';
-import { CaptionTrack } from '~/editor/components/timeline/tracks/CaptionTrack';
-import { SfxTrack } from '~/editor/components/timeline/tracks/SfxTrack';
-import { VfxTrack } from '~/editor/components/timeline/tracks/VfxTrack';
-import { VideoTrack } from '~/editor/components/timeline/tracks/VideoTrack';
-import { ZoomTrack } from '~/editor/components/timeline/tracks/ZoomTrack';
-import { getPlayer } from '~/editor/lib/player-bridge';
-import { editsTopologyEqual } from '~/editor/lib/edit-topology';
-import { isTimelineScrubbing, setTimelineScrubbing, useEditor, useEditorEqual } from '~/editor/store';
+  LABEL_OFFSET,
+  TIMELINE_MAX_HEIGHT,
+} from "~/editor/components/timeline/constants";
+import {
+  contentXForSec,
+  useTimelineZoom,
+} from "~/editor/components/timeline/hooks/useTimelineZoom";
+import { Playhead } from "~/editor/components/timeline/Playhead";
+import { TimelineRuler } from "~/editor/components/timeline/TimelineRuler";
+import { BRollTrack } from "~/editor/components/timeline/tracks/BRollTrack";
+import { CaptionTrack } from "~/editor/components/timeline/tracks/CaptionTrack";
+import { SfxTrack } from "~/editor/components/timeline/tracks/SfxTrack";
+import { StickerTrack } from "~/editor/components/timeline/tracks/StickerTrack";
+import { VfxTrack } from "~/editor/components/timeline/tracks/VfxTrack";
+import { VideoTrack } from "~/editor/components/timeline/tracks/VideoTrack";
+import { ZoomTrack } from "~/editor/components/timeline/tracks/ZoomTrack";
+import { TransitionGutter } from "~/editor/components/timeline/TransitionGutter";
+import { editsTopologyEqual } from "~/editor/lib/edit-topology";
+import { getPlayer } from "~/editor/lib/player-bridge";
+import {
+  isTimelineScrubbing,
+  setTimelineScrubbing,
+  useEditor,
+  useEditorEqual,
+} from "~/editor/store";
 
 import type {
   BrollEdit,
   SfxEdit,
+  StickerEdit,
   TransitionEdit,
   VfxEdit,
   ZoomEdit,
 } from "~/domain/project-config";
+
 function scrollPlayheadIntoView(el: HTMLDivElement, playheadX: number): void {
   const viewLeft = el.scrollLeft;
   const viewRight = viewLeft + el.clientWidth;
@@ -50,14 +63,12 @@ export function Timeline() {
   const [scrubbing, setScrubbing] = useState(false);
   const skipClickRef = useRef(false);
 
-  const zooms =
-    edits?.filter((e): e is ZoomEdit => e.kind === "zoom") ?? [];
-  const vfx =
-    edits?.filter((e): e is VfxEdit => e.kind === "vfx") ?? [];
-  const brolls =
-    edits?.filter((e): e is BrollEdit => e.kind === "broll") ?? [];
-  const sfx =
-    edits?.filter((e): e is SfxEdit => e.kind === "sfx") ?? [];
+  const zooms = edits?.filter((e): e is ZoomEdit => e.kind === "zoom") ?? [];
+  const vfx = edits?.filter((e): e is VfxEdit => e.kind === "vfx") ?? [];
+  const brolls = edits?.filter((e): e is BrollEdit => e.kind === "broll") ?? [];
+  const stickers =
+    edits?.filter((e): e is StickerEdit => e.kind === "sticker") ?? [];
+  const sfx = edits?.filter((e): e is SfxEdit => e.kind === "sfx") ?? [];
   const transitions =
     edits?.filter((e): e is TransitionEdit => e.kind === "transition") ?? [];
 
@@ -145,7 +156,7 @@ export function Timeline() {
     >
       <div
         ref={scrollRef}
-        className="relative min-h-0 min-w-0 overflow-x-auto overflow-y-auto [touch-action:pan-x_pan-y]"
+        className="relative min-h-0 min-w-0 [touch-action:pan-x_pan-y] overflow-x-auto overflow-y-auto"
       >
         <div
           ref={contentRef}
@@ -190,6 +201,7 @@ export function Timeline() {
             <VideoTrack layout={layout} width={trackWidth} />
             <CaptionTrack width={trackWidth} />
             <BRollTrack edits={brolls} width={trackWidth} />
+            <StickerTrack edits={stickers} width={trackWidth} />
             <SfxTrack edits={sfx} width={trackWidth} />
             <ZoomTrack edits={zooms} width={trackWidth} />
             <VfxTrack edits={vfx} width={trackWidth} />
