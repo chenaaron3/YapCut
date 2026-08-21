@@ -1,10 +1,12 @@
 import React, { Children, isValidElement } from "react";
 
 import { DEFAULT_CAPTION_STYLE } from "~/remotion/captions/style";
-import { ArcLayoutContext, layoutCaptionArc, type ArcLayout } from "./arc-layout";
+
+import { ArcLayoutContext, layoutCaptionArc } from "./arc-layout";
 import { captionGroupCss } from "./caption-style-css";
 import { CaptionBackground } from "./CaptionBackground";
 
+import type { ArcLayout } from "./arc-layout";
 import type {
   BackgroundKind,
   BackgroundStyle,
@@ -56,9 +58,7 @@ function spacedWords(line: ReactNode[]): ReactNode[] {
   return line.flatMap((child, j) => (j === 0 ? [child] : [" ", child]));
 }
 
-function groupShellStyle(
-  style: CaptionGroupStyle,
-): CSSProperties {
+function groupShellStyle(style: CaptionGroupStyle): CSSProperties {
   const justify = rowJustify(style.textAlign);
   return {
     position: "relative",

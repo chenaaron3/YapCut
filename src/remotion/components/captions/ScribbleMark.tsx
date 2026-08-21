@@ -10,12 +10,12 @@ import {
 } from "~/remotion/components/captions/scribble-catalog";
 
 import type { ScribbleId } from "~/domain/transcript/scribble";
-import type { CaptionWordProp } from "~/remotion/helpers/types";
 import type {
   ScribbleDefinition,
   ScribbleFillLayer,
   ScribbleStrokeLayer,
 } from "~/remotion/components/captions/scribble-catalog";
+import type { CaptionWordProp } from "~/remotion/helpers/types";
 import type { CSSProperties, ReactNode } from "react";
 
 function StrokeLayer({

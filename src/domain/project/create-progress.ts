@@ -62,7 +62,7 @@ export function clampProgress(value: number): number {
 
 /**
  * Estimated 0–1 for a vendor job with no percent:
- * queued 0.1, running 0.5→0.9 (time-based), done 1.
+ * queued/running 0.5→0.9 (time-based), done 1.
  */
 export function estimateJobProgress(options: {
   phase: "queued" | "running" | "done";
@@ -71,7 +71,6 @@ export function estimateJobProgress(options: {
   tauSec: number;
 }): number {
   if (options.phase === "done") return 1;
-  if (options.phase === "queued") return 0.1;
   const elapsedSec = Math.max(0, (options.nowMs - options.startedAtMs) / 1000);
   const tau = options.tauSec > 0 ? options.tauSec : 1;
   return clampProgress(0.5 + 0.4 * (1 - Math.exp(-elapsedSec / tau)));
