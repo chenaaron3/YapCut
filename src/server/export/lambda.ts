@@ -61,6 +61,10 @@ export async function startLambdaRender(options: {
       fileName: `${options.projectId}.mp4`,
     },
     framesPerLambda: 40,
+    // Occlude plate = source + mask Offthread extracts. Default cache evicts
+    // long HEVC A-roll frames ("No frame found at position").
+    offthreadVideoCacheSizeInBytes: 512 * 1024 * 1024,
+    timeoutInMilliseconds: 120000,
   });
 
   return { renderId, bucketName };

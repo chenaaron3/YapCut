@@ -1,11 +1,14 @@
 import { Video } from "@remotion/media";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import {
   AbsoluteFill,
   Img,
+  OffthreadVideo,
   continueRender,
   delayRender,
+  getRemotionEnvironment,
   useCurrentFrame,
+  useVideoConfig,
 } from "remotion";
 
 import { hardAlphaFromLuma } from "~/domain/asset/hard-mask";
@@ -13,16 +16,13 @@ import { hardAlphaFromLuma } from "~/domain/asset/hard-mask";
 import type { CSSProperties } from "react";
 
 /**
- * Original pixels × hard BiRefNet luminance mask (white = keep).
- * Never plays the masker's restained RGB.
+ * Original × hard BiRefNet luminance mask (white = keep).
  *
- * Video cannot use CSS `mask-image` (mp4) or `mix-blend-mode: destination-in`
- * (not a CSS blend). Composite on a canvas instead.
- *
- * Player and Lambda both use @remotion/media (native decode + its canvas).
- * OffthreadVideo is avoided — it throws "No frame found at position" on long
- * sources and is too slow in the Player.
+ * Preview: @remotion/media canvases (Player / desktop codecs).
+ * Lambda: OffthreadVideo + onVideoFrame — Chrome on Lambda cannot decode
+ * HEVC A-roll, and Offthread renders <img> so there is no canvas to scrape.
  */
+
 function luminanceMask(maskSrc: string): CSSProperties {
   const quoted = `url("${maskSrc.replace(/"/g, '\\"')}")`;
   return {
@@ -39,35 +39,67 @@ function luminanceMask(maskSrc: string): CSSProperties {
   } as CSSProperties;
 }
 
+function sourceSize(source: CanvasImageSource): { w: number; h: number } {
+  if (source instanceof HTMLVideoElement) {
+    return { w: source.videoWidth, h: source.videoHeight };
+  }
+  if (source instanceof HTMLImageElement) {
+    return { w: source.naturalWidth, h: source.naturalHeight };
+  }
+  if (source instanceof HTMLCanvasElement || source instanceof OffscreenCanvas) {
+    return { w: source.width, h: source.height };
+  }
+  if (typeof ImageBitmap !== "undefined" && source instanceof ImageBitmap) {
+    return { w: source.width, h: source.height };
+  }
+  return { w: 0, h: 0 };
+}
+
+function drawCover(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  dw: number,
+  dh: number,
+): boolean {
+  const { w: sw, h: sh } = sourceSize(source);
+  if (sw < 2 || sh < 2) return false;
+  const scale = Math.max(dw / sw, dh / sh);
+  const w = sw * scale;
+  const h = sh * scale;
+  ctx.drawImage(source, (dw - w) / 2, (dh - h) / 2, w, h);
+  return true;
+}
+
 function paintHardMask(
-  src: HTMLCanvasElement,
-  mask: HTMLCanvasElement,
+  src: CanvasImageSource,
+  mask: CanvasImageSource,
   out: HTMLCanvasElement,
   tmp: HTMLCanvasElement,
+  width: number,
+  height: number,
 ): boolean {
-  const w = src.width;
-  const h = src.height;
-  if (w < 2 || h < 2 || mask.width < 2) return false;
-  if (out.width !== w || out.height !== h) {
-    out.width = w;
-    out.height = h;
+  if (width < 2 || height < 2) return false;
+  if (out.width !== width || out.height !== height) {
+    out.width = width;
+    out.height = height;
   }
-  if (tmp.width !== w || tmp.height !== h) {
-    tmp.width = w;
-    tmp.height = h;
+  if (tmp.width !== width || tmp.height !== height) {
+    tmp.width = width;
+    tmp.height = height;
   }
   const tctx = tmp.getContext("2d", { willReadFrequently: true });
   const ctx = out.getContext("2d");
   if (!tctx || !ctx) return false;
-  tctx.drawImage(mask, 0, 0, w, h);
-  const pixels = tctx.getImageData(0, 0, w, h);
+  tctx.clearRect(0, 0, width, height);
+  if (!drawCover(tctx, mask, width, height)) return false;
+  const pixels = tctx.getImageData(0, 0, width, height);
   hardAlphaFromLuma(pixels.data);
   tctx.putImageData(pixels, 0, 0);
   ctx.globalCompositeOperation = "source-over";
-  ctx.clearRect(0, 0, w, h);
-  ctx.drawImage(src, 0, 0, w, h);
+  ctx.clearRect(0, 0, width, height);
+  if (!drawCover(ctx, src, width, height)) return false;
   ctx.globalCompositeOperation = "destination-in";
-  ctx.drawImage(tmp, 0, 0, w, h);
+  ctx.drawImage(tmp, 0, 0, width, height);
   ctx.globalCompositeOperation = "source-over";
   return true;
 }
@@ -88,7 +120,14 @@ function MaskedImage({
   );
 }
 
-function MaskedVideo({
+const HIDDEN: CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  opacity: 0,
+  pointerEvents: "none",
+};
+
+function MaskedVideoPreview({
   src,
   maskSrc,
   trimBefore,
@@ -129,7 +168,16 @@ function MaskedVideo({
       ) {
         if (!tmpRef.current) tmpRef.current = document.createElement("canvas");
         try {
-          if (paintHardMask(srcCanvas, maskCanvas, out, tmpRef.current)) {
+          if (
+            paintHardMask(
+              srcCanvas,
+              maskCanvas,
+              out,
+              tmpRef.current,
+              srcCanvas.width,
+              srcCanvas.height,
+            )
+          ) {
             continueRender(handle);
             return;
           }
@@ -170,7 +218,6 @@ function MaskedVideo({
             muted={volume <= 0}
             objectFit={objectFit}
             style={fill}
-            disallowFallbackToOffthreadVideo
           />
         </div>
         <div data-mask-matte style={{ position: "absolute", inset: 0 }}>
@@ -182,7 +229,6 @@ function MaskedVideo({
             muted
             objectFit={objectFit}
             style={fill}
-            disallowFallbackToOffthreadVideo
           />
         </div>
       </div>
@@ -197,6 +243,121 @@ function MaskedVideo({
       />
     </AbsoluteFill>
   );
+}
+
+function MaskedVideoRender({
+  src,
+  maskSrc,
+  trimBefore,
+  trimAfter,
+  volume,
+  objectFit,
+  style,
+}: {
+  src: string;
+  maskSrc: string;
+  trimBefore?: number;
+  trimAfter?: number;
+  volume: number;
+  objectFit: "cover" | "contain" | "fill";
+  style?: CSSProperties;
+}) {
+  const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  const [handle] = useState(() => delayRender("hard-mask-render"));
+  const outRef = useRef<HTMLCanvasElement>(null);
+  const tmpRef = useRef<HTMLCanvasElement | null>(null);
+  const srcFrame = useRef<CanvasImageSource | null>(null);
+  const maskFrame = useRef<CanvasImageSource | null>(null);
+  const released = useRef(false);
+  const fill: CSSProperties = { width: "100%", height: "100%", ...style };
+
+  const tryPaint = useCallback(() => {
+    const out = outRef.current;
+    const plate = srcFrame.current;
+    const matte = maskFrame.current;
+    if (!out || !plate || !matte) return;
+    if (!tmpRef.current) tmpRef.current = document.createElement("canvas");
+    try {
+      if (!paintHardMask(plate, matte, out, tmpRef.current, width, height)) {
+        return;
+      }
+      if (!released.current) {
+        released.current = true;
+        continueRender(handle);
+      }
+    } catch {
+      /* not ready */
+    }
+  }, [handle, height, width]);
+
+  useLayoutEffect(() => {
+    tryPaint();
+  }, [frame, tryPaint]);
+
+  useLayoutEffect(() => {
+    return () => {
+      if (!released.current) continueRender(handle);
+    };
+  }, [handle]);
+
+  return (
+    <AbsoluteFill>
+      <OffthreadVideo
+        src={src}
+        trimBefore={trimBefore}
+        trimAfter={trimAfter}
+        volume={volume}
+        muted={volume <= 0}
+        style={HIDDEN}
+        crossOrigin="anonymous"
+        delayRenderTimeoutInMilliseconds={120000}
+        onVideoFrame={(image) => {
+          srcFrame.current = image;
+          tryPaint();
+        }}
+      />
+      <OffthreadVideo
+        src={maskSrc}
+        trimBefore={trimBefore}
+        trimAfter={trimAfter}
+        volume={0}
+        muted
+        style={HIDDEN}
+        crossOrigin="anonymous"
+        delayRenderTimeoutInMilliseconds={120000}
+        onVideoFrame={(image) => {
+          maskFrame.current = image;
+          tryPaint();
+        }}
+      />
+      <canvas
+        ref={outRef}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          objectFit,
+          ...fill,
+        }}
+      />
+    </AbsoluteFill>
+  );
+}
+
+function MaskedVideo(props: {
+  src: string;
+  maskSrc: string;
+  trimBefore?: number;
+  trimAfter?: number;
+  volume: number;
+  objectFit: "cover" | "contain" | "fill";
+  style?: CSSProperties;
+}) {
+  if (getRemotionEnvironment().isRendering) {
+    return <MaskedVideoRender {...props} />;
+  }
+  return <MaskedVideoPreview {...props} />;
 }
 
 export function MaskedMedia({

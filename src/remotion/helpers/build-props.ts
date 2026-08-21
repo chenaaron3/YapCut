@@ -150,7 +150,10 @@ function buildSections(
   return arolls.map((keep) => {
     const asset = assets.get(keep.assetId);
     const trimBefore = secToFrame(keep.start, fps);
-    const trimAfter = secToFrame(keep.end, fps);
+    const assetEnd = asset?.durationSec
+      ? Math.max(trimBefore + 1, Math.floor(asset.durationSec * fps))
+      : Number.POSITIVE_INFINITY;
+    const trimAfter = Math.min(secToFrame(keep.end, fps), assetEnd);
     const durationInFrames = Math.max(1, trimAfter - trimBefore);
     const loud = loudnessOf(asset);
     return {
