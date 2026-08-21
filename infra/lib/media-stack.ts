@@ -6,32 +6,32 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import * as fs from "node:fs";
 
-/** CloudFront Function body: allowlisted OPTIONS preflight (no signed URL). */
-function corsOptionsFunctionSource(allowedOrigins: string[]): string {
+/**
+ * CloudFront Function: answer OPTIONS without a signed URL.
+ * Reflect any Origin — media GETs are authorized by the signed URL, not Origin.
+ * (Remotion Lambda site origin is not in the app allowlist.)
+ */
+function corsOptionsFunctionSource(): string {
   return `function handler(event) {
   var request = event.request;
   if (request.method !== 'OPTIONS') return request;
-  var allowed = ${JSON.stringify(allowedOrigins)};
   var origin = request.headers.origin ? request.headers.origin.value : '';
-  if (allowed.indexOf(origin) === -1) {
-    return {
-      statusCode: 403,
-      statusDescription: 'Forbidden',
-      headers: { 'content-type': { value: 'text/plain' } },
-      body: 'Origin not allowed'
-    };
+  var headers = {
+    'access-control-allow-methods': { value: 'GET, HEAD, OPTIONS' },
+    'access-control-allow-headers': { value: '*' },
+    'access-control-max-age': { value: '86400' },
+    'access-control-expose-headers': { value: 'ETag, Content-Length, Content-Range, Accept-Ranges' },
+    'vary': { value: 'Origin' }
+  };
+  if (origin) {
+    headers['access-control-allow-origin'] = { value: origin };
+  } else {
+    headers['access-control-allow-origin'] = { value: '*' };
   }
   return {
     statusCode: 204,
     statusDescription: 'No Content',
-    headers: {
-      'access-control-allow-origin': { value: origin },
-      'access-control-allow-methods': { value: 'GET, HEAD, OPTIONS' },
-      'access-control-allow-headers': { value: '*' },
-      'access-control-max-age': { value: '86400' },
-      'access-control-expose-headers': { value: 'ETag, Content-Length, Content-Range, Accept-Ranges' },
-      'vary': { value: 'Origin' }
-    }
+    headers: headers
   };
 }
 `;
@@ -101,18 +101,19 @@ export class MediaStack extends cdk.Stack {
 
     this.keyPairId = publicKey.publicKeyId;
 
-    // Remotion MediaPlayer uses fetch(+ Range) → needs CORS on CF responses.
-    // S3 bucket CORS alone is not enough (reads go through CloudFront OAC).
+    // Remotion MediaPlayer + Lambda hard-mask canvas need CORS on CF responses.
+    // Auth is the signed URL; allow any browser Origin (incl. remotionlambda S3 site).
+    // S3 bucket CORS above stays app-origin-only for presigned PUTs.
     const corsResponseHeaders = new cloudfront.ResponseHeadersPolicy(
       this,
       "MediaCorsHeaders",
       {
-        comment: "Browser GET/HEAD for editor + Remotion preview",
+        comment: "Signed GET: any Origin (editor, preview, Remotion Lambda)",
         corsBehavior: {
           accessControlAllowCredentials: false,
           accessControlAllowHeaders: ["*"],
           accessControlAllowMethods: ["GET", "HEAD", "OPTIONS"],
-          accessControlAllowOrigins: corsOrigins,
+          accessControlAllowOrigins: ["*"],
           accessControlExposeHeaders: [
             "ETag",
             "Content-Length",
@@ -128,9 +129,7 @@ export class MediaStack extends cdk.Stack {
     // Trusted key groups reject unsigned OPTIONS; answer preflight at the edge.
     const corsOptionsFn = new cloudfront.Function(this, "CorsOptionsFn", {
       comment: "Signed-URL CDN: answer CORS preflight without a signature",
-      code: cloudfront.FunctionCode.fromInline(
-        corsOptionsFunctionSource(corsOrigins),
-      ),
+      code: cloudfront.FunctionCode.fromInline(corsOptionsFunctionSource()),
     });
 
     this.distribution = new cloudfront.Distribution(this, "Cdn", {

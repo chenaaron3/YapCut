@@ -40,8 +40,14 @@ Signing **private** key never goes into CloudFormation — only the public key i
 
 ## CORS
 
-Default allowed origins: `http://localhost:3000`, `http://127.0.0.1:3000`.  
-Add your Vercel URL in `bin/infra.ts` before production uploads from the browser.
+Two layers:
+
+| Surface | Policy |
+|---------|--------|
+| **S3 bucket** (presigned PUT) | App origins only — set in `bin/infra.ts` (`localhost`, Vercel, …) |
+| **CloudFront GET/OPTIONS** (signed playback) | Any Origin (`*`) — auth is the signed URL. Required for Remotion Lambda’s site Origin (`remotionlambda-….s3.amazonaws.com`), which is **not** wired from `REMOTION_SERVE_URL` (different deploy pipeline; URL can change). |
+
+Do not add `REMOTION_SERVE_URL` to the S3 upload allowlist. Redeploy this stack after CORS changes; invalidate the distribution if browsers still cache old `Access-Control-Allow-Origin` headers.
 
 ## Remotion Lambda (export)
 

@@ -2,9 +2,9 @@ import { Video } from "@remotion/media";
 import { useLayoutEffect, useRef, useState } from "react";
 import {
   AbsoluteFill,
-  Img,
   continueRender,
   delayRender,
+  Img,
   useCurrentFrame,
 } from "remotion";
 
