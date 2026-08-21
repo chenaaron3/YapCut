@@ -106,8 +106,8 @@ export function applyZoomPoint(
 ): CompPoint {
   const cx = width / 2;
   const cy = height / 2;
-  let x = (point.x - cx) * t.scale;
-  let y = (point.y - cy) * t.scale;
+  const x = (point.x - cx) * t.scale;
+  const y = (point.y - cy) * t.scale;
   const rad = (t.rotation * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
@@ -125,8 +125,8 @@ export function invertZoomPoint(
 ): CompPoint {
   const cx = width / 2;
   const cy = height / 2;
-  let x = point.x - cx - t.offsetX * width;
-  let y = point.y - cy - t.offsetY * height;
+  const x = point.x - cx - t.offsetX * width;
+  const y = point.y - cy - t.offsetY * height;
   const rad = (-t.rotation * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
