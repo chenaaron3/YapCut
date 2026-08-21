@@ -641,7 +641,8 @@ export function timelineSecInAssetRun(
   return timelineSec < run.end;
 }
 
-function assetRunAtTimelineSec(
+/** Asset run containing `timelineSec`, or null if outside all runs. */
+export function assetRunAtTimelineSec(
   runs: readonly ArollAssetRun[],
   timelineSec: number,
 ): ArollAssetRun | null {

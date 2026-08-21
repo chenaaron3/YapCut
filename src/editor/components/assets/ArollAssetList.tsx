@@ -17,6 +17,12 @@ import {
 import { useRef, useState } from "react";
 
 import {
+  assetRunAtTimelineSec,
+  assetRunTimelineRanges,
+  buildArollLayout,
+  durationMapFromAssets,
+} from "~/domain/aroll/arolls";
+import {
   ArollRowContent,
   SortableArollRow,
 } from "~/editor/components/assets/ArollRow";
@@ -33,6 +39,13 @@ import type { EditorAsset } from "~/editor/store";
 export function ArollAssetList({ assets }: { assets: EditorAsset[] }) {
   const reorderArollAssets = useEditor((s) => s.reorderArollAssets);
   const undo = useEditor((s) => s.undo);
+  const playheadAssetId = useEditor((s) => {
+    if (!s.config) return null;
+    const runs = assetRunTimelineRanges(
+      buildArollLayout(s.config.arolls, durationMapFromAssets(s.assets)),
+    );
+    return assetRunAtTimelineSec(runs, s.timelineSec)?.assetId ?? null;
+  });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const endGestureRef = useRef<(() => void) | null>(null);
@@ -114,6 +127,7 @@ export function ArollAssetList({ assets }: { assets: EditorAsset[] }) {
               key={asset.id}
               asset={asset}
               playing={playingId === asset.id}
+              atPlayhead={playheadAssetId === asset.id}
               onTogglePlay={() =>
                 setPlayingId((id) => (id === asset.id ? null : asset.id))
               }

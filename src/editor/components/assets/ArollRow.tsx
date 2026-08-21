@@ -4,7 +4,10 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 
-import { assetRunForAssetId, durationMapFromAssets } from "~/domain/aroll/arolls";
+import {
+  assetRunForAssetId,
+  durationMapFromAssets,
+} from "~/domain/aroll/arolls";
 import { ArollMiniPlayer } from "~/editor/components/assets/ArollMiniPlayer";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
@@ -19,6 +22,7 @@ export function ArollRowContent({
   onTogglePlay,
   onSelect,
   selected,
+  atPlayhead,
   dragHandleProps,
   dragging,
 }: {
@@ -27,6 +31,7 @@ export function ArollRowContent({
   onTogglePlay: () => void;
   onSelect?: () => void;
   selected?: boolean;
+  atPlayhead?: boolean;
   dragHandleProps?: HTMLAttributes<HTMLButtonElement>;
   dragging?: boolean;
 }) {
@@ -48,7 +53,9 @@ export function ArollRowContent({
       className={cn(
         "bg-panel-2 flex items-center gap-2 rounded-md px-2 py-1.5 text-sm",
         onSelect && "cursor-pointer",
-        selected && "outline-primary/50 outline outline-2",
+        selected
+          ? "outline-primary/50 outline outline-2"
+          : atPlayhead && "outline-primary/25 outline outline-2",
         dragging && "opacity-50 shadow-md",
       )}
     >
@@ -86,10 +93,12 @@ export function SortableArollRow({
   asset,
   playing,
   onTogglePlay,
+  atPlayhead,
 }: {
   asset: EditorAsset;
   playing: boolean;
   onTogglePlay: () => void;
+  atPlayhead?: boolean;
 }) {
   const select = useSelection((s) => s.select);
   const selected = useSelection((s) => {
@@ -138,6 +147,7 @@ export function SortableArollRow({
         onTogglePlay={onTogglePlay}
         onSelect={onSelect}
         selected={selected}
+        atPlayhead={atPlayhead}
         dragging={isDragging}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
