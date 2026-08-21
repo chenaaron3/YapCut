@@ -76,9 +76,12 @@ function addCalendarDays(
   };
 }
 
+const MS_24H = 24 * 60 * 60 * 1000;
+
 /**
  * Next daily slot at configured time in timezone.
  * - No prior schedules: today at slot if still ahead, else tomorrow.
+ * - No future slots and latest past slot is >24h ago: now (catch-up).
  * - Else: day after the latest scheduledAt, at the configured time
  *   (bumped forward if that would be in the past).
  */
@@ -119,9 +122,16 @@ export function nextPublishAt(options: {
     );
   }
 
-  const latest = options.scheduledAts
-    .map((s) => (s instanceof Date ? s : new Date(s)))
-    .reduce((a, b) => (a > b ? a : b));
+  const dates = options.scheduledAts.map((s) =>
+    s instanceof Date ? s : new Date(s),
+  );
+  const hasFuture = dates.some((d) => d > now);
+  const latest = dates.reduce((a, b) => (a > b ? a : b));
+
+  if (!hasFuture && now.getTime() - latest.getTime() > MS_24H) {
+    return new Date(now.getTime());
+  }
+
   const latestParts = getPartsInZone(latest, options.timezone);
   const nextDay = addCalendarDays(
     latestParts.year,

@@ -18,6 +18,7 @@ type LocalInput = {
   videoPath: string;
   coverPath: string;
   publishAt: Date;
+  immediate: boolean;
 };
 
 function pad2(n: number): string {
@@ -189,13 +190,12 @@ async function capturePostLink(page: Page, title: string): Promise<string> {
   );
 }
 
-async function scheduleVideo(
+async function publishVideo(
   input: LocalInput,
   timeZone: string,
   context: BrowserContext,
 ): Promise<PublishResult> {
   const page = await newPage(context);
-  const when = dateParts(input.publishAt, timeZone);
 
   console.log("[tiktok] upload");
   await page.goto(TIKTOK.uploadUrl, {
@@ -231,25 +231,42 @@ async function scheduleVideo(
     .click({ timeout: TIMEOUTS.action });
   await settle(page, TIMEOUTS.settleMedium);
 
-  console.log("[tiktok] schedule");
+  // Probed: schedule_container radios value="post_now" (label Now) | value="schedule"
   const schedule = page.locator(TIKTOK.scheduleContainer);
   await schedule.scrollIntoViewIfNeeded();
-  await schedule
-    .locator("label")
-    .filter({ hasText: /^Schedule$/i })
-    .click({ timeout: TIMEOUTS.scheduleUi });
-  await settle(page, 800);
-  const scheduleRadio = schedule.locator(
-    'input.Radio__input[value="schedule"]',
-  );
-  if (!(await scheduleRadio.isChecked().catch(() => false))) {
-    await scheduleRadio.check({ force: true, timeout: TIMEOUTS.scheduleUi });
-    await settle(page, 500);
-  }
 
-  const fields = schedule.locator("input.TUXTextInputCore-input");
-  await fields.first().waitFor({ state: "visible", timeout: TIMEOUTS.dateTime });
-  await setScheduleDateTime(page, schedule, when);
+  if (input.immediate) {
+    console.log("[tiktok] post now");
+    const postNowRadio = schedule.locator(
+      'input.Radio__input[value="post_now"]',
+    );
+    if (!(await postNowRadio.isChecked().catch(() => false))) {
+      await schedule
+        .locator("label")
+        .filter({ hasText: /^Now$/i })
+        .click({ timeout: TIMEOUTS.scheduleUi });
+      await settle(page, 500);
+    }
+  } else {
+    const when = dateParts(input.publishAt, timeZone);
+    console.log("[tiktok] schedule");
+    await schedule
+      .locator("label")
+      .filter({ hasText: /^Schedule$/i })
+      .click({ timeout: TIMEOUTS.scheduleUi });
+    await settle(page, 800);
+    const scheduleRadio = schedule.locator(
+      'input.Radio__input[value="schedule"]',
+    );
+    if (!(await scheduleRadio.isChecked().catch(() => false))) {
+      await scheduleRadio.check({ force: true, timeout: TIMEOUTS.scheduleUi });
+      await settle(page, 500);
+    }
+
+    const fields = schedule.locator("input.TUXTextInputCore-input");
+    await fields.first().waitFor({ state: "visible", timeout: TIMEOUTS.dateTime });
+    await setScheduleDateTime(page, schedule, when);
+  }
 
   console.log("[tiktok] post");
   const postBtn = page.locator(TIKTOK.postButton);
@@ -258,7 +275,11 @@ async function scheduleVideo(
 
   console.log("[tiktok] copy post link");
   const url = await capturePostLink(page, input.title);
-  console.log(`[tiktok] scheduled → ${url}`);
+  console.log(
+    input.immediate
+      ? `[tiktok] published → ${url}`
+      : `[tiktok] scheduled → ${url}`,
+  );
   return { url };
 }
 
@@ -276,8 +297,9 @@ export function createTikTokPublisher(timeZone: string): Publisher {
           videoPath: local.videoPath,
           coverPath: local.coverPath,
           publishAt: job.publishAt,
+          immediate: job.immediate,
         };
-        return await withBrowser((ctx) => scheduleVideo(input, timeZone, ctx));
+        return await withBrowser((ctx) => publishVideo(input, timeZone, ctx));
       } finally {
         await disposeLocalMedia(local);
       }

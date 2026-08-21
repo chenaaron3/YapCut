@@ -10,6 +10,8 @@ export type PublishJob = {
   platform: PlatformId;
   title: string;
   publishAt: Date;
+  /** When true, publish immediately instead of scheduling for publishAt. */
+  immediate: boolean;
   video: PublishMedia;
   cover: PublishMedia;
 };

@@ -18,5 +18,7 @@ export const META = {
   homeUrl: "https://business.facebook.com/latest/home",
   scheduledPostsUrl:
     "https://business.facebook.com/latest/posts/scheduled_posts",
+  publishedPostsUrl:
+    "https://business.facebook.com/latest/posts/published_posts",
   captionEditorFallback: 'div.notranslate._5rpu[role="textbox"]',
 } as const;

@@ -208,11 +208,26 @@ export const youtubePublisher: Publisher = {
     });
     try {
       const youtube = await getAuthenticatedYoutube();
-      const publishAt = toRfc3339(job.publishAt);
       const title = job.title.slice(0, 100);
 
       console.log(`[youtube] uploading ${local.videoPath}`);
-      console.log(`[youtube] schedule ${publishAt}`);
+
+      const status = job.immediate
+        ? {
+            privacyStatus: "public" as const,
+            selfDeclaredMadeForKids: false,
+          }
+        : {
+            privacyStatus: "private" as const,
+            publishAt: toRfc3339(job.publishAt),
+            selfDeclaredMadeForKids: false,
+          };
+
+      if (job.immediate) {
+        console.log("[youtube] publish now (public)");
+      } else {
+        console.log(`[youtube] schedule ${status.publishAt}`);
+      }
 
       const res = await youtube.videos.insert({
         part: ["snippet", "status"],
@@ -222,11 +237,7 @@ export const youtubePublisher: Publisher = {
             description: title,
             categoryId: "22",
           },
-          status: {
-            privacyStatus: "private",
-            publishAt,
-            selfDeclaredMadeForKids: false,
-          },
+          status,
         },
         media: {
           body: fs.createReadStream(local.videoPath),
@@ -241,7 +252,11 @@ export const youtubePublisher: Publisher = {
       await uploadThumbnail(youtube, videoId, local.coverPath);
 
       const url = `https://youtube.com/shorts/${videoId}`;
-      console.log(`[youtube] scheduled → ${url}`);
+      console.log(
+        job.immediate
+          ? `[youtube] published → ${url}`
+          : `[youtube] scheduled → ${url}`,
+      );
       return { url };
     } finally {
       await disposeLocalMedia(local);

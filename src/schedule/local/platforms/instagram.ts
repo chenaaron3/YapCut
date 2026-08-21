@@ -19,6 +19,7 @@ type LocalInput = {
   videoPath: string;
   coverPath: string;
   publishAt: Date;
+  immediate: boolean;
 };
 
 function pad2(n: number): string {
@@ -92,12 +93,18 @@ async function clickButton(
   await roleButton(page, name).click({ timeout });
 }
 
-async function copyPostLink(page: Page, title: string): Promise<string> {
+async function copyPostLink(
+  page: Page,
+  title: string,
+  options: { listUrl: string; tabName: "Scheduled" | "Published" },
+): Promise<string> {
   const deadline = Date.now() + TIMEOUTS.linkPollTotal;
+  const pathHint =
+    options.tabName === "Scheduled" ? "/scheduled_posts" : "/published_posts";
 
   while (Date.now() < deadline) {
-    if (!page.url().includes("/scheduled_posts")) {
-      await page.goto(META.scheduledPostsUrl, {
+    if (!page.url().includes(pathHint)) {
+      await page.goto(options.listUrl, {
         waitUntil: "domcontentloaded",
         timeout: TIMEOUTS.navigation,
       });
@@ -107,7 +114,7 @@ async function copyPostLink(page: Page, title: string): Promise<string> {
         .catch(() => undefined);
     }
     await page
-      .getByRole("tab", { name: "Scheduled" })
+      .getByRole("tab", { name: options.tabName })
       .click({ timeout: TIMEOUTS.action })
       .catch(() => undefined);
     await settle(page, 1500);
@@ -138,14 +145,10 @@ async function copyPostLink(page: Page, title: string): Promise<string> {
   );
 }
 
-async function scheduleReel(
+async function fillReelThroughShareStep(
+  page: Page,
   input: LocalInput,
-  timeZone: string,
-  context: BrowserContext,
-): Promise<PublishResult> {
-  const page = await newPage(context);
-  const when = dateParts(input.publishAt, timeZone);
-
+): Promise<void> {
   console.log("[instagram] Create reel");
   await page.goto(META.homeUrl, {
     waitUntil: "commit",
@@ -184,7 +187,7 @@ async function scheduleReel(
   await coverChooser.setFiles(input.coverPath);
   await settle(page, TIMEOUTS.settleMedium);
 
-  console.log("[instagram] Next → Next → Schedule");
+  console.log("[instagram] Next → Next → Scheduling options");
   await clickButton(page, /^Next$/i, TIMEOUTS.videoUpload);
   await settle(page, TIMEOUTS.settleMedium);
   await clickButton(page, /^Next$/i, TIMEOUTS.videoUpload);
@@ -192,6 +195,41 @@ async function scheduleReel(
     .getByText(/Scheduling options/i)
     .first()
     .waitFor({ state: "visible", timeout: TIMEOUTS.scheduleUi });
+}
+
+async function publishReel(
+  input: LocalInput,
+  timeZone: string,
+  context: BrowserContext,
+): Promise<PublishResult> {
+  const page = await newPage(context);
+  await fillReelThroughShareStep(page, input);
+
+  if (input.immediate) {
+    // Probed: Share now / Schedule are aria-pressed toggles on the same step.
+    const shareNow = page.getByRole("button", { name: /^Share now$/i }).first();
+    if ((await shareNow.getAttribute("aria-pressed")) !== "true") {
+      await shareNow.click({ timeout: TIMEOUTS.scheduleUi });
+    }
+    console.log("[instagram] Share now → Share");
+    // Header + bottom both say "Share"; the confirm is the last exact match.
+    await page
+      .locator('div[role="button"], button')
+      .filter({ hasText: /^Share$/i })
+      .last()
+      .click({ timeout: TIMEOUTS.confirm });
+    await settle(page, TIMEOUTS.settleMedium);
+
+    console.log("[instagram] copy post link");
+    const url = await copyPostLink(page, input.title, {
+      listUrl: META.publishedPostsUrl,
+      tabName: "Published",
+    });
+    console.log(`[instagram] published → ${url}`);
+    return { url };
+  }
+
+  const when = dateParts(input.publishAt, timeZone);
 
   await page
     .getByRole("button", { name: "Schedule", exact: true })
@@ -220,7 +258,10 @@ async function scheduleReel(
   await settle(page, TIMEOUTS.settleMedium);
 
   console.log("[instagram] copy post link");
-  const url = await copyPostLink(page, input.title);
+  const url = await copyPostLink(page, input.title, {
+    listUrl: META.scheduledPostsUrl,
+    tabName: "Scheduled",
+  });
   console.log(`[instagram] scheduled → ${url}`);
 
   return { url };
@@ -240,8 +281,9 @@ export function createInstagramPublisher(timeZone: string): Publisher {
           videoPath: local.videoPath,
           coverPath: local.coverPath,
           publishAt: job.publishAt,
+          immediate: job.immediate,
         };
-        return await withBrowser((ctx) => scheduleReel(input, timeZone, ctx));
+        return await withBrowser((ctx) => publishReel(input, timeZone, ctx));
       } finally {
         await disposeLocalMedia(local);
       }

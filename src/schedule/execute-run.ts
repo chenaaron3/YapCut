@@ -116,9 +116,15 @@ export async function executeScheduleRun(
       objectKey: project.coverS3Key,
     });
 
+    const immediate = entry.scheduledAt.getTime() <= Date.now();
+    if (immediate) {
+      console.log(`[schedule] ${entry.projectId} scheduledAt in past → upload now`);
+    }
+
     const jobBase = {
       title,
       publishAt: entry.scheduledAt,
+      immediate,
       video: { url: videoUrl, contentType: "video/mp4" },
       cover: { url: coverUrl, contentType: "image/jpeg" },
     };
