@@ -28,46 +28,49 @@ export type AiAssistProgress = (
   label: string,
 ) => void | Promise<void>;
 
-export type AiAssistInput = {
+/**
+ * JSON-serializable AI assist state (Workflow steps + in-process).
+ * Use {@link createAiAssistState} to bootstrap; pass `onProgress` separately.
+ */
+export type AiAssistState = {
   arolls: ArollKeep[];
-  wordsByAssetId: Map<string, TranscriptWord[]>;
-  durationByAssetId: Map<string, number>;
-  /** Existing project title (may be empty). */
-  title: string;
-  /** When true and title empty, generate a title. */
-  generateTitleIfEmpty: boolean;
-  /** Edits to keep before AI (`editsForAiAssist`). */
-  baseEdits?: readonly Edit[];
-  /** SoT listicle look — copied onto each seeded listicle. */
-  listicleStyle?: TemplateStyle;
-  /** Companion cue map (create uses shipped defaults). */
-  companionSfx?: CompanionSfxMap;
-  /** Create only: cut vocalized pauses + retakes before visual AI. */
-  trimSpeech?: boolean;
-  onProgress?: AiAssistProgress;
-};
-
-export type AiAssistResult = {
+  wordsByAssetId: Record<string, TranscriptWord[]>;
+  durationByAssetId: Record<string, number>;
   title: string;
   edits: Edit[];
-  /** Per-asset words with emphasis applied (only changed assets may differ). */
-  wordsByAssetId: Map<string, TranscriptWord[]>;
-  arolls: ArollKeep[];
+  /** Resolved: generate a title this run (empty title + caller asked). */
+  generateTitleIfEmpty: boolean;
+  trimSpeech: boolean;
+  listicleStyle: TemplateStyle;
+  companionSfx?: CompanionSfxMap;
+  /** Edit ids present before AI — companion SFX skips these. */
+  baseEditIds: number[];
+  completed: number;
+  total: number;
 };
 
-function clearEmphasis(
-  wordsByAssetId: Map<string, TranscriptWord[]>,
+function wordsMap(
+  record: Record<string, TranscriptWord[]>,
 ): Map<string, TranscriptWord[]> {
-  const out = new Map<string, TranscriptWord[]>();
-  for (const [assetId, words] of wordsByAssetId) {
-    out.set(
-      assetId,
-      words.map((w) => ({
-        text: w.text,
-        start: w.start,
-        end: w.end,
-      })),
-    );
+  return new Map(Object.entries(record));
+}
+
+function durationMap(
+  record: Record<string, number>,
+): Map<string, number> {
+  return new Map(Object.entries(record));
+}
+
+function clearEmphasis(
+  wordsByAssetId: Record<string, TranscriptWord[]>,
+): Record<string, TranscriptWord[]> {
+  const out: Record<string, TranscriptWord[]> = {};
+  for (const [assetId, words] of Object.entries(wordsByAssetId)) {
+    out[assetId] = words.map((w) => ({
+      text: w.text,
+      start: w.start,
+      end: w.end,
+    }));
   }
   return out;
 }
@@ -96,54 +99,110 @@ function projectAssistWords(
   };
 }
 
-/**
- * Shared create / editor AI assist: optional speech cleanup (create) →
- * punch-ins → listicles → transitions → quotes → emphasis → pacing slow
- * zooms → companion SFX → emphasis pings.
- */
-export async function runAiAssist(
-  input: AiAssistInput,
-): Promise<AiAssistResult> {
-  const wordsByAssetId = clearEmphasis(input.wordsByAssetId);
-  const { durationByAssetId, onProgress } = input;
-  let arolls = input.arolls;
-  const includeTitle = !input.title.trim() && input.generateTitleIfEmpty;
-  const includeTrim = Boolean(input.trimSpeech);
-  const total = (includeTrim ? 1 : 0) + (includeTitle ? 1 : 0) + 8;
-  let completed = 0;
-  const tick = async (label: string) => {
-    await onProgress?.(completed, total, label);
+/** Bootstrap progress counters, clear emphasis, snapshot base edit ids. */
+export function createAiAssistState(
+  init: Omit<
+    AiAssistState,
+    | "completed"
+    | "total"
+    | "baseEditIds"
+    | "generateTitleIfEmpty"
+    | "trimSpeech"
+    | "listicleStyle"
+    | "edits"
+  > & {
+    edits?: Edit[];
+    generateTitleIfEmpty?: boolean;
+    trimSpeech?: boolean;
+    listicleStyle?: TemplateStyle;
+  },
+): AiAssistState {
+  const title = init.title.trim();
+  const generateTitleIfEmpty = !title && Boolean(init.generateTitleIfEmpty);
+  const trimSpeech = Boolean(init.trimSpeech);
+  const edits = [...(init.edits ?? [])];
+  return {
+    arolls: init.arolls,
+    wordsByAssetId: clearEmphasis(init.wordsByAssetId),
+    durationByAssetId: init.durationByAssetId,
+    title,
+    edits,
+    generateTitleIfEmpty,
+    trimSpeech,
+    listicleStyle: init.listicleStyle ?? {
+      templateId: DEFAULT_LISTICLE_TEMPLATE_ID,
+    },
+    companionSfx: init.companionSfx,
+    baseEditIds: edits.map((e) => e.id),
+    completed: 0,
+    total: (trimSpeech ? 1 : 0) + (generateTitleIfEmpty ? 1 : 0) + 8,
   };
-  const done = async (label: string) => {
-    completed += 1;
-    await onProgress?.(completed, total, label);
-  };
+}
 
-  if (includeTrim) {
-    await tick("Cutting fillers…");
-    try {
-      arolls = await generateSpeechCleanupArolls({
-        arolls,
-        wordsByAssetId,
-        durationByAssetId,
-      });
-    } catch (error) {
-      console.warn(
-        "[ai-assist] speech cleanup soft-failed:",
-        error instanceof Error ? error.message : error,
-      );
-    }
-    await done("Cutting fillers…");
+async function tickProgress(
+  state: AiAssistState,
+  label: string,
+  onProgress?: AiAssistProgress,
+): Promise<void> {
+  await onProgress?.(state.completed, state.total, label);
+}
+
+function markDone(state: AiAssistState): AiAssistState {
+  return { ...state, completed: state.completed + 1 };
+}
+
+async function doneProgress(
+  state: AiAssistState,
+  label: string,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const next = markDone(state);
+  await onProgress?.(next.completed, next.total, label);
+  return next;
+}
+
+export async function aiAssistSpeechCleanup(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  if (!state.trimSpeech) return state;
+  const label = "Cutting fillers…";
+  await tickProgress(state, label, onProgress);
+  let arolls = state.arolls;
+  try {
+    arolls = await generateSpeechCleanupArolls({
+      arolls: state.arolls,
+      wordsByAssetId: wordsMap(state.wordsByAssetId),
+      durationByAssetId: durationMap(state.durationByAssetId),
+    });
+  } catch (error) {
+    console.warn(
+      "[ai-assist] speech cleanup soft-failed:",
+      error instanceof Error ? error.message : error,
+    );
   }
+  return doneProgress({ ...state, arolls }, label, onProgress);
+}
 
-  const { layout, keepRanges, timelineWords, timelineDuration, titleStartSec } =
-    projectAssistWords(arolls, wordsByAssetId, durationByAssetId);
+/** Generate title when requested, then seed title text VFX if title is set. */
+export async function aiAssistTitle(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const wordsByAssetId = wordsMap(state.wordsByAssetId);
+  const durationByAssetId = durationMap(state.durationByAssetId);
+  const { timelineWords, timelineDuration, titleStartSec } = projectAssistWords(
+    state.arolls,
+    wordsByAssetId,
+    durationByAssetId,
+  );
 
-  let title = input.title.trim();
-  let edits: Edit[] = [...(input.baseEdits ?? [])];
+  let title = state.title;
+  let next = state;
 
-  if (includeTitle) {
-    await tick("Writing title…");
+  if (state.generateTitleIfEmpty) {
+    const label = "Writing title…";
+    await tickProgress(next, label, onProgress);
     try {
       title = await generateTitle(timelineWords);
       console.log(`[ai-assist] title="${title}"`);
@@ -153,9 +212,10 @@ export async function runAiAssist(
         error instanceof Error ? error.message : error,
       );
     }
-    await done("Writing title…");
+    next = await doneProgress({ ...next, title }, label, onProgress);
   }
 
+  let edits = next.edits;
   if (title) {
     edits = [
       ...edits,
@@ -167,8 +227,21 @@ export async function runAiAssist(
       }),
     ];
   }
+  return { ...next, title, edits };
+}
 
-  await tick("Finding punch-ins…");
+export async function aiAssistZooms(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const label = "Finding punch-ins…";
+  await tickProgress(state, label, onProgress);
+  const { timelineWords } = projectAssistWords(
+    state.arolls,
+    wordsMap(state.wordsByAssetId),
+    durationMap(state.durationByAssetId),
+  );
+  let edits = state.edits;
   try {
     const zooms = await generateZoomEdits(timelineWords, edits);
     edits = [...edits, ...zooms];
@@ -179,14 +252,26 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
-  await done("Finding punch-ins…");
+  return doneProgress({ ...state, edits }, label, onProgress);
+}
 
-  await tick("Finding listicles…");
+export async function aiAssistListicles(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const label = "Finding listicles…";
+  await tickProgress(state, label, onProgress);
+  const { timelineWords } = projectAssistWords(
+    state.arolls,
+    wordsMap(state.wordsByAssetId),
+    durationMap(state.durationByAssetId),
+  );
+  let edits = state.edits;
   try {
     const listicles = await generateListicleEdits(
       timelineWords,
       edits,
-      input.listicleStyle ?? { templateId: DEFAULT_LISTICLE_TEMPLATE_ID },
+      state.listicleStyle,
     );
     edits = [...edits, ...listicles];
     console.log(`[ai-assist] listicles=${listicles.length}`);
@@ -196,9 +281,21 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
-  await done("Finding listicles…");
+  return doneProgress({ ...state, edits }, label, onProgress);
+}
 
-  await tick("Placing transitions…");
+export async function aiAssistTransitions(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const label = "Placing transitions…";
+  await tickProgress(state, label, onProgress);
+  const { layout, timelineWords } = projectAssistWords(
+    state.arolls,
+    wordsMap(state.wordsByAssetId),
+    durationMap(state.durationByAssetId),
+  );
+  let edits = state.edits;
   try {
     edits = await generateTransitionEdits(timelineWords, edits, layout);
     console.log(
@@ -210,9 +307,21 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
-  await done("Placing transitions…");
+  return doneProgress({ ...state, edits }, label, onProgress);
+}
 
-  await tick("Finding quotes…");
+export async function aiAssistQuotes(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const label = "Finding quotes…";
+  await tickProgress(state, label, onProgress);
+  const { timelineWords } = projectAssistWords(
+    state.arolls,
+    wordsMap(state.wordsByAssetId),
+    durationMap(state.durationByAssetId),
+  );
+  let edits = state.edits;
   try {
     const quotes = await generateQuoteEdits(timelineWords, edits);
     edits = [...edits, ...quotes];
@@ -223,14 +332,26 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
-  await done("Finding quotes…");
+  return doneProgress({ ...state, edits }, label, onProgress);
+}
 
-  await tick("Marking emphasis…");
+export async function aiAssistEmphasis(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const label = "Marking emphasis…";
+  await tickProgress(state, label, onProgress);
+  const wordsByAssetId = wordsMap(state.wordsByAssetId);
+  const { timelineWords } = projectAssistWords(
+    state.arolls,
+    wordsByAssetId,
+    durationMap(state.durationByAssetId),
+  );
   try {
     const updates = await generateEmphasisUpdates(
       timelineWords,
       wordsByAssetId,
-      edits,
+      state.edits,
     );
     for (const [assetId, words] of updates) {
       wordsByAssetId.set(assetId, words);
@@ -242,16 +363,33 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
-  await done("Marking emphasis…");
+  return doneProgress(
+    { ...state, wordsByAssetId: Object.fromEntries(wordsByAssetId) },
+    label,
+    onProgress,
+  );
+}
 
+export async function aiAssistPacing(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const label = "Adding slow zooms…";
+  await tickProgress(state, label, onProgress);
+  const wordsByAssetId = wordsMap(state.wordsByAssetId);
+  const durationByAssetId = durationMap(state.durationByAssetId);
+  const { keepRanges } = projectAssistWords(
+    state.arolls,
+    wordsByAssetId,
+    durationByAssetId,
+  );
   const timelineWordsAfterEmphasis = snapWordBoundsToKeepEdges(
     keptTimelineWords(
-      projectTimelineWords(arolls, wordsByAssetId, durationByAssetId),
+      projectTimelineWords(state.arolls, wordsByAssetId, durationByAssetId),
     ),
     keepRanges,
   );
-
-  await tick("Adding slow zooms…");
+  let edits = state.edits;
   try {
     const slowZooms = await generatePacingReconcileZooms(
       timelineWordsAfterEmphasis,
@@ -265,14 +403,21 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
-  await done("Adding slow zooms…");
+  return doneProgress({ ...state, edits }, label, onProgress);
+}
 
-  await tick("Placing companion SFX…");
+export async function aiAssistCompanionSfx(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const label = "Placing companion SFX…";
+  await tickProgress(state, label, onProgress);
+  let edits = state.edits;
   try {
     edits = await generateCompanionSfxEdits({
       edits,
-      companionSfx: input.companionSfx,
-      skipIds: new Set((input.baseEdits ?? []).map((e) => e.id)),
+      companionSfx: state.companionSfx,
+      skipIds: new Set(state.baseEditIds),
     });
   } catch (error) {
     console.warn(
@@ -280,9 +425,29 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
-  await done("Placing companion SFX…");
+  return doneProgress({ ...state, edits }, label, onProgress);
+}
 
-  await tick("Placing emphasis SFX…");
+export async function aiAssistEmphasisSfx(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  const label = "Placing emphasis SFX…";
+  await tickProgress(state, label, onProgress);
+  const wordsByAssetId = wordsMap(state.wordsByAssetId);
+  const durationByAssetId = durationMap(state.durationByAssetId);
+  const { keepRanges } = projectAssistWords(
+    state.arolls,
+    wordsByAssetId,
+    durationByAssetId,
+  );
+  const timelineWordsAfterEmphasis = snapWordBoundsToKeepEdges(
+    keptTimelineWords(
+      projectTimelineWords(state.arolls, wordsByAssetId, durationByAssetId),
+    ),
+    keepRanges,
+  );
+  let edits = state.edits;
   try {
     const sfxEdits = await generateEmphasisSfxEdits({
       words: timelineWordsAfterEmphasis,
@@ -296,7 +461,28 @@ export async function runAiAssist(
       error instanceof Error ? error.message : error,
     );
   }
-  await done("Placing emphasis SFX…");
+  return doneProgress({ ...state, edits }, label, onProgress);
+}
 
-  return { title, edits, wordsByAssetId, arolls };
+/**
+ * Shared create / editor AI assist: optional speech cleanup (create) →
+ * punch-ins → listicles → transitions → quotes → emphasis → pacing slow
+ * zooms → companion SFX → emphasis pings.
+ */
+export async function runAiAssist(
+  state: AiAssistState,
+  onProgress?: AiAssistProgress,
+): Promise<AiAssistState> {
+  let next = state;
+  next = await aiAssistSpeechCleanup(next, onProgress);
+  next = await aiAssistTitle(next, onProgress);
+  next = await aiAssistZooms(next, onProgress);
+  next = await aiAssistListicles(next, onProgress);
+  next = await aiAssistTransitions(next, onProgress);
+  next = await aiAssistQuotes(next, onProgress);
+  next = await aiAssistEmphasis(next, onProgress);
+  next = await aiAssistPacing(next, onProgress);
+  next = await aiAssistCompanionSfx(next, onProgress);
+  next = await aiAssistEmphasisSfx(next, onProgress);
+  return next;
 }

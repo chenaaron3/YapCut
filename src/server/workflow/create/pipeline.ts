@@ -11,7 +11,20 @@ import {
   DEFAULT_CAPTION_TEMPLATE_ID,
   emptyProjectConfig,
 } from "~/domain/project/project-config";
-import { runAiAssist } from "~/server/ai/run-ai-assist";
+import {
+  aiAssistCompanionSfx,
+  aiAssistEmphasis,
+  aiAssistEmphasisSfx,
+  aiAssistListicles,
+  aiAssistPacing,
+  aiAssistQuotes,
+  aiAssistSpeechCleanup,
+  aiAssistTitle,
+  aiAssistTransitions,
+  aiAssistZooms,
+  createAiAssistState,
+  type AiAssistState,
+} from "~/server/ai/run-ai-assist";
 import {
   parseCreateProgress,
   publishCreateProgress,
@@ -26,6 +39,7 @@ import {
 
 import type { ProjectConfig } from "~/domain/project/project-config";
 import type { TranscriptWord } from "~/domain/transcript/transcript";
+import type { AiAssistProgress } from "~/server/ai/run-ai-assist";
 
 /** Serializable A-roll ref passed across workflow `sleep()` / steps. */
 export type CreateAssetRef = {
@@ -274,10 +288,28 @@ export async function markAssetTranscriptFailed(
   }
 }
 
+export function createAiProgressPublisher(
+  projectId: string,
+): AiAssistProgress {
+  return async (completed, total, label) => {
+    await publishCreateProgress(
+      projectId,
+      createProgressEvent(
+        "ai_analysis",
+        total > 0 ? completed / total : 0,
+        label,
+      ),
+    );
+  };
+}
+
 /**
- * After all transcripts are ready: keeps → speech cleanup → AI seed → ready.
+ * Load transcripts + build keeps + emit ai_analysis start.
+ * Returns null when the project is no longer `processing` (idempotent skip).
  */
-export async function finalizeCreateProject(projectId: string): Promise<void> {
+export async function prepareCreateFinalize(
+  projectId: string,
+): Promise<AiAssistState | null> {
   const [project] = await db
     .select()
     .from(projects)
@@ -291,7 +323,7 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
     console.warn(
       `[create] skip finalize: project ${projectId} status=${project.status}`,
     );
-    return;
+    return null;
   }
 
   const projectAssets = await loadCreateAssets(projectId);
@@ -330,26 +362,37 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
   }
 
   await publishCreateProgress(projectId, createProgressEvent("ai_analysis", 0));
-  const assist = await runAiAssist({
+  return createAiAssistState({
     arolls,
-    wordsByAssetId,
-    durationByAssetId,
+    wordsByAssetId: Object.fromEntries(wordsByAssetId),
+    durationByAssetId: Object.fromEntries(durationByAssetId),
     title: project.title?.trim() ?? "",
     generateTitleIfEmpty: true,
     trimSpeech: true,
-    onProgress: async (completed, total, label) => {
-      await publishCreateProgress(
-        projectId,
-        createProgressEvent(
-          "ai_analysis",
-          total > 0 ? completed / total : 0,
-          label,
-        ),
-      );
-    },
   });
+}
 
-  for (const [assetId, words] of assist.wordsByAssetId) {
+/** Persist AI assist result and mark the project ready. */
+export async function persistCreateReady(
+  projectId: string,
+  state: AiAssistState,
+): Promise<void> {
+  const [project] = await db
+    .select({ status: projects.status })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+  if (!project) {
+    throw new Error(`Project ${projectId} not found`);
+  }
+  if (project.status !== "processing") {
+    console.warn(
+      `[create] skip persist ready: project ${projectId} status=${project.status}`,
+    );
+    return;
+  }
+
+  for (const [assetId, words] of Object.entries(state.wordsByAssetId)) {
     await db
       .update(transcripts)
       .set({ words, updatedAt: new Date() })
@@ -358,8 +401,8 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
 
   const config: ProjectConfig = {
     ...emptyProjectConfig(),
-    arolls: assist.arolls,
-    edits: assist.edits,
+    arolls: state.arolls,
+    edits: state.edits,
     captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
   };
 
@@ -367,7 +410,7 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
   await db
     .update(projects)
     .set({
-      title: assist.title.length > 0 ? assist.title : null,
+      title: state.title.length > 0 ? state.title : null,
       config,
       configUpdatedAt: now,
       status: "ready",
@@ -380,4 +423,27 @@ export async function finalizeCreateProject(projectId: string): Promise<void> {
   await publishCreateProgress(projectId, createProgressEvent("ready", 1));
 
   console.log(`[create] project ${projectId} → ready`);
+}
+
+/**
+ * After all transcripts are ready: keeps → speech cleanup → AI seed → ready.
+ * In-process path; durable Workflow splits AI into one step per stage.
+ */
+export async function finalizeCreateProject(projectId: string): Promise<void> {
+  const prepared = await prepareCreateFinalize(projectId);
+  if (!prepared) return;
+
+  const onProgress = createAiProgressPublisher(projectId);
+  let state = prepared;
+  state = await aiAssistSpeechCleanup(state, onProgress);
+  state = await aiAssistTitle(state, onProgress);
+  state = await aiAssistZooms(state, onProgress);
+  state = await aiAssistListicles(state, onProgress);
+  state = await aiAssistTransitions(state, onProgress);
+  state = await aiAssistQuotes(state, onProgress);
+  state = await aiAssistEmphasis(state, onProgress);
+  state = await aiAssistPacing(state, onProgress);
+  state = await aiAssistCompanionSfx(state, onProgress);
+  state = await aiAssistEmphasisSfx(state, onProgress);
+  await persistCreateReady(projectId, state);
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { firstVisibleSpokenCaptionWord } from "~/domain/transcript/caption-visibility";
 import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import { CaptionTemplatePreview } from "~/editor/components/inspector/preview/CaptionTemplatePreview";
 import { play } from "~/editor/lib/player/player-bridge";
@@ -90,10 +91,19 @@ export function StyleTemplatePicker({
                 setHovered(null);
                 onChange(template.id);
                 play(e);
-                const selection = useSelection.getState().selection;
+                const selectionState = useSelection.getState();
+                const editor = useEditor.getState();
+                if (selectionState.projectPanel === "captions") {
+                  const word = firstVisibleSpokenCaptionWord(
+                    editor.getGlobalWords(),
+                    editor.config?.edits ?? [],
+                  );
+                  if (word) editor.seekTimeline(word.start);
+                  return;
+                }
+                const selection = selectionState.selection;
                 if (selection?.kind === "edit") {
                   const id = primaryId(selection);
-                  const editor = useEditor.getState();
                   const edit =
                     id != null
                       ? editor.config?.edits.find((item) => item.id === id)

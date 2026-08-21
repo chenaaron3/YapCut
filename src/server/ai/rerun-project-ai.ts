@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { editsForAiAssist } from "~/domain/edit/edits";
 import { parseProjectConfig } from "~/domain/project/project-config";
 import { isEditorProjectStatus } from "~/domain/project/project-status";
-import { runAiAssist } from "~/server/ai/run-ai-assist";
+import { runAiAssist, createAiAssistState } from "~/server/ai/run-ai-assist";
 import { db } from "~/server/db";
 import { assets, projects, transcripts } from "~/server/db/schema";
 
@@ -74,18 +74,20 @@ export async function rerunProjectAiAssist(options: {
 
   const baseEdits = editsForAiAssist(config.edits);
 
-  const assist = await runAiAssist({
-    arolls: config.arolls,
-    wordsByAssetId,
-    durationByAssetId,
-    title: project.title?.trim() ?? "",
-    generateTitleIfEmpty: true,
-    baseEdits,
-    listicleStyle: config.listicleStyle,
-    companionSfx: config.companionSfx,
-  });
+  const assist = await runAiAssist(
+    createAiAssistState({
+      arolls: config.arolls,
+      wordsByAssetId: Object.fromEntries(wordsByAssetId),
+      durationByAssetId: Object.fromEntries(durationByAssetId),
+      title: project.title?.trim() ?? "",
+      generateTitleIfEmpty: true,
+      edits: [...baseEdits],
+      listicleStyle: config.listicleStyle,
+      companionSfx: config.companionSfx,
+    }),
+  );
 
-  for (const [assetId, words] of assist.wordsByAssetId) {
+  for (const [assetId, words] of Object.entries(assist.wordsByAssetId)) {
     await db
       .update(transcripts)
       .set({ words, updatedAt: new Date() })

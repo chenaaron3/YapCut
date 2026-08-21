@@ -632,8 +632,9 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
 
     syncActiveWord: () => {
       const { timelineSec } = get();
-      const { selection, select } = useSelection.getState();
-      // Keep edit / a-roll / multi-word selections while the playhead moves.
+      const { selection, projectPanel, select } = useSelection.getState();
+      // Keep project panels / edit / a-roll / multi-word while the playhead moves.
+      if (projectPanel != null) return;
       if (selection != null && selection.kind !== "word") return;
       if (selection?.kind === "word" && selection.ids.length > 1) return;
       const words = get().getGlobalWords();

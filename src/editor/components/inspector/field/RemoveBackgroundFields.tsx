@@ -26,12 +26,8 @@ export function AssetMaskToggle({
   const smooth = useSmoothPercent(running ? (event?.progress ?? 0) : 0);
   const on =
     type === onMode || (onMode === "occlude" && type === "cutout");
-  const hint =
-    masking || running
-      ? running
-        ? `${maskingLabel} ${Math.round(smooth * 100)}%`
-        : maskingLabel
-      : null;
+  const showProgress = masking || running;
+  const pct = Math.round(smooth * 100);
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -53,8 +49,26 @@ export function AssetMaskToggle({
           {on ? "On" : "Off"}
         </span>
       </button>
-      {hint ? (
-        <p className="text-muted-foreground text-[10px]">{hint}</p>
+      {showProgress ? (
+        <div
+          className="bg-panel-2 relative h-5 overflow-hidden rounded"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+          aria-label={maskingLabel}
+        >
+          <div
+            className="bg-primary/35 absolute inset-y-0 left-0 transition-[width] duration-300 ease-out"
+            style={{ width: `${pct}%` }}
+          />
+          <span className="text-muted-foreground absolute inset-y-0 left-1.5 z-10 flex items-center text-[10px]">
+            {maskingLabel}
+          </span>
+          <span className="text-foreground absolute inset-0 z-10 flex items-center justify-center text-[10px] font-medium tabular-nums">
+            {pct}%
+          </span>
+        </div>
       ) : null}
     </div>
   );

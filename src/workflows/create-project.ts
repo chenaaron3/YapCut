@@ -3,7 +3,8 @@
  * Started when `USE_VERCEL_WORKFLOW=true` (see `startCreatePipeline`).
  *
  * WhisperX and fal measure enqueue in parallel, then the shared Job runner
- * polls each job type across short steps with `sleep()`.
+ * polls each job type across short steps with `sleep()`. AI assist runs as
+ * one `"use step"` per stage so queue HTTP/2 waits stay under ~30s.
  *
  * Node I/O (postgres, fal, Replicate) is loaded only inside `"use step"`
  * functions so the workflow isolate stays sandbox-safe.
@@ -17,6 +18,7 @@ import { rethrowAsFatal, rethrowFatalFal } from "~/server/workflow/fatal";
 import { runJobs } from "~/server/workflow/job";
 
 import type { CreateProgressEvent } from "~/domain/project/create-progress";
+import type { AiAssistState } from "~/server/ai/run-ai-assist";
 import type { CreateAssetRef } from "~/server/workflow/create/pipeline";
 import type { MeasureHandle } from "~/server/workflow/create/jobs/measure";
 import type { WhisperXHandle } from "~/server/workflow/create/jobs/whisperx";
@@ -76,7 +78,23 @@ export async function createProjectWorkflow(projectId: string) {
         cancel,
       }),
     );
-    await finalizeStep(projectId);
+    // One step per AI stage so the queue's ~30s HTTP/2 wait never spans
+    // the full OpenAI assist pipeline.
+    const prepared = await prepareFinalizeStep(projectId);
+    if (prepared) {
+      let state = prepared;
+      state = await speechCleanupStep(projectId, state);
+      state = await titleStep(projectId, state);
+      state = await zoomsStep(projectId, state);
+      state = await listiclesStep(projectId, state);
+      state = await transitionsStep(projectId, state);
+      state = await quotesStep(projectId, state);
+      state = await emphasisStep(projectId, state);
+      state = await pacingStep(projectId, state);
+      state = await companionSfxStep(projectId, state);
+      state = await emphasisSfxStep(projectId, state);
+      await persistReadyStep(projectId, state);
+    }
   } catch (error) {
     await markFailedStep(
       projectId,
@@ -164,12 +182,145 @@ async function finishMeasureStep(asset: CreateAssetRef, handle: MeasureHandle) {
   }
 }
 
-async function finalizeStep(projectId: string): Promise<void> {
+async function prepareFinalizeStep(
+  projectId: string,
+): Promise<AiAssistState | null> {
   "use step";
-  const { finalizeCreateProject } = await import(
+  const { prepareCreateFinalize } = await import(
     "~/server/workflow/create/pipeline"
   );
-  await finalizeCreateProject(projectId);
+  return prepareCreateFinalize(projectId);
+}
+
+async function speechCleanupStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistSpeechCleanup } = await import("~/server/ai/run-ai-assist");
+  return aiAssistSpeechCleanup(state, createAiProgressPublisher(projectId));
+}
+
+async function titleStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistTitle } = await import("~/server/ai/run-ai-assist");
+  return aiAssistTitle(state, createAiProgressPublisher(projectId));
+}
+
+async function zoomsStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistZooms } = await import("~/server/ai/run-ai-assist");
+  return aiAssistZooms(state, createAiProgressPublisher(projectId));
+}
+
+async function listiclesStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistListicles } = await import("~/server/ai/run-ai-assist");
+  return aiAssistListicles(state, createAiProgressPublisher(projectId));
+}
+
+async function transitionsStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistTransitions } = await import("~/server/ai/run-ai-assist");
+  return aiAssistTransitions(state, createAiProgressPublisher(projectId));
+}
+
+async function quotesStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistQuotes } = await import("~/server/ai/run-ai-assist");
+  return aiAssistQuotes(state, createAiProgressPublisher(projectId));
+}
+
+async function emphasisStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistEmphasis } = await import("~/server/ai/run-ai-assist");
+  return aiAssistEmphasis(state, createAiProgressPublisher(projectId));
+}
+
+async function pacingStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistPacing } = await import("~/server/ai/run-ai-assist");
+  return aiAssistPacing(state, createAiProgressPublisher(projectId));
+}
+
+async function companionSfxStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistCompanionSfx } = await import("~/server/ai/run-ai-assist");
+  return aiAssistCompanionSfx(state, createAiProgressPublisher(projectId));
+}
+
+async function emphasisSfxStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<AiAssistState> {
+  "use step";
+  const { createAiProgressPublisher } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  const { aiAssistEmphasisSfx } = await import("~/server/ai/run-ai-assist");
+  return aiAssistEmphasisSfx(state, createAiProgressPublisher(projectId));
+}
+
+async function persistReadyStep(
+  projectId: string,
+  state: AiAssistState,
+): Promise<void> {
+  "use step";
+  const { persistCreateReady } = await import(
+    "~/server/workflow/create/pipeline"
+  );
+  await persistCreateReady(projectId, state);
 }
 
 async function markFailedStep(
