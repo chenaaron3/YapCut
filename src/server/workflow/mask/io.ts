@@ -41,6 +41,7 @@ type BirefnetVideoResult = {
 
 type BirefnetImageResult = {
   mask_image?: FalFile;
+  image?: FalFile;
 };
 
 /** Serializable ref for the mask Job / workflow. */
@@ -102,9 +103,14 @@ function birefnetSpec(row: MaskAssetRef): {
       endpoint: VIDEO_ENDPOINT,
       input: {
         video_url: mediaUrl,
-        model: "Matting",
+        model: "General Use (Light)",
+        operating_resolution: "1024x1024",
         output_mask: true,
+        refine_foreground: false,
         video_output_type: "X264 (.mp4)",
+        video_quality: "low",
+        video_write_mode: "fast",
+        sync_mode: false,
       },
       what: "mask-video",
     };
@@ -113,8 +119,13 @@ function birefnetSpec(row: MaskAssetRef): {
     endpoint: IMAGE_ENDPOINT,
     input: {
       image_url: mediaUrl,
-      model: "Matting",
-      output_mask: true,
+      model: "General Use (Light)",
+      operating_resolution: "1024x1024",
+      mask_only: true,
+      output_mask: false,
+      refine_foreground: false,
+      output_format: "png",
+      sync_mode: false,
     },
     what: "mask-image",
   };
@@ -254,7 +265,7 @@ async function persistVideoMask(asset: MaskAssetRef, handle: MaskJobHandle) {
 
 async function persistImageMask(asset: MaskAssetRef, handle: MaskJobHandle) {
   const data = await resultFalJob<BirefnetImageResult>(handle.job);
-  const file = data.mask_image;
+  const file = data.mask_image ?? data.image;
   const fetched = await fetchBytes(fileUrl(file, "mask_image"));
   return {
     bytes: fetched.bytes,
