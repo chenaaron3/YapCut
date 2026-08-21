@@ -4,6 +4,7 @@ import {
   mixPlaybackVolume,
   MUSIC_VOLUME_DEFAULT,
 } from "~/domain/audio/mix-levels";
+import { PendingAssetTile } from "~/editor/components/assets/PendingAssetTile";
 import { useAssetUpload } from "~/editor/components/assets/useAssetUpload";
 import { useAudioPreview } from "~/editor/components/assets/useAudioPreview";
 import {
@@ -30,7 +31,7 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
   const activeId = config?.music?.assetId ?? null;
   const mixVolume = config?.music?.volume ?? MUSIC_VOLUME_DEFAULT;
   const { playingKey, preview, stopPreview } = useAudioPreview();
-  const { importing, importFiles } = useAssetUpload({
+  const { importing, pending, importFiles } = useAssetUpload({
     onBeforeUpload: stopPreview,
   });
 
@@ -48,6 +49,7 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
     noClick: true,
     noKeyboard: true,
     multiple: true,
+    disabled: importing,
     accept: {
       "audio/mpeg": [".mp3"],
       "audio/wav": [".wav"],
@@ -107,13 +109,20 @@ export function MusicLibrary({ assets }: { assets: EditorAsset[] }) {
             </PickerTile>
           );
         })}
-        {assets.length === 0 && !importing ? (
+        {pending.map((item) => (
+          <PendingAssetTile
+            key={item.id}
+            pending={item}
+            stripExt
+            thumbClassName="bg-music/25 text-music"
+          />
+        ))}
+        {assets.length === 0 && pending.length === 0 ? (
           <PickerEmpty>
             Drop audio here, or run{" "}
             <code className="text-[10px]">npm run seed:global</code>.
           </PickerEmpty>
         ) : null}
-        {importing ? <PickerEmpty>Importing…</PickerEmpty> : null}
         {isDragActive ? <PickerEmpty>Drop audio to add</PickerEmpty> : null}
       </PickerGrid>
     </div>

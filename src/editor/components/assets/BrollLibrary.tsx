@@ -7,6 +7,7 @@ import { Button } from "~/components/ui/button";
 import { BrollGenerateModal } from "~/editor/components/assets/broll-generate";
 import { BrollPreviewModal } from "~/editor/components/assets/BrollPreviewModal";
 import { BrollTile } from "~/editor/components/assets/BrollTile";
+import { PendingAssetTile } from "~/editor/components/assets/PendingAssetTile";
 import { useAssetUpload } from "~/editor/components/assets/useAssetUpload";
 import { PickerEmpty, PickerGrid } from "~/editor/components/picker";
 import { prepareMediaFileForUpload } from "~/editor/lib/player/prepare-media-file";
@@ -21,7 +22,7 @@ import type { EditorAsset } from "~/editor/store";
 export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
   const projectId = useEditor((s) => s.projectId);
   const rehydrateFromServer = useRehydrateFromServer();
-  const { importing, importFiles } = useAssetUpload();
+  const { importing, pending, importFiles } = useAssetUpload();
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -115,10 +116,12 @@ export function BrollLibrary({ assets }: { assets: EditorAsset[] }) {
             onRemove={() => void onRemove(asset.id)}
           />
         ))}
-        {visibleAssets.length === 0 && !importing ? (
+        {pending.map((item) => (
+          <PendingAssetTile key={item.id} pending={item} fillThumb />
+        ))}
+        {visibleAssets.length === 0 && pending.length === 0 ? (
           <PickerEmpty>Drop images or videos here</PickerEmpty>
         ) : null}
-        {importing ? <PickerEmpty>Importing…</PickerEmpty> : null}
         {isDragActive ? <PickerEmpty>Drop media to add</PickerEmpty> : null}
       </PickerGrid>
       <BrollGenerateModal

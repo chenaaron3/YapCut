@@ -13,15 +13,46 @@ export type PreparedAssetUpload = {
   file: File;
 } & Omit<StartFile, "filename" | "size">;
 
+export type PendingUpload = {
+  id: string;
+  filename: string;
+  previewUrl: string;
+  kind: "image" | "video" | "audio";
+};
+
+function kindFromFile(file: File): PendingUpload["kind"] {
+  const type = file.type.toLowerCase();
+  if (type.startsWith("video/")) return "video";
+  if (type.startsWith("audio/")) return "audio";
+  if (type.startsWith("image/")) return "image";
+  const name = file.name.toLowerCase();
+  if (/\.(mp4|mov|webm|m4v)$/.test(name)) return "video";
+  if (/\.(mp3|wav|m4a|aac|ogg|flac)$/.test(name)) return "audio";
+  return "image";
+}
+
+function revokePending(items: readonly PendingUpload[]) {
+  for (const item of items) URL.revokeObjectURL(item.previewUrl);
+}
+
 /**
  * Shared editor upload: probe in the caller, then start → PUT → finalize → library.
+ * Shows optimistic local thumbs while the upload runs.
  */
 export function useAssetUpload(options?: { onBeforeUpload?: () => void }) {
   const onBeforeUpload = options?.onBeforeUpload;
   const [importing, setImporting] = useState(false);
+  const [pending, setPending] = useState<PendingUpload[]>([]);
   const importingRef = useRef(false);
+  const pendingRef = useRef<PendingUpload[]>([]);
   const uploadStart = api.project.uploadAssetsStart.useMutation();
   const uploadFinalize = api.project.uploadAssetsFinalize.useMutation();
+
+  const clearPending = useCallback(() => {
+    revokePending(pendingRef.current);
+    pendingRef.current = [];
+    setPending([]);
+  }, []);
 
   const importFiles = useCallback(
     async (
@@ -33,8 +64,37 @@ export function useAssetUpload(options?: { onBeforeUpload?: () => void }) {
       importingRef.current = true;
       setImporting(true);
       onBeforeUpload?.();
+
+      const nextPending = accepted.map((file) => ({
+        id: crypto.randomUUID(),
+        filename: file.name,
+        previewUrl: URL.createObjectURL(file),
+        kind: kindFromFile(file),
+      }));
+      pendingRef.current = nextPending;
+      setPending(nextPending);
+
       try {
-        const prepared = await Promise.all(accepted.map(prepare));
+        const prepared = await Promise.all(
+          accepted.map(async (raw, i) => {
+            const result = await prepare(raw);
+            const slot = pendingRef.current[i];
+            if (slot && result.file !== raw) {
+              URL.revokeObjectURL(slot.previewUrl);
+              const updated: PendingUpload = {
+                ...slot,
+                filename: result.file.name,
+                previewUrl: URL.createObjectURL(result.file),
+                kind: kindFromFile(result.file),
+              };
+              pendingRef.current = pendingRef.current.map((p, j) =>
+                j === i ? updated : p,
+              );
+              setPending([...pendingRef.current]);
+            }
+            return result;
+          }),
+        );
         const { uploads } = await uploadStart.mutateAsync({
           projectId,
           files: prepared.map(
@@ -66,12 +126,13 @@ export function useAssetUpload(options?: { onBeforeUpload?: () => void }) {
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Upload failed");
       } finally {
+        clearPending();
         importingRef.current = false;
         setImporting(false);
       }
     },
-    [onBeforeUpload, uploadStart, uploadFinalize],
+    [onBeforeUpload, uploadStart, uploadFinalize, clearPending],
   );
 
-  return { importing, importFiles };
+  return { importing, pending, importFiles };
 }

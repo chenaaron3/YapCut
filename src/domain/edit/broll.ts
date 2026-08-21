@@ -33,12 +33,6 @@ export function clampKenBurns(multiplier: number): number {
   return Math.min(KEN_BURNS_MAX, Math.max(KEN_BURNS_MIN, multiplier));
 }
 
-/** Resolved end-scale multiplier, or `null` when disabled. */
-export function resolveKenBurns(kenBurns: number | undefined): number | null {
-  if (kenBurns == null) return null;
-  return clampKenBurns(kenBurns);
-}
-
 /** `null` turns Ken Burns off (`kenBurns` cleared). */
 export function withBrollKenBurns(
   edit: BrollEdit,
@@ -68,7 +62,6 @@ export function brollSeed(
     kind: "broll",
     assetId,
     ...TRANSFORM_DEFAULTS,
-    kenBurns: DEFAULT_KEN_BURNS,
     mediaOffsetSec: opts?.mediaOffsetSec ?? 0,
     volume: DEFAULT_MEDIA_VOLUME,
   };
