@@ -1,13 +1,13 @@
-import type { CSSProperties } from "react";
-
 import { containSize } from "~/domain/edit/transform";
-import type { EditableTransform } from "~/editor/lib/player/use-editable-transform";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
+import { invertZoomPoint } from "~/remotion/helpers/zoom-transform";
 
 import type { Transform } from "~/domain/edit/transform";
+import type { EditableTransform } from "~/editor/lib/player/use-editable-transform";
+import type { CSSProperties } from "react";
 
 export const EDIT_HIT_ATTR = "data-edit-hit";
 
@@ -34,6 +34,19 @@ export function clientToComp(
     x: ((clientX - rect.left) / rect.width) * COMPOSITION_WIDTH,
     y: ((clientY - rect.top) / rect.height) * COMPOSITION_HEIGHT,
   };
+}
+
+/** Player composition px, inverted through Zoom when the edit lives in that layer. */
+export function pointerInEditSpace(
+  clientX: number,
+  clientY: number,
+  rect: DOMRect,
+  inZoom: boolean,
+  zoom: Transform,
+): { x: number; y: number } {
+  const point = clientToComp(clientX, clientY, rect);
+  if (!inZoom) return point;
+  return invertZoomPoint(point, zoom, COMPOSITION_WIDTH, COMPOSITION_HEIGHT);
 }
 
 export function boxStyle(editable: EditableTransform, t: Transform): BoxStyle {

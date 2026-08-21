@@ -159,6 +159,7 @@ export function TextOverlayView({
         pointerEvents: "none",
         justifyContent: "center",
         alignItems: "center",
+        overflow: "hidden",
       }}
     >
       <div

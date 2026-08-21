@@ -1,9 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   clampTransformScale,
@@ -16,23 +11,26 @@ import { SelectedChrome } from "~/editor/components/player/SelectedChrome";
 import { SnapGuides } from "~/editor/components/player/SnapGuides";
 import {
   boxStyle,
-  clientToComp,
   editIdsFromPoint,
+  pointerInEditSpace,
 } from "~/editor/components/player/transform-overlay";
+import { useEditableTransforms } from "~/editor/lib/player/use-editable-transform";
 import { runGesture } from "~/editor/lib/selection/gesture";
 import { primaryId } from "~/editor/lib/selection/selection";
-import {
-  useEditableTransforms,
-  type EditableTransform,
-} from "~/editor/lib/player/use-editable-transform";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
+import {
+  zoomLayerCssPct,
+  zoomTransformAtFrame,
+} from "~/remotion/helpers/zoom-transform";
 
 import type { SnapGuide, Transform } from "~/domain/edit/transform";
+import type { EditableTransform } from "~/editor/lib/player/use-editable-transform";
+import type { ReactNode, PointerEvent as ReactPointerEvent } from "react";
 
 type DragMode =
   | { kind: "move"; startX: number; startY: number; origin: Transform }
@@ -60,8 +58,14 @@ export function TransformOverlay({
   });
   const setSelection = useSelection((s) => s.setSelection);
   const patchEdit = useEditor((s) => s.patchEdit);
+  const frame = useEditor((s) => s.frame);
+  const zooms = useEditor((s) => s.props?.zooms ?? []);
+  const zoomPose = zoomTransformAtFrame(frame, zooms);
   const rootRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragMode | null>(null);
+  const dragInZoomRef = useRef(false);
+  const zoomPoseRef = useRef(zoomPose);
+  zoomPoseRef.current = zoomPose;
   const endGestureRef = useRef<(() => void) | null>(null);
   const editIdRef = useRef<number | null>(null);
   const boxRef = useRef<{ w: number; h: number } | null>(null);
@@ -94,7 +98,13 @@ export function TransformOverlay({
       const id = editIdRef.current;
       if (!drag || !root || !box || id == null) return;
       const rect = root.getBoundingClientRect();
-      const { x, y } = clientToComp(e.clientX, e.clientY, rect);
+      const { x, y } = pointerInEditSpace(
+        e.clientX,
+        e.clientY,
+        rect,
+        dragInZoomRef.current,
+        zoomPoseRef.current,
+      );
       const cx =
         COMPOSITION_WIDTH / 2 + drag.origin.offsetX * COMPOSITION_WIDTH;
       const cy =
@@ -188,12 +198,19 @@ export function TransformOverlay({
     const root = rootRef.current;
     if (!root) return;
     const rect = root.getBoundingClientRect();
-    const { x, y } = clientToComp(e.clientX, e.clientY, rect);
+    const { x, y } = pointerInEditSpace(
+      e.clientX,
+      e.clientY,
+      rect,
+      editable.inZoom,
+      zoomPoseRef.current,
+    );
     const origin = transformOf(editable.transform);
     const cx = COMPOSITION_WIDTH / 2 + origin.offsetX * COMPOSITION_WIDTH;
     const cy = COMPOSITION_HEIGHT / 2 + origin.offsetY * COMPOSITION_HEIGHT;
     endGestureRef.current?.();
     endGestureRef.current = runGesture();
+    dragInZoomRef.current = editable.inZoom;
     setVisual({ transform: origin, guides: [] });
 
     if (mode === "move") {
@@ -240,45 +257,65 @@ export function TransformOverlay({
   if (editables.length === 0) return null;
 
   const guides = visual?.guides ?? [];
+  const inZoom = editables.filter((item) => item.inZoom);
+  const screen = editables.filter((item) => !item.inZoom);
+  const draggingInZoom = selected?.inZoom === true;
+
+  const paint = (editable: EditableTransform) => {
+    const isSelected = editable.editId === selectedId;
+    const t =
+      isSelected && visual?.transform ? visual.transform : editable.transform;
+    const box = boxStyle(editable, t);
+    if (!isSelected) {
+      return (
+        <HitTarget
+          key={editable.editId}
+          editable={editable}
+          box={box}
+          showOutline={hoveredId === editable.editId}
+          onPointerDown={onHitPointerDown}
+          onHoverChange={setHoveredId}
+        />
+      );
+    }
+    return (
+      <SelectedChrome
+        key={editable.editId}
+        editable={editable}
+        box={box}
+        onHitPointerDown={onHitPointerDown}
+        startDrag={startDrag}
+        onHoverChange={setHoveredId}
+        dragging={dragging}
+      />
+    );
+  };
+
+  const zoomLayer = (children: ReactNode) => (
+    <div
+      className="pointer-events-none absolute inset-0"
+      style={zoomLayerCssPct(zoomPose)}
+    >
+      {children}
+    </div>
+  );
 
   return (
     <div
       ref={rootRef}
-      className="pointer-events-none absolute inset-0 z-50 overflow-visible"
+      className="pointer-events-none absolute inset-0 z-50 overflow-hidden"
     >
-      <SnapGuides guides={guides} />
+      {inZoom.length > 0
+        ? zoomLayer(
+            <>
+              {inZoom.map(paint)}
+              {draggingInZoom ? <SnapGuides guides={guides} /> : null}
+            </>,
+          )
+        : null}
 
-      {editables.map((editable) => {
-        const isSelected = editable.editId === selectedId;
-        const t =
-          isSelected && visual?.transform
-            ? visual.transform
-            : editable.transform;
-        const box = boxStyle(editable, t);
-        if (!isSelected) {
-          return (
-            <HitTarget
-              key={editable.editId}
-              editable={editable}
-              box={box}
-              showOutline={hoveredId === editable.editId}
-              onPointerDown={onHitPointerDown}
-              onHoverChange={setHoveredId}
-            />
-          );
-        }
-        return (
-          <SelectedChrome
-            key={editable.editId}
-            editable={editable}
-            box={box}
-            onHitPointerDown={onHitPointerDown}
-            startDrag={startDrag}
-            onHoverChange={setHoveredId}
-            dragging={dragging}
-          />
-        );
-      })}
+      {screen.map(paint)}
+      {!draggingInZoom ? <SnapGuides guides={guides} /> : null}
     </div>
   );
 }

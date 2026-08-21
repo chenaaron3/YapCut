@@ -238,7 +238,7 @@ export function CaptionOverlay({
   return (
     <div
       ref={rootRef}
-      className="pointer-events-none absolute inset-0 z-[60] overflow-visible"
+      className="pointer-events-none absolute inset-0 z-[60] overflow-hidden"
     >
       <div
         data-caption-hit=""

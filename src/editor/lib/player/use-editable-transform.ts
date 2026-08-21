@@ -1,14 +1,20 @@
 import { useSyncExternalStore } from "react";
 
+import { editSitsBehindPerson } from "~/domain/asset/mask";
 import { isBrollActiveAt } from "~/domain/edit/broll";
-import { isMotionEdit } from "~/domain/vfx/motion";
-import { isTextBaseEdit } from "~/domain/project/project-config";
-import { isStickerEdit, STICKER_BOX_PX, stickerLabel } from "~/domain/edit/sticker";
+import {
+  isStickerEdit,
+  STICKER_BOX_PX,
+  stickerLabel,
+} from "~/domain/edit/sticker";
 import { transformOf } from "~/domain/edit/transform";
 import { isZoomActiveAt } from "~/domain/edit/zoom";
+import { isTextBaseEdit } from "~/domain/project/project-config";
+import { isMotionEdit } from "~/domain/vfx/motion";
 import { primaryId } from "~/editor/lib/selection/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
+import { arollLayerAtFrame } from "~/remotion/helpers/aroll-layer";
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
@@ -20,8 +26,8 @@ import {
   subscribeOverlayMeasures,
 } from "~/remotion/helpers/overlay-measure";
 
-import type { Edit, ProjectConfig } from "~/domain/project/project-config";
 import type { Transform } from "~/domain/edit/transform";
+import type { Edit, ProjectConfig } from "~/domain/project/project-config";
 
 /** Paint stack under the player: zoom (a-roll) → b-roll → text overlays. */
 export type EditableLayer = "zoom" | "broll" | "overlay";
@@ -33,6 +39,8 @@ export type EditableTransform = {
   height: number;
   label: string;
   layer: EditableLayer;
+  /** Painted inside TalkingHead Zoom (behind + Separate background). */
+  inZoom: boolean;
 };
 
 type AssetSize = {
@@ -54,7 +62,10 @@ function editableForEdit(
   timelineSec: number,
   assets: readonly AssetSize[],
   overlaySize: { width: number; height: number } | null,
+  inZoomWorld: boolean,
 ): EditableTransform | null {
+  const inZoom = inZoomWorld && editSitsBehindPerson(edit);
+
   if (edit.kind === "zoom") {
     if (!isZoomActiveAt(edit, timelineSec)) return null;
     return {
@@ -64,6 +75,7 @@ function editableForEdit(
       height: COMPOSITION_HEIGHT,
       label: "Zoom",
       layer: "zoom",
+      inZoom: false,
     };
   }
 
@@ -79,6 +91,7 @@ function editableForEdit(
         edit.heading.trim() ||
         (edit.type === "listicle" ? "Listicle" : "Title"),
       layer: "overlay",
+      inZoom,
     };
   }
 
@@ -92,6 +105,7 @@ function editableForEdit(
       height: size.height,
       label: "Motion",
       layer: "overlay",
+      inZoom,
     };
   }
 
@@ -108,6 +122,7 @@ function editableForEdit(
       height: size.height,
       label: stickerLabel(edit),
       layer: "overlay",
+      inZoom,
     };
   }
 
@@ -126,6 +141,7 @@ function editableForEdit(
     height: asset.height,
     label: asset.originalFilename ?? asset.id.slice(0, 8),
     layer: "broll",
+    inZoom,
   };
 }
 
@@ -138,6 +154,7 @@ export function listEditableTransforms(
   assets: readonly AssetSize[],
   timelineSec: number,
   overlaySizeFor: (editId: number) => { width: number; height: number } | null,
+  inZoomWorld = false,
 ): EditableTransform[] {
   if (!config) return [];
   const out: EditableTransform[] = [];
@@ -147,6 +164,7 @@ export function listEditableTransforms(
       timelineSec,
       assets,
       overlaySizeFor(edit.id),
+      inZoomWorld,
     );
     if (item) out.push(item);
   }
@@ -166,13 +184,22 @@ export function useEditableTransforms(): EditableTransform[] {
   const config = useEditor((s) => s.config);
   const assets = useEditor((s) => s.assets);
   const timelineSec = useEditor((s) => s.timelineSec);
+  const frame = useEditor((s) => s.frame);
+  const sections = useEditor((s) => s.props?.sections);
   useSyncExternalStore(
     subscribeOverlayMeasures,
     getOverlayMeasuresRevision,
     () => 0,
   );
 
-  return listEditableTransforms(config, assets, timelineSec, getOverlayMeasure);
+  const inZoomWorld = arollLayerAtFrame(sections ?? [], frame) === "occlude";
+  return listEditableTransforms(
+    config,
+    assets,
+    timelineSec,
+    getOverlayMeasure,
+    inZoomWorld,
+  );
 }
 
 /**

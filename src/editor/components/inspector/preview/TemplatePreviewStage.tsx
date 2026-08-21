@@ -1,9 +1,11 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
+
+import type { ReactNode } from "react";
 
 /** Scaled composition viewport for inspector template previews. */
 export function TemplatePreviewStage({

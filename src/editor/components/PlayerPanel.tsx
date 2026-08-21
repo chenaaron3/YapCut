@@ -136,9 +136,10 @@ export function PlayerPanel() {
 
   return (
     <div ref={shellRef} className={shellClassName}>
-      <div className="relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-visible p-2 fullscreen:p-0 lg:p-4">
+      <div className="relative z-20 flex min-h-0 flex-1 items-center justify-center overflow-hidden p-2 fullscreen:p-0 lg:p-4">
         <div
-          className="relative h-full w-full overflow-visible bg-black"
+          className="relative h-full w-full isolate overflow-hidden bg-black"
+          style={{ clipPath: "inset(0)" }}
           onPointerDownCapture={onPlayGesture}
         >
           <Player
@@ -149,7 +150,7 @@ export function PlayerPanel() {
             compositionWidth={COMPOSITION_WIDTH}
             compositionHeight={COMPOSITION_HEIGHT}
             fps={COMPOSITION_FPS}
-            style={{ width: "100%", height: "100%" }}
+            style={{ width: "100%", height: "100%", overflow: "hidden" }}
             controls={false}
             clickToPlay={!overlayDragging}
             spaceKeyToPlayOrPause={false}

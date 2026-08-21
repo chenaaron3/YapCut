@@ -1,76 +1,12 @@
-import type { ReactNode } from "react";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig } from "remotion";
+
 import {
-  AbsoluteFill,
-  Easing,
-  interpolate,
-  useCurrentFrame,
-  useVideoConfig,
-} from "remotion";
+  zoomLayerCssPx,
+  zoomTransformAtFrame,
+} from "~/remotion/helpers/zoom-transform";
 
-import { TRANSFORM_DEFAULTS } from "~/domain/edit/transform";
 import type { ZoomProp } from "~/remotion/helpers/types";
-
-const EASE = Easing.inOut(Easing.ease);
-
-function activeZoom(frame: number, zooms: ZoomProp[]): ZoomProp | null {
-  for (const zoom of zooms) {
-    if (frame >= zoom.startFrame && frame <= zoom.endFrame) return zoom;
-  }
-  return null;
-}
-
-function transformAtFrame(
-  frame: number,
-  zoom: ZoomProp,
-): {
-  scale: number;
-  offsetX: number;
-  offsetY: number;
-  rotation: number;
-} {
-  if (!zoom.ease || zoom.endFrame <= zoom.startFrame) {
-    return {
-      scale: zoom.scale,
-      offsetX: zoom.offsetX,
-      offsetY: zoom.offsetY,
-      rotation: zoom.rotation,
-    };
-  }
-
-  const input = [zoom.startFrame, zoom.endFrame] as const;
-  const opts = {
-    extrapolateLeft: "clamp" as const,
-    extrapolateRight: "clamp" as const,
-    easing: EASE,
-  };
-
-  return {
-    scale: interpolate(
-      frame,
-      input,
-      [TRANSFORM_DEFAULTS.scale, zoom.scale],
-      opts,
-    ),
-    offsetX: interpolate(
-      frame,
-      input,
-      [TRANSFORM_DEFAULTS.offsetX, zoom.offsetX],
-      opts,
-    ),
-    offsetY: interpolate(
-      frame,
-      input,
-      [TRANSFORM_DEFAULTS.offsetY, zoom.offsetY],
-      opts,
-    ),
-    rotation: interpolate(
-      frame,
-      input,
-      [TRANSFORM_DEFAULTS.rotation, zoom.rotation],
-      opts,
-    ),
-  };
-}
+import type { ReactNode } from "react";
 
 export function Zoom({
   zooms,
@@ -81,18 +17,10 @@ export function Zoom({
 }) {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
-  const active = zooms.length > 0 ? activeZoom(frame, zooms) : null;
-  const t = active
-    ? transformAtFrame(frame, active)
-    : TRANSFORM_DEFAULTS;
+  const t = zoomTransformAtFrame(frame, zooms);
 
   return (
-    <AbsoluteFill
-      style={{
-        transform: `translate(${t.offsetX * width}px, ${t.offsetY * height}px) rotate(${t.rotation}deg) scale(${t.scale})`,
-        transformOrigin: "center center",
-      }}
-    >
+    <AbsoluteFill style={zoomLayerCssPx(t, width, height)}>
       {children}
     </AbsoluteFill>
   );

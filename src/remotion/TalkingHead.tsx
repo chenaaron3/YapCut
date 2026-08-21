@@ -1,26 +1,31 @@
-import { AbsoluteFill, Series, useCurrentFrame, useVideoConfig } from "remotion";
+import {
+  AbsoluteFill,
+  Series,
+  useCurrentFrame,
+  useVideoConfig,
+} from "remotion";
 
 import { partitionBehindPerson } from "~/domain/asset/mask";
 import { BRollOverlay } from "~/remotion/components/BRollOverlay";
 import { Captions } from "~/remotion/components/Captions";
 import { EnsureLocalFonts } from "~/remotion/components/EnsureLocalFonts";
+import { MaskedMedia } from "~/remotion/components/MaskedMedia";
 import { MotionLayer } from "~/remotion/components/motion/MotionLayer";
 import { MusicOverlay } from "~/remotion/components/MusicOverlay";
 import { ScreenShake } from "~/remotion/components/ScreenShake";
 import { SfxAudio } from "~/remotion/components/SfxAudio";
 import { StickerOverlay } from "~/remotion/components/StickerOverlay";
-import { MaskedMedia } from "~/remotion/components/MaskedMedia";
 import { TextOverlay } from "~/remotion/components/TextOverlay";
 import { Zoom } from "~/remotion/components/Zoom";
+import { arollLayerAtFrame } from "~/remotion/helpers/aroll-layer";
 import { PREMOUNT_SEC } from "~/remotion/helpers/constants";
 import { TransitionLayer } from "~/remotion/transitions/TransitionLayer";
 
+import type { ArollLayer } from "~/remotion/helpers/aroll-layer";
 import type { ArollSection, ProjectProps } from "~/remotion/helpers/types";
 import type { ReactNode } from "react";
 
 const FILL = { width: "100%", height: "100%" } as const;
-
-type ArollLayer = "original" | "occlude";
 
 function ArollPicture({
   section,
@@ -91,20 +96,6 @@ function ArollSeries({
   );
 }
 
-function arollLayerAtFrame(
-  sections: readonly ArollSection[],
-  frame: number,
-): ArollLayer {
-  let t = 0;
-  for (const section of sections) {
-    if (frame >= t && frame < t + section.durationInFrames) {
-      return section.mask?.type === "occlude" ? "occlude" : "original";
-    }
-    t += section.durationInFrames;
-  }
-  return sections.at(-1)?.mask?.type === "occlude" ? "occlude" : "original";
-}
-
 function MaskWindow({
   sections,
   when,
@@ -168,7 +159,7 @@ export function TalkingHead({
   });
 
   return (
-    <AbsoluteFill style={{ backgroundColor: "#000" }}>
+    <AbsoluteFill style={{ backgroundColor: "#000", overflow: "hidden" }}>
       <EnsureLocalFonts />
       <ScreenShake shakes={shakes}>
         <TransitionLayer transitions={transitions}>

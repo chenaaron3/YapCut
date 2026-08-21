@@ -6,11 +6,10 @@ import { play } from "~/editor/lib/player/player-bridge";
 import { primaryId } from "~/editor/lib/selection/selection";
 import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
-import {
-  resolveCaptionFont,
-  type CaptionGroupStyle,
-} from "~/remotion/captions/style";
 import { cn } from "~/lib/utils";
+import { resolveCaptionFont } from "~/remotion/captions/style";
+
+import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export type StyleTemplateChip = {
   id: string;
@@ -38,33 +37,33 @@ export function StyleTemplatePicker({
   const previewStyle = previewingOther
     ? hovered.style
     : (fallbackStyle ?? selected?.style ?? null);
-  const previewLabel = previewingOther ? hovered.label : (selected?.label ?? null);
+  const previewLabel = previewingOther
+    ? hovered.label
+    : (selected?.label ?? null);
 
   return (
     <InspectorCollapsible
       title="Template"
       accessory={
         selected ? (
-          <span className="max-w-[50%] truncate text-[10px] text-muted-foreground/70">
+          <span className="text-muted-foreground/70 max-w-[50%] truncate text-[10px]">
             {selected.label}
           </span>
         ) : undefined
       }
       contentClassName="gap-1.5"
     >
-      <div className="overflow-hidden rounded-lg border border-border">
+      <div className="border-border overflow-hidden rounded-lg border">
         {previewStyle ? (
           <>
             <CaptionTemplatePreview
               style={previewStyle}
               playing={previewingOther}
               restartKey={
-                previewingOther
-                  ? hovered.id
-                  : (selected?.id ?? value ?? "")
+                previewingOther ? hovered.id : (selected?.id ?? value ?? "")
               }
             />
-            <div className="border-t border-border bg-panel-2 px-2 py-1.5 text-center text-[10px] text-muted-foreground">
+            <div className="border-border bg-panel-2 text-muted-foreground border-t px-2 py-1.5 text-center text-[10px]">
               {previewLabel ?? "Current"}
               {previewingOther ? (
                 <span className="text-muted-foreground/70"> · preview</span>
@@ -72,7 +71,7 @@ export function StyleTemplatePicker({
             </div>
           </>
         ) : (
-          <div className="flex h-[128px] items-center justify-center bg-panel-2 text-[11px] text-muted-foreground">
+          <div className="bg-panel-2 text-muted-foreground flex h-[128px] items-center justify-center text-[11px]">
             Hover a template
           </div>
         )}
@@ -124,7 +123,7 @@ export function StyleTemplatePicker({
               >
                 Aa
               </span>
-              <span className="mt-1 max-w-full truncate text-[9px] text-muted-foreground">
+              <span className="text-muted-foreground mt-1 max-w-full truncate text-[9px]">
                 {template.label}
               </span>
             </button>
