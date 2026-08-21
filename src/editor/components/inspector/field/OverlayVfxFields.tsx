@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { overlayMidpointSec } from "~/domain/project/project-config";
 import { OVERLAY_TRANSFORM_DEFAULTS, transformOf } from "~/domain/edit/transform";
@@ -35,26 +35,27 @@ function persistSerialMiddle(edit: OverlayEdit, stacked: boolean) {
 }
 
 function OverlayLineStyleFields({
-  label,
   resolved,
   overrides,
   bag,
   style,
   defaultTemplateId,
   onStyleChange,
+  leading,
 }: {
-  label: string;
   resolved: CaptionGroupStyle;
   overrides: ReturnType<typeof normalizeCaptionOverrides>;
   bag: "overrides" | "subheadingOverrides";
   style: TemplateStyle | undefined;
   defaultTemplateId: OverlayTemplateId;
   onStyleChange: (next: TemplateStyle, live?: boolean) => void;
+  leading?: ReactNode;
 }) {
   return (
     <CaptionStyleFields
-      title={label}
+      title="Style"
       defaultOpen
+      leading={leading}
       overrides={overrides}
       resolvedFill={resolved.wordStyle.fill}
       resolvedY={resolved.y}
@@ -181,47 +182,39 @@ export function OverlayVfxFields({
         }}
       />
 
-      {hasSubheading ? (
-        <div className="border-border flex gap-1 rounded-md border p-0.5">
-          {(["heading", "subheading"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              className={cn(
-                "flex-1 rounded px-2 py-1 text-[10px] font-medium tracking-wide uppercase",
-                activeTab === tab
-                  ? "bg-primary/15 text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              onClick={() => setLineTab(tab)}
-            >
-              {tab === "heading" ? headingLabel : subheadingLabel}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {activeTab === "heading" ? (
-        <OverlayLineStyleFields
-          label={hasSubheading ? headingLabel : "Style"}
-          resolved={look.heading}
-          overrides={normalizeCaptionOverrides(style?.overrides)}
-          bag="overrides"
-          style={style}
-          defaultTemplateId={defaultTemplateId}
-          onStyleChange={onStyleChange}
-        />
-      ) : (
-        <OverlayLineStyleFields
-          label={subheadingLabel}
-          resolved={look.subheading}
-          overrides={normalizeCaptionOverrides(style?.subheadingOverrides)}
-          bag="subheadingOverrides"
-          style={style}
-          defaultTemplateId={defaultTemplateId}
-          onStyleChange={onStyleChange}
-        />
-      )}
+      <OverlayLineStyleFields
+        resolved={activeTab === "heading" ? look.heading : look.subheading}
+        overrides={normalizeCaptionOverrides(
+          activeTab === "heading"
+            ? style?.overrides
+            : style?.subheadingOverrides,
+        )}
+        bag={activeTab === "heading" ? "overrides" : "subheadingOverrides"}
+        style={style}
+        defaultTemplateId={defaultTemplateId}
+        onStyleChange={onStyleChange}
+        leading={
+          hasSubheading ? (
+            <div className="border-border flex gap-1 rounded-md border p-0.5">
+              {(["heading", "subheading"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={cn(
+                    "flex-1 rounded px-2 py-1 text-[10px] font-medium tracking-wide uppercase",
+                    activeTab === tab
+                      ? "bg-primary/15 text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() => setLineTab(tab)}
+                >
+                  {tab === "heading" ? headingLabel : subheadingLabel}
+                </button>
+              ))}
+            </div>
+          ) : undefined
+        }
+      />
 
       <TransformFields
         transform={transformOf(edit)}

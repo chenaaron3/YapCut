@@ -1,5 +1,5 @@
 import { Minus, Plus } from "lucide-react";
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -34,6 +34,7 @@ export function CaptionStyleFields({
   showY = true,
   yMode = "safe-area",
   title = "Style",
+  leading,
 }: {
   overrides: CaptionStyleOverrides;
   resolvedFill: string;
@@ -52,6 +53,8 @@ export function CaptionStyleFields({
   /** Captions/quotes: safe-area −1…1. Overlay lines after the first: previous-group height fraction. */
   yMode?: "safe-area" | "line";
   title?: string;
+  /** Optional content above the fields (e.g. line tabs inside Style). */
+  leading?: ReactNode;
 }) {
   const words = resolvedCaptionsAtATime ?? 1;
   const fill = overrides.fill ?? resolvedFill;
@@ -66,6 +69,7 @@ export function CaptionStyleFields({
 
   return (
     <InspectorCollapsible title={title} defaultOpen={defaultOpen}>
+      {leading}
       <div
         className={
           showCaptionsAtATime

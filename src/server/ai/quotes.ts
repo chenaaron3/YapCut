@@ -5,11 +5,12 @@ import {
   buildNumberedTranscript,
   wordIndexToTimelineSec,
 } from "~/domain/aroll/projection";
-import type { Edit, VfxQuoteEdit } from "~/domain/project/project-config";
 import { nextEditId } from "~/domain/project/project-config";
 import { quoteRangeConflicts, quoteSeed } from "~/domain/vfx/quote";
-import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 import { getOpenAIClient, OPENAI_MODEL } from "~/server/ai/openai";
+
+import type { Edit, VfxQuoteEdit } from "~/domain/project/project-config";
+import type { GlobalTranscriptWord } from "~/domain/transcript/transcript";
 
 const MAX_QUOTES = 30;
 const MIN_WORDS = 3;
@@ -150,7 +151,6 @@ async function callOpenAI(
           "Only quote true key phrases (hooks, claims, contrasts, numbers, memorable lines). Skip filler and ordinary connective speech.",
           "The first quote MUST start at word index 0. Choose endWordIndex where that opening hook key phrase ends (still within the word limit).",
           `Leave at least ${MIN_GAP_WORDS} words between quotes. If two candidate ranges sit too close, pick a spaced subset inside each range (or drop one) — never merge past the word limit.`,
-          "Overlap with zooms/text is fine; do not place on clear listicle indicator/value spans.",
           "Return startWordIndex/endWordIndex into the numbered transcript.",
           `At most ${MAX_QUOTES} quotes.`,
         ].join(" "),

@@ -97,13 +97,18 @@ FOOD_ID_BY_CODEPOINT = {
 UNICODE_GROUP_TO_TOPIC = {
     "Smileys & Emotion": "smileys-emotion",
     "People & Body": "people-body",
+    "Animals & Nature": "animals-nature",
     "Food & Drink": "food-drink",
     "Travel & Places": "travel-places",
     "Activities": "activities",
     "Objects": "objects",
     "Symbols": "symbols",
+    "Flags": "flags",
+    "Component": "component",
 }
-SKIP_UNICODE_GROUPS = frozenset({"Component", "Animals & Nature", "Flags"})
+
+# Fitzpatrick modifiers — keep only the default (yellow) form per glyph.
+SKIN_TONE_MODIFIERS = frozenset({"1f3fb", "1f3fc", "1f3fd", "1f3fe", "1f3ff"})
 
 LORDICON_CATEGORY_TO_TOPIC = {
     "interface": "ui",
@@ -219,6 +224,16 @@ def glyph_from_codepoint(cp: str) -> str:
     return "".join(parts)
 
 
+def normalize_codepoint(cp: str) -> str:
+    """Strip leading zeros per hex segment so Noto `a9_fe0f` matches Unicode `00a9_fe0f`."""
+    return "_".join(part.lstrip("0") or "0" for part in cp.lower().split("_"))
+
+
+def cdn_codepoint(cp: str) -> str:
+    """Pad each hex segment to ≥4 digits for fonts.gstatic.com (Noto uses bare `a9_fe0f`)."""
+    return "_".join(part.zfill(4) for part in cp.lower().split("_"))
+
+
 def decode_li(blob: bytes) -> dict:
     raw = base64.b64decode(blob.strip())
     return json.loads(bytes(b ^ 0x2A for b in raw))
@@ -244,9 +259,9 @@ def write_json(path: Path, obj) -> None:
     path.write_text(json.dumps(obj, separators=(",", ":")), encoding="utf-8")
 
 
-def parse_emoji_topics(text: str) -> dict[str, str | None]:
-    """codepoint key → topic slug, or None if the Unicode group is skipped."""
-    out: dict[str, str | None] = {}
+def parse_emoji_topics(text: str) -> dict[str, str]:
+    """codepoint key → topic slug for every fully-qualified emoji."""
+    out: dict[str, str] = {}
     group: str | None = None
     for line in text.splitlines():
         if line.startswith("# group:"):
@@ -257,22 +272,20 @@ def parse_emoji_topics(text: str) -> dict[str, str | None]:
         hex_seq, rest = line.split(";", 1)
         if "fully-qualified" not in rest:
             continue
-        key = "_".join(hex_seq.split()).lower()
-        if group in SKIP_UNICODE_GROUPS:
-            out[key] = None
-        elif group in UNICODE_GROUP_TO_TOPIC:
-            out[key] = UNICODE_GROUP_TO_TOPIC[group]
-        else:
+        key = normalize_codepoint("_".join(hex_seq.split()))
+        if group not in UNICODE_GROUP_TO_TOPIC:
             raise RuntimeError(f"unknown Unicode emoji group: {group}")
+        out[key] = UNICODE_GROUP_TO_TOPIC[group]
     return out
 
 
-def lookup_emoji_topic(cp: str, topics: dict[str, str | None]) -> str | None:
-    keys = [cp]
-    if cp.endswith("_fe0f"):
-        keys.append(cp[: -len("_fe0f")])
+def lookup_emoji_topic(cp: str, topics: dict[str, str]) -> str:
+    base = normalize_codepoint(cp)
+    keys = [base]
+    if base.endswith("_fe0f"):
+        keys.append(base[: -len("_fe0f")])
     else:
-        keys.append(f"{cp}_fe0f")
+        keys.append(f"{base}_fe0f")
     for key in keys:
         if key in topics:
             return topics[key]
@@ -295,7 +308,7 @@ def place_file(dest: Path, old_paths: list[Path], write) -> str:
 
 
 def download_emoji(codepoint: str, dest: Path) -> None:
-    url = f"https://fonts.gstatic.com/s/e/notoemoji/latest/{codepoint}/lottie.json"
+    url = f"https://fonts.gstatic.com/s/e/notoemoji/latest/{cdn_codepoint(codepoint)}/lottie.json"
     raw = fetch(url)
     json.loads(raw)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -313,10 +326,14 @@ def download_lordicon_pair(slug: str, json_path: Path, svg_path: Path) -> None:
     write_json(json_path, data)
 
 
-def noto_emoji_rows(topics: dict[str, str | None]) -> list[dict]:
+def has_skin_tone(cp: str) -> bool:
+    return bool(set(cp.lower().split("_")) & SKIN_TONE_MODIFIERS)
+
+
+def noto_emoji_rows(topics: dict[str, str]) -> list[dict]:
     data = json.loads(fetch(NOTO_API_URL))
     by_cp = {i["codepoint"]: i for i in data["icons"]}
-    icons = sorted(data["icons"], key=lambda i: -i.get("popularity", 0))[:250]
+    icons = sorted(data["icons"], key=lambda i: -i.get("popularity", 0))
     seen_cp = {i["codepoint"] for i in icons}
     for cp in (*EMOJI_ID_BY_CODEPOINT, *FOOD_ID_BY_CODEPOINT):
         extra = by_cp.get(cp)
@@ -326,13 +343,13 @@ def noto_emoji_rows(topics: dict[str, str | None]) -> list[dict]:
 
     used: dict[str, int] = {}
     rows = []
-    skipped = 0
+    skipped_tone = 0
     for icon in icons:
         cp = icon["codepoint"]
-        topic = lookup_emoji_topic(cp, topics)
-        if topic is None:
-            skipped += 1
+        if has_skin_tone(cp):
+            skipped_tone += 1
             continue
+        topic = lookup_emoji_topic(cp, topics)
         tags = icon.get("tags") or [cp]
         tag = tags[0]
         pinned = EMOJI_ID_BY_CODEPOINT.get(cp) or FOOD_ID_BY_CODEPOINT.get(cp)
@@ -351,7 +368,7 @@ def noto_emoji_rows(topics: dict[str, str | None]) -> list[dict]:
                 "popular": cp in EMOJI_ID_BY_CODEPOINT,
             }
         )
-    print(f"emoji skipped (animals/flags/component): {skipped}", flush=True)
+    print(f"emoji skipped (skin-tone variants): {skipped_tone}", flush=True)
     return rows
 
 

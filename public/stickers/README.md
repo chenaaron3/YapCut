@@ -10,7 +10,7 @@ Refresh / extend:
 python3 scripts/sync-stickers.py
 ```
 
-That pulls Noto **top 250** by `popularity` (plus our original emoji and 15 food/drink if they fell outside), skips Unicode **Animals & Nature** and **Flags**, Lordicon Wired Flat **[Popular](https://lordicon.com/icons/wired/flat#c:popular)** (~70), the original Marks, and a hand-picked talking-head set (numbers, quote, mic, …). It writes files into topic folders, moves leftovers from the old flat dirs, prunes unreferenced files, and regenerates `sticker-catalog.json`. Existing dest files are skipped.
+That pulls the full Noto Animated Emoji catalogue except Fitzpatrick skin-tone variants (default yellow only; pinned Popular ids + 15 food/drink keep stable slugs), Lordicon Wired Flat **[Popular](https://lordicon.com/icons/wired/flat#c:popular)** (~70), the original Marks, and a hand-picked talking-head set (numbers, quote, mic, …). It writes files into topic folders, moves leftovers from the old flat dirs, prunes unreferenced files, and regenerates `sticker-catalog.json`. Existing dest files are skipped.
 
 Library tabs: Popular (curated mix) / Emoji / Marks / All. Search matches the full catalog.
 
@@ -28,13 +28,16 @@ Library tabs: Popular (curated mix) / Emoji / Marks / All. Search matches the fu
 |---|---|
 | Smileys & Emotion | `smileys-emotion` |
 | People & Body | `people-body` |
+| Animals & Nature | `animals-nature` |
 | Food & Drink | `food-drink` |
 | Travel & Places | `travel-places` |
 | Activities | `activities` |
 | Objects | `objects` |
 | Symbols | `symbols` |
+| Flags | `flags` |
+| Component | `component` |
 
-Skipped: Animals & Nature, Flags, Component (skin-tone modifiers as standalone). Skin-tone sequences stay next to the base in `people-body`.
+Default (yellow) form only — Fitzpatrick skin-tone sequences are skipped. Standalone Component modifiers land in `component` if present.
 
 **File:** `emoji/<topic>/<id>.json`
 
@@ -42,7 +45,7 @@ Skipped: Animals & Nature, Flags, Component (skin-tone modifiers as standalone).
 https://fonts.gstatic.com/s/e/notoemoji/latest/<codepoint>/lottie.json
 ```
 
-`<codepoint>` is lowercase hex with no `U+`. Sequences use `_` (`2665_fe0f`).
+`<codepoint>` is lowercase hex with no `U+`, each segment padded to ≥4 digits (`00a9_fe0f`). Sequences use `_` (`2665_fe0f`).
 
 Manual add: drop the JSON in the topic folder, append a row to `sticker-catalog.json`:
 

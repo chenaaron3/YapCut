@@ -86,7 +86,7 @@ broll | sticker | sfx | zoom | vfx | transition
 
 - **zoom** — end-keyframe `Transform` + optional `ease` (omit/false = hard **punch-in**; true = **slow zoom** ease identity → end over the range)
 - **vfx** — `type: "quote" | "text" | "listicle" | "shake" | "motion"` (location VFX out of scope; **Separate background** / **Remove background** are Asset **Mask**, not a VFX type)
-- **sticker** — catalog overlay (`source: "emoji" | "lordicon"` + `catalogId`). Same Edit shape; `source` is playback (`loop` vs intro-then-hold), not a second kind. Fixed ~180px box + `Transform`. No Ken Burns, no Asset row. Catalog files live under `public/stickers/{source}/{topic}/`. Emoji: Noto top 250 by popularity, Unicode group as topic (skip Animals & Nature and Flags), plus 15 food/drink. Lordicon: Wired Flat Popular + original Marks + talking-head extras; topic is a collapsed Lordicon category (`ui` / `people` / `media` / `business` / `tech` / `objects`). Drag from Stickers (Popular / Emoji / Marks / All + search). Place range is the drop word. Editor AI re-run drops stickers (keeps b-roll).
+- **sticker** — catalog overlay (`source: "emoji" | "lordicon"` + `catalogId`). Same Edit shape; `source` is playback (`loop` vs intro-then-hold), not a second kind. Fixed ~180px box + `Transform`. No Ken Burns, no Asset row. Catalog files live under `public/stickers/{source}/{topic}/`. Emoji: full Noto Animated Emoji catalogue minus Fitzpatrick skin-tone variants (default yellow only), Unicode group as topic (incl. Animals & Nature, Flags, Component), Popular + food/drink keep stable ids. Lordicon: Wired Flat Popular + original Marks + talking-head extras; topic is a collapsed Lordicon category (`ui` / `people` / `media` / `business` / `tech` / `objects`). Drag from Stickers (Popular / Emoji / Marks / All + search). Place range is the drop word. Editor AI re-run drops stickers (keeps b-roll).
 - **transition** — A-roll picture stitch (`templateId: "flash" | "fade" | "slide"`). Identity is `stitch` + `durationSec`; one per keep–keep stitch (plus opening and closing). Not a VFX subtype, not a sting.
 
 **Transition**:
@@ -103,7 +103,7 @@ _Avoid_: filling dry stretches with standalone SFX; partial-sentence slow zooms
 
 **Punch phrase**:
 Short high-impact key-phrase span for a quote VFX (~3–10 words), not a full sentence. AI always starts the first quote at word 0 (hook); later quotes only on true key phrases, ≥5 words between spans — prefer spaced subsets over merging past the word limit.
-_Avoid_: quote-as-paragraph, quote overlapping listicle, packing ordinary connective speech, back-to-back quotes
+_Avoid_: quote-as-paragraph, packing ordinary connective speech, back-to-back quotes
 
 **Companion SFX**:
 An `sfx` Edit placed beside an eligible visual moment (punch-in, quote peak, listicle heading/subheading, title card). Optional per candidate (`none` allowed). Not used to plug pacing gaps. AI does not place riser companions.
@@ -255,7 +255,7 @@ Export is a snapshot at click; editing during `exporting` is allowed. Only one e
    3. punch-in zooms
    4. listicles
    5. transitions — code seeds opening+closing as a mirrored **flash** pair (same duration); code seeds a transition on any listicle heading whose start sits on a valid drop word (keep-edge punctuated sentence; mid-keep listicles get none); LLM yes/no on remaining interior valid junctions (soft-fail). No companion SFX role for transitions (existing reveal SFX on title/listicle unchanged).
-   6. quotes (key phrases ~3–10 words; first starts at word 0 / hook end by LLM; ≥5 words between; no overlap with listicle; may overlap text/zoom)
+   6. quotes (key phrases ~3–10 words; first starts at word 0 / hook end by LLM; ≥5 words between; may overlap text/zoom/listicle)
    7. emphasis — two LLM passes unioned: sparse over whole script, then denser inside quote ranges
    8. pacing reconcile → yes/no slow zooms on bare sentences (≥5 words, no edits)
    9. companion SFX (intensity soft/medium/hard/none for fixed role; hash-pick asset from `sfx/<role>/` pool; 300ms min-gap; priority reveal/tick → quote ping → punch-in motion; no riser candidates)
@@ -293,7 +293,7 @@ Uploads/retries incomplete **PlatformPublish** rows for due **ScheduleEntry**s (
 - Captions are a Project field (`TemplateStyle`); quote VFX overrides caption look over a range at props time
 - Emphasis look is a Project field (`emphasisStyle`); quote may sparse-merge the same `EmphasisStyle` shape on top; AI never writes emphasis style
 - Scribble is a Transcript word field (sibling of `emphasized`); AI never writes scribble; paint only when the word is emphasized
-- Quote may overlap text VFX and zoom; quote must not overlap listicle; quotes do not overlap each other
+- Quote may overlap text VFX, zoom, and listicle; quotes do not overlap each other
 - Title and listicle share one overlay catalog and one paint path; both carry `TextBase.style`; listicle’s copy mirrors Project `listicleStyle` (fan-out on patch)
 - Companion SFX are sibling `sfx` edits; AI chooses optional intensity (`soft`/`medium`/`hard`) for a fixed candidate role from the AI SFX pack only; concrete Asset is hash-picked from the seeded role pool; intensity sets volume
 - A **Transition** Edit is one-per keep–keep stitch (plus opening/closing); identity is `stitch` + `durationSec`; derived `{start,end}` spans the gap; not a VFX subtype and not a companion SFX candidate

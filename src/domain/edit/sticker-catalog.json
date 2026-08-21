@@ -1448,6 +1448,14 @@
     "topic": "objects"
   },
   {
+    "id": "microbe",
+    "source": "emoji",
+    "label": "Microbe",
+    "glyph": "\ud83e\udda0",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
     "id": "bone",
     "source": "emoji",
     "label": "Bone",
@@ -1488,90 +1496,10 @@
     "topic": "people-body"
   },
   {
-    "id": "nose-1f443_1f3fb",
-    "source": "emoji",
-    "label": "Nose",
-    "glyph": "\ud83d\udc43\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "nose-1f443_1f3fc",
-    "source": "emoji",
-    "label": "Nose",
-    "glyph": "\ud83d\udc43\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "nose-1f443_1f3fd",
-    "source": "emoji",
-    "label": "Nose",
-    "glyph": "\ud83d\udc43\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "nose-1f443_1f3fe",
-    "source": "emoji",
-    "label": "Nose",
-    "glyph": "\ud83d\udc43\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "nose-1f443_1f3ff",
-    "source": "emoji",
-    "label": "Nose",
-    "glyph": "\ud83d\udc43\ud83c\udfff",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
     "id": "ear",
     "source": "emoji",
     "label": "Ear",
     "glyph": "\ud83d\udc42",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "ear-1f442_1f3fb",
-    "source": "emoji",
-    "label": "Ear",
-    "glyph": "\ud83d\udc42\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "ear-1f442_1f3fc",
-    "source": "emoji",
-    "label": "Ear",
-    "glyph": "\ud83d\udc42\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "ear-1f442_1f3fd",
-    "source": "emoji",
-    "label": "Ear",
-    "glyph": "\ud83d\udc42\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "ear-1f442_1f3fe",
-    "source": "emoji",
-    "label": "Ear",
-    "glyph": "\ud83d\udc42\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "ear-1f442_1f3ff",
-    "source": "emoji",
-    "label": "Ear",
-    "glyph": "\ud83d\udc42\ud83c\udfff",
     "popular": false,
     "topic": "people-body"
   },
@@ -1584,46 +1512,6 @@
     "topic": "people-body"
   },
   {
-    "id": "hearing-aid-1f9bb_1f3fb",
-    "source": "emoji",
-    "label": "Hearing aid",
-    "glyph": "\ud83e\uddbb\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "hearing-aid-1f9bb_1f3fc",
-    "source": "emoji",
-    "label": "Hearing aid",
-    "glyph": "\ud83e\uddbb\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "hearing-aid-1f9bb_1f3fd",
-    "source": "emoji",
-    "label": "Hearing aid",
-    "glyph": "\ud83e\uddbb\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "hearing-aid-1f9bb_1f3fe",
-    "source": "emoji",
-    "label": "Hearing aid",
-    "glyph": "\ud83e\uddbb\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "hearing-aid-1f9bb_1f3ff",
-    "source": "emoji",
-    "label": "Hearing aid",
-    "glyph": "\ud83e\uddbb\ud83c\udfff",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
     "id": "foot",
     "source": "emoji",
     "label": "Foot",
@@ -1632,90 +1520,10 @@
     "topic": "people-body"
   },
   {
-    "id": "foot-1f9b6_1f3fb",
-    "source": "emoji",
-    "label": "Foot",
-    "glyph": "\ud83e\uddb6\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "foot-1f9b6_1f3fc",
-    "source": "emoji",
-    "label": "Foot",
-    "glyph": "\ud83e\uddb6\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "foot-1f9b6_1f3fd",
-    "source": "emoji",
-    "label": "Foot",
-    "glyph": "\ud83e\uddb6\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "foot-1f9b6_1f3fe",
-    "source": "emoji",
-    "label": "Foot",
-    "glyph": "\ud83e\uddb6\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "foot-1f9b6_1f3ff",
-    "source": "emoji",
-    "label": "Foot",
-    "glyph": "\ud83e\uddb6\ud83c\udfff",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
     "id": "leg",
     "source": "emoji",
     "label": "Leg",
     "glyph": "\ud83e\uddb5",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "leg-1f9b5_1f3fb",
-    "source": "emoji",
-    "label": "Leg",
-    "glyph": "\ud83e\uddb5\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "leg-1f9b5_1f3fc",
-    "source": "emoji",
-    "label": "Leg",
-    "glyph": "\ud83e\uddb5\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "leg-1f9b5_1f3fd",
-    "source": "emoji",
-    "label": "Leg",
-    "glyph": "\ud83e\uddb5\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "leg-1f9b5_1f3fe",
-    "source": "emoji",
-    "label": "Leg",
-    "glyph": "\ud83e\uddb5\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "leg-1f9b5_1f3ff",
-    "source": "emoji",
-    "label": "Leg",
-    "glyph": "\ud83e\uddb5\ud83c\udfff",
     "popular": false,
     "topic": "people-body"
   },
@@ -1744,91 +1552,11 @@
     "topic": "people-body"
   },
   {
-    "id": "muscle-1f4aa_1f3fb",
-    "source": "emoji",
-    "label": "Muscle",
-    "glyph": "\ud83d\udcaa\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "muscle-1f4aa_1f3fc",
-    "source": "emoji",
-    "label": "Muscle",
-    "glyph": "\ud83d\udcaa\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "muscle-1f4aa_1f3fd",
-    "source": "emoji",
-    "label": "Muscle",
-    "glyph": "\ud83d\udcaa\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "muscle-1f4aa_1f3fe",
-    "source": "emoji",
-    "label": "Muscle",
-    "glyph": "\ud83d\udcaa\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "muscle-1f4aa_1f3ff",
-    "source": "emoji",
-    "label": "Muscle",
-    "glyph": "\ud83d\udcaa\ud83c\udfff",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
     "id": "clap",
     "source": "emoji",
     "label": "Clap",
     "glyph": "\ud83d\udc4f",
     "popular": true,
-    "topic": "people-body"
-  },
-  {
-    "id": "clap-1f44f_1f3fb",
-    "source": "emoji",
-    "label": "Clap",
-    "glyph": "\ud83d\udc4f\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "clap-1f44f_1f3fc",
-    "source": "emoji",
-    "label": "Clap",
-    "glyph": "\ud83d\udc4f\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "clap-1f44f_1f3fd",
-    "source": "emoji",
-    "label": "Clap",
-    "glyph": "\ud83d\udc4f\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "clap-1f44f_1f3fe",
-    "source": "emoji",
-    "label": "Clap",
-    "glyph": "\ud83d\udc4f\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "clap-1f44f_1f3ff",
-    "source": "emoji",
-    "label": "Clap",
-    "glyph": "\ud83d\udc4f\ud83c\udfff",
-    "popular": false,
     "topic": "people-body"
   },
   {
@@ -1840,90 +1568,10 @@
     "topic": "people-body"
   },
   {
-    "id": "thumbs-up-1f44d_1f3fb",
-    "source": "emoji",
-    "label": "Thumbs up",
-    "glyph": "\ud83d\udc4d\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-up-1f44d_1f3fc",
-    "source": "emoji",
-    "label": "Thumbs up",
-    "glyph": "\ud83d\udc4d\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-up-1f44d_1f3fd",
-    "source": "emoji",
-    "label": "Thumbs up",
-    "glyph": "\ud83d\udc4d\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-up-1f44d_1f3fe",
-    "source": "emoji",
-    "label": "Thumbs up",
-    "glyph": "\ud83d\udc4d\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-up-1f44d_1f3ff",
-    "source": "emoji",
-    "label": "Thumbs up",
-    "glyph": "\ud83d\udc4d\ud83c\udfff",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
     "id": "thumbs-down",
     "source": "emoji",
     "label": "Thumbs down",
     "glyph": "\ud83d\udc4e",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-down-1f44e_1f3fb",
-    "source": "emoji",
-    "label": "Thumbs down",
-    "glyph": "\ud83d\udc4e\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-down-1f44e_1f3fc",
-    "source": "emoji",
-    "label": "Thumbs down",
-    "glyph": "\ud83d\udc4e\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-down-1f44e_1f3fd",
-    "source": "emoji",
-    "label": "Thumbs down",
-    "glyph": "\ud83d\udc4e\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-down-1f44e_1f3fe",
-    "source": "emoji",
-    "label": "Thumbs down",
-    "glyph": "\ud83d\udc4e\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "thumbs-down-1f44e_1f3ff",
-    "source": "emoji",
-    "label": "Thumbs down",
-    "glyph": "\ud83d\udc4e\ud83c\udfff",
     "popular": false,
     "topic": "people-body"
   },
@@ -1936,46 +1584,6 @@
     "topic": "people-body"
   },
   {
-    "id": "heart-hands-1faf6_1f3fb",
-    "source": "emoji",
-    "label": "Heart hands",
-    "glyph": "\ud83e\udef6\ud83c\udffb",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "heart-hands-1faf6_1f3fc",
-    "source": "emoji",
-    "label": "Heart hands",
-    "glyph": "\ud83e\udef6\ud83c\udffc",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "heart-hands-1faf6_1f3fd",
-    "source": "emoji",
-    "label": "Heart hands",
-    "glyph": "\ud83e\udef6\ud83c\udffd",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "heart-hands-1faf6_1f3fe",
-    "source": "emoji",
-    "label": "Heart hands",
-    "glyph": "\ud83e\udef6\ud83c\udffe",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
-    "id": "heart-hands-1faf6_1f3ff",
-    "source": "emoji",
-    "label": "Heart hands",
-    "glyph": "\ud83e\udef6\ud83c\udfff",
-    "popular": false,
-    "topic": "people-body"
-  },
-  {
     "id": "raising-hands",
     "source": "emoji",
     "label": "Raising hands",
@@ -1984,10 +1592,98 @@
     "topic": "people-body"
   },
   {
-    "id": "raising-hands-1f64c_1f3fb",
+    "id": "open-hands",
     "source": "emoji",
-    "label": "Raising hands",
-    "glyph": "\ud83d\ude4c\ud83c\udffb",
+    "label": "Open hands",
+    "glyph": "\ud83d\udc50",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "palms-up",
+    "source": "emoji",
+    "label": "Palms up",
+    "glyph": "\ud83e\udd32",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "fist-rightwards",
+    "source": "emoji",
+    "label": "Fist rightwards",
+    "glyph": "\ud83e\udd1c",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "fist-leftwards",
+    "source": "emoji",
+    "label": "Fist leftwards",
+    "glyph": "\ud83e\udd1b",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "raised-fist",
+    "source": "emoji",
+    "label": "Raised fist",
+    "glyph": "\u270a",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "fist",
+    "source": "emoji",
+    "label": "Fist",
+    "glyph": "\ud83d\udc4a",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "palm-down",
+    "source": "emoji",
+    "label": "Palm down",
+    "glyph": "\ud83e\udef3",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "palm-up",
+    "source": "emoji",
+    "label": "Palm up",
+    "glyph": "\ud83e\udef4",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "rightwards-hand",
+    "source": "emoji",
+    "label": "Rightwards hand",
+    "glyph": "\ud83e\udef1",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "leftwards-hand",
+    "source": "emoji",
+    "label": "Leftwards hand",
+    "glyph": "\ud83e\udef2",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "push-rightwards",
+    "source": "emoji",
+    "label": "Push rightwards",
+    "glyph": "\ud83e\udef8",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "push-leftwards",
+    "source": "emoji",
+    "label": "Push leftwards",
+    "glyph": "\ud83e\udef7",
     "popular": false,
     "topic": "people-body"
   },
@@ -2000,11 +1696,179 @@
     "topic": "people-body"
   },
   {
+    "id": "back-hand",
+    "source": "emoji",
+    "label": "Back hand",
+    "glyph": "\ud83e\udd1a",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "palm",
+    "source": "emoji",
+    "label": "Palm",
+    "glyph": "\ud83d\udd90\ufe0f",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "raised-hand",
+    "source": "emoji",
+    "label": "Raised hand",
+    "glyph": "\u270b",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "vulcan",
+    "source": "emoji",
+    "label": "Vulcan",
+    "glyph": "\ud83d\udd96",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "love-you-gesture",
+    "source": "emoji",
+    "label": "Love you gesture",
+    "glyph": "\ud83e\udd1f",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "metal",
+    "source": "emoji",
+    "label": "Metal",
+    "glyph": "\ud83e\udd18",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "victory",
+    "source": "emoji",
+    "label": "Victory",
+    "glyph": "\u270c\ufe0f",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "crossed-fingers",
+    "source": "emoji",
+    "label": "Crossed fingers",
+    "glyph": "\ud83e\udd1e",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "hand-with-index-finger-and-thumb-crossed",
+    "source": "emoji",
+    "label": "Hand with index finger and thumb crossed",
+    "glyph": "\ud83e\udef0",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "call-me-hand",
+    "source": "emoji",
+    "label": "Call me hand",
+    "glyph": "\ud83e\udd19",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "pinched-fingers",
+    "source": "emoji",
+    "label": "Pinched fingers",
+    "glyph": "\ud83e\udd0c",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "pinch",
+    "source": "emoji",
+    "label": "Pinch",
+    "glyph": "\ud83e\udd0f",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
     "id": "ok",
     "source": "emoji",
     "label": "Ok",
     "glyph": "\ud83d\udc4c",
     "popular": true,
+    "topic": "people-body"
+  },
+  {
+    "id": "pointing",
+    "source": "emoji",
+    "label": "Pointing",
+    "glyph": "\ud83e\udef5",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "point-right",
+    "source": "emoji",
+    "label": "Point right",
+    "glyph": "\ud83d\udc49",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "point-left",
+    "source": "emoji",
+    "label": "Point left",
+    "glyph": "\ud83d\udc48",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "index-finger",
+    "source": "emoji",
+    "label": "Index finger",
+    "glyph": "\u261d\ufe0f",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "point-up",
+    "source": "emoji",
+    "label": "Point up",
+    "glyph": "\ud83d\udc46",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "point-down",
+    "source": "emoji",
+    "label": "Point down",
+    "glyph": "\ud83d\udc47",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "middle-finger",
+    "source": "emoji",
+    "label": "Middle finger",
+    "glyph": "\ud83d\udd95",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "writing-hand",
+    "source": "emoji",
+    "label": "Writing hand",
+    "glyph": "\u270d\ufe0f",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "selfie",
+    "source": "emoji",
+    "label": "Selfie",
+    "glyph": "\ud83e\udd33",
+    "popular": false,
     "topic": "people-body"
   },
   {
@@ -2016,6 +1880,14 @@
     "topic": "people-body"
   },
   {
+    "id": "nail-care",
+    "source": "emoji",
+    "label": "Nail care",
+    "glyph": "\ud83d\udc85",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
     "id": "handshake",
     "source": "emoji",
     "label": "Handshake",
@@ -2024,58 +1896,1242 @@
     "topic": "people-body"
   },
   {
-    "id": "rocket",
+    "id": "parachute",
     "source": "emoji",
-    "label": "Rocket",
-    "glyph": "\ud83d\ude80",
-    "popular": true,
+    "label": "Parachute",
+    "glyph": "\ud83e\ude82",
+    "popular": false,
     "topic": "travel-places"
   },
   {
-    "id": "trophy",
+    "id": "hairy-creature",
     "source": "emoji",
-    "label": "Trophy",
-    "glyph": "\ud83c\udfc6",
-    "popular": true,
-    "topic": "activities"
+    "label": "Hairy creature",
+    "glyph": "\ud83e\udec8",
+    "popular": false,
+    "topic": "people-body"
   },
   {
-    "id": "light-bulb",
+    "id": "dancer-woman",
     "source": "emoji",
-    "label": "Light bulb",
-    "glyph": "\ud83d\udca1",
-    "popular": true,
+    "label": "Dancer woman",
+    "glyph": "\ud83d\udc83",
+    "popular": false,
+    "topic": "people-body"
+  },
+  {
+    "id": "bouquet",
+    "source": "emoji",
+    "label": "Bouquet",
+    "glyph": "\ud83d\udc90",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "rose",
+    "source": "emoji",
+    "label": "Rose",
+    "glyph": "\ud83c\udf39",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "wilted-flower",
+    "source": "emoji",
+    "label": "Wilted flower",
+    "glyph": "\ud83e\udd40",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "tulip",
+    "source": "emoji",
+    "label": "Tulip",
+    "glyph": "\ud83c\udf37",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "lotus",
+    "source": "emoji",
+    "label": "Lotus",
+    "glyph": "\ud83e\udeb7",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "cherry-blossom",
+    "source": "emoji",
+    "label": "Cherry blossom",
+    "glyph": "\ud83c\udf38",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "hyacinth",
+    "source": "emoji",
+    "label": "Hyacinth",
+    "glyph": "\ud83e\udebb",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "blossom",
+    "source": "emoji",
+    "label": "Blossom",
+    "glyph": "\ud83c\udf3c",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "fallen-leaf",
+    "source": "emoji",
+    "label": "Fallen leaf",
+    "glyph": "\ud83c\udf42",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "maple-leaf",
+    "source": "emoji",
+    "label": "Maple leaf",
+    "glyph": "\ud83c\udf41",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "mushroom",
+    "source": "emoji",
+    "label": "Mushroom",
+    "glyph": "\ud83c\udf44",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "herb",
+    "source": "emoji",
+    "label": "Herb",
+    "glyph": "\ud83c\udf3f",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "plant",
+    "source": "emoji",
+    "label": "Plant",
+    "glyph": "\ud83c\udf31",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "leaves",
+    "source": "emoji",
+    "label": "Leaves",
+    "glyph": "\ud83c\udf43",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "luck",
+    "source": "emoji",
+    "label": "Luck",
+    "glyph": "\ud83c\udf40",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "cactus",
+    "source": "emoji",
+    "label": "Cactus",
+    "glyph": "\ud83c\udf35",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "leafless-tree",
+    "source": "emoji",
+    "label": "Leafless tree",
+    "glyph": "\ud83e\udebe",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "evergreen-tree",
+    "source": "emoji",
+    "label": "Evergreen tree",
+    "glyph": "\ud83c\udf32",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "rock",
+    "source": "emoji",
+    "label": "Rock",
+    "glyph": "\ud83e\udea8",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "debris",
+    "source": "emoji",
+    "label": "Debris",
+    "glyph": "\ud83d\uded8",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "volcano",
+    "source": "emoji",
+    "label": "Volcano",
+    "glyph": "\ud83c\udf0b",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "national-park",
+    "source": "emoji",
+    "label": "National park",
+    "glyph": "\ud83c\udfde\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "sunrise",
+    "source": "emoji",
+    "label": "Sunrise",
+    "glyph": "\ud83c\udf05",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "sunrise-over-mountains",
+    "source": "emoji",
+    "label": "Sunrise over mountains",
+    "glyph": "\ud83c\udf04",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "ocean",
+    "source": "emoji",
+    "label": "Ocean",
+    "glyph": "\ud83c\udf0a",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "wind-face",
+    "source": "emoji",
+    "label": "Wind face",
+    "glyph": "\ud83c\udf2c\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "snowflake",
+    "source": "emoji",
+    "label": "Snowflake",
+    "glyph": "\u2744\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "cyclone",
+    "source": "emoji",
+    "label": "Cyclone",
+    "glyph": "\ud83c\udf00",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "tornado",
+    "source": "emoji",
+    "label": "Tornado",
+    "glyph": "\ud83c\udf2a\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "rainbow",
+    "source": "emoji",
+    "label": "Rainbow",
+    "glyph": "\ud83c\udf08",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "droplet",
+    "source": "emoji",
+    "label": "Droplet",
+    "glyph": "\ud83d\udca7",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "cloud",
+    "source": "emoji",
+    "label": "Cloud",
+    "glyph": "\u2601\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "rain-cloud",
+    "source": "emoji",
+    "label": "Rain cloud",
+    "glyph": "\ud83c\udf27\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "cloud-with-lightning",
+    "source": "emoji",
+    "label": "Cloud with lightning",
+    "glyph": "\ud83c\udf29\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "partly-sunny",
+    "source": "emoji",
+    "label": "Partly sunny",
+    "glyph": "\u26c5",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "ringed-planet",
+    "source": "emoji",
+    "label": "Ringed planet",
+    "glyph": "\ud83e\ude90",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "globe-showing-europe-africa",
+    "source": "emoji",
+    "label": "Globe showing Europe Africa",
+    "glyph": "\ud83c\udf0d",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "globe-showing-americas",
+    "source": "emoji",
+    "label": "Globe showing Americas",
+    "glyph": "\ud83c\udf0e",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "globe-showing-asia-australia",
+    "source": "emoji",
+    "label": "Globe showing Asia Australia",
+    "glyph": "\ud83c\udf0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "milky-way",
+    "source": "emoji",
+    "label": "Milky way",
+    "glyph": "\ud83c\udf0c",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "comet",
+    "source": "emoji",
+    "label": "Comet",
+    "glyph": "\u2604\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "lion-face",
+    "source": "emoji",
+    "label": "Lion face",
+    "glyph": "\ud83e\udd81",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "wolf",
+    "source": "emoji",
+    "label": "Wolf",
+    "glyph": "\ud83d\udc3a",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "bear-face",
+    "source": "emoji",
+    "label": "Bear face",
+    "glyph": "\ud83d\udc3b",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "panda",
+    "source": "emoji",
+    "label": "Panda",
+    "glyph": "\ud83d\udc3c",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "fox-face",
+    "source": "emoji",
+    "label": "Fox face",
+    "glyph": "\ud83e\udd8a",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "cow-face",
+    "source": "emoji",
+    "label": "Cow face",
+    "glyph": "\ud83d\udc2e",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "unicorn",
+    "source": "emoji",
+    "label": "Unicorn",
+    "glyph": "\ud83e\udd84",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "lizard",
+    "source": "emoji",
+    "label": "Lizard",
+    "glyph": "\ud83e\udd8e",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "dragon",
+    "source": "emoji",
+    "label": "Dragon",
+    "glyph": "\ud83d\udc09",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "t-rex",
+    "source": "emoji",
+    "label": "T rex",
+    "glyph": "\ud83e\udd96",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "dinosaur",
+    "source": "emoji",
+    "label": "Dinosaur",
+    "glyph": "\ud83e\udd95",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "turtle",
+    "source": "emoji",
+    "label": "Turtle",
+    "glyph": "\ud83d\udc22",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "crocodile",
+    "source": "emoji",
+    "label": "Crocodile",
+    "glyph": "\ud83d\udc0a",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "snake",
+    "source": "emoji",
+    "label": "Snake",
+    "glyph": "\ud83d\udc0d",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "frog",
+    "source": "emoji",
+    "label": "Frog",
+    "glyph": "\ud83d\udc38",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "rabbit",
+    "source": "emoji",
+    "label": "Rabbit",
+    "glyph": "\ud83d\udc07",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "rat",
+    "source": "emoji",
+    "label": "Rat",
+    "glyph": "\ud83d\udc00",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "poodle",
+    "source": "emoji",
+    "label": "Poodle",
+    "glyph": "\ud83d\udc29",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "dog",
+    "source": "emoji",
+    "label": "Dog",
+    "glyph": "\ud83d\udc15",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "guide-dog",
+    "source": "emoji",
+    "label": "Guide dog",
+    "glyph": "\ud83e\uddae",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "service-dog",
+    "source": "emoji",
+    "label": "Service dog",
+    "glyph": "\ud83d\udc15\u200d\ud83e\uddba",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "pig",
+    "source": "emoji",
+    "label": "Pig",
+    "glyph": "\ud83d\udc16",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "racehorse",
+    "source": "emoji",
+    "label": "Racehorse",
+    "glyph": "\ud83d\udc0e",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "donkey",
+    "source": "emoji",
+    "label": "Donkey",
+    "glyph": "\ud83e\udecf",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "ox",
+    "source": "emoji",
+    "label": "Ox",
+    "glyph": "\ud83d\udc02",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "goat",
+    "source": "emoji",
+    "label": "Goat",
+    "glyph": "\ud83d\udc10",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "sloth",
+    "source": "emoji",
+    "label": "Sloth",
+    "glyph": "\ud83e\udda5",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "kangaroo",
+    "source": "emoji",
+    "label": "Kangaroo",
+    "glyph": "\ud83e\udd98",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "tiger",
+    "source": "emoji",
+    "label": "Tiger",
+    "glyph": "\ud83d\udc05",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "monkey",
+    "source": "emoji",
+    "label": "Monkey",
+    "glyph": "\ud83d\udc12",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "gorilla",
+    "source": "emoji",
+    "label": "Gorilla",
+    "glyph": "\ud83e\udd8d",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "orangutan",
+    "source": "emoji",
+    "label": "Orangutan",
+    "glyph": "\ud83e\udda7",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "chipmunk",
+    "source": "emoji",
+    "label": "Chipmunk",
+    "glyph": "\ud83d\udc3f\ufe0f",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "raccoon",
+    "source": "emoji",
+    "label": "Raccoon",
+    "glyph": "\ud83e\udd9d",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "hedgehog",
+    "source": "emoji",
+    "label": "Hedgehog",
+    "glyph": "\ud83e\udd94",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "otter",
+    "source": "emoji",
+    "label": "Otter",
+    "glyph": "\ud83e\udda6",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "bat",
+    "source": "emoji",
+    "label": "Bat",
+    "glyph": "\ud83e\udd87",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "bird",
+    "source": "emoji",
+    "label": "Bird",
+    "glyph": "\ud83d\udc26",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "black-bird",
+    "source": "emoji",
+    "label": "Black bird",
+    "glyph": "\ud83d\udc26\u200d\u2b1b",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "rooster",
+    "source": "emoji",
+    "label": "Rooster",
+    "glyph": "\ud83d\udc13",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "hatching-chick",
+    "source": "emoji",
+    "label": "Hatching chick",
+    "glyph": "\ud83d\udc23",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "baby-chick",
+    "source": "emoji",
+    "label": "Baby chick",
+    "glyph": "\ud83d\udc24",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "hatched-chick",
+    "source": "emoji",
+    "label": "Hatched chick",
+    "glyph": "\ud83d\udc25",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "eagle",
+    "source": "emoji",
+    "label": "Eagle",
+    "glyph": "\ud83e\udd85",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "owl",
+    "source": "emoji",
+    "label": "Owl",
+    "glyph": "\ud83e\udd89",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "peace",
+    "source": "emoji",
+    "label": "Peace",
+    "glyph": "\ud83d\udd4a\ufe0f",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "goose",
+    "source": "emoji",
+    "label": "Goose",
+    "glyph": "\ud83e\udebf",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "flamingo",
+    "source": "emoji",
+    "label": "Flamingo",
+    "glyph": "\ud83e\udda9",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "peacock",
+    "source": "emoji",
+    "label": "Peacock",
+    "glyph": "\ud83e\udd9a",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "phoenix",
+    "source": "emoji",
+    "label": "Phoenix",
+    "glyph": "\ud83d\udc26\u200d\ud83d\udd25",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "penguin",
+    "source": "emoji",
+    "label": "Penguin",
+    "glyph": "\ud83d\udc27",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "seal",
+    "source": "emoji",
+    "label": "Seal",
+    "glyph": "\ud83e\uddad",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "shark",
+    "source": "emoji",
+    "label": "Shark",
+    "glyph": "\ud83e\udd88",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "orca",
+    "source": "emoji",
+    "label": "Orca",
+    "glyph": "\ud83e\udecd",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "dolphin",
+    "source": "emoji",
+    "label": "Dolphin",
+    "glyph": "\ud83d\udc2c",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "whale",
+    "source": "emoji",
+    "label": "Whale",
+    "glyph": "\ud83d\udc33",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "fish",
+    "source": "emoji",
+    "label": "Fish",
+    "glyph": "\ud83d\udc1f",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "blowfish",
+    "source": "emoji",
+    "label": "Blowfish",
+    "glyph": "\ud83d\udc21",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "lobster",
+    "source": "emoji",
+    "label": "Lobster",
+    "glyph": "\ud83e\udd9e",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "crab",
+    "source": "emoji",
+    "label": "Crab",
+    "glyph": "\ud83e\udd80",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "octopus",
+    "source": "emoji",
+    "label": "Octopus",
+    "glyph": "\ud83d\udc19",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "jellyfish",
+    "source": "emoji",
+    "label": "Jellyfish",
+    "glyph": "\ud83e\udebc",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "bubbles",
+    "source": "emoji",
+    "label": "Bubbles",
+    "glyph": "\ud83e\udee7",
+    "popular": false,
     "topic": "objects"
   },
   {
-    "id": "check",
+    "id": "scorpion",
     "source": "emoji",
-    "label": "Check mark",
-    "glyph": "\u2705",
-    "popular": true,
-    "topic": "symbols"
+    "label": "Scorpion",
+    "glyph": "\ud83e\udd82",
+    "popular": false,
+    "topic": "animals-nature"
   },
   {
-    "id": "cross",
+    "id": "spider",
     "source": "emoji",
-    "label": "Cross mark",
-    "glyph": "\u274c",
-    "popular": true,
-    "topic": "symbols"
+    "label": "Spider",
+    "glyph": "\ud83d\udd77\ufe0f",
+    "popular": false,
+    "topic": "animals-nature"
   },
   {
-    "id": "warning",
+    "id": "snail",
     "source": "emoji",
-    "label": "Warning",
-    "glyph": "\u26a0\ufe0f",
-    "popular": true,
-    "topic": "symbols"
+    "label": "Snail",
+    "glyph": "\ud83d\udc0c",
+    "popular": false,
+    "topic": "animals-nature"
   },
   {
-    "id": "pizza",
+    "id": "ant",
     "source": "emoji",
-    "label": "Pizza",
-    "glyph": "\ud83c\udf55",
+    "label": "Ant",
+    "glyph": "\ud83d\udc1c",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "cricket",
+    "source": "emoji",
+    "label": "Cricket",
+    "glyph": "\ud83e\udd97",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "mosquito",
+    "source": "emoji",
+    "label": "Mosquito",
+    "glyph": "\ud83e\udd9f",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "cockroach",
+    "source": "emoji",
+    "label": "Cockroach",
+    "glyph": "\ud83e\udeb3",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "fly",
+    "source": "emoji",
+    "label": "Fly",
+    "glyph": "\ud83e\udeb0",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "bee",
+    "source": "emoji",
+    "label": "Bee",
+    "glyph": "\ud83d\udc1d",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "lady-bug",
+    "source": "emoji",
+    "label": "Lady bug",
+    "glyph": "\ud83d\udc1e",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "butterfly",
+    "source": "emoji",
+    "label": "Butterfly",
+    "glyph": "\ud83e\udd8b",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "bug",
+    "source": "emoji",
+    "label": "Bug",
+    "glyph": "\ud83d\udc1b",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "worm",
+    "source": "emoji",
+    "label": "Worm",
+    "glyph": "\ud83e\udeb1",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "paw-prints",
+    "source": "emoji",
+    "label": "Paw prints",
+    "glyph": "\ud83d\udc3e",
+    "popular": false,
+    "topic": "animals-nature"
+  },
+  {
+    "id": "strawberry",
+    "source": "emoji",
+    "label": "Strawberry",
+    "glyph": "\ud83c\udf53",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "cherries",
+    "source": "emoji",
+    "label": "Cherries",
+    "glyph": "\ud83c\udf52",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "red-apple",
+    "source": "emoji",
+    "label": "Red apple",
+    "glyph": "\ud83c\udf4e",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "tomato",
+    "source": "emoji",
+    "label": "Tomato",
+    "glyph": "\ud83c\udf45",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "watermelon",
+    "source": "emoji",
+    "label": "Watermelon",
+    "glyph": "\ud83c\udf49",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "tangerine",
+    "source": "emoji",
+    "label": "Tangerine",
+    "glyph": "\ud83c\udf4a",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "carrot",
+    "source": "emoji",
+    "label": "Carrot",
+    "glyph": "\ud83e\udd55",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "mango",
+    "source": "emoji",
+    "label": "Mango",
+    "glyph": "\ud83e\udd6d",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "pineapple",
+    "source": "emoji",
+    "label": "Pineapple",
+    "glyph": "\ud83c\udf4d",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "ear-of-corn",
+    "source": "emoji",
+    "label": "Ear of corn",
+    "glyph": "\ud83c\udf3d",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "lemon",
+    "source": "emoji",
+    "label": "Lemon",
+    "glyph": "\ud83c\udf4b",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "melon",
+    "source": "emoji",
+    "label": "Melon",
+    "glyph": "\ud83c\udf48",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "pear",
+    "source": "emoji",
+    "label": "Pear",
+    "glyph": "\ud83c\udf50",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "pea-pod",
+    "source": "emoji",
+    "label": "Pea pod",
+    "glyph": "\ud83e\udedb",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "leafy-green",
+    "source": "emoji",
+    "label": "Leafy green",
+    "glyph": "\ud83e\udd6c",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "bell-pepper",
+    "source": "emoji",
+    "label": "Bell pepper",
+    "glyph": "\ud83e\uded1",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "kiwi-fruit",
+    "source": "emoji",
+    "label": "Kiwi fruit",
+    "glyph": "\ud83e\udd5d",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "avocado",
+    "source": "emoji",
+    "label": "Avocado",
+    "glyph": "\ud83e\udd51",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "broccoli",
+    "source": "emoji",
+    "label": "Broccoli",
+    "glyph": "\ud83e\udd66",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "cucumber",
+    "source": "emoji",
+    "label": "Cucumber",
+    "glyph": "\ud83e\udd52",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "blueberries",
+    "source": "emoji",
+    "label": "Blueberries",
+    "glyph": "\ud83e\uded0",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "grapes",
+    "source": "emoji",
+    "label": "Grapes",
+    "glyph": "\ud83c\udf47",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "root-vegetable",
+    "source": "emoji",
+    "label": "Root vegetable",
+    "glyph": "\ud83e\udedc",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "potato",
+    "source": "emoji",
+    "label": "Potato",
+    "glyph": "\ud83e\udd54",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "onion",
+    "source": "emoji",
+    "label": "Onion",
+    "glyph": "\ud83e\uddc5",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "ginger",
+    "source": "emoji",
+    "label": "Ginger",
+    "glyph": "\ud83e\udeda",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "garlic",
+    "source": "emoji",
+    "label": "Garlic",
+    "glyph": "\ud83e\uddc4",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "beans",
+    "source": "emoji",
+    "label": "Beans",
+    "glyph": "\ud83e\uded8",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "bread",
+    "source": "emoji",
+    "label": "Bread",
+    "glyph": "\ud83c\udf5e",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "pancakes",
+    "source": "emoji",
+    "label": "Pancakes",
+    "glyph": "\ud83e\udd5e",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "cooking",
+    "source": "emoji",
+    "label": "Cooking",
+    "glyph": "\ud83c\udf73",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "cheese-wedge",
+    "source": "emoji",
+    "label": "Cheese wedge",
+    "glyph": "\ud83e\uddc0",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "bacon",
+    "source": "emoji",
+    "label": "Bacon",
+    "glyph": "\ud83e\udd53",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "poultry-leg",
+    "source": "emoji",
+    "label": "Poultry leg",
+    "glyph": "\ud83c\udf57",
     "popular": false,
     "topic": "food-drink"
   },
@@ -2092,6 +3148,22 @@
     "source": "emoji",
     "label": "Hot dog",
     "glyph": "\ud83c\udf2d",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "pretzel",
+    "source": "emoji",
+    "label": "Pretzel",
+    "glyph": "\ud83e\udd68",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "pizza",
+    "source": "emoji",
+    "label": "Pizza",
+    "glyph": "\ud83c\udf55",
     "popular": false,
     "topic": "food-drink"
   },
@@ -2120,18 +3192,58 @@
     "topic": "food-drink"
   },
   {
-    "id": "cooking",
+    "id": "green-salad",
     "source": "emoji",
-    "label": "Cooking",
-    "glyph": "\ud83c\udf73",
+    "label": "Green salad",
+    "glyph": "\ud83e\udd57",
     "popular": false,
     "topic": "food-drink"
   },
   {
-    "id": "popcorn",
+    "id": "steaming-bowl",
     "source": "emoji",
-    "label": "Popcorn",
-    "glyph": "\ud83c\udf7f",
+    "label": "Steaming bowl",
+    "glyph": "\ud83c\udf5c",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "oden",
+    "source": "emoji",
+    "label": "Oden",
+    "glyph": "\ud83c\udf62",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "dango",
+    "source": "emoji",
+    "label": "Dango",
+    "glyph": "\ud83c\udf61",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "ice-cream",
+    "source": "emoji",
+    "label": "Ice cream",
+    "glyph": "\ud83c\udf68",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "soft-ice-cream",
+    "source": "emoji",
+    "label": "Soft ice cream",
+    "glyph": "\ud83c\udf66",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "pie",
+    "source": "emoji",
+    "label": "Pie",
+    "glyph": "\ud83e\udd67",
     "popular": false,
     "topic": "food-drink"
   },
@@ -2152,18 +3264,18 @@
     "topic": "food-drink"
   },
   {
-    "id": "ice-cream",
+    "id": "salt",
     "source": "emoji",
-    "label": "Ice cream",
-    "glyph": "\ud83c\udf68",
+    "label": "Salt",
+    "glyph": "\ud83e\uddc2",
     "popular": false,
     "topic": "food-drink"
   },
   {
-    "id": "hot-beverage",
+    "id": "popcorn",
     "source": "emoji",
-    "label": "Hot beverage",
-    "glyph": "\u2615",
+    "label": "Popcorn",
+    "glyph": "\ud83c\udf7f",
     "popular": false,
     "topic": "food-drink"
   },
@@ -2176,10 +3288,74 @@
     "topic": "food-drink"
   },
   {
+    "id": "beverage-box",
+    "source": "emoji",
+    "label": "Beverage box",
+    "glyph": "\ud83e\uddc3",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "baby-bottle",
+    "source": "emoji",
+    "label": "Baby bottle",
+    "glyph": "\ud83c\udf7c",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "teacup-without-handle",
+    "source": "emoji",
+    "label": "Teacup without handle",
+    "glyph": "\ud83c\udf75",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "hot-beverage",
+    "source": "emoji",
+    "label": "Hot beverage",
+    "glyph": "\u2615",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "teapot",
+    "source": "emoji",
+    "label": "Teapot",
+    "glyph": "\ud83e\uded6",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "mate",
+    "source": "emoji",
+    "label": "Mate",
+    "glyph": "\ud83e\uddc9",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
     "id": "clinking-beer-mugs",
     "source": "emoji",
     "label": "Clinking beer mugs",
     "glyph": "\ud83c\udf7b",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "clinking-glasses",
+    "source": "emoji",
+    "label": "Clinking glasses",
+    "glyph": "\ud83e\udd42",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "bottle-with-popping-cork",
+    "source": "emoji",
+    "label": "Bottle with popping cork",
+    "glyph": "\ud83c\udf7e",
     "popular": false,
     "topic": "food-drink"
   },
@@ -2190,6 +3366,1526 @@
     "glyph": "\ud83c\udf77",
     "popular": false,
     "topic": "food-drink"
+  },
+  {
+    "id": "pour",
+    "source": "emoji",
+    "label": "Pour",
+    "glyph": "\ud83e\uded7",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "tropical-drink",
+    "source": "emoji",
+    "label": "Tropical drink",
+    "glyph": "\ud83c\udf79",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "chopsticks",
+    "source": "emoji",
+    "label": "Chopsticks",
+    "glyph": "\ud83e\udd62",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "fork-and-knife-with-plate",
+    "source": "emoji",
+    "label": "Fork and knife with plate",
+    "glyph": "\ud83c\udf7d\ufe0f",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "stop-sign",
+    "source": "emoji",
+    "label": "Stop sign",
+    "glyph": "\ud83d\uded1",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "construction",
+    "source": "emoji",
+    "label": "Construction",
+    "glyph": "\ud83d\udea7",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "police-car-light",
+    "source": "emoji",
+    "label": "Police car light",
+    "glyph": "\ud83d\udea8",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "fuel-pump",
+    "source": "emoji",
+    "label": "Fuel pump",
+    "glyph": "\u26fd",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "ring-buoy",
+    "source": "emoji",
+    "label": "Ring buoy",
+    "glyph": "\ud83d\udedf",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "anchor",
+    "source": "emoji",
+    "label": "Anchor",
+    "glyph": "\u2693",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "vertical-traffic-light",
+    "source": "emoji",
+    "label": "Vertical traffic light",
+    "glyph": "\ud83d\udea6",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "bicycle",
+    "source": "emoji",
+    "label": "Bicycle",
+    "glyph": "\ud83d\udeb2",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "motorcycle",
+    "source": "emoji",
+    "label": "Motorcycle",
+    "glyph": "\ud83c\udfcd\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "automobile",
+    "source": "emoji",
+    "label": "Automobile",
+    "glyph": "\ud83d\ude97",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "delivery-truck",
+    "source": "emoji",
+    "label": "Delivery truck",
+    "glyph": "\ud83d\ude9a",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "tractor",
+    "source": "emoji",
+    "label": "Tractor",
+    "glyph": "\ud83d\ude9c",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "racing-car",
+    "source": "emoji",
+    "label": "Racing car",
+    "glyph": "\ud83c\udfce\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "taxi",
+    "source": "emoji",
+    "label": "Taxi",
+    "glyph": "\ud83d\ude95",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "bus",
+    "source": "emoji",
+    "label": "Bus",
+    "glyph": "\ud83d\ude8c",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "locomotive",
+    "source": "emoji",
+    "label": "Locomotive",
+    "glyph": "\ud83d\ude82",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "sailboat",
+    "source": "emoji",
+    "label": "Sailboat",
+    "glyph": "\u26f5",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "canoe",
+    "source": "emoji",
+    "label": "Canoe",
+    "glyph": "\ud83d\udef6",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "flying-saucer",
+    "source": "emoji",
+    "label": "Flying saucer",
+    "glyph": "\ud83d\udef8",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "rocket",
+    "source": "emoji",
+    "label": "Rocket",
+    "glyph": "\ud83d\ude80",
+    "popular": true,
+    "topic": "travel-places"
+  },
+  {
+    "id": "airplane",
+    "source": "emoji",
+    "label": "Airplane",
+    "glyph": "\u2708\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "airplane-departure",
+    "source": "emoji",
+    "label": "Airplane departure",
+    "glyph": "\ud83d\udeeb",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "airplane-arrival",
+    "source": "emoji",
+    "label": "Airplane arrival",
+    "glyph": "\ud83d\udeec",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "roller-coaster",
+    "source": "emoji",
+    "label": "Roller coaster",
+    "glyph": "\ud83c\udfa2",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "ferris-wheel",
+    "source": "emoji",
+    "label": "Ferris wheel",
+    "glyph": "\ud83c\udfa1",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "carousel-horse",
+    "source": "emoji",
+    "label": "Carousel horse",
+    "glyph": "\ud83c\udfa0",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "moai",
+    "source": "emoji",
+    "label": "Moai",
+    "glyph": "\ud83d\uddff",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "derelict-house",
+    "source": "emoji",
+    "label": "Derelict house",
+    "glyph": "\ud83c\udfda\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "house",
+    "source": "emoji",
+    "label": "House",
+    "glyph": "\ud83c\udfe0",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "camping",
+    "source": "emoji",
+    "label": "Camping",
+    "glyph": "\ud83c\udfd5\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "sunset",
+    "source": "emoji",
+    "label": "Sunset",
+    "glyph": "\ud83c\udf07",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "balloon",
+    "source": "emoji",
+    "label": "Balloon",
+    "glyph": "\ud83c\udf88",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "birthday-cake",
+    "source": "emoji",
+    "label": "Birthday cake",
+    "glyph": "\ud83c\udf82",
+    "popular": false,
+    "topic": "food-drink"
+  },
+  {
+    "id": "wrapped-gift",
+    "source": "emoji",
+    "label": "Wrapped gift",
+    "glyph": "\ud83c\udf81",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "fireworks",
+    "source": "emoji",
+    "label": "Fireworks",
+    "glyph": "\ud83c\udf86",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "diya-lamp",
+    "source": "emoji",
+    "label": "Diya lamp",
+    "glyph": "\ud83e\ude94",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "pi-ata",
+    "source": "emoji",
+    "label": "Pi\u00f1ata",
+    "glyph": "\ud83e\ude85",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "mirror-ball",
+    "source": "emoji",
+    "label": "Mirror ball",
+    "glyph": "\ud83e\udea9",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "gold-medal",
+    "source": "emoji",
+    "label": "Gold medal",
+    "glyph": "\ud83e\udd47",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "silver-medal",
+    "source": "emoji",
+    "label": "Silver medal",
+    "glyph": "\ud83e\udd48",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "bronze-medal",
+    "source": "emoji",
+    "label": "Bronze medal",
+    "glyph": "\ud83e\udd49",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "trophy",
+    "source": "emoji",
+    "label": "Trophy",
+    "glyph": "\ud83c\udfc6",
+    "popular": true,
+    "topic": "activities"
+  },
+  {
+    "id": "soccer-ball",
+    "source": "emoji",
+    "label": "Soccer ball",
+    "glyph": "\u26bd",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "baseball",
+    "source": "emoji",
+    "label": "Baseball",
+    "glyph": "\u26be",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "softball",
+    "source": "emoji",
+    "label": "Softball",
+    "glyph": "\ud83e\udd4e",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "basketball",
+    "source": "emoji",
+    "label": "Basketball",
+    "glyph": "\ud83c\udfc0",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "rugby-football",
+    "source": "emoji",
+    "label": "Rugby football",
+    "glyph": "\ud83c\udfc9",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "tennis",
+    "source": "emoji",
+    "label": "Tennis",
+    "glyph": "\ud83c\udfbe",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "badminton",
+    "source": "emoji",
+    "label": "Badminton",
+    "glyph": "\ud83c\udff8",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "lacrosse",
+    "source": "emoji",
+    "label": "Lacrosse",
+    "glyph": "\ud83e\udd4d",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "cricket-game",
+    "source": "emoji",
+    "label": "Cricket game",
+    "glyph": "\ud83c\udfcf",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "field-hockey",
+    "source": "emoji",
+    "label": "Field hockey",
+    "glyph": "\ud83c\udfd1",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "ice-hockey",
+    "source": "emoji",
+    "label": "Ice hockey",
+    "glyph": "\ud83c\udfd2",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "skis",
+    "source": "emoji",
+    "label": "Skis",
+    "glyph": "\ud83c\udfbf",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "ice-skate",
+    "source": "emoji",
+    "label": "Ice skate",
+    "glyph": "\u26f8\ufe0f",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "roller-skates",
+    "source": "emoji",
+    "label": "Roller skates",
+    "glyph": "\ud83d\udefc",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "ballet-shoes",
+    "source": "emoji",
+    "label": "Ballet shoes",
+    "glyph": "\ud83e\ude70",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "skateboard",
+    "source": "emoji",
+    "label": "Skateboard",
+    "glyph": "\ud83d\udef9",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "flag-in-hole",
+    "source": "emoji",
+    "label": "Flag in hole",
+    "glyph": "\u26f3",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "direct-hit",
+    "source": "emoji",
+    "label": "Direct hit",
+    "glyph": "\ud83c\udfaf",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "flying-disc",
+    "source": "emoji",
+    "label": "Flying disc",
+    "glyph": "\ud83e\udd4f",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "boomerang",
+    "source": "emoji",
+    "label": "Boomerang",
+    "glyph": "\ud83e\ude83",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "kite",
+    "source": "emoji",
+    "label": "Kite",
+    "glyph": "\ud83e\ude81",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "fishing-pole",
+    "source": "emoji",
+    "label": "Fishing pole",
+    "glyph": "\ud83c\udfa3",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "martial-arts-uniform",
+    "source": "emoji",
+    "label": "Martial arts uniform",
+    "glyph": "\ud83e\udd4b",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "8-ball",
+    "source": "emoji",
+    "label": "8 ball",
+    "glyph": "\ud83c\udfb1",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "ping-pong",
+    "source": "emoji",
+    "label": "Ping pong",
+    "glyph": "\ud83c\udfd3",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "bowling",
+    "source": "emoji",
+    "label": "Bowling",
+    "glyph": "\ud83c\udfb3",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "chess-pawn",
+    "source": "emoji",
+    "label": "Chess pawn",
+    "glyph": "\u265f\ufe0f",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "die",
+    "source": "emoji",
+    "label": "Die",
+    "glyph": "\ud83c\udfb2",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "slot-machine",
+    "source": "emoji",
+    "label": "Slot machine",
+    "glyph": "\ud83c\udfb0",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "wand",
+    "source": "emoji",
+    "label": "Wand",
+    "glyph": "\ud83e\ude84",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "camera",
+    "source": "emoji",
+    "label": "Camera",
+    "glyph": "\ud83d\udcf7",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "camera-flash",
+    "source": "emoji",
+    "label": "Camera flash",
+    "glyph": "\ud83d\udcf8",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "splatter",
+    "source": "emoji",
+    "label": "Splatter",
+    "glyph": "\ud83e\udedf",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "saxophone",
+    "source": "emoji",
+    "label": "Saxophone",
+    "glyph": "\ud83c\udfb7",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "trumpet",
+    "source": "emoji",
+    "label": "Trumpet",
+    "glyph": "\ud83c\udfba",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "trombone",
+    "source": "emoji",
+    "label": "Trombone",
+    "glyph": "\ud83e\ude8a",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "guitar",
+    "source": "emoji",
+    "label": "Guitar",
+    "glyph": "\ud83c\udfb8",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "banjo",
+    "source": "emoji",
+    "label": "Banjo",
+    "glyph": "\ud83e\ude95",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "violin",
+    "source": "emoji",
+    "label": "Violin",
+    "glyph": "\ud83c\udfbb",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "harp",
+    "source": "emoji",
+    "label": "Harp",
+    "glyph": "\ud83e\ude89",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "drum",
+    "source": "emoji",
+    "label": "Drum",
+    "glyph": "\ud83e\udd41",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "maracas",
+    "source": "emoji",
+    "label": "Maracas",
+    "glyph": "\ud83e\ude87",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "television",
+    "source": "emoji",
+    "label": "Television",
+    "glyph": "\ud83d\udcfa",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "film",
+    "source": "emoji",
+    "label": "Film",
+    "glyph": "\ud83c\udf9e\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "clapper",
+    "source": "emoji",
+    "label": "Clapper",
+    "glyph": "\ud83c\udfac",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "performing-arts",
+    "source": "emoji",
+    "label": "Performing arts",
+    "glyph": "\ud83c\udfad",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "admission-tickets",
+    "source": "emoji",
+    "label": "Admission tickets",
+    "glyph": "\ud83c\udf9f\ufe0f",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "pager",
+    "source": "emoji",
+    "label": "Pager",
+    "glyph": "\ud83d\udcdf",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "electric-plug",
+    "source": "emoji",
+    "label": "Electric plug",
+    "glyph": "\ud83d\udd0c",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "battery-full",
+    "source": "emoji",
+    "label": "Battery full",
+    "glyph": "\ud83d\udd0b",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "battery-low",
+    "source": "emoji",
+    "label": "Battery low",
+    "glyph": "\ud83e\udeab",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "optical-disk",
+    "source": "emoji",
+    "label": "Optical disk",
+    "glyph": "\ud83d\udcbf",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "laptop-computer",
+    "source": "emoji",
+    "label": "Laptop computer",
+    "glyph": "\ud83d\udcbb",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "printer",
+    "source": "emoji",
+    "label": "Printer",
+    "glyph": "\ud83d\udda8\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "treasure",
+    "source": "emoji",
+    "label": "Treasure",
+    "glyph": "\ud83e\ude8e",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "coin",
+    "source": "emoji",
+    "label": "Coin",
+    "glyph": "\ud83e\ude99",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "gem-stone",
+    "source": "emoji",
+    "label": "Gem stone",
+    "glyph": "\ud83d\udc8e",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "money-with-wings",
+    "source": "emoji",
+    "label": "Money with wings",
+    "glyph": "\ud83d\udcb8",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "balance-scale",
+    "source": "emoji",
+    "label": "Balance scale",
+    "glyph": "\u2696\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "shopping-cart",
+    "source": "emoji",
+    "label": "Shopping cart",
+    "glyph": "\ud83d\uded2",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "light-bulb",
+    "source": "emoji",
+    "label": "Light bulb",
+    "glyph": "\ud83d\udca1",
+    "popular": true,
+    "topic": "objects"
+  },
+  {
+    "id": "broom",
+    "source": "emoji",
+    "label": "Broom",
+    "glyph": "\ud83e\uddf9",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "socks",
+    "source": "emoji",
+    "label": "Socks",
+    "glyph": "\ud83e\udde6",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "graduation-cap",
+    "source": "emoji",
+    "label": "Graduation cap",
+    "glyph": "\ud83c\udf93",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "crown",
+    "source": "emoji",
+    "label": "Crown",
+    "glyph": "\ud83d\udc51",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "ring",
+    "source": "emoji",
+    "label": "Ring",
+    "glyph": "\ud83d\udc8d",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "fan",
+    "source": "emoji",
+    "label": "Fan",
+    "glyph": "\ud83e\udead",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "umbrella",
+    "source": "emoji",
+    "label": "Umbrella",
+    "glyph": "\u2602\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "high-heeled-shoe",
+    "source": "emoji",
+    "label": "High heeled shoe",
+    "glyph": "\ud83d\udc60",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "running-shoe",
+    "source": "emoji",
+    "label": "Running shoe",
+    "glyph": "\ud83d\udc5f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "thermometer",
+    "source": "emoji",
+    "label": "Thermometer",
+    "glyph": "\ud83c\udf21\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "stethoscope",
+    "source": "emoji",
+    "label": "Stethoscope",
+    "glyph": "\ud83e\ude7a",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "hammer-and-wrench",
+    "source": "emoji",
+    "label": "Hammer and wrench",
+    "glyph": "\ud83d\udee0\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "shovel",
+    "source": "emoji",
+    "label": "Shovel",
+    "glyph": "\ud83e\ude8f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "gear",
+    "source": "emoji",
+    "label": "Gear",
+    "glyph": "\u2699\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "broken-chain",
+    "source": "emoji",
+    "label": "Broken chain",
+    "glyph": "\u26d3\ufe0f\u200d\ud83d\udca5",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "chains",
+    "source": "emoji",
+    "label": "Chains",
+    "glyph": "\u26d3\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "linked-paperclips",
+    "source": "emoji",
+    "label": "Linked paperclips",
+    "glyph": "\ud83d\udd87\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "scissors",
+    "source": "emoji",
+    "label": "Scissors",
+    "glyph": "\u2702\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "pencil",
+    "source": "emoji",
+    "label": "Pencil",
+    "glyph": "\u270f\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "books",
+    "source": "emoji",
+    "label": "Books",
+    "glyph": "\ud83d\udcda",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "bar-chart",
+    "source": "emoji",
+    "label": "Bar chart",
+    "glyph": "\ud83d\udcca",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "chart-increasing",
+    "source": "emoji",
+    "label": "Chart increasing",
+    "glyph": "\ud83d\udcc8",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "chart-decreasing",
+    "source": "emoji",
+    "label": "Chart decreasing",
+    "glyph": "\ud83d\udcc9",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "wastebasket",
+    "source": "emoji",
+    "label": "Wastebasket",
+    "glyph": "\ud83d\uddd1\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "package",
+    "source": "emoji",
+    "label": "Package",
+    "glyph": "\ud83d\udce6",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "ballot-box",
+    "source": "emoji",
+    "label": "Ballot box",
+    "glyph": "\ud83d\uddf3\ufe0f",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "alarm-clock",
+    "source": "emoji",
+    "label": "Alarm clock",
+    "glyph": "\u23f0",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "hourglass-done",
+    "source": "emoji",
+    "label": "Hourglass done",
+    "glyph": "\u231b",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "hourglass-not-done",
+    "source": "emoji",
+    "label": "Hourglass not done",
+    "glyph": "\u23f3",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "bellhop-bell",
+    "source": "emoji",
+    "label": "Bellhop bell",
+    "glyph": "\ud83d\udece\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "bell",
+    "source": "emoji",
+    "label": "Bell",
+    "glyph": "\ud83d\udd14",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "megaphone",
+    "source": "emoji",
+    "label": "Megaphone",
+    "glyph": "\ud83d\udce3",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "magnifying-glass-tilted-right",
+    "source": "emoji",
+    "label": "Magnifying glass tilted right",
+    "glyph": "\ud83d\udd0e",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "crystal-ball",
+    "source": "emoji",
+    "label": "Crystal ball",
+    "glyph": "\ud83d\udd2e",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "bomb",
+    "source": "emoji",
+    "label": "Bomb",
+    "glyph": "\ud83d\udca3",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "mouse-trap",
+    "source": "emoji",
+    "label": "Mouse trap",
+    "glyph": "\ud83e\udea4",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "locked",
+    "source": "emoji",
+    "label": "Locked",
+    "glyph": "\ud83d\udd12",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "spade",
+    "source": "emoji",
+    "label": "Spade",
+    "glyph": "\u2660\ufe0f",
+    "popular": false,
+    "topic": "activities"
+  },
+  {
+    "id": "aries",
+    "source": "emoji",
+    "label": "Aries",
+    "glyph": "\u2648",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "taurus",
+    "source": "emoji",
+    "label": "Taurus",
+    "glyph": "\u2649",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "gemini",
+    "source": "emoji",
+    "label": "Gemini",
+    "glyph": "\u264a",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "cancer",
+    "source": "emoji",
+    "label": "Cancer",
+    "glyph": "\u264b",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "leo",
+    "source": "emoji",
+    "label": "Leo",
+    "glyph": "\u264c",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "virgo",
+    "source": "emoji",
+    "label": "Virgo",
+    "glyph": "\u264d",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "libra",
+    "source": "emoji",
+    "label": "Libra",
+    "glyph": "\u264e",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "scorpio",
+    "source": "emoji",
+    "label": "Scorpio",
+    "glyph": "\u264f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "sagittarius",
+    "source": "emoji",
+    "label": "Sagittarius",
+    "glyph": "\u2650",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "capricorn",
+    "source": "emoji",
+    "label": "Capricorn",
+    "glyph": "\u2651",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "aquarius",
+    "source": "emoji",
+    "label": "Aquarius",
+    "glyph": "\u2652",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "pisces",
+    "source": "emoji",
+    "label": "Pisces",
+    "glyph": "\u2653",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "ophiuchus",
+    "source": "emoji",
+    "label": "Ophiuchus",
+    "glyph": "\u26ce",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "anger-bubble",
+    "source": "emoji",
+    "label": "Anger bubble",
+    "glyph": "\ud83d\uddef\ufe0f",
+    "popular": false,
+    "topic": "smileys-emotion"
+  },
+  {
+    "id": "speech-bubble",
+    "source": "emoji",
+    "label": "Speech bubble",
+    "glyph": "\ud83d\udcac",
+    "popular": false,
+    "topic": "smileys-emotion"
+  },
+  {
+    "id": "exclamation",
+    "source": "emoji",
+    "label": "Exclamation",
+    "glyph": "\u2757",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "question",
+    "source": "emoji",
+    "label": "Question",
+    "glyph": "\u2753",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "exclamation-question-mark",
+    "source": "emoji",
+    "label": "Exclamation question mark",
+    "glyph": "\u2049\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "exclamation-double",
+    "source": "emoji",
+    "label": "Exclamation double",
+    "glyph": "\u203c\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "cross",
+    "source": "emoji",
+    "label": "Cross mark",
+    "glyph": "\u274c",
+    "popular": true,
+    "topic": "symbols"
+  },
+  {
+    "id": "sos",
+    "source": "emoji",
+    "label": "Sos",
+    "glyph": "\ud83c\udd98",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "hot-springs",
+    "source": "emoji",
+    "label": "Hot springs",
+    "glyph": "\u2668\ufe0f",
+    "popular": false,
+    "topic": "travel-places"
+  },
+  {
+    "id": "phone-off",
+    "source": "emoji",
+    "label": "Phone off",
+    "glyph": "\ud83d\udcf4",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "radioactive",
+    "source": "emoji",
+    "label": "Radioactive",
+    "glyph": "\u2622\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "biohazard",
+    "source": "emoji",
+    "label": "Biohazard",
+    "glyph": "\u2623\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "warning",
+    "source": "emoji",
+    "label": "Warning",
+    "glyph": "\u26a0\ufe0f",
+    "popular": true,
+    "topic": "symbols"
+  },
+  {
+    "id": "check",
+    "source": "emoji",
+    "label": "Check mark",
+    "glyph": "\u2705",
+    "popular": true,
+    "topic": "symbols"
+  },
+  {
+    "id": "new",
+    "source": "emoji",
+    "label": "New",
+    "glyph": "\ud83c\udd95",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "free",
+    "source": "emoji",
+    "label": "Free",
+    "glyph": "\ud83c\udd93",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "up",
+    "source": "emoji",
+    "label": "Up!",
+    "glyph": "\ud83c\udd99",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "ok-button",
+    "source": "emoji",
+    "label": "Ok button",
+    "glyph": "\ud83c\udd97",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "cool",
+    "source": "emoji",
+    "label": "Cool",
+    "glyph": "\ud83c\udd92",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "litter",
+    "source": "emoji",
+    "label": "Litter",
+    "glyph": "\ud83d\udeae",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "peace-symbol",
+    "source": "emoji",
+    "label": "Peace symbol",
+    "glyph": "\u262e\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "yin-yang",
+    "source": "emoji",
+    "label": "Yin yang",
+    "glyph": "\u262f\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "infinity",
+    "source": "emoji",
+    "label": "Infinity",
+    "glyph": "\u267e\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "musical-notes",
+    "source": "emoji",
+    "label": "Musical notes",
+    "glyph": "\ud83c\udfb6",
+    "popular": false,
+    "topic": "objects"
+  },
+  {
+    "id": "plus-sign",
+    "source": "emoji",
+    "label": "Plus sign",
+    "glyph": "\u2795",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "copyright",
+    "source": "emoji",
+    "label": "Copyright",
+    "glyph": "\u00a9\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "registered",
+    "source": "emoji",
+    "label": "Registered",
+    "glyph": "\u00ae\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "trade-mark",
+    "source": "emoji",
+    "label": "Trade mark",
+    "glyph": "\u2122\ufe0f",
+    "popular": false,
+    "topic": "symbols"
+  },
+  {
+    "id": "chequered-flag",
+    "source": "emoji",
+    "label": "Chequered flag",
+    "glyph": "\ud83c\udfc1",
+    "popular": false,
+    "topic": "flags"
+  },
+  {
+    "id": "triangular-flag",
+    "source": "emoji",
+    "label": "Triangular flag",
+    "glyph": "\ud83d\udea9",
+    "popular": false,
+    "topic": "flags"
+  },
+  {
+    "id": "black-flag",
+    "source": "emoji",
+    "label": "Black flag",
+    "glyph": "\ud83c\udff4",
+    "popular": false,
+    "topic": "flags"
+  },
+  {
+    "id": "white-flag",
+    "source": "emoji",
+    "label": "White flag",
+    "glyph": "\ud83c\udff3\ufe0f",
+    "popular": false,
+    "topic": "flags"
   },
   {
     "id": "image-mountain",

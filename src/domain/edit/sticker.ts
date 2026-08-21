@@ -26,11 +26,14 @@ export type StickerPreview =
 export const EMOJI_TOPIC_ORDER = [
   "smileys-emotion",
   "people-body",
+  "animals-nature",
   "food-drink",
   "travel-places",
   "activities",
   "objects",
   "symbols",
+  "flags",
+  "component",
 ] as const;
 export type EmojiTopic = (typeof EMOJI_TOPIC_ORDER)[number];
 
@@ -47,11 +50,14 @@ export type LordiconTopic = (typeof LORDICON_TOPIC_ORDER)[number];
 export const EMOJI_TOPIC_LABELS: Record<EmojiTopic, string> = {
   "smileys-emotion": "Smileys",
   "people-body": "People & body",
+  "animals-nature": "Animals & nature",
   "food-drink": "Food & drink",
   "travel-places": "Travel & places",
   activities: "Activities",
   objects: "Objects",
   symbols: "Symbols",
+  flags: "Flags",
+  component: "Component",
 };
 
 export const LORDICON_TOPIC_LABELS: Record<LordiconTopic, string> = {

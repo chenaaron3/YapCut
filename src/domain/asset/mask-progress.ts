@@ -14,7 +14,7 @@ export type MaskProgressStage =
 /** Streamed mask-job progress (same NDJSON shape as create, different stages). */
 export type MaskProgressEvent = {
   stage: MaskProgressStage;
-  /** 0–1 time estimate; fal has no percent. */
+  /** 0–1 time estimate (0→0.9 while running); fal has no percent. */
   progress: number;
   error?: string;
 };

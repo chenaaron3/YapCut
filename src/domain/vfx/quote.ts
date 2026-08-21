@@ -1,4 +1,3 @@
-import { isListicleEdit } from "~/domain/vfx/listicle";
 import type {
   Edit,
   TemplateStyle,
@@ -30,31 +29,13 @@ function rangesOverlap(a: TimelineTime, b: TimelineTime): boolean {
   return a.start < b.end - EPS && b.start < a.end - EPS;
 }
 
-export type QuoteRangeConflict = "quote" | "listicle";
-
-/**
- * Why `range` cannot host a quote: another quote, or a listicle
- * (quotes must not stack on listicles).
- */
-export function quoteRangeConflict(
-  edits: readonly Edit[],
-  range: TimelineTime,
-  excludeId?: number,
-): QuoteRangeConflict | null {
-  for (const e of edits) {
-    if (isListicleEdit(e) && rangesOverlap(e, range)) return "listicle";
-    if (isQuoteEdit(e) && e.id !== excludeId && rangesOverlap(e, range)) {
-      return "quote";
-    }
-  }
-  return null;
-}
-
-/** True if `range` conflicts with another quote or any listicle. */
+/** True if `range` overlaps another quote. */
 export function quoteRangeConflicts(
   edits: readonly Edit[],
   range: TimelineTime,
   excludeId?: number,
 ): boolean {
-  return quoteRangeConflict(edits, range, excludeId) != null;
+  return edits.some(
+    (e) => isQuoteEdit(e) && e.id !== excludeId && rangesOverlap(e, range),
+  );
 }

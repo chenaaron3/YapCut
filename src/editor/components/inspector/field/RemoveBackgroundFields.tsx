@@ -1,6 +1,7 @@
 import { Label } from "~/components/ui/label";
 import { useAssetMask } from "~/editor/components/inspector/field/use-asset-mask";
 import { useMaskProgressStore } from "~/editor/components/inspector/field/use-mask-stream";
+import { useSmoothPercent } from "~/lib/use-smooth-percent";
 import { cn } from "~/lib/utils";
 
 import type { EditorAsset } from "~/editor/store";
@@ -21,12 +22,14 @@ export function AssetMaskToggle({
   const { type, isPending, masking, setMask, canSet } = useAssetMask(asset);
   const live = useMaskProgressStore((s) => s.byId[asset.id]);
   const event = live ?? asset.mask?.progress;
+  const running = event?.stage === "running";
+  const smooth = useSmoothPercent(running ? (event?.progress ?? 0) : 0);
   const on =
     type === onMode || (onMode === "occlude" && type === "cutout");
   const hint =
-    masking || event?.stage === "running"
-      ? event?.stage === "running"
-        ? `${maskingLabel} ${Math.round(event.progress * 100)}%`
+    masking || running
+      ? running
+        ? `${maskingLabel} ${Math.round(smooth * 100)}%`
         : maskingLabel
       : null;
 

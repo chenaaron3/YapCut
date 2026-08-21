@@ -11,7 +11,7 @@ import {
   withVolume,
 } from "~/domain/media/media";
 import { nextEditId } from "~/domain/project/project-config";
-import { quoteRangeConflict, quoteRangeConflicts } from "~/domain/vfx/quote";
+import { quoteRangeConflicts } from "~/domain/vfx/quote";
 import { isShakeEdit, withShakeIntensity } from "~/domain/vfx/shake";
 import { withTransform } from "~/domain/edit/transform";
 import {
@@ -246,7 +246,6 @@ export function patchEditRange(
 export type PlaceEditFailure =
   | "invalid-range"
   | "quote-overlap"
-  | "quote-listicle-overlap"
   | "transition-conflict";
 
 export type PlaceEditResult =
@@ -262,12 +261,12 @@ function appendEdit(
 ): PlaceEditResult {
   const clamped = clampRange(range, timelineDuration);
   if (!clamped) return { ok: false, reason: "invalid-range" };
-  if (seed.kind === "vfx" && seed.type === "quote") {
-    const conflict = quoteRangeConflict(config.edits, clamped);
-    if (conflict === "quote") return { ok: false, reason: "quote-overlap" };
-    if (conflict === "listicle") {
-      return { ok: false, reason: "quote-listicle-overlap" };
-    }
+  if (
+    seed.kind === "vfx" &&
+    seed.type === "quote" &&
+    quoteRangeConflicts(config.edits, clamped)
+  ) {
+    return { ok: false, reason: "quote-overlap" };
   }
   if (
     seed.kind === "transition" &&

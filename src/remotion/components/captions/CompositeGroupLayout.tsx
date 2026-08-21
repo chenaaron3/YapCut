@@ -50,13 +50,15 @@ function StackChild({
     return () => ro.disconnect();
   });
 
+  // Opacity, not visibility: typewriter letters set visibility:visible on
+  // glyphs, which would punch through a parent with visibility:hidden.
   return (
     <div
       ref={ref}
       style={{
         position: "relative",
         zIndex,
-        visibility: visible ? "visible" : "hidden",
+        opacity: visible ? 1 : 0,
         marginTop: localY * prevHeight,
       }}
     >
@@ -105,7 +107,9 @@ export function CompositeGroupLayout({
               gridArea: "1 / 1",
               position: "relative",
               zIndex: items.length - i,
-              visibility: items[i]!.visible === false ? "hidden" : "visible",
+              // Opacity: typewriter glyph visibility:visible punches through
+              // parent visibility:hidden (CSS exception for visibility).
+              opacity: items[i]!.visible === false ? 0 : 1,
             }}
           >
             {view}

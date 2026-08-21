@@ -6,7 +6,10 @@ import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
 import { resolveTemplateId } from "~/remotion/templates/style";
 
-import type { TemplateStyle, TextBaseEdit } from "~/domain/project/project-config";
+import type {
+  TemplateStyle,
+  TextBaseEdit,
+} from "~/domain/project/project-config";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
 export const OVERLAY_TEMPLATE_IDS = [
@@ -14,9 +17,6 @@ export const OVERLAY_TEMPLATE_IDS = [
   "arc-ribbon",
   "red-teal",
   "black-white",
-  "wipe",
-  "pop",
-  "slide",
 ] as const;
 
 export type OverlayTemplateId = (typeof OVERLAY_TEMPLATE_IDS)[number];
@@ -92,12 +92,13 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
     {
       ...OVERLAY_TEXT_BASE,
       fontFamily: "comico",
-      fontSize: 72,
+      fontSize: 100,
       groupAnimation: "none",
       wordAnimation: "none",
       wordReveal: "typewriter",
       textTransform: "lowercase",
       background: { kind: "none" },
+      arc: 75,
       wordStyle: {
         fill: "#FFFFFF",
         opacity: 1,
@@ -109,19 +110,14 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
     {
       ...OVERLAY_TEXT_BASE,
       fontFamily: "comico",
-      fontSize: 48,
-      groupAnimation: "none",
+      fontSize: 75,
+      groupAnimation: "wipe",
       wordAnimation: "none",
       wordReveal: "typewriter",
       textTransform: "lowercase",
-      background: { kind: "none" },
-      y: -0.2,
-      wordStyle: {
-        fill: "#FFFFFF",
-        opacity: 1,
-        border: { width: 5, color: "#000000" },
-        textShadow: OVERLAY_TYPEWRITER_SHADOW,
-      },
+      background: { kind: "ribbon", color: "#FFFFFF" },
+      y: -0.35,
+      wordStyle: { fill: "#111111", opacity: 1 },
       futureWordStyle: { opacity: 0 },
     },
   ),
@@ -205,88 +201,6 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       fontFamily: "satoshi",
       fontSize: 56,
       groupAnimation: "fade",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "wrap", color: "#FFFFFF" },
-      y: -0.15,
-      wordStyle: { fill: "#111111", opacity: 1 },
-    },
-  ),
-  wipe: overlayTemplate(
-    "wipe",
-    "Wipe",
-    true,
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "satoshi",
-      fontSize: 75,
-      groupAnimation: "wipe",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "box", color: "#111111" },
-      wordStyle: { fill: "#FFFFFF", opacity: 1 },
-    },
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "satoshi",
-      fontSize: 56,
-      groupAnimation: "wipe",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "wrap" },
-      y: -0.15,
-      wordStyle: {
-        fill: "#FFFFFF",
-        opacity: 1,
-        border: { width: 6, color: "#000000" },
-      },
-    },
-  ),
-  pop: overlayTemplate(
-    "pop",
-    "Pop",
-    true,
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "clash-display",
-      fontSize: 75,
-      groupAnimation: "scale",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "wrap", color: "#111111" },
-      wordStyle: { fill: "#FFFFFF", opacity: 1 },
-    },
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "satoshi",
-      fontSize: 56,
-      groupAnimation: "scale",
-      wordAnimation: "none",
-      textTransform: "lowercase",
-      background: { kind: "wrap", color: "#FFFFFF" },
-      y: -0.2,
-      wordStyle: { fill: "#111111", opacity: 1 },
-    },
-  ),
-  slide: overlayTemplate(
-    "slide",
-    "Slide",
-    true,
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "tanker",
-      fontSize: 75,
-      groupAnimation: "slide",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "wrap", color: "#111111" },
-      wordStyle: { fill: "#FFFFFF", opacity: 1 },
-    },
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "tanker",
-      fontSize: 56,
-      groupAnimation: "slide",
       wordAnimation: "none",
       textTransform: "uppercase",
       background: { kind: "wrap", color: "#FFFFFF" },
