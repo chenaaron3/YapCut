@@ -39,6 +39,7 @@ import {
   cloneTemplateStyle,
   PROJECT_FPS,
 } from "~/domain/project/project-config";
+import { applyThemePatch, cloneTheme, DEFAULT_THEME } from "~/domain/project/theme";
 import {
   adjacentKeptWordIndex,
   projectTimelineWords,
@@ -66,10 +67,12 @@ import type { EditPatch, EditSeed, RangeEdge } from "~/domain/edit/edits";
 import type { EmphasisStyle } from "~/domain/transcript/emphasis-style";
 import type { MediaRefPatch } from "~/domain/media/media";
 import type {
+  CaptionTemplateStyle,
   EditId,
+  OverlayTemplateStyle,
   ProjectConfig,
-  TemplateStyle,
 } from "~/domain/project/project-config";
+import type { Theme } from "~/domain/project/theme";
 import type { TimelineTime } from "~/domain/media/time";
 import type { GlobalTranscriptWord, TranscriptWord } from "~/domain/transcript/transcript";
 import type { ProjectProps } from "~/remotion/helpers/types";
@@ -213,11 +216,22 @@ type EditorActions = {
     targetTimelineSec: number,
   ) => void;
   /** Patch Project field `captions` TemplateStyle. */
-  patchCaptions: (patch: Partial<TemplateStyle>, live?: boolean) => void;
+  patchCaptions: (
+    patch: Partial<Omit<CaptionTemplateStyle, "kind">>,
+    live?: boolean,
+  ) => void;
   /** Patch Project field `listicleStyle` and fan out onto every listicle edit. */
-  patchListicleStyle: (patch: Partial<TemplateStyle>, live?: boolean) => void;
+  patchListicleStyle: (
+    patch: Partial<Omit<OverlayTemplateStyle, "kind">>,
+    live?: boolean,
+  ) => void;
   /** Replace Project field `emphasisStyle`. */
   patchEmphasisStyle: (next: EmphasisStyle, live?: boolean) => void;
+  /** Patch Project field `theme` (font roles + colors). */
+  patchTheme: (
+    patch: { fonts?: Partial<Theme["fonts"]>; colors?: Partial<Theme["colors"]> },
+    live?: boolean,
+  ) => void;
   /** Patch fields on an existing edit (discriminant fixed). */
   patchEdit: (id: number, patch: EditPatch, live?: boolean) => void;
   /** Volume / media offset for the music bed or an sfx/b-roll edit. */
@@ -1030,14 +1044,7 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       const { config, transcriptsByAssetId } = get();
       if (!config) return;
       const next = produce(config, (draft) => {
-        const templateId = patch.templateId ?? draft.captions.templateId;
-        const overrides = patch.overrides ?? draft.captions.overrides;
-        draft.captions = {
-          templateId,
-          ...(overrides && Object.keys(overrides).length > 0
-            ? { overrides }
-            : {}),
-        };
+        draft.captions = applyTemplateStylePatch(draft.captions, patch);
       });
       commit({ config: next, transcriptsByAssetId }, { live });
     },
@@ -1065,6 +1072,18 @@ export const useEditor = create<EditorState & EditorActions>((set, get) => {
       if (!config) return;
       const next = produce(config, (draft) => {
         draft.emphasisStyle = nextStyle;
+      });
+      commit({ config: next, transcriptsByAssetId }, { live });
+    },
+
+    patchTheme: (patch, live = false) => {
+      const { config, transcriptsByAssetId } = get();
+      if (!config) return;
+      const next = produce(config, (draft) => {
+        draft.theme = applyThemePatch(
+          draft.theme ?? cloneTheme(DEFAULT_THEME),
+          patch,
+        );
       });
       commit({ config: next, transcriptsByAssetId }, { live });
     },

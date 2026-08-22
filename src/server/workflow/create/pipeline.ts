@@ -8,7 +8,6 @@ import {
 import { buildArollKeepsFromWords } from "~/domain/aroll/keeps";
 import {
   assignKeepIds,
-  DEFAULT_CAPTION_TEMPLATE_ID,
   emptyProjectConfig,
 } from "~/domain/project/project-config";
 import {
@@ -403,7 +402,6 @@ export async function persistCreateReady(
     ...emptyProjectConfig(),
     arolls: state.arolls,
     edits: state.edits,
-    captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
   };
 
   const now = new Date();

@@ -291,7 +291,7 @@ const listicle: Edit = {
   offsetX: 0,
   offsetY: 0,
   rotation: 0,
-  style: { templateId: "red-teal" },
+  style: { kind: "overlay", templateId: "wrap-pair" },
 };
 const withListicle = seedListicleTransitions([listicle], words, layout);
 check(

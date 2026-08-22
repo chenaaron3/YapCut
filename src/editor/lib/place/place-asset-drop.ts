@@ -1,7 +1,7 @@
 import { buildArollLayoutFromAssets } from "~/domain/aroll/arolls";
 import { BROLL_DRAG_MIME, brollSeed } from "~/domain/edit/broll";
 import { listicleSeedFromWords } from "~/domain/vfx/listicle";
-import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project/project-config";
+import { overlayTemplateStyle } from "~/domain/project/project-config";
 import { SFX_DRAG_MIME, sfxSeed } from "~/domain/edit/sfx";
 import {
   STICKER_DRAG_MIME,
@@ -131,9 +131,7 @@ function placeListicleFromDrop(
     listicleSeedFromWords(
       words,
       range,
-      useEditor.getState().config?.listicleStyle ?? {
-        templateId: DEFAULT_LISTICLE_TEMPLATE_ID,
-      },
+      useEditor.getState().config?.listicleStyle ?? overlayTemplateStyle(),
     ),
   );
 }

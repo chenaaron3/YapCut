@@ -14,7 +14,9 @@ import {
   sfxFolderLabel,
   sfxFolderOf,
 } from "~/domain/edit/sfx";
+import { InspectorCollapsible } from "~/editor/components/inspector/field/InspectorCollapsible";
 import { InspectorSelect } from "~/editor/components/inspector/field/InspectorSelect";
+import { ThemeFields } from "~/editor/components/inspector/field/ThemeFields";
 import {
   matchesSfxQuery,
   type SfxAssetOption,
@@ -71,24 +73,27 @@ export function ProjectSettingsInspector() {
     });
   }, [sfxAssets]);
 
-  if (!companionSfx) return null;
-
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      <p className="text-muted-foreground text-[10px]">
-        Default SFX attached when an edit is created. Existing edits keep their
-        pick.
-      </p>
-      {COMPANION_SFX_CUE_IDS.map((cue) => (
-        <CueRow
-          key={cue}
-          cue={cue}
-          source={companionSfx[cue]}
-          folders={folders}
-          sfxAssets={sfxAssets}
-          onChange={(source) => setCompanionSfxCue(cue, source)}
-        />
-      ))}
+      <ThemeFields />
+      {companionSfx ? (
+        <InspectorCollapsible title="SFX" defaultOpen>
+          <p className="text-muted-foreground text-[10px]">
+            Default SFX attached when an edit is created. Existing edits keep
+            their pick.
+          </p>
+          {COMPANION_SFX_CUE_IDS.map((cue) => (
+            <CueRow
+              key={cue}
+              cue={cue}
+              source={companionSfx[cue]}
+              folders={folders}
+              sfxAssets={sfxAssets}
+              onChange={(source) => setCompanionSfxCue(cue, source)}
+            />
+          ))}
+        </InspectorCollapsible>
+      ) : null}
     </div>
   );
 }

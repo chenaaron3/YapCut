@@ -5,7 +5,9 @@ import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/remotion/templates/overlay";
 
 export function ListicleVfxInspector({ edit }: { edit: VfxListicleEdit }) {
   const patchListicleStyle = useEditor((s) => s.patchListicleStyle);
-  const listicleStyle = useEditor((s) => s.config?.listicleStyle);
+  const listicleStyle = useEditor(
+    (s) => s.config?.listicleStyle ?? edit.style,
+  );
 
   return (
     <OverlayVfxFields

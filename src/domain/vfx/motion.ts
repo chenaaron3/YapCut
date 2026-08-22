@@ -1,4 +1,4 @@
-import { DEFAULT_CAPTION_TEMPLATE_ID } from "~/domain/project/project-config";
+import { captionTemplateStyle } from "~/domain/project/project-config";
 import { TRANSFORM_DEFAULTS } from "~/domain/edit/transform";
 
 import type { Edit, VfxMotionEdit } from "~/domain/project/project-config";
@@ -20,7 +20,7 @@ export function motionSeed(): Omit<VfxMotionEdit, "id" | "start" | "end"> {
     type: "motion",
     plan: null,
     hideCaptions: false,
-    style: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
+    style: captionTemplateStyle(),
     ...TRANSFORM_DEFAULTS,
   };
 }

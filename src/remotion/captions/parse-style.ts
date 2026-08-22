@@ -1,3 +1,4 @@
+import { isThemeFontRole } from "~/domain/project/theme";
 import {
   DEFAULT_CAPTION_STYLE,
   clampCaptionArc,
@@ -147,9 +148,10 @@ export function normalizeCaptionStyle(
   fallback: CaptionGroupStyle = DEFAULT_CAPTION_STYLE,
 ): CaptionGroupStyle {
   const src = isPlainObject(raw) ? raw : {};
-  const fontFamily = isCaptionFontId(src.fontFamily)
-    ? src.fontFamily
-    : fallback.fontFamily;
+  const fontFamily =
+    isCaptionFontId(src.fontFamily) || isThemeFontRole(src.fontFamily)
+      ? src.fontFamily
+      : fallback.fontFamily;
   const fontSize = Number(src.fontSize);
   const y = Number(src.y);
   const groupAnimation = isCaptionGroupAnimation(src.groupAnimation)

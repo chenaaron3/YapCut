@@ -1,17 +1,15 @@
+import { QUOTE_TEMPLATE_IDS } from "~/domain/project/template-style";
 import { QUOTE_CAPTION_Y } from "~/remotion/captions/style";
 
+import type { QuoteTemplateId } from "~/domain/project/template-style";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
-export const QUOTE_TEMPLATE_IDS = ["bold-white", "typewriter", "pop"] as const;
-
-export type QuoteTemplateId = (typeof QUOTE_TEMPLATE_IDS)[number];
-
-export function isQuoteTemplateId(value: unknown): value is QuoteTemplateId {
-  return (
-    typeof value === "string" &&
-    (QUOTE_TEMPLATE_IDS as readonly string[]).includes(value)
-  );
-}
+export {
+  DEFAULT_QUOTE_TEMPLATE_ID,
+  isQuoteTemplateId,
+  QUOTE_TEMPLATE_IDS,
+} from "~/domain/project/template-style";
+export type { QuoteTemplateId } from "~/domain/project/template-style";
 
 export type QuoteTemplate = {
   id: QuoteTemplateId;
@@ -19,50 +17,39 @@ export type QuoteTemplate = {
   style: CaptionGroupStyle;
 };
 
-export const DEFAULT_QUOTE_TEMPLATE_ID: QuoteTemplateId = "bold-white";
-
 const QUOTE_TEXT_SHADOW = "0 2px 0 #000, 0 4px 14px rgba(0,0,0,0.8)";
 
-const QUOTE_WHITE_WORD = {
-  fill: "#FFFFFF",
+const QUOTE_INK_WORD = {
+  fill: "ink" as const,
   opacity: 1,
-  border: { width: 6, color: "#000000" },
+  border: { width: 6, color: "stroke" as const },
   textShadow: QUOTE_TEXT_SHADOW,
-} as const;
-
-const QUOTE_TYPEWRITER_WORD = {
-  fill: "#FFFFFF",
-  opacity: 1,
-  border: { width: 5, color: "#000000" },
-  textShadow: QUOTE_TEXT_SHADOW,
-} as const;
-
-const BOLD_WHITE_BASE: CaptionGroupStyle = {
-  fontFamily: "chillax",
-  fontSize: 125,
-  y: QUOTE_CAPTION_Y,
-  groupAnimation: "none",
-  wordAnimation: "none",
-  wordReveal: "none",
-  textTransform: "uppercase",
-  captionsAtATime: 1,
-  background: { kind: "none" },
-  fontStyle: "normal",
-  textAlign: "center",
-  wordStyle: { ...QUOTE_WHITE_WORD },
 };
 
 export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplate> = {
   "bold-white": {
     id: "bold-white",
     label: "Bold White",
-    style: { ...BOLD_WHITE_BASE },
+    style: {
+      fontFamily: "clean",
+      fontSize: 125,
+      y: QUOTE_CAPTION_Y,
+      groupAnimation: "none",
+      wordAnimation: "none",
+      wordReveal: "none",
+      textTransform: "uppercase",
+      captionsAtATime: 1,
+      background: { kind: "none" },
+      fontStyle: "normal",
+      textAlign: "center",
+      wordStyle: { ...QUOTE_INK_WORD },
+    },
   },
   typewriter: {
     id: "typewriter",
     label: "Typewriter",
     style: {
-      fontFamily: "comico",
+      fontFamily: "handwritten",
       fontSize: 72,
       y: QUOTE_CAPTION_Y,
       groupAnimation: "none",
@@ -73,7 +60,12 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplate> = {
       background: { kind: "none" },
       fontStyle: "normal",
       textAlign: "center",
-      wordStyle: { ...QUOTE_TYPEWRITER_WORD },
+      wordStyle: {
+        fill: "ink",
+        opacity: 1,
+        border: { width: 5, color: "stroke" },
+        textShadow: QUOTE_TEXT_SHADOW,
+      },
       futureWordStyle: { opacity: 0 },
     },
   },
@@ -81,7 +73,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplate> = {
     id: "pop",
     label: "Pop",
     style: {
-      fontFamily: "clash-display",
+      fontFamily: "punch",
       fontSize: 88,
       y: QUOTE_CAPTION_Y,
       groupAnimation: "none",
@@ -92,7 +84,7 @@ export const QUOTE_TEMPLATES: Record<QuoteTemplateId, QuoteTemplate> = {
       background: { kind: "none" },
       fontStyle: "normal",
       textAlign: "center",
-      wordStyle: { ...QUOTE_WHITE_WORD },
+      wordStyle: { ...QUOTE_INK_WORD },
     },
   },
 };
@@ -101,16 +93,3 @@ export const QUOTE_TEMPLATE_LIST: QuoteTemplate[] = QUOTE_TEMPLATE_IDS.map(
   (id) => QUOTE_TEMPLATES[id],
 );
 
-export function resolveQuoteTemplate(
-  templateId: QuoteTemplateId,
-): QuoteTemplate {
-  return (
-    QUOTE_TEMPLATES[templateId] ?? QUOTE_TEMPLATES[DEFAULT_QUOTE_TEMPLATE_ID]
-  );
-}
-
-export function resolveQuoteTemplateStyle(
-  templateId: QuoteTemplateId,
-): CaptionGroupStyle {
-  return resolveQuoteTemplate(templateId).style;
-}

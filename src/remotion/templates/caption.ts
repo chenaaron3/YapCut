@@ -1,35 +1,23 @@
 import {
-  DEFAULT_CAPTION_STYLE,
-  TRENDING_CAPTION_Y,
-} from "~/remotion/captions/style";
+  CAPTION_TEMPLATE_IDS,
+} from "~/domain/project/template-style";
+import { TRENDING_CAPTION_Y } from "~/remotion/captions/style";
 
+import type { CaptionTemplateId } from "~/domain/project/template-style";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
-export const CAPTION_TEMPLATE_IDS = [
-  "typewriter",
-  "ugc",
-  "bold",
-  "hormozi",
-] as const;
-
-export type CaptionTemplateId = (typeof CAPTION_TEMPLATE_IDS)[number];
-
-export function isCaptionTemplateId(
-  value: unknown,
-): value is CaptionTemplateId {
-  return (
-    typeof value === "string" &&
-    (CAPTION_TEMPLATE_IDS as readonly string[]).includes(value)
-  );
-}
+export {
+  CAPTION_TEMPLATE_IDS,
+  DEFAULT_CAPTION_TEMPLATE_ID,
+  isCaptionTemplateId,
+} from "~/domain/project/template-style";
+export type { CaptionTemplateId } from "~/domain/project/template-style";
 
 export type CaptionTemplate = {
   id: CaptionTemplateId;
   label: string;
   style: CaptionGroupStyle;
 };
-
-export const DEFAULT_CAPTION_TEMPLATE_ID: CaptionTemplateId = "ugc";
 
 const SHADOW = "0 3px 0 #000, 0 6px 16px rgba(0,0,0,0.85)";
 
@@ -38,7 +26,7 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     id: "typewriter",
     label: "Typewriter",
     style: {
-      fontFamily: "comico",
+      fontFamily: "handwritten",
       fontSize: 72,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -50,8 +38,8 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
       fontStyle: "normal",
       textAlign: "center",
       wordStyle: {
-        fill: "#FFFFFF",
-        border: { width: 6, color: "#000000" },
+        fill: "ink",
+        border: { width: 6, color: "stroke" },
         opacity: 1,
         textShadow: SHADOW,
       },
@@ -62,7 +50,7 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     id: "ugc",
     label: "UGC",
     style: {
-      fontFamily: "chillax",
+      fontFamily: "clean",
       fontSize: 75,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -74,8 +62,8 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
       fontStyle: "normal",
       textAlign: "center",
       wordStyle: {
-        fill: "#FFFFFF",
-        border: { width: 6, color: "#000000" },
+        fill: "ink",
+        border: { width: 6, color: "stroke" },
         opacity: 1,
       },
     },
@@ -84,7 +72,7 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     id: "bold",
     label: "Bold",
     style: {
-      fontFamily: "clash-display",
+      fontFamily: "punch",
       fontSize: 68,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -96,8 +84,8 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
       fontStyle: "normal",
       textAlign: "center",
       wordStyle: {
-        fill: "#FFFFFF",
-        border: { width: 10, color: "#000000" },
+        fill: "ink",
+        border: { width: 10, color: "stroke" },
         opacity: 1,
         textShadow: SHADOW,
       },
@@ -107,7 +95,7 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
     id: "hormozi",
     label: "Hormozi",
     style: {
-      fontFamily: "clash-display",
+      fontFamily: "punch",
       fontSize: 64,
       y: TRENDING_CAPTION_Y,
       groupAnimation: "none",
@@ -119,14 +107,14 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
       fontStyle: "normal",
       textAlign: "center",
       wordStyle: {
-        fill: "#FFFFFF",
-        border: { width: 8, color: "#000000" },
+        fill: "ink",
+        border: { width: 8, color: "stroke" },
         opacity: 1,
         textShadow: SHADOW,
       },
       futureWordStyle: { opacity: 0.35 },
       activeWordStyle: {
-        background: { kind: "rounded", color: "#FFE600" },
+        background: { kind: "rounded", color: "accent" },
       },
     },
   },
@@ -134,22 +122,3 @@ export const CAPTION_TEMPLATES: Record<CaptionTemplateId, CaptionTemplate> = {
 
 export const CAPTION_TEMPLATE_LIST: CaptionTemplate[] =
   CAPTION_TEMPLATE_IDS.map((id) => CAPTION_TEMPLATES[id]);
-
-export function resolveCaptionTemplate(
-  templateId: CaptionTemplateId,
-): CaptionTemplate {
-  return (
-    CAPTION_TEMPLATES[templateId] ??
-    CAPTION_TEMPLATES[DEFAULT_CAPTION_TEMPLATE_ID]
-  );
-}
-
-export function resolveCaptionTemplateStyle(
-  templateId: CaptionTemplateId,
-): CaptionGroupStyle {
-  return resolveCaptionTemplate(templateId).style;
-}
-
-export function defaultCaptionStyle(): CaptionGroupStyle {
-  return { ...DEFAULT_CAPTION_STYLE };
-}

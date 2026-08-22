@@ -1,7 +1,7 @@
 import {
   clampOverlayMiddle,
   type Edit,
-  type TemplateStyle,
+  type OverlayTemplateStyle,
   type VfxListicleEdit,
 } from "~/domain/project/project-config";
 import type { TimelineTime } from "~/domain/media/time";
@@ -45,7 +45,7 @@ function wordsInRange(
 export function listicleSeedFromWords(
   words: readonly GlobalTranscriptWord[],
   range: TimelineTime,
-  listicleStyle: TemplateStyle,
+  listicleStyle: OverlayTemplateStyle,
 ): ListicleSeed {
   const covered = wordsInRange(words, range);
   const first = covered[0];

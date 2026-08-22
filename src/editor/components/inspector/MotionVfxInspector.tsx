@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "~/components/ui/button";
-import { DEFAULT_CAPTION_TEMPLATE_ID } from "~/domain/project/project-config";
+import { applyTemplateStylePatch } from "~/domain/project/project-config";
 import { TRANSFORM_DEFAULTS, transformOf } from "~/domain/edit/transform";
 import {
   CaptionStyleFields,
   PersonFields,
   TextField,
   TransformFields,
+  useProjectTheme,
 } from "~/editor/components/inspector/field";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
@@ -17,11 +18,10 @@ import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
   CAPTION_TEMPLATE_LIST,
   isCaptionTemplateId,
-  resolveCaptionTemplateStyle,
 } from "~/remotion/templates/caption";
 import {
   mergeTemplateStyleOverrides,
-  resolveTemplateId,
+  resolveTemplateChips,
   resolveTemplateStyle,
 } from "~/remotion/templates/style";
 import { api } from "~/utils/api";
@@ -37,17 +37,9 @@ export function MotionVfxInspector({ edit }: { edit: VfxMotionEdit }) {
   useEffect(() => {
     setPrompt("");
   }, [edit.id]);
-  const templateId = resolveTemplateId(
-    edit.style,
-    isCaptionTemplateId,
-    DEFAULT_CAPTION_TEMPLATE_ID,
-  );
-  const style = resolveTemplateStyle(
-    edit.style,
-    isCaptionTemplateId,
-    DEFAULT_CAPTION_TEMPLATE_ID,
-    resolveCaptionTemplateStyle,
-  );
+  const theme = useProjectTheme();
+  const templateId = edit.style.templateId;
+  const style = resolveTemplateStyle(edit.style, theme);
   const overrides = normalizeCaptionOverrides(edit.style?.overrides);
 
   const generate = api.project.generateMotion.useMutation({
@@ -120,13 +112,13 @@ export function MotionVfxInspector({ edit }: { edit: VfxMotionEdit }) {
         </p>
       ) : null}
       <StyleTemplatePicker
-        templates={CAPTION_TEMPLATE_LIST}
+        templates={resolveTemplateChips(CAPTION_TEMPLATE_LIST, theme)}
         value={templateId}
         fallbackStyle={style}
         onChange={(id) => {
-          const tid = isCaptionTemplateId(id) ? id : DEFAULT_CAPTION_TEMPLATE_ID;
+          const tid = isCaptionTemplateId(id) ? id : edit.style.templateId;
           patchEdit(edit.id, {
-            style: { templateId: tid, overrides: edit.style.overrides },
+            style: applyTemplateStylePatch(edit.style, { templateId: tid }),
           });
         }}
       />
@@ -140,12 +132,7 @@ export function MotionVfxInspector({ edit }: { edit: VfxMotionEdit }) {
           patchEdit(
             edit.id,
             {
-              style: mergeTemplateStyleOverrides(
-                edit.style,
-                partial,
-                isCaptionTemplateId,
-                DEFAULT_CAPTION_TEMPLATE_ID,
-              ),
+              style: mergeTemplateStyleOverrides(edit.style, partial),
             },
             live,
           )

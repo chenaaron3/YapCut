@@ -5,7 +5,7 @@ import {
   mergeWordStyle,
   resolveCaptionFont,
   type CaptionGroupStyle,
-  type CaptionFontId,
+  type CaptionFontRef,
   type CaptionTextTransform,
   type WordStyle,
 } from "~/remotion/captions/style";
@@ -41,7 +41,7 @@ export function captionGroupCss(style: CaptionGroupStyle): CSSProperties {
 }
 
 /** Per-word font override (emphasis) — family + weight. */
-export function captionFontCss(fontFamily: CaptionFontId): CSSProperties {
+export function captionFontCss(fontFamily: CaptionFontRef): CSSProperties {
   const font = resolveCaptionFont(fontFamily);
   return {
     fontFamily: font.family,

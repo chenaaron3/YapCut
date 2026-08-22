@@ -3,7 +3,7 @@ import {
   firstKeepTimelineSec,
   layoutTimelineDuration,
 } from "~/domain/aroll/layout-time";
-import { DEFAULT_LISTICLE_TEMPLATE_ID } from "~/domain/project/project-config";
+import { overlayTemplateStyle } from "~/domain/project/project-config";
 import { keptTimelineWords, projectTimelineWords } from "~/domain/aroll/projection";
 import { snapWordBoundsToKeepEdges } from "~/domain/edit/snap";
 import { seedTitleTextVfx } from "~/domain/edit/vfx";
@@ -19,7 +19,11 @@ import { generateTransitionEdits } from "~/server/ai/transitions";
 import { generateZoomEdits } from "~/server/ai/zooms";
 
 import type { CompanionSfxMap } from "~/domain/audio/companion-sfx-map";
-import type { ArollKeep, Edit, TemplateStyle } from "~/domain/project/project-config";
+import type {
+  ArollKeep,
+  Edit,
+  OverlayTemplateStyle,
+} from "~/domain/project/project-config";
 import type { TranscriptWord } from "~/domain/transcript/transcript";
 
 export type AiAssistProgress = (
@@ -41,7 +45,7 @@ export type AiAssistState = {
   /** Resolved: generate a title this run (empty title + caller asked). */
   generateTitleIfEmpty: boolean;
   trimSpeech: boolean;
-  listicleStyle: TemplateStyle;
+  listicleStyle: OverlayTemplateStyle;
   companionSfx?: CompanionSfxMap;
   /** Edit ids present before AI — companion SFX skips these. */
   baseEditIds: number[];
@@ -114,7 +118,7 @@ export function createAiAssistState(
     edits?: Edit[];
     generateTitleIfEmpty?: boolean;
     trimSpeech?: boolean;
-    listicleStyle?: TemplateStyle;
+    listicleStyle?: OverlayTemplateStyle;
   },
 ): AiAssistState {
   const title = init.title.trim();
@@ -129,9 +133,7 @@ export function createAiAssistState(
     edits,
     generateTitleIfEmpty,
     trimSpeech,
-    listicleStyle: init.listicleStyle ?? {
-      templateId: DEFAULT_LISTICLE_TEMPLATE_ID,
-    },
+    listicleStyle: init.listicleStyle ?? overlayTemplateStyle(),
     companionSfx: init.companionSfx,
     baseEditIds: edits.map((e) => e.id),
     completed: 0,

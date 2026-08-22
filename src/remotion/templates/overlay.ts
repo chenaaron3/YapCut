@@ -1,36 +1,20 @@
-import {
-  DEFAULT_LISTICLE_TEMPLATE_ID,
-  DEFAULT_TEXT_TEMPLATE_ID,
-} from "~/domain/project/project-config";
+import { OVERLAY_TEMPLATE_IDS } from "~/domain/project/template-style";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import { applyCaptionOverrides } from "~/remotion/captions/style";
-import { resolveTemplateId } from "~/remotion/templates/style";
+import { resolveThemeStyle } from "~/remotion/templates/theme-style";
 
-import type {
-  TemplateStyle,
-  TextBaseEdit,
-} from "~/domain/project/project-config";
+import type { TextBaseEdit } from "~/domain/project/project-config";
+import type { OverlayTemplateId } from "~/domain/project/template-style";
+import type { Theme } from "~/domain/project/theme";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 
-export const OVERLAY_TEMPLATE_IDS = [
-  "typewriter",
-  "arc-ribbon",
-  "red-teal",
-  "black-white",
-] as const;
-
-export type OverlayTemplateId = (typeof OVERLAY_TEMPLATE_IDS)[number];
-
-export function isOverlayTemplateId(
-  value: unknown,
-): value is OverlayTemplateId {
-  return (
-    typeof value === "string" &&
-    (OVERLAY_TEMPLATE_IDS as readonly string[]).includes(value)
-  );
-}
-
-export { DEFAULT_LISTICLE_TEMPLATE_ID, DEFAULT_TEXT_TEMPLATE_ID };
+export {
+  DEFAULT_LISTICLE_TEMPLATE_ID,
+  DEFAULT_TEXT_TEMPLATE_ID,
+  isOverlayTemplateId,
+  OVERLAY_TEMPLATE_IDS,
+} from "~/domain/project/template-style";
+export type { OverlayTemplateId } from "~/domain/project/template-style";
 
 /** Overlay `y` on lines after the first: fraction of previous group's height. */
 const OVERLAY_TEXT_BASE = {
@@ -49,7 +33,9 @@ export type OverlayTemplate = {
   stacked: boolean;
 };
 
-function defaultSubheadingStyle(heading: CaptionGroupStyle): CaptionGroupStyle {
+function defaultSubheadingStyle(
+  heading: CaptionGroupStyle,
+): CaptionGroupStyle {
   return {
     ...heading,
     fontSize: Math.max(24, Math.round(heading.fontSize * 0.55)),
@@ -91,7 +77,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
     true,
     {
       ...OVERLAY_TEXT_BASE,
-      fontFamily: "comico",
+      fontFamily: "handwritten",
       fontSize: 100,
       groupAnimation: "none",
       wordAnimation: "none",
@@ -100,24 +86,24 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       background: { kind: "none" },
       arc: 75,
       wordStyle: {
-        fill: "#FFFFFF",
+        fill: "ink",
         opacity: 1,
-        border: { width: 6, color: "#000000" },
+        border: { width: 6, color: "stroke" },
         textShadow: OVERLAY_TYPEWRITER_SHADOW,
       },
       futureWordStyle: { opacity: 0 },
     },
     {
       ...OVERLAY_TEXT_BASE,
-      fontFamily: "comico",
+      fontFamily: "clean",
       fontSize: 75,
       groupAnimation: "wipe",
       wordAnimation: "none",
       wordReveal: "typewriter",
       textTransform: "lowercase",
-      background: { kind: "ribbon", color: "#FFFFFF" },
+      background: { kind: "ribbon", color: "ink" },
       y: -0.35,
-      wordStyle: { fill: "#111111", opacity: 1 },
+      wordStyle: { fill: "paper", opacity: 1 },
       futureWordStyle: { opacity: 0 },
     },
   ),
@@ -127,7 +113,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
     true,
     {
       ...OVERLAY_TEXT_BASE,
-      fontFamily: "dancing-script",
+      fontFamily: "script",
       fontSize: 125,
       groupAnimation: "none",
       wordAnimation: "none",
@@ -138,74 +124,48 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       arc: 65,
       fontStyle: "normal",
       wordStyle: {
-        fill: "#FFFFFF",
+        fill: "ink",
         opacity: 1,
-        border: { width: 10, color: "#000000" },
+        border: { width: 10, color: "stroke" },
         textShadow: "0 3px 0 #000000, 0 0 14px rgba(0,0,0,0.9)",
       },
     },
     {
       ...OVERLAY_TEXT_BASE,
-      fontFamily: "comico",
+      fontFamily: "clean",
       fontSize: 75,
       groupAnimation: "scale",
       wordAnimation: "none",
       textTransform: "lowercase",
-      background: { kind: "ribbon", color: "#FFFFFF" },
+      background: { kind: "ribbon", color: "ink" },
       y: -0.5,
-      wordStyle: { fill: "#111111", opacity: 1 },
+      wordStyle: { fill: "paper", opacity: 1 },
     },
   ),
-  "red-teal": overlayTemplate(
-    "red-teal",
-    "Red + Teal",
+  "wrap-pair": overlayTemplate(
+    "wrap-pair",
+    "Wrap",
     true,
     {
       ...OVERLAY_TEXT_BASE,
-      fontFamily: "satoshi",
+      fontFamily: "clean",
       fontSize: 75,
       groupAnimation: "fade",
       wordAnimation: "none",
       textTransform: "uppercase",
-      background: { kind: "wrap", color: "#E53935" },
-      wordStyle: { fill: "#FFFFFF", opacity: 1 },
+      background: { kind: "wrap", color: "brand" },
+      wordStyle: { fill: "ink", opacity: 1 },
     },
     {
       ...OVERLAY_TEXT_BASE,
-      fontFamily: "satoshi",
+      fontFamily: "clean",
       fontSize: 56,
       groupAnimation: "fade",
       wordAnimation: "none",
       textTransform: "uppercase",
-      background: { kind: "wrap", color: "#5ED4DC" },
+      background: { kind: "wrap", color: "ink" },
       y: -0.15,
-      wordStyle: { fill: "#111111", opacity: 1 },
-    },
-  ),
-  "black-white": overlayTemplate(
-    "black-white",
-    "Black + White",
-    true,
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "satoshi",
-      fontSize: 75,
-      groupAnimation: "fade",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "wrap", color: "#111111" },
-      wordStyle: { fill: "#FFFFFF", opacity: 1 },
-    },
-    {
-      ...OVERLAY_TEXT_BASE,
-      fontFamily: "satoshi",
-      fontSize: 56,
-      groupAnimation: "fade",
-      wordAnimation: "none",
-      textTransform: "uppercase",
-      background: { kind: "wrap", color: "#FFFFFF" },
-      y: -0.15,
-      wordStyle: { fill: "#111111", opacity: 1 },
+      wordStyle: { fill: "paper", opacity: 1 },
     },
   ),
 };
@@ -213,53 +173,32 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
 export const OVERLAY_TEMPLATE_LIST: OverlayTemplate[] =
   OVERLAY_TEMPLATE_IDS.map((id) => OVERLAY_TEMPLATES[id]);
 
-export function resolveOverlayTemplate(
-  templateId: OverlayTemplateId,
-): OverlayTemplate {
-  return OVERLAY_TEMPLATES[templateId];
-}
-
-export function resolveOverlayLayerStyles(
-  templateId: OverlayTemplateId,
-  style?: TemplateStyle,
+/** Catalog + theme + overrides for a title or listicle edit. */
+export function resolveOverlayForEdit(
+  edit: TextBaseEdit,
+  theme: Theme,
 ): {
-  heading: CaptionGroupStyle;
-  subheading: CaptionGroupStyle;
-  stacked: boolean;
-} {
-  const template = resolveOverlayTemplate(templateId);
-  return {
-    heading: applyCaptionOverrides(
-      template.headingStyle,
-      normalizeCaptionOverrides(style?.overrides),
-    ),
-    subheading: applyCaptionOverrides(
-      template.subheadingStyle,
-      normalizeCaptionOverrides(style?.subheadingOverrides),
-    ),
-    stacked: template.stacked,
-  };
-}
-
-/** Catalog + resolved heading/subheading looks for a title or listicle edit. */
-export function resolveOverlayForEdit(edit: TextBaseEdit): {
   templateId: OverlayTemplateId;
   heading: CaptionGroupStyle;
   subheading: CaptionGroupStyle;
   stacked: boolean;
 } {
-  const title = edit.type === "text";
-  const templateId = resolveTemplateId(
-    edit.style,
-    isOverlayTemplateId,
-    title ? DEFAULT_TEXT_TEMPLATE_ID : DEFAULT_LISTICLE_TEMPLATE_ID,
-  );
+  const templateId = edit.style.templateId;
+  const template = OVERLAY_TEMPLATES[templateId];
   return {
     templateId,
-    ...resolveOverlayLayerStyles(templateId, edit.style),
+    heading: applyCaptionOverrides(
+      resolveThemeStyle(template.headingStyle, theme),
+      normalizeCaptionOverrides(edit.style?.overrides),
+    ),
+    subheading: applyCaptionOverrides(
+      resolveThemeStyle(template.subheadingStyle, theme),
+      normalizeCaptionOverrides(edit.style?.subheadingOverrides),
+    ),
+    stacked: template.stacked,
   };
 }
 
 export function overlayStackedForEdit(edit: TextBaseEdit): boolean {
-  return resolveOverlayForEdit(edit).stacked;
+  return OVERLAY_TEMPLATES[edit.style.templateId].stacked;
 }

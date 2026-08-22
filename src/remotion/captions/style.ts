@@ -1,3 +1,5 @@
+import type { ThemeColorRole, ThemeFontRole } from "~/domain/project/theme";
+
 /** Curated caption font IDs — weight is baked into each entry. */
 export const CAPTION_FONT_IDS = [
   "clash-display",
@@ -15,6 +17,12 @@ export function isCaptionFontId(value: unknown): value is CaptionFontId {
     (CAPTION_FONT_IDS as readonly string[]).includes(value)
   );
 }
+
+/** Catalog role or a concrete face. Resolve roles against Theme before paint. */
+export type CaptionFontRef = CaptionFontId | ThemeFontRole;
+
+/** Catalog color role or a raw CSS color. Resolve roles against Theme before paint. */
+export type CaptionColor = ThemeColorRole | string;
 
 export type CaptionFontFace = {
   id: CaptionFontId;
@@ -157,8 +165,8 @@ export function isBackgroundKind(value: unknown): value is BackgroundKind {
 /** Shared background chrome for group or word. */
 export type BackgroundStyle = {
   kind: BackgroundKind;
-  /** Ignored when kind is `none`. */
-  color?: string | null;
+  /** Ignored when kind is `none`. Role or raw CSS color. */
+  color?: CaptionColor | null;
 };
 
 export const CAPTION_FONT_STYLES = ["normal", "italic"] as const;
@@ -183,12 +191,12 @@ export function isCaptionTextAlign(value: unknown): value is CaptionTextAlign {
 
 export type WordBorder = {
   width: number;
-  color: string;
+  color: CaptionColor;
 };
 
 /** Paint props for a single word (base or resolved state). */
 export type WordStyle = {
-  fill: string;
+  fill: CaptionColor;
   border?: WordBorder | null;
   background?: BackgroundStyle | null;
   /** Default 1 when omitted. */
@@ -205,7 +213,7 @@ export type WordStyleDelta = Partial<WordStyle>;
  * `wordReveal` paints in CaptionWordSpan. Arc is glyph layout, not motion.
  */
 export type CaptionGroupStyle = {
-  fontFamily: CaptionFontId;
+  fontFamily: CaptionFontRef;
   fontSize: number;
   /**
    * Captions/quotes: −1…1 in the safe area (world placement).
@@ -284,8 +292,9 @@ export const WORD_STATE_BLEND_SEC = 0.08;
 /** Group-scope typewriter delay between characters. */
 export const TYPEWRITER_CHAR_DELAY_SEC = 0.02;
 
-export function resolveCaptionFont(id: CaptionFontId): CaptionFontFace {
-  return CAPTION_FONTS[id];
+export function resolveCaptionFont(id: CaptionFontRef): CaptionFontFace {
+  if (isCaptionFontId(id)) return CAPTION_FONTS[id];
+  return CAPTION_FONTS.chillax;
 }
 
 export function clampCaptionY(y: number): number {
@@ -375,7 +384,12 @@ export function captionStyleOverridesFrom(
   const out: CaptionStyleOverrides = {};
   if (style.y !== template.y) out.y = style.y;
   if (style.fontSize !== template.fontSize) out.fontSize = style.fontSize;
-  if (style.fontFamily !== template.fontFamily) out.fontFamily = style.fontFamily;
+  if (
+    style.fontFamily !== template.fontFamily &&
+    isCaptionFontId(style.fontFamily)
+  ) {
+    out.fontFamily = style.fontFamily;
+  }
   if (style.captionsAtATime !== template.captionsAtATime) {
     out.captionsAtATime = style.captionsAtATime;
   }

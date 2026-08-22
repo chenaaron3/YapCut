@@ -6,62 +6,62 @@ import {
   defaultCompanionSfxMap,
 } from "~/domain/audio/companion-sfx-map";
 import {
-  DEFAULT_EMPHASIS_FONT_FAMILY,
   DEFAULT_EMPHASIS_SCALE,
   emphasisStyleSchema,
   optionalEmphasisStyleSchema,
 } from "~/domain/transcript/emphasis-style";
+import { cloneTheme, DEFAULT_THEME, themeSchema } from "~/domain/project/theme";
+import {
+  captionTemplateStyle,
+  captionTemplateStyleSchema,
+  overlayTemplateStyle,
+  overlayTemplateStyleSchema,
+  quoteTemplateStyleSchema,
+} from "~/domain/project/template-style";
 import { shotPlanSchema } from "~/domain/vfx/motion-config";
 
 import type { CompanionSfxMap } from "~/domain/audio/companion-sfx-map";
 import type { EmphasisStyle } from "~/domain/transcript/emphasis-style";
+import type { Theme } from "~/domain/project/theme";
+import type {
+  CaptionTemplateStyle,
+  OverlayTemplateStyle,
+  QuoteTemplateStyle,
+} from "~/domain/project/template-style";
 import type { ShotPlan } from "~/domain/vfx/motion-config";
 import type { LocalTime, TimelineTime } from "~/domain/media/time";
 
-export type { EmphasisStyle };
+export type {
+  CaptionTemplateId,
+  CaptionTemplateStyle,
+  OverlayTemplateId,
+  OverlayTemplateStyle,
+  QuoteTemplateId,
+  QuoteTemplateStyle,
+  TemplateStyle,
+} from "~/domain/project/template-style";
+export {
+  applyTemplateStylePatch,
+  captionTemplateStyle,
+  cloneTemplateStyle,
+  DEFAULT_CAPTION_TEMPLATE_ID,
+  DEFAULT_LISTICLE_TEMPLATE_ID,
+  DEFAULT_QUOTE_TEMPLATE_ID,
+  DEFAULT_TEXT_TEMPLATE_ID,
+  overlayTemplateStyle,
+  quoteTemplateStyle,
+} from "~/domain/project/template-style";
+
+export type { EmphasisStyle, Theme };
+export type {
+  ThemeColorRole,
+  ThemeFontRole,
+} from "~/domain/project/theme";
 export type {
   CompanionSfxCueId,
   CompanionSfxMap,
   CompanionSfxSource,
 } from "~/domain/audio/companion-sfx-map";
-
-/** Catalog base + sparse user overrides. Overlay adds a subheading bag. */
-export type TemplateStyle = {
-  templateId: string;
-  /** Captions/quotes: the look. Overlay: heading tab. */
-  overrides?: Record<string, unknown>;
-  /** Overlay subheading tab. Captions/quotes ignore. */
-  subheadingOverrides?: Record<string, unknown>;
-};
-
-/** Copy bags so fan-out does not share object identity. */
-export function cloneTemplateStyle(style: TemplateStyle): TemplateStyle {
-  return {
-    templateId: style.templateId,
-    ...(style.overrides ? { overrides: { ...style.overrides } } : {}),
-    ...(style.subheadingOverrides
-      ? { subheadingOverrides: { ...style.subheadingOverrides } }
-      : {}),
-  };
-}
-
-/**
- * Merge a partial patch onto a TemplateStyle.
- * `"overrides" in patch` / `"subheadingOverrides" in patch` can clear a bag.
- */
-export function applyTemplateStylePatch(
-  current: TemplateStyle,
-  patch: Partial<TemplateStyle>,
-): TemplateStyle {
-  return cloneTemplateStyle({
-    templateId: patch.templateId ?? current.templateId,
-    overrides: "overrides" in patch ? patch.overrides : current.overrides,
-    subheadingOverrides:
-      "subheadingOverrides" in patch
-        ? patch.subheadingOverrides
-        : current.subheadingOverrides,
-  });
-}
 
 export type KeepId = number;
 
@@ -129,7 +129,7 @@ export type TextBase = Transform &
     heading: string;
     subheading: string;
     middle: number | null;
-    style: TemplateStyle;
+    style: OverlayTemplateStyle;
   };
 
 export type VfxTextEdit = EditBase &
@@ -143,7 +143,7 @@ export type VfxQuoteEdit = EditBase &
   CanSitBehindPerson & {
     kind: "vfx";
     type: "quote";
-    style?: TemplateStyle;
+    style: QuoteTemplateStyle;
     /**
      * Sparse merge over project `emphasisStyle` for emphasized words in this quote.
      * Omit / `{}` = use project only.
@@ -180,7 +180,7 @@ export type VfxMotionEdit = EditBase &
     kind: "vfx";
     type: "motion";
     plan: ShotPlan | null;
-    style: TemplateStyle;
+    style: CaptionTemplateStyle;
   };
 
 /** Normalized transform applied at props / overlay time. */
@@ -293,12 +293,14 @@ export function overlayMidpointSec(start: number, end: number): number {
 export type ProjectConfig = {
   arolls: ArollKeep[];
   edits: Edit[];
-  captions: TemplateStyle;
+  /** Project-wide font roles + colors. Templates resolve against this. */
+  theme: Theme;
+  captions: CaptionTemplateStyle;
   /**
    * Shared listicle look (all listicle edits use this).
    * Same overlay catalog as titles; `overrides` = heading, `subheadingOverrides` = subheading.
    */
-  listicleStyle: TemplateStyle;
+  listicleStyle: OverlayTemplateStyle;
   /**
    * Shared emphasis treatment for `emphasized` words.
    * Applied after the caption/quote group style. Quotes may replace via
@@ -318,31 +320,20 @@ export type ProjectConfig = {
   music: MusicBed | null;
 };
 
-export const DEFAULT_CAPTION_TEMPLATE_ID = "ugc";
-/** Titles seed this overlay look (see remotion/templates/overlay). */
-export const DEFAULT_TEXT_TEMPLATE_ID = "red-teal" as const;
-/** Listicles seed this overlay look (see remotion/templates/overlay). */
-export const DEFAULT_LISTICLE_TEMPLATE_ID = "red-teal" as const;
 /** Output fps used for min-keep filtering (matches Remotion composition). */
 export const PROJECT_FPS = 30;
 
 export const emptyProjectConfig = (): ProjectConfig => ({
   arolls: [],
   edits: [],
-  captions: { templateId: DEFAULT_CAPTION_TEMPLATE_ID },
-  listicleStyle: { templateId: DEFAULT_LISTICLE_TEMPLATE_ID },
+  theme: cloneTheme(DEFAULT_THEME),
+  captions: captionTemplateStyle(),
+  listicleStyle: overlayTemplateStyle(),
   emphasisStyle: {
     scale: DEFAULT_EMPHASIS_SCALE,
-    fontFamily: DEFAULT_EMPHASIS_FONT_FAMILY,
   },
   companionSfx: defaultCompanionSfxMap(),
   music: null,
-});
-
-const templateStyleSchema = z.object({
-  templateId: z.string().min(1),
-  overrides: z.record(z.unknown()).optional(),
-  subheadingOverrides: z.record(z.unknown()).optional(),
 });
 
 const arollKeepSchema = z.object({
@@ -395,7 +386,7 @@ const textBaseSchema = transformSchema.extend({
   subheading: z.string(),
   middle: z.number().nullable(),
   hideCaptions: z.boolean(),
-  style: templateStyleSchema,
+  style: overlayTemplateStyleSchema,
 });
 
 const vfxTextEditSchema = editBaseSchema
@@ -409,7 +400,7 @@ const vfxTextEditSchema = editBaseSchema
 const vfxQuoteEditSchema = editBaseSchema.merge(behindPersonSchema).extend({
   kind: z.literal("vfx"),
   type: z.literal("quote"),
-  style: templateStyleSchema.optional(),
+  style: quoteTemplateStyleSchema,
   emphasisStyle: optionalEmphasisStyleSchema,
 });
 
@@ -435,7 +426,7 @@ const vfxMotionEditSchema = editBaseSchema
     type: z.literal("motion"),
     hideCaptions: z.boolean(),
     plan: shotPlanSchema.nullable(),
-    style: templateStyleSchema,
+    style: captionTemplateStyleSchema,
   });
 
 const brollEditSchema = editBaseSchema
@@ -496,8 +487,9 @@ export const projectConfigSchema = z.object({
       transitionEditSchema,
     ]),
   ),
-  captions: templateStyleSchema,
-  listicleStyle: templateStyleSchema,
+  theme: themeSchema,
+  captions: captionTemplateStyleSchema,
+  listicleStyle: overlayTemplateStyleSchema,
   emphasisStyle: emphasisStyleSchema,
   companionSfx: companionSfxMapSchema,
   music: z

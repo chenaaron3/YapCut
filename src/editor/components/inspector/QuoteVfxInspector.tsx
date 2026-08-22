@@ -2,6 +2,7 @@ import {
   CaptionStyleFields,
   EmphasisStyleFields,
   PersonFields,
+  useProjectTheme,
 } from "~/editor/components/inspector/field";
 import { StyleTemplatePicker } from "~/editor/components/inspector/StyleTemplatePicker";
 import { useEditor } from "~/editor/store";
@@ -9,31 +10,21 @@ import { applyEmphasisPatch } from "~/domain/transcript/emphasis-style";
 import type { VfxQuoteEdit } from "~/domain/project/project-config";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
-  DEFAULT_QUOTE_TEMPLATE_ID,
   isQuoteTemplateId,
   QUOTE_TEMPLATE_LIST,
-  resolveQuoteTemplateStyle,
 } from "~/remotion/templates/quote";
 import {
   mergeTemplateStyleOverrides,
-  resolveTemplateId,
+  resolveTemplateChips,
   resolveTemplateStyle,
 } from "~/remotion/templates/style";
 
 export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
   const patchEdit = useEditor((s) => s.patchEdit);
   const projectEmphasis = useEditor((s) => s.config?.emphasisStyle ?? {});
-  const templateId = resolveTemplateId(
-    edit.style,
-    isQuoteTemplateId,
-    DEFAULT_QUOTE_TEMPLATE_ID,
-  );
-  const style = resolveTemplateStyle(
-    edit.style,
-    isQuoteTemplateId,
-    DEFAULT_QUOTE_TEMPLATE_ID,
-    resolveQuoteTemplateStyle,
-  );
+  const theme = useProjectTheme();
+  const templateId = edit.style.templateId;
+  const style = resolveTemplateStyle(edit.style, theme);
   const overrides = normalizeCaptionOverrides(edit.style?.overrides);
   const quoteEmphasis = edit.emphasisStyle ?? {};
   const hasOverride = Object.keys(quoteEmphasis).length > 0;
@@ -42,15 +33,16 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
     <div className="flex w-full min-w-0 flex-col gap-4">
       <PersonFields edit={edit} />
       <StyleTemplatePicker
-        templates={QUOTE_TEMPLATE_LIST}
+        templates={resolveTemplateChips(QUOTE_TEMPLATE_LIST, theme)}
         value={templateId}
         fallbackStyle={style}
         onChange={(id) => {
-          const tid = isQuoteTemplateId(id) ? id : DEFAULT_QUOTE_TEMPLATE_ID;
-          const prev = normalizeCaptionOverrides(edit.style?.overrides);
+          const tid = isQuoteTemplateId(id) ? id : edit.style.templateId;
+          const prev = normalizeCaptionOverrides(edit.style.overrides);
           const kept: { y?: number } = prev.y != null ? { y: prev.y } : {};
           patchEdit(edit.id, {
             style: {
+              kind: "quote",
               templateId: tid,
               ...(Object.keys(kept).length > 0 ? { overrides: kept } : {}),
             },
@@ -68,12 +60,7 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
           patchEdit(
             edit.id,
             {
-              style: mergeTemplateStyleOverrides(
-                edit.style,
-                partial,
-                isQuoteTemplateId,
-                DEFAULT_QUOTE_TEMPLATE_ID,
-              ),
+              style: mergeTemplateStyleOverrides(edit.style, partial),
             },
             live,
           )
@@ -82,6 +69,7 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
       <EmphasisStyleFields
         title={hasOverride ? "Emphasis override" : "Emphasis"}
         value={{ ...projectEmphasis, ...quoteEmphasis }}
+        accent={theme.colors.accent}
         onClear={
           hasOverride
             ? () => patchEdit(edit.id, { emphasisStyle: {} })

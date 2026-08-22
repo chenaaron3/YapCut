@@ -1,17 +1,16 @@
 import { z } from "zod";
 
+import { DEFAULT_THEME } from "~/domain/project/theme";
 import { CAPTION_FONT_IDS } from "~/remotion/captions/style";
 
+import type { Theme } from "~/domain/project/theme";
 import type { CaptionFontId } from "~/remotion/captions/style";
 
 /** Default emphasis scale relative to the surrounding caption/quote group. */
 export const DEFAULT_EMPHASIS_SCALE = 1.25;
 
-/** Default emphasis fill when style leaves fill unset. */
-export const DEFAULT_EMPHASIS_FILL = "#FFE600";
-
-/** Default emphasis face when style leaves font unset. */
-export const DEFAULT_EMPHASIS_FONT_FAMILY: CaptionFontId = "tanker";
+/** Default emphasis fill when style leaves fill unset (matches Theme.colors.accent). */
+export const DEFAULT_EMPHASIS_FILL = DEFAULT_THEME.colors.accent;
 
 /** Clamp range for emphasis scale (× group fontSize). */
 export const EMPHASIS_SCALE_MIN = 0.5;
@@ -47,16 +46,18 @@ export function clampEmphasisScale(n: number): number {
 /**
  * Merge quote emphasis over project and materialize defaults.
  * Project is always present; quote keys override when set.
+ * Unset font inherits the surrounding caption/quote group.
  */
 export function pickEmphasisStyle(
   project: EmphasisStyle,
   quote?: EmphasisStyle | null,
+  theme: Theme = DEFAULT_THEME,
 ): ResolvedEmphasisStyle {
   const s = { ...project, ...quote };
   return {
     scale: clampEmphasisScale(s.scale ?? DEFAULT_EMPHASIS_SCALE),
-    fill: s.fill?.trim() ? s.fill.trim() : DEFAULT_EMPHASIS_FILL,
-    fontFamily: s.fontFamily ?? DEFAULT_EMPHASIS_FONT_FAMILY,
+    fill: s.fill?.trim() ? s.fill.trim() : theme.colors.accent,
+    fontFamily: s.fontFamily ?? null,
   };
 }
 
@@ -93,7 +94,6 @@ const emphasisStyleObjectSchema = z.object({
 
 export const emphasisStyleSchema = emphasisStyleObjectSchema.default({
   scale: DEFAULT_EMPHASIS_SCALE,
-  fontFamily: DEFAULT_EMPHASIS_FONT_FAMILY,
 });
 
 /** Optional quote override — same shape as project; omit = use project. */

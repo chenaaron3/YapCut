@@ -1,10 +1,7 @@
-import type {
-  Edit,
-  TemplateStyle,
-  VfxQuoteEdit,
-} from "~/domain/project/project-config";
+import { quoteTemplateStyle } from "~/domain/project/project-config";
+
+import type { Edit, VfxQuoteEdit } from "~/domain/project/project-config";
 import type { TimelineTime } from "~/domain/media/time";
-import { DEFAULT_QUOTE_TEMPLATE_ID } from "~/remotion/templates/quote";
 
 const EPS = 0.001;
 
@@ -16,12 +13,12 @@ export function isQuoteEdit(edit: Edit): edit is VfxQuoteEdit {
 export function quoteSeed(): {
   kind: "vfx";
   type: "quote";
-  style: TemplateStyle;
+  style: VfxQuoteEdit["style"];
 } {
   return {
     kind: "vfx",
     type: "quote",
-    style: { templateId: DEFAULT_QUOTE_TEMPLATE_ID },
+    style: quoteTemplateStyle(),
   };
 }
 

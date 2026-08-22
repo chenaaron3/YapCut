@@ -24,10 +24,6 @@ import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
-import {
-  DEFAULT_QUOTE_TEMPLATE_ID,
-  isQuoteTemplateId,
-} from "~/remotion/templates/quote";
 import { mergeTemplateStyleOverrides } from "~/remotion/templates/style";
 
 import type { CaptionStyleOverrides } from "~/remotion/captions/style";
@@ -60,12 +56,7 @@ function patchCaptionStyle(
     patchEdit(
       quoteId,
       {
-        style: mergeTemplateStyleOverrides(
-          edit.style,
-          partial,
-          isQuoteTemplateId,
-          DEFAULT_QUOTE_TEMPLATE_ID,
-        ),
+        style: mergeTemplateStyleOverrides(edit.style, partial),
       },
       live,
     );

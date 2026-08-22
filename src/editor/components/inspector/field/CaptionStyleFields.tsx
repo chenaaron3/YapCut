@@ -15,6 +15,7 @@ import {
   CAPTION_FONT_IDS,
   CAPTION_FONT_LABELS,
   type CaptionFontId,
+  type CaptionFontRef,
   type CaptionStyleOverrides,
 } from "~/remotion/captions/style";
 
@@ -40,7 +41,7 @@ export function CaptionStyleFields({
   resolvedFill: string;
   resolvedY: number;
   resolvedFontSize: number;
-  resolvedFontFamily: CaptionFontId;
+  resolvedFontFamily: CaptionFontRef;
   resolvedCaptionsAtATime?: number;
   resolvedArc?: number;
   onPatch: (partial: CaptionStyleOverrides, live?: boolean) => void;

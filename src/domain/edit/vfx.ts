@@ -1,8 +1,8 @@
 import {
-  DEFAULT_TEXT_TEMPLATE_ID,
   isTextBaseEdit,
   nextEditId,
   overlayMidpointSec,
+  overlayTemplateStyle,
 } from "~/domain/project/project-config";
 import { motionSeed } from "~/domain/vfx/motion";
 import { quoteSeed } from "~/domain/vfx/quote";
@@ -45,7 +45,7 @@ export function textSeed(): Extract<EditSeed, { kind: "vfx"; type: "text" }> {
     middle: null,
     hideCaptions: false,
     ...OVERLAY_TRANSFORM_DEFAULTS,
-    style: { templateId: DEFAULT_TEXT_TEMPLATE_ID },
+    style: overlayTemplateStyle(),
   };
 }
 

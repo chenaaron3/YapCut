@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   clampOverlayMiddle,
   nextEditId,
-  type TemplateStyle,
+  type OverlayTemplateStyle,
   type VfxListicleEdit,
 } from "~/domain/project/project-config";
 import {
@@ -76,7 +76,7 @@ export function detectionToListicleEdits(
   detection: ListicleDetection,
   words: readonly GlobalTranscriptWord[],
   existingEdits: readonly { id: number }[],
-  listicleStyle: TemplateStyle,
+  listicleStyle: OverlayTemplateStyle,
 ): VfxListicleEdit[] {
   let nextId = nextEditId(existingEdits);
   const out: VfxListicleEdit[] = [];
@@ -195,7 +195,7 @@ async function callOpenAI(
 export async function generateListicleEdits(
   words: readonly GlobalTranscriptWord[],
   existingEdits: readonly { id: number }[],
-  listicleStyle: TemplateStyle,
+  listicleStyle: OverlayTemplateStyle,
 ): Promise<VfxListicleEdit[]> {
   if (words.length === 0) return [];
   const detection = await callOpenAI(words);

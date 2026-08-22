@@ -14,12 +14,7 @@ import { useSelection } from "~/editor/selection-store";
 import { useEditor } from "~/editor/store";
 import { cn } from "~/lib/utils";
 import { overlayStackedForEdit } from "~/remotion/templates/overlay";
-import {
-  DEFAULT_QUOTE_TEMPLATE_ID,
-  isQuoteTemplateId,
-  resolveQuoteTemplate,
-} from "~/remotion/templates/quote";
-import { resolveTemplateId } from "~/remotion/templates/style";
+import { QUOTE_TEMPLATES } from "~/remotion/templates/quote";
 
 import type { TextBaseEdit, VfxEdit } from "~/domain/project/project-config";
 
@@ -42,9 +37,7 @@ function vfxCellLabel(edit: VfxEdit): string {
     return overlayLabel(edit);
   if (edit.type === "shake") return "Shake";
   if (isMotionEdit(edit)) return motionLabel(edit);
-  return resolveQuoteTemplate(
-    resolveTemplateId(edit.style, isQuoteTemplateId, DEFAULT_QUOTE_TEMPLATE_ID),
-  ).label;
+  return QUOTE_TEMPLATES[edit.style.templateId].label;
 }
 
 export function VfxTrack({ edits, width }: Props) {

@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { overlayMidpointSec } from "~/domain/project/project-config";
 import { OVERLAY_TRANSFORM_DEFAULTS, transformOf } from "~/domain/edit/transform";
 import { CaptionStyleFields } from "~/editor/components/inspector/field/CaptionStyleFields";
+import { useProjectTheme } from "~/editor/components/inspector/field/ThemeFields";
 import { PersonFields } from "~/editor/components/inspector/field/PersonFields";
 import { TextField } from "~/editor/components/inspector/field/TextField";
 import { TransformFields } from "~/editor/components/inspector/field/TransformFields";
@@ -13,13 +14,16 @@ import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
   isOverlayTemplateId,
   OVERLAY_TEMPLATE_LIST,
+  OVERLAY_TEMPLATES,
   resolveOverlayForEdit,
-  resolveOverlayTemplate,
 } from "~/remotion/templates/overlay";
-import { mergeTemplateStyleOverrides } from "~/remotion/templates/style";
+import {
+  mergeTemplateStyleOverrides,
+  resolveTemplateChips,
+} from "~/remotion/templates/style";
 
 import type {
-  TemplateStyle,
+  OverlayTemplateStyle,
   VfxListicleEdit,
   VfxTextEdit,
 } from "~/domain/project/project-config";
@@ -46,9 +50,9 @@ function OverlayLineStyleFields({
   resolved: CaptionGroupStyle;
   overrides: ReturnType<typeof normalizeCaptionOverrides>;
   bag: "overrides" | "subheadingOverrides";
-  style: TemplateStyle | undefined;
+  style: OverlayTemplateStyle;
   defaultTemplateId: OverlayTemplateId;
-  onStyleChange: (next: TemplateStyle, live?: boolean) => void;
+  onStyleChange: (next: OverlayTemplateStyle, live?: boolean) => void;
   leading?: ReactNode;
 }) {
   return (
@@ -68,13 +72,7 @@ function OverlayLineStyleFields({
       resolvedArc={resolved.arc ?? 0}
       onPatch={(partial, live) =>
         onStyleChange(
-          mergeTemplateStyleOverrides(
-            style,
-            partial,
-            isOverlayTemplateId,
-            defaultTemplateId,
-            bag,
-          ),
+          mergeTemplateStyleOverrides(style, partial, bag),
           live,
         )
       }
@@ -91,15 +89,16 @@ export function OverlayVfxFields({
   onStyleChange,
 }: {
   edit: OverlayEdit;
-  style: TemplateStyle | undefined;
+  style: OverlayTemplateStyle;
   defaultTemplateId: OverlayTemplateId;
   headingLabel: string;
   subheadingLabel: string;
-  onStyleChange: (next: TemplateStyle, live?: boolean) => void;
+  onStyleChange: (next: OverlayTemplateStyle, live?: boolean) => void;
 }) {
   const patchEdit = useEditor((s) => s.patchEdit);
+  const theme = useProjectTheme();
   const [lineTab, setLineTab] = useState<LineTab>("heading");
-  const look = resolveOverlayForEdit(edit);
+  const look = resolveOverlayForEdit(edit, theme);
   const hasSubheading = Boolean(edit.subheading.trim());
   const activeTab: LineTab =
     hasSubheading && lineTab === "subheading" ? "subheading" : "heading";
@@ -164,19 +163,27 @@ export function OverlayVfxFields({
       </label>
 
       <StyleTemplatePicker
-        templates={OVERLAY_TEMPLATE_LIST.map((t) => ({
-          id: t.id,
-          label: t.label,
-          style: t.headingStyle,
-        }))}
+        templates={resolveTemplateChips(
+          OVERLAY_TEMPLATE_LIST.map((t) => ({
+            id: t.id,
+            label: t.label,
+            style: t.headingStyle,
+          })),
+          theme,
+        )}
         value={look.templateId}
         fallbackStyle={look.heading}
         onChange={(id) => {
           const tid = isOverlayTemplateId(id) ? id : defaultTemplateId;
-          onStyleChange({ templateId: tid });
+          onStyleChange({
+            kind: "overlay",
+            templateId: tid,
+            overrides: style.overrides,
+            subheadingOverrides: style.subheadingOverrides,
+          });
           const patch = persistSerialMiddle(
             edit,
-            resolveOverlayTemplate(tid).stacked,
+            OVERLAY_TEMPLATES[tid].stacked,
           );
           if (patch) patchEdit(edit.id, patch);
         }}

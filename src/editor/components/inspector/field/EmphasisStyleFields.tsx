@@ -4,7 +4,6 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
   DEFAULT_EMPHASIS_FILL,
-  DEFAULT_EMPHASIS_FONT_FAMILY,
   DEFAULT_EMPHASIS_SCALE,
   EMPHASIS_SCALE_MAX,
   EMPHASIS_SCALE_MIN,
@@ -34,6 +33,7 @@ export function EmphasisStyleFields({
   onPatch,
   title = "Emphasis",
   onClear,
+  accent = DEFAULT_EMPHASIS_FILL,
 }: {
   /** Display values (project, or project←quote merge). */
   value: EmphasisStyle;
@@ -41,10 +41,12 @@ export function EmphasisStyleFields({
   title?: string;
   /** Clear quote override (reset to project). */
   onClear?: () => void;
+  /** Theme accent — shown when fill is unset. */
+  accent?: string;
 }) {
   const scale = value.scale ?? DEFAULT_EMPHASIS_SCALE;
-  const fill = value.fill ?? DEFAULT_EMPHASIS_FILL;
-  const fontSelectValue = value.fontFamily ?? DEFAULT_EMPHASIS_FONT_FAMILY;
+  const fill = value.fill ?? accent;
+  const fontSelectValue = value.fontFamily ?? "inherit";
   const fillGestureRef = useRef<(() => void) | null>(null);
   const beginFillGesture = () => {
     fillGestureRef.current ??= runGesture();
@@ -91,7 +93,7 @@ export function EmphasisStyleFields({
           <Input
             type="text"
             className="h-8 flex-1"
-            placeholder={DEFAULT_EMPHASIS_FILL}
+            placeholder={accent}
             value={fill}
             onFocus={beginFillGesture}
             onBlur={endFillGesture}

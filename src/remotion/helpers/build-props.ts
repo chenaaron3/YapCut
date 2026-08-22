@@ -30,8 +30,6 @@ import { resolveTransform } from "~/domain/edit/transform";
 import { keepsForStitch } from "~/domain/edit/transition";
 import { editMiddleSec } from "~/domain/edit/vfx";
 import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/edit/zoom";
-import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
-import { applyCaptionOverrides } from "~/remotion/captions/style";
 import {
   groupStyledCaptionWords,
   isFiller,
@@ -43,17 +41,7 @@ import {
   COMPOSITION_HEIGHT,
   COMPOSITION_WIDTH,
 } from "~/remotion/helpers/constants";
-import {
-  DEFAULT_CAPTION_TEMPLATE_ID,
-  isCaptionTemplateId,
-  resolveCaptionTemplateStyle,
-} from "~/remotion/templates/caption";
 import { resolveOverlayForEdit } from "~/remotion/templates/overlay";
-import {
-  DEFAULT_QUOTE_TEMPLATE_ID,
-  isQuoteTemplateId,
-  resolveQuoteTemplateStyle,
-} from "~/remotion/templates/quote";
 import { resolveTemplateStyle } from "~/remotion/templates/style";
 
 import type { ArollLayoutCell } from "~/domain/aroll/arolls";
@@ -168,18 +156,6 @@ function buildSections(
   });
 }
 
-export function resolveProjectCaptionStyle(
-  captions: ProjectConfig["captions"],
-): CaptionGroupStyle {
-  const templateId = isCaptionTemplateId(captions.templateId)
-    ? captions.templateId
-    : DEFAULT_CAPTION_TEMPLATE_ID;
-  const base = resolveCaptionTemplateStyle(templateId);
-  return applyCaptionOverrides(
-    base,
-    normalizeCaptionOverrides(captions.overrides),
-  );
-}
 
 type OutputQuote = {
   id: number;
@@ -193,6 +169,7 @@ type OutputQuote = {
 function outputQuotes(
   edits: ProjectConfig["edits"],
   cells: ReturnType<typeof buildArollLayout>,
+  theme: ProjectConfig["theme"],
 ): OutputQuote[] {
   const out: OutputQuote[] = [];
   for (const e of edits) {
@@ -203,12 +180,7 @@ function outputQuotes(
       id: e.id,
       start: range.start,
       end: range.end,
-      style: resolveTemplateStyle(
-        e.style,
-        isQuoteTemplateId,
-        DEFAULT_QUOTE_TEMPLATE_ID,
-        resolveQuoteTemplateStyle,
-      ),
+      style: resolveTemplateStyle(e.style, theme),
       emphasisStyle: e.emphasisStyle,
       ...behindPersonProp(e),
     });
@@ -258,10 +230,14 @@ function buildCaptionGroups(
   cells: ReturnType<typeof buildArollLayout>,
   fps: number,
 ): CaptionGroupProp[] {
-  const captionStyle = resolveProjectCaptionStyle(config.captions);
+  const captionStyle = resolveTemplateStyle(config.captions, config.theme);
   const projectEmphasis = config.emphasisStyle;
-  const defaultEmphasis = pickEmphasisStyle(projectEmphasis);
-  const quotes = outputQuotes(config.edits, cells);
+  const defaultEmphasis = pickEmphasisStyle(
+    projectEmphasis,
+    null,
+    config.theme,
+  );
+  const quotes = outputQuotes(config.edits, cells, config.theme);
   const hiddenRanges = hiddenCaptionRanges(config.edits, cells);
   const words = projectOutputWords(config.arolls, transcriptsByAssetId);
 
@@ -292,6 +268,7 @@ function buildCaptionGroups(
     const emphasisStyle = pickEmphasisStyle(
       projectEmphasis,
       quote?.emphasisStyle,
+      config.theme,
     );
     styledWords.push({
       text: word.text,
@@ -388,7 +365,7 @@ function buildTextOverlays(
     if (!range) continue;
     const startFrame = secToFrame(range.start, fps);
     const endFrame = Math.max(startFrame + 1, secToFrame(range.end, fps));
-    const look = resolveOverlayForEdit(e);
+    const look = resolveOverlayForEdit(e, config.theme);
     const t = resolveTransform(e);
     out.push({
       id: e.id,
@@ -494,6 +471,7 @@ function buildMotionOverlays(
   cells: ReturnType<typeof buildArollLayout>,
   assets: Assets,
   fps: number,
+  theme: ProjectConfig["theme"],
 ): MotionOverlayProp[] {
   const out: MotionOverlayProp[] = [];
   for (const e of edits) {
@@ -501,12 +479,7 @@ function buildMotionOverlays(
     const range = timelineRangeToOutput(cells, e);
     if (!range) continue;
     const pose = resolveTransform(e);
-    const style = resolveTemplateStyle(
-      e.style,
-      isCaptionTemplateId,
-      DEFAULT_CAPTION_TEMPLATE_ID,
-      resolveCaptionTemplateStyle,
-    );
+    const style = resolveTemplateStyle(e.style, theme);
     const ref = motionMediaRef(e.plan);
     let media: MotionOverlayProp["media"] = null;
     if (ref) {
@@ -807,6 +780,7 @@ export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
       layout,
       input.assets,
       fps,
+      input.config.theme,
     ),
     stickers: buildStickers(input.config.edits, layout, fps),
   };

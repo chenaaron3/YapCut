@@ -15,5 +15,6 @@ export { InspectorPills } from "./InspectorPills";
 export { SfxSearchSelect } from "./SfxSearchSelect";
 export { SliderField } from "./SliderField";
 export { TextField } from "./TextField";
+export { ThemeFields, useProjectTheme } from "./ThemeFields";
 export { TransformFields } from "./TransformFields";
 

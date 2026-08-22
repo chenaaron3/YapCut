@@ -1,56 +1,70 @@
-import type { TemplateStyle } from "~/domain/project/project-config";
+import type {
+  CaptionTemplateStyle,
+  QuoteTemplateStyle,
+  TemplateStyle,
+} from "~/domain/project/template-style";
+import type { Theme } from "~/domain/project/theme";
 import { normalizeCaptionOverrides } from "~/remotion/captions/parse-style";
 import {
   applyCaptionOverrides,
   type CaptionGroupStyle,
   type CaptionStyleOverrides,
 } from "~/remotion/captions/style";
+import { CAPTION_TEMPLATES } from "~/remotion/templates/caption";
+import { QUOTE_TEMPLATES } from "~/remotion/templates/quote";
+import { resolveThemeStyle } from "~/remotion/templates/theme-style";
 
-/** Resolve sparse TemplateStyle.templateId against a catalog (+ default). */
-export function resolveTemplateId<T extends string>(
-  style: TemplateStyle | undefined,
-  isId: (value: unknown) => value is T,
-  defaultId: T,
-): T {
-  return isId(style?.templateId) ? style.templateId : defaultId;
+/** Resolve catalog roles against Theme for picker chips. */
+export function resolveTemplateChips(
+  templates: readonly {
+    id: string;
+    label: string;
+    style: CaptionGroupStyle;
+  }[],
+  theme: Theme,
+): { id: string; label: string; style: CaptionGroupStyle }[] {
+  return templates.map((t) => ({
+    id: t.id,
+    label: t.label,
+    style: resolveThemeStyle(t.style, theme),
+  }));
 }
 
-/** Resolve sparse TemplateStyle → full CaptionGroupStyle. */
-export function resolveTemplateStyle<T extends string>(
-  style: TemplateStyle | undefined,
-  isId: (value: unknown) => value is T,
-  defaultId: T,
-  resolveBase: (id: T) => CaptionGroupStyle,
+/** Caption/quote TemplateStyle → catalog → theme → overrides. */
+export function resolveTemplateStyle(
+  style: CaptionTemplateStyle | QuoteTemplateStyle,
+  theme: Theme,
 ): CaptionGroupStyle {
-  const templateId = resolveTemplateId(style, isId, defaultId);
+  const entry =
+    style.kind === "caption"
+      ? CAPTION_TEMPLATES[style.templateId]
+      : QUOTE_TEMPLATES[style.templateId];
   return applyCaptionOverrides(
-    resolveBase(templateId),
-    normalizeCaptionOverrides(style?.overrides),
+    resolveThemeStyle(entry.style, theme),
+    normalizeCaptionOverrides(style.overrides),
   );
 }
 
-/** Merge sparse overrides onto a TemplateStyle (keeps resolved templateId). */
-export function mergeTemplateStyleOverrides<T extends string>(
-  style: TemplateStyle | undefined,
+/** Merge sparse overrides onto a TemplateStyle (keeps kind + templateId). */
+export function mergeTemplateStyleOverrides<T extends TemplateStyle>(
+  style: T,
   patch: CaptionStyleOverrides,
-  isId: (value: unknown) => value is T,
-  defaultId: T,
   bag: "overrides" | "subheadingOverrides" = "overrides",
-): TemplateStyle {
-  const templateId = resolveTemplateId(style, isId, defaultId);
+): T {
+  const currentSub =
+    style.kind === "overlay" ? style.subheadingOverrides : undefined;
   const heading = normalizeCaptionOverrides(
-    bag === "overrides" ? { ...style?.overrides, ...patch } : style?.overrides,
+    bag === "overrides" ? { ...style.overrides, ...patch } : style.overrides,
   );
   const subheading = normalizeCaptionOverrides(
-    bag === "subheadingOverrides"
-      ? { ...style?.subheadingOverrides, ...patch }
-      : style?.subheadingOverrides,
+    bag === "subheadingOverrides" ? { ...currentSub, ...patch } : currentSub,
   );
   return {
-    templateId,
+    kind: style.kind,
+    templateId: style.templateId,
     ...(Object.keys(heading).length > 0 ? { overrides: heading } : {}),
-    ...(Object.keys(subheading).length > 0
+    ...(style.kind === "overlay" && Object.keys(subheading).length > 0
       ? { subheadingOverrides: subheading }
       : {}),
-  };
+  } as T;
 }
