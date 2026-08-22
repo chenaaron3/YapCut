@@ -22,6 +22,7 @@ export function isCaptionFontId(value: unknown): value is CaptionFontId {
 export type CaptionFontRef = CaptionFontId | ThemeFontRole;
 
 /** Catalog color role or a raw CSS color. Resolve roles against Theme before paint. */
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- roles for autocomplete; any CSS color allowed
 export type CaptionColor = ThemeColorRole | string;
 
 export type CaptionFontFace = {

@@ -1,38 +1,38 @@
+import { buildArollLayout } from "~/domain/aroll/arolls";
+import {
+  outputDurationFromArolls,
+  timelineRangeToOutput,
+} from "~/domain/aroll/layout-time";
+import { projectOutputWords } from "~/domain/aroll/projection";
 import {
   arollPlaybackMask,
   behindPersonProp,
   maskProp,
 } from "~/domain/asset/mask";
-import { buildArollLayout } from "~/domain/aroll/arolls";
 import {
   arollPlaybackGain,
   mixPlaybackVolume,
   MUSIC_VOLUME_DEFAULT,
   sfxPlaybackVolume,
 } from "~/domain/audio/mix-levels";
-import {
-  createQuoteEmphasisFontCycler,
-  pickEmphasisStyle,
-} from "~/domain/transcript/emphasis-style";
-import {
-  outputDurationFromArolls,
-  timelineRangeToOutput,
-} from "~/domain/aroll/layout-time";
-import { isMotionEdit } from "~/domain/vfx/motion";
-import { motionMediaRef } from "~/domain/vfx/motion-config";
-import {
-  editHidesCaptions,
-  isTextBaseEdit,
-  PROJECT_FPS,
-} from "~/domain/project/project-config";
-import { projectOutputWords } from "~/domain/aroll/projection";
-import { scribbleWordFields } from "~/domain/transcript/scribble";
-import { resolveShakeIntensity } from "~/domain/vfx/shake";
 import { isStickerEdit } from "~/domain/edit/sticker";
 import { resolveTransform } from "~/domain/edit/transform";
 import { keepsForStitch } from "~/domain/edit/transition";
 import { editMiddleSec } from "~/domain/edit/vfx";
 import { DEFAULT_ZOOM_SCALE, resolveZoomEase } from "~/domain/edit/zoom";
+import {
+  editHidesCaptions,
+  isTextBaseEdit,
+  PROJECT_FPS,
+} from "~/domain/project/project-config";
+import {
+  createQuoteEmphasisFontCycler,
+  pickEmphasisStyle,
+} from "~/domain/transcript/emphasis-style";
+import { scribbleWordFields } from "~/domain/transcript/scribble";
+import { isMotionEdit } from "~/domain/vfx/motion";
+import { motionMediaRef } from "~/domain/vfx/motion-config";
+import { resolveShakeIntensity } from "~/domain/vfx/shake";
 import {
   groupStyledCaptionWords,
   isFiller,
@@ -49,12 +49,12 @@ import { resolveTemplateStyle } from "~/remotion/templates/style";
 
 import type { ArollLayoutCell } from "~/domain/aroll/arolls";
 import type { MaskEntry } from "~/domain/asset/mask";
+import type { OutputTime } from "~/domain/media/time";
+import type { ArollKeep, ProjectConfig } from "~/domain/project/project-config";
 import type {
   EmphasisStyle,
   ResolvedEmphasisStyle,
 } from "~/domain/transcript/emphasis-style";
-import type { ArollKeep, ProjectConfig } from "~/domain/project/project-config";
-import type { OutputTime } from "~/domain/media/time";
 import type { TranscriptWord } from "~/domain/transcript/transcript";
 import type { CaptionGroupStyle } from "~/remotion/captions/style";
 import type {
@@ -158,7 +158,6 @@ function buildSections(
     };
   });
 }
-
 
 type OutputQuote = {
   id: number;
@@ -311,8 +310,7 @@ function buildCaptionGroups(
   const displayGroups = groupStyledCaptionWords(styledWords)
     .map((group) => {
       const quoteId = quoteIdFromStyleKey(group.styleKey);
-      const cycleFonts =
-        quoteId != null && cyclingQuoteIds.has(quoteId);
+      const cycleFonts = quoteId != null && cyclingQuoteIds.has(quoteId);
 
       const displayWords = group.words
         .map((w) => {
@@ -764,11 +762,9 @@ function buildTransitions(
 
 export function buildProjectProps(input: BuildProjectPropsInput): ProjectProps {
   const fps = input.fps ?? COMPOSITION_FPS ?? PROJECT_FPS;
-  const sections = buildSections(
-    input.config.arolls,
-    input.assets,
-    fps,
-  ).filter((s) => s.src.length > 0);
+  const sections = buildSections(input.config.arolls, input.assets, fps).filter(
+    (s) => s.src.length > 0,
+  );
 
   const layout = buildArollLayout(
     input.config.arolls,
