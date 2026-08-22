@@ -35,6 +35,7 @@ export function EmphasisStyleFields({
   onClear,
   accent = DEFAULT_EMPHASIS_FILL,
   handwritten,
+  showCycleFontRoles = false,
 }: {
   /** Display values (project, or project←quote merge). */
   value: EmphasisStyle;
@@ -46,9 +47,12 @@ export function EmphasisStyleFields({
   accent?: string;
   /** Theme handwritten face — shown when font is unset. */
   handwritten: CaptionFontId;
+  /** Quote inspector only — cycle theme roles across emphasized words. */
+  showCycleFontRoles?: boolean;
 }) {
   const scale = value.scale ?? DEFAULT_EMPHASIS_SCALE;
   const fill = value.fill ?? accent;
+  const cycleFontRoles = value.cycleFontRoles === true;
   const fontSelectValue = value.fontFamily ?? handwritten;
   const fillGestureRef = useRef<(() => void) | null>(null);
   const beginFillGesture = () => {
@@ -105,25 +109,41 @@ export function EmphasisStyleFields({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <Label className="text-muted-foreground text-[10px] tracking-wider uppercase">
-          Font
-        </Label>
-        <InspectorSelect
-          aria-label="Font"
-          value={fontSelectValue}
-          options={CAPTION_FONT_IDS.map((id) => ({
-            value: id,
-            label: CAPTION_FONT_LABELS[id],
-          }))}
-          onChange={(v) => {
-            const fontFamily = v as CaptionFontId;
-            onPatch({
-              fontFamily: fontFamily === handwritten ? undefined : fontFamily,
-            });
-          }}
-        />
-      </div>
+      {showCycleFontRoles ? (
+        <label className="text-foreground flex cursor-pointer items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            className="accent-primary size-3.5"
+            checked={cycleFontRoles}
+            onChange={(e) =>
+              onPatch({ cycleFontRoles: e.target.checked || undefined })
+            }
+          />
+          Cycle fonts
+        </label>
+      ) : null}
+
+      {cycleFontRoles ? null : (
+        <div className="flex flex-col gap-1">
+          <Label className="text-muted-foreground text-[10px] tracking-wider uppercase">
+            Font
+          </Label>
+          <InspectorSelect
+            aria-label="Font"
+            value={fontSelectValue}
+            options={CAPTION_FONT_IDS.map((id) => ({
+              value: id,
+              label: CAPTION_FONT_LABELS[id],
+            }))}
+            onChange={(v) => {
+              const fontFamily = v as CaptionFontId;
+              onPatch({
+                fontFamily: fontFamily === handwritten ? undefined : fontFamily,
+              });
+            }}
+          />
+        </div>
+      )}
     </InspectorCollapsible>
   );
 }

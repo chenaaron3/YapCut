@@ -71,6 +71,7 @@ export function QuoteVfxInspector({ edit }: { edit: VfxQuoteEdit }) {
         value={{ ...projectEmphasis, ...quoteEmphasis }}
         accent={theme.colors.accent}
         handwritten={theme.fonts.handwritten}
+        showCycleFontRoles
         onClear={
           hasOverride
             ? () => patchEdit(edit.id, { emphasisStyle: {} })

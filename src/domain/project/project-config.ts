@@ -147,6 +147,7 @@ export type VfxQuoteEdit = EditBase &
     /**
      * Sparse merge over project `emphasisStyle` for emphasized words in this quote.
      * Omit / `{}` = use project only.
+     * `cycleFontRoles` is quote-only — cycles theme faces across emphasized words.
      */
     emphasisStyle?: EmphasisStyle;
   };

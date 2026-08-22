@@ -10,7 +10,10 @@ import {
   MUSIC_VOLUME_DEFAULT,
   sfxPlaybackVolume,
 } from "~/domain/audio/mix-levels";
-import { pickEmphasisStyle } from "~/domain/transcript/emphasis-style";
+import {
+  createQuoteEmphasisFontCycler,
+  pickEmphasisStyle,
+} from "~/domain/transcript/emphasis-style";
 import {
   outputDurationFromArolls,
   timelineRangeToOutput,
@@ -224,6 +227,12 @@ function wordInHiddenRange(
   return false;
 }
 
+/** `quote:${id}` style keys from caption grouping; null for default captions. */
+function quoteIdFromStyleKey(styleKey: string): number | null {
+  const match = /^quote:(\d+)$/.exec(styleKey);
+  return match ? Number(match[1]) : null;
+}
+
 function buildCaptionGroups(
   config: ProjectConfig,
   transcriptsByAssetId: ReadonlyMap<string, readonly TranscriptWord[]>,
@@ -254,6 +263,7 @@ function buildCaptionGroups(
   // strip for on-screen display after groups are formed.
   // Bump `segment` across hidden runs so a caption group never spans a hide.
   const styledWords: StyledWord[] = [];
+  const cyclingQuoteIds = new Set<number>();
   let segment = 0;
   for (const word of words) {
     if (isFiller(word.text) || !word.text.trim()) continue;
@@ -270,6 +280,9 @@ function buildCaptionGroups(
       quote?.emphasisStyle,
       config.theme,
     );
+    if (quote?.emphasisStyle?.cycleFontRoles) {
+      cyclingQuoteIds.add(quote.id);
+    }
     styledWords.push({
       text: word.text,
       startFrame,
@@ -293,13 +306,27 @@ function buildCaptionGroups(
     if (word.behindPerson) behindByKey.set(word.styleKey, true);
   }
 
+  const nextCycleFont = createQuoteEmphasisFontCycler(config.theme);
+
   const displayGroups = groupStyledCaptionWords(styledWords)
     .map((group) => {
+      const quoteId = quoteIdFromStyleKey(group.styleKey);
+      const cycleFonts =
+        quoteId != null && cyclingQuoteIds.has(quoteId);
+
       const displayWords = group.words
-        .map((w) => ({
-          ...w,
-          text: stripPunctuationForDisplay(w.text),
-        }))
+        .map((w) => {
+          const text = stripPunctuationForDisplay(w.text);
+          const emphasisFontFamily =
+            cycleFonts && w.emphasized && text.length > 0
+              ? nextCycleFont(quoteId)
+              : undefined;
+          return {
+            ...w,
+            text,
+            ...(emphasisFontFamily ? { emphasisFontFamily } : {}),
+          };
+        })
         .filter((w) => w.text.length > 0);
       if (displayWords.length === 0) return null;
       const style = styleByKey.get(group.styleKey) ?? captionStyle;

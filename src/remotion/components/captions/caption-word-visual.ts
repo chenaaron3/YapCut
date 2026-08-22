@@ -61,16 +61,17 @@ function resolvePaintStyle(
 
 function emphasisTypographyCss(
   groupStyle: CaptionGroupStyle,
-  emphasized: boolean | undefined,
+  word: CaptionWordProp,
   emphasis: ResolvedEmphasisStyle | null | undefined,
 ): CSSProperties {
-  if (!emphasized || !emphasis) return {};
+  if (!word.emphasized || !emphasis) return {};
   const css: CSSProperties = {};
   if (emphasis.scale !== 1) {
     css.fontSize = groupStyle.fontSize * emphasis.scale;
   }
-  if (emphasis.fontFamily) {
-    Object.assign(css, captionFontCss(emphasis.fontFamily));
+  const fontFamily = word.emphasisFontFamily ?? emphasis.fontFamily;
+  if (fontFamily) {
+    Object.assign(css, captionFontCss(fontFamily));
   }
   return css;
 }
@@ -162,7 +163,7 @@ export function resolveCaptionWordVisual(input: {
   );
   const emphasisCss = emphasisTypographyCss(
     groupStyle,
-    word.emphasized,
+    word,
     emphasisStyle,
   );
   const bg = paint.background;

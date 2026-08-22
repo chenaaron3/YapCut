@@ -2,7 +2,7 @@ import type { MaskEntry } from "~/domain/asset/mask";
 import type { ResolvedEmphasisStyle } from "~/domain/transcript/emphasis-style";
 import type { ShotPlan } from "~/domain/vfx/motion-config";
 import type { ScribbleId } from "~/domain/transcript/scribble";
-import type { CaptionGroupStyle } from "~/remotion/captions/style";
+import type { CaptionFontId, CaptionGroupStyle } from "~/remotion/captions/style";
 
 export type ArollSection = {
   assetId: string;
@@ -23,6 +23,11 @@ export type CaptionWordProp = {
   endFrame: number;
   emphasized?: boolean;
   scribble?: ScribbleId;
+  /**
+   * Per-word emphasis face when a quote has `cycleFontRoles`.
+   * Overrides group `emphasisStyle.fontFamily` for this word only.
+   */
+  emphasisFontFamily?: CaptionFontId;
 };
 
 export type CaptionGroupProp = {
