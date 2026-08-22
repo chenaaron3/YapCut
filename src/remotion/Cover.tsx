@@ -3,6 +3,8 @@ import {
   AbsoluteFill,
   continueRender,
   delayRender,
+  getRemotionEnvironment,
+  OffthreadVideo,
   staticFile,
   useVideoConfig,
 } from "remotion";
@@ -86,6 +88,39 @@ function EnsureCoverFont() {
   return null;
 }
 
+function CoverPlate({
+  src,
+  trimBefore,
+  trimAfter,
+}: {
+  src: string;
+  trimBefore: number;
+  trimAfter: number;
+}) {
+  const fill = { width: "100%", height: "100%" } as const;
+  if (getRemotionEnvironment().isRendering) {
+    return (
+      <OffthreadVideo
+        src={src}
+        trimBefore={trimBefore}
+        trimAfter={trimAfter}
+        style={{ ...fill, objectFit: "cover" }}
+        crossOrigin="anonymous"
+        delayRenderTimeoutInMilliseconds={120000}
+      />
+    );
+  }
+  return (
+    <Video
+      src={src}
+      trimBefore={trimBefore}
+      trimAfter={trimAfter}
+      objectFit="cover"
+      style={fill}
+    />
+  );
+}
+
 /** Single-frame cover: first keep frame + large centered title. */
 export function Cover({ title, sections }: ProjectProps) {
   const { width } = useVideoConfig();
@@ -102,12 +137,10 @@ export function Cover({ title, sections }: ProjectProps) {
     <AbsoluteFill style={{ backgroundColor: "#000" }}>
       <EnsureCoverFont />
       {first?.src ? (
-        <Video
+        <CoverPlate
           src={first.src}
           trimBefore={first.trimBefore}
           trimAfter={Math.min(first.trimAfter, first.trimBefore + 1)}
-          objectFit="cover"
-          style={{ width: "100%", height: "100%" }}
         />
       ) : null}
 

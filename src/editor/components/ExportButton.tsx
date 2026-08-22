@@ -101,6 +101,7 @@ export function ExportButton() {
       void utils.project.byId.invalidate({ id: projectId ?? "" });
       if (
         progress.failureReason &&
+        !progress.exportS3Key &&
         toastedExportFailureRef.current !== progress.failureReason
       ) {
         toastedExportFailureRef.current = progress.failureReason;

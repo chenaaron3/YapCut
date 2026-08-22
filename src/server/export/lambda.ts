@@ -17,6 +17,9 @@ function remotionRegion(): AwsRegion {
   return (env.REMOTION_AWS_REGION ?? env.AWS_REGION) as AwsRegion;
 }
 
+/** Occluded A-roll uses two OffthreadVideo tracks; default cache evicts HEVC frames. */
+const OFFTHREAD_VIDEO_CACHE_BYTES = 512 * 1024 * 1024;
+
 function requireLambdaConfig(): {
   functionName: string;
   serveUrl: string;
@@ -61,9 +64,7 @@ export async function startLambdaRender(options: {
       fileName: `${options.projectId}.mp4`,
     },
     framesPerLambda: 40,
-    // Occlude plate = source + mask Offthread extracts. Default cache evicts
-    // long HEVC A-roll frames ("No frame found at position").
-    offthreadVideoCacheSizeInBytes: 512 * 1024 * 1024,
+    offthreadVideoCacheSizeInBytes: OFFTHREAD_VIDEO_CACHE_BYTES,
     timeoutInMilliseconds: 120000,
   });
 
@@ -90,6 +91,8 @@ export async function renderCoverStill(options: {
     privacy: "public",
     frame: 0,
     forceBucketName: options.bucketName,
+    offthreadVideoCacheSizeInBytes: OFFTHREAD_VIDEO_CACHE_BYTES,
+    timeoutInMilliseconds: 120000,
     downloadBehavior: {
       type: "download",
       fileName: `${options.projectId}-cover.jpg`,
