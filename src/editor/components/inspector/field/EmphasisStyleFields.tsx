@@ -34,6 +34,7 @@ export function EmphasisStyleFields({
   title = "Emphasis",
   onClear,
   accent = DEFAULT_EMPHASIS_FILL,
+  handwritten,
 }: {
   /** Display values (project, or project←quote merge). */
   value: EmphasisStyle;
@@ -43,10 +44,12 @@ export function EmphasisStyleFields({
   onClear?: () => void;
   /** Theme accent — shown when fill is unset. */
   accent?: string;
+  /** Theme handwritten face — shown when font is unset. */
+  handwritten: CaptionFontId;
 }) {
   const scale = value.scale ?? DEFAULT_EMPHASIS_SCALE;
   const fill = value.fill ?? accent;
-  const fontSelectValue = value.fontFamily ?? "inherit";
+  const fontSelectValue = value.fontFamily ?? handwritten;
   const fillGestureRef = useRef<(() => void) | null>(null);
   const beginFillGesture = () => {
     fillGestureRef.current ??= runGesture();
@@ -109,20 +112,15 @@ export function EmphasisStyleFields({
         <InspectorSelect
           aria-label="Font"
           value={fontSelectValue}
-          options={[
-            { value: "inherit", label: "Inherit group" },
-            ...CAPTION_FONT_IDS.map((id) => ({
-              value: id,
-              label: CAPTION_FONT_LABELS[id],
-            })),
-          ]}
+          options={CAPTION_FONT_IDS.map((id) => ({
+            value: id,
+            label: CAPTION_FONT_LABELS[id],
+          }))}
           onChange={(v) => {
-            if (v === "inherit") {
-              // Omit font — parent drops the key from the style being edited.
-              onPatch({ fontFamily: undefined });
-              return;
-            }
-            onPatch({ fontFamily: v as CaptionFontId });
+            const fontFamily = v as CaptionFontId;
+            onPatch({
+              fontFamily: fontFamily === handwritten ? undefined : fontFamily,
+            });
           }}
         />
       </div>

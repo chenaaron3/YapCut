@@ -33,9 +33,7 @@ export type OverlayTemplate = {
   stacked: boolean;
 };
 
-function defaultSubheadingStyle(
-  heading: CaptionGroupStyle,
-): CaptionGroupStyle {
+function defaultSubheadingStyle(heading: CaptionGroupStyle): CaptionGroupStyle {
   return {
     ...heading,
     fontSize: Math.max(24, Math.round(heading.fontSize * 0.55)),
@@ -86,7 +84,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       background: { kind: "none" },
       arc: 75,
       wordStyle: {
-        fill: "ink",
+        fill: "brand",
         opacity: 1,
         border: { width: 6, color: "stroke" },
         textShadow: OVERLAY_TYPEWRITER_SHADOW,
@@ -101,7 +99,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       wordAnimation: "none",
       wordReveal: "typewriter",
       textTransform: "lowercase",
-      background: { kind: "ribbon", color: "ink" },
+      background: { kind: "ribbon", color: "accent" },
       y: -0.35,
       wordStyle: { fill: "paper", opacity: 1 },
       futureWordStyle: { opacity: 0 },
@@ -124,7 +122,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       arc: 65,
       fontStyle: "normal",
       wordStyle: {
-        fill: "ink",
+        fill: "brand",
         opacity: 1,
         border: { width: 10, color: "stroke" },
         textShadow: "0 3px 0 #000000, 0 0 14px rgba(0,0,0,0.9)",
@@ -137,7 +135,7 @@ export const OVERLAY_TEMPLATES: Record<OverlayTemplateId, OverlayTemplate> = {
       groupAnimation: "scale",
       wordAnimation: "none",
       textTransform: "lowercase",
-      background: { kind: "ribbon", color: "ink" },
+      background: { kind: "ribbon", color: "accent" },
       y: -0.5,
       wordStyle: { fill: "paper", opacity: 1 },
     },

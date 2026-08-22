@@ -68,6 +68,7 @@ export function CaptionsInspector() {
       <EmphasisStyleFields
         value={emphasisStyle}
         accent={theme.colors.accent}
+        handwritten={theme.fonts.handwritten}
         onPatch={(partial, live) =>
           patchEmphasisStyle(applyEmphasisPatch(emphasisStyle, partial), live)
         }

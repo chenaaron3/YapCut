@@ -30,12 +30,12 @@ export type EmphasisStyle = {
 
 /**
  * Fully resolved emphasis paint for a caption group.
- * `fontFamily` null = keep the surrounding group font.
+ * Unset font → Theme handwritten face.
  */
 export type ResolvedEmphasisStyle = {
   scale: number;
   fill: string;
-  fontFamily: CaptionFontId | null;
+  fontFamily: CaptionFontId;
 };
 
 export function clampEmphasisScale(n: number): number {
@@ -46,7 +46,7 @@ export function clampEmphasisScale(n: number): number {
 /**
  * Merge quote emphasis over project and materialize defaults.
  * Project is always present; quote keys override when set.
- * Unset font inherits the surrounding caption/quote group.
+ * Unset font uses Theme.fonts.handwritten.
  */
 export function pickEmphasisStyle(
   project: EmphasisStyle,
@@ -57,7 +57,7 @@ export function pickEmphasisStyle(
   return {
     scale: clampEmphasisScale(s.scale ?? DEFAULT_EMPHASIS_SCALE),
     fill: s.fill?.trim() ? s.fill.trim() : theme.colors.accent,
-    fontFamily: s.fontFamily ?? null,
+    fontFamily: s.fontFamily ?? theme.fonts.handwritten,
   };
 }
 

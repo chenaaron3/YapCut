@@ -43,8 +43,27 @@ export function ThemeFields() {
     colorGestureRef.current = null;
   };
 
+  const isDefault =
+    THEME_FONT_ROLES.every((role) => theme.fonts[role] === DEFAULT_THEME.fonts[role]) &&
+    THEME_COLOR_ROLES.every(
+      (role) => theme.colors[role] === DEFAULT_THEME.colors[role],
+    );
+
   return (
     <InspectorCollapsible title="Theme" defaultOpen>
+      <button
+        type="button"
+        className="text-muted-foreground hover:text-foreground text-left text-[11px] underline-offset-2 hover:underline disabled:pointer-events-none disabled:opacity-40"
+        disabled={isDefault}
+        onClick={() =>
+          patchTheme({
+            fonts: { ...DEFAULT_THEME.fonts },
+            colors: { ...DEFAULT_THEME.colors },
+          })
+        }
+      >
+        Reset to default
+      </button>
       <div className="grid grid-cols-2 gap-2">
         {THEME_FONT_ROLES.map((role) => (
           <div key={role} className="flex flex-col gap-1">

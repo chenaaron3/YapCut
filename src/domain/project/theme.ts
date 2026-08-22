@@ -52,7 +52,7 @@ export const DEFAULT_THEME: Theme = {
     paper: "#3D3548",
     stroke: "#2A2433",
     accent: "#F7E3A1",
-    brand: "#EE8B82",
+    brand: "#E04A42",
   },
 };
 
