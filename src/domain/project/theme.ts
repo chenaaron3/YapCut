@@ -48,11 +48,11 @@ export const DEFAULT_THEME: Theme = {
     handwritten: "comico",
   },
   colors: {
-    ink: "#FFFFFF",
-    paper: "#111111",
-    stroke: "#000000",
-    accent: "#FFE600",
-    brand: "#E53935",
+    ink: "#FFF8F4",
+    paper: "#3D3548",
+    stroke: "#2A2433",
+    accent: "#F7E3A1",
+    brand: "#EE8B82",
   },
 };
 
